@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Post a Job</title>
+</head>
+<body>
+  <h2>Customer: Post a Job ✅</h2>
+
+  <form method="POST" action="/customer/create">
+    <label>Your Name</label><br>
+    <input name="customer_name" required><br><br>
+
+    <label>Pickup Address</label><br>
+    <input name="pickup_address" required><br><br>
+
+    <label>What needs hauled?</label><br>
+    <textarea name="job_description" required></textarea><br><br>
+
+    <button type="submit">Submit Job</button>
+  </form>
+
+  <p><a href="/">Back Home</a></p>
+</body>
+</html>
