@@ -13,6 +13,8 @@ class User(UserMixin, db.Model):
     profile_image_url = db.Column(db.String, nullable=True)
     phone = db.Column(db.String, nullable=True)
     user_type = db.Column(db.String, nullable=True)
+    home_zip = db.Column(db.String, nullable=True)
+    max_travel_miles = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
@@ -38,6 +40,7 @@ class Job(db.Model):
     customer_name = db.Column(db.String, nullable=False)
     customer_phone = db.Column(db.String, nullable=True)
     pickup_address = db.Column(db.String, nullable=False)
+    pickup_zip = db.Column(db.String, nullable=True)
     job_description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String, default='open')
     accepted_hauler = db.Column(db.String, nullable=True)

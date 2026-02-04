@@ -26,6 +26,19 @@
             <label>Account Type</label>
             <input value="{{ current_user.user_type.title() if current_user.user_type else 'Not set' }}" disabled>
         </div>
+        {% if current_user.user_type == 'hauler' %}
+        <hr>
+        <h3>Travel Preferences</h3>
+        <div class="form-group">
+            <label>Your Home ZIP Code</label>
+            <input name="home_zip" value="{{ current_user.home_zip or '' }}" placeholder="Your ZIP code" maxlength="10">
+        </div>
+        <div class="form-group">
+            <label>Max Travel Distance (miles)</label>
+            <input name="max_travel_miles" type="number" min="1" max="500" value="{{ current_user.max_travel_miles or '' }}" placeholder="e.g. 25">
+            <small style="color: #666;">Jobs beyond this distance won't be shown to you</small>
+        </div>
+        {% endif %}
         <button type="submit" class="btn btn-success">Save Changes</button>
     </form>
 </div>

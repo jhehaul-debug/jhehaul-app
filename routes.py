@@ -79,9 +79,10 @@ def customer_create():
     customer_name = request.form.get("customer_name", "").strip()
     customer_phone = request.form.get("customer_phone", "").strip()
     pickup_address = request.form.get("pickup_address", "").strip()
+    pickup_zip = request.form.get("pickup_zip", "").strip()
     job_description = request.form.get("job_description", "").strip()
 
-    if not customer_name or not pickup_address or not job_description:
+    if not customer_name or not pickup_address or not job_description or not pickup_zip:
         return "Missing required fields", 400
 
     job = Job(
@@ -89,6 +90,7 @@ def customer_create():
         customer_name=customer_name,
         customer_phone=customer_phone,
         pickup_address=pickup_address,
+        pickup_zip=pickup_zip,
         job_description=job_description,
         status='open'
     )
@@ -185,7 +187,31 @@ def payment_success(job_id):
 @app.route("/hauler/jobs")
 @require_role('hauler')
 def hauler_jobs():
-    jobs = Job.query.filter_by(status='open').order_by(Job.id.desc()).all()
+    all_jobs = Job.query.filter_by(status='open').order_by(Job.id.desc()).all()
+    
+    if current_user.home_zip and current_user.max_travel_miles:
+        import pgeocode
+        nomi = pgeocode.Nominatim('us')
+        hauler_loc = nomi.query_postal_code(current_user.home_zip)
+        
+        if hauler_loc is not None and not (hasattr(hauler_loc, 'latitude') and hauler_loc.latitude != hauler_loc.latitude):
+            filtered_jobs = []
+            for job in all_jobs:
+                if job.pickup_zip:
+                    job_loc = nomi.query_postal_code(job.pickup_zip)
+                    if job_loc is not None and not (job_loc.latitude != job_loc.latitude):
+                        dist = pgeocode.GeoDistance('us')
+                        miles = dist.query_postal_code(current_user.home_zip, job.pickup_zip) * 0.621371
+                        if miles <= current_user.max_travel_miles:
+                            filtered_jobs.append(job)
+                else:
+                    filtered_jobs.append(job)
+            jobs = filtered_jobs
+        else:
+            jobs = all_jobs
+    else:
+        jobs = all_jobs
+    
     return render_template('hauler_jobs.html', jobs=jobs)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
@@ -256,6 +282,13 @@ def profile_update():
     current_user.first_name = first_name
     current_user.last_name = last_name
     current_user.phone = phone
+    
+    if current_user.user_type == 'hauler':
+        home_zip = request.form.get("home_zip", "").strip()
+        max_travel_miles = request.form.get("max_travel_miles", "").strip()
+        current_user.home_zip = home_zip if home_zip else None
+        current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
+    
     db.session.commit()
     
     return redirect(url_for('profile'))

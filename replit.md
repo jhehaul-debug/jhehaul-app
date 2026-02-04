@@ -100,3 +100,5 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Restructured from single main.py to modular file structure
 - **Feb 2026**: Added user profile page for editing name/phone
 - **Feb 2026**: Integrated SendGrid for email notifications
+- **Feb 2026**: Added Google Maps directions button for haulers
+- **Feb 2026**: Added hauler travel preferences (home ZIP, max miles)
