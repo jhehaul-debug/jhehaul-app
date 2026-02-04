@@ -48,9 +48,9 @@ Preferred communication style: Simple, everyday language.
 - **Stripe** payment links for deposit collection
 - Four-tier pricing based on quote amounts:
   - Under $150
-  - $150-$300
-  - $301-$500
-  - Over $500 ($49.99 deposit)
+  - $150-$299
+  - $300 and over
+  - $500 and over ($49.99 deposit)
 - Payment confirmation redirects back to app
 - Address unlocks for hauler only after deposit confirmed
 
