@@ -113,7 +113,8 @@ def customer_create():
             User.user_type == 'hauler',
             User.home_zip.isnot(None),
             User.max_travel_miles.isnot(None),
-            User.email.isnot(None)
+            User.email.isnot(None),
+            User.notify_new_jobs == True
         ).all()
         
         dist_calc = pgeocode.GeoDistance('us')
@@ -306,8 +307,10 @@ def profile_update():
     if current_user.user_type == 'hauler':
         home_zip = request.form.get("home_zip", "").strip()
         max_travel_miles = request.form.get("max_travel_miles", "").strip()
+        notify_new_jobs = request.form.get("notify_new_jobs") == "1"
         current_user.home_zip = home_zip if home_zip else None
         current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
+        current_user.notify_new_jobs = notify_new_jobs
     
     db.session.commit()
     

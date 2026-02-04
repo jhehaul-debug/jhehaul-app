@@ -38,6 +38,12 @@
             <input name="max_travel_miles" type="number" min="1" max="500" value="{{ current_user.max_travel_miles or '' }}" placeholder="e.g. 25">
             <small style="color: #666;">Jobs beyond this distance won't be shown to you</small>
         </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_new_jobs" value="1" {% if current_user.notify_new_jobs != False %}checked{% endif %}>
+                Email me when new jobs are posted in my area
+            </label>
+        </div>
         {% endif %}
         <button type="submit" class="btn btn-success">Save Changes</button>
     </form>

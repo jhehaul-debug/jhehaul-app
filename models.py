@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     user_type = db.Column(db.String, nullable=True)
     home_zip = db.Column(db.String, nullable=True)
     max_travel_miles = db.Column(db.Integer, nullable=True)
+    notify_new_jobs = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
