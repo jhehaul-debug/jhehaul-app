@@ -246,21 +246,19 @@ def customer_job_detail(job_id):
                 html += "</div>"
 
         # If accepted, show pay deposit link
-                # If accepted, show pay deposit link
                 if job["status"] == "accepted" and not job["deposit_paid"]:
-                    pay_link = pay_link = choose_pay_link(job["accepted_quote"])
+                    pay_link = choose_pay_link(job["accepted_quote"])
+                    domain = os.environ.get("REPLIT_DEV_DOMAIN", "")
+                    success_url = f"https://{domain}/payment_success/{job['id']}"
 
                     if pay_link:
+                        full_pay_link = f"{pay_link}?success_url={success_url}"
                         html += f"""
                             <hr>
                             <h3>Deposit Payment</h3>
                             <p>You accepted a hauler. Next step: pay the deposit to unlock the address for the hauler.</p>
-                            <p><a href="{pay_link}" target="_blank">Pay Deposit (Stripe)</a></p>
-
-                            <p>After you pay, click:</p>
-                            <form method="POST" action="/customer/mark_paid/{job['id']}">
-                                <button type="submit">I Paid the Deposit ✅</button>
-                            </form>
+                            <p><a href="{full_pay_link}" target="_blank" style="background:#28a745;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Pay Deposit (Stripe)</a></p>
+                            <p><small>After payment, you'll be redirected back to confirm.</small></p>
                         """
                     else:
                         html += """
@@ -268,12 +266,6 @@ def customer_job_detail(job_id):
                             <h3>Deposit Payment</h3>
                             <p><b>Error:</b> Payment link missing in Secrets.</p>
                         """
-            else:
-                html += """
-                <hr>
-                <h3>Deposit Payment</h3>
-                <p><b>Missing STRIPE_PAYMENT_LINK</b> in Replit Secrets.</p>
-                """
 
         if job["deposit_paid"]:
             html += """
@@ -321,6 +313,35 @@ def customer_mark_paid(job_id):
         conn.commit()
         conn.close()
         return redirect(f"/customer/job/{job_id}")
+
+
+@app.route("/payment_success/<int:job_id>")
+def payment_success(job_id):
+    conn = db()
+    job = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+    conn.close()
+
+    if not job:
+        return "<h2>Job not found</h2><p><a href='/'>Back Home</a></p>", 404
+
+    if job["deposit_paid"]:
+        return f"""
+        <h2>Payment Already Confirmed</h2>
+        <p>This deposit has already been marked as paid.</p>
+        <p><a href="/customer/job/{job_id}">View Job Details</a></p>
+        """
+
+    return f"""
+    <h2>Payment Complete!</h2>
+    <p>Thank you for your payment for Job #{job_id}.</p>
+    <p>Click the button below to confirm and unlock the address for your hauler:</p>
+    <form method="POST" action="/customer/mark_paid/{job_id}">
+        <button type="submit" style="background:#28a745;color:white;padding:15px 30px;font-size:18px;border:none;border-radius:5px;cursor:pointer;">
+            Confirm Payment ✅
+        </button>
+    </form>
+    <p><small>This will notify the hauler and unlock the pickup address.</small></p>
+    """
 
 
     # -------------------------
