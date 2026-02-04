@@ -9,6 +9,7 @@ from flask_login import current_user
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from replit_auth import require_login, make_replit_blueprint
 from models import User, Job, JobPhoto, Bid
+from email_service import notify_customer_new_bid, notify_hauler_bid_accepted
 
 def require_role(role):
     def decorator(f):
@@ -149,6 +150,11 @@ def customer_accept_bid(bid_id):
     Bid.query.filter(Bid.job_id == job.id, Bid.id != bid_id).update({'status': 'rejected'})
     
     db.session.commit()
+    
+    hauler = User.query.get(bid.hauler_id)
+    if hauler and hauler.email:
+        notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount)
+    
     return redirect(url_for('customer_job_detail', job_id=job.id))
 
 @app.route("/customer/mark_paid/<int:job_id>", methods=["POST"])
@@ -213,6 +219,10 @@ def hauler_bid_submit(job_id):
     )
     db.session.add(bid)
     db.session.commit()
+
+    customer = User.query.get(job.customer_id)
+    if customer and customer.email:
+        notify_customer_new_bid(customer.email, job_id, hauler_name, quote_amount)
 
     return render_template('bid_success.html')
 

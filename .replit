@@ -16,7 +16,7 @@ deploymentTarget = "cloudrun"
 
 [agent]
 expertMode = true
-integrations = ["python_log_in_with_replit:1.0.0"]
+integrations = ["python_log_in_with_replit:1.0.0", "sendgrid:1.0.0"]
 
 [[ports]]
 localPort = 3000

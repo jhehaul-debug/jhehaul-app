@@ -84,6 +84,13 @@ Preferred communication style: Simple, everyday language.
 - `PAY_LINK_150_300` - Stripe payment link for quotes $150-$300
 - `PAY_LINK_OVER_300` - Stripe payment link for quotes over $300
 
+### Email Service
+- **SendGrid** integration via Replit Connectors
+- `email_service.py` - Email helper functions
+- Automatic notifications for:
+  - Customers when they receive a new bid
+  - Haulers when their bid is accepted
+
 ## Recent Changes
 
 - **Feb 2026**: Migrated from SQLite to PostgreSQL
@@ -91,3 +98,5 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Implemented customer/hauler role system
 - **Feb 2026**: Added role-based access control on all routes
 - **Feb 2026**: Restructured from single main.py to modular file structure
+- **Feb 2026**: Added user profile page for editing name/phone
+- **Feb 2026**: Integrated SendGrid for email notifications

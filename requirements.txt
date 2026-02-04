@@ -9,3 +9,5 @@ pyjwt
 werkzeug
 flask-sqlalchemy
 psycopg2-binary
+sqlalchemy
+sendgrid
