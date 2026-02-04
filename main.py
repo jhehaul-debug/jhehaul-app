@@ -128,10 +128,7 @@ def customer_new():
             <label>What needs hauled?</label><br>
             <textarea name="job_description" required></textarea><br><br>
 <label>Upload Photos</label><br>
-<input type="file" name="photos" multiple accept="image/*"><br><br>
-            <!-- ✅ FILE UPLOAD MUST BE HERE -->
-            <label>Upload Photos</label><br>
-            
+            <input type="file" name="photos" multiple accept="image/*"><br><br>
 
             <button type="submit">Submit Job</button>
         </form>
@@ -379,8 +376,6 @@ def hauler_bid_form(job_id):
         for row in photos:
             filename = row["filename"] if hasattr(row, "keys") else row[0]
             html += f"<img src='/uploads/{filename}' style='max-width:300px; margin:10px; border:1px solid #ccc;'>"
-            filename = row["filename"] if hasattr(row, "keys") else row[0]
-            html += f"<img src='/uploads/{filename}' style='max-width:300px;margin:10px;border:1px solid #ccc;'>"
     html += f"""
         <hr>
         <form method="POST" action="/hauler/bid/{job_id}">
