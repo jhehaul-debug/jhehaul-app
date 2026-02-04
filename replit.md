@@ -46,10 +46,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Payment Processing
 - **Stripe** payment links for deposit collection
-- Three-tier pricing based on quote amounts:
+- Four-tier pricing based on quote amounts:
   - Under $150
   - $150-$300
-  - Over $300
+  - $301-$500
+  - Over $500 ($49.99 deposit)
 - Payment confirmation redirects back to app
 - Address unlocks for hauler only after deposit confirmed
 
@@ -88,7 +89,8 @@ Preferred communication style: Simple, everyday language.
 - `SESSION_SECRET` - Session encryption key (auto-configured by Replit)
 - `PAY_LINK_UNDER_150` - Stripe payment link for quotes under $150
 - `PAY_LINK_150_300` - Stripe payment link for quotes $150-$300
-- `PAY_LINK_OVER_300` - Stripe payment link for quotes over $300
+- `PAY_LINK_OVER_300` - Stripe payment link for quotes $301-$500
+- `PAY_LINK_OVER_500` - Stripe payment link for quotes over $500 ($49.99)
 
 ### Email Service
 - **SendGrid** integration via Replit Connectors

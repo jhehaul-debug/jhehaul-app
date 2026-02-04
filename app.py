@@ -28,7 +28,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 PAY_LINK_UNDER_150 = os.environ.get("PAY_LINK_UNDER_150", "")
 PAY_LINK_150_300 = os.environ.get("PAY_LINK_150_300", "")
-PAY_LINK_OVER_300 = os.environ.get("PAY_LINK_OVER_300", "")
+PAY_LINK_300_500 = os.environ.get("PAY_LINK_OVER_300", "")
+PAY_LINK_OVER_500 = os.environ.get("PAY_LINK_OVER_500", "")
 
 def choose_pay_link(accepted_quote):
     try:
@@ -39,8 +40,10 @@ def choose_pay_link(accepted_quote):
         return PAY_LINK_UNDER_150
     elif q <= 300:
         return PAY_LINK_150_300
+    elif q <= 500:
+        return PAY_LINK_300_500
     else:
-        return PAY_LINK_OVER_300
+        return PAY_LINK_OVER_500
 
 with app.app_context():
     import models
