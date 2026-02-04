@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Choose Your Role - JHE Haul{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 40px;">
+    <h2 style="margin-bottom: 30px;">How will you use JHE Haul?</h2>
+    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+        <form method="POST" action="{{ url_for('set_role') }}">
+            <input type="hidden" name="role" value="customer">
+            <button type="submit" class="btn btn-primary" style="padding: 30px 50px; font-size: 1.2rem;">
+                <strong>I'm a Customer</strong><br>
+                <small style="font-weight: normal;">I need junk hauled</small>
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('set_role') }}">
+            <input type="hidden" name="role" value="hauler">
+            <button type="submit" class="btn btn-success" style="padding: 30px 50px; font-size: 1.2rem;">
+                <strong>I'm a Hauler</strong><br>
+                <small style="font-weight: normal;">I haul junk for pay</small>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

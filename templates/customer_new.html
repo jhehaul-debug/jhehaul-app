@@ -1,24 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Post a Job</title>
-</head>
-<body>
-  <h2>Customer: Post a Job ✅</h2>
-
-  <form method="POST" action="/customer/create">
-    <label>Your Name</label><br>
-    <input name="customer_name" required><br><br>
-
-    <label>Pickup Address</label><br>
-    <input name="pickup_address" required><br><br>
-
-    <label>What needs hauled?</label><br>
-    <textarea name="job_description" required></textarea><br><br>
-
-    <button type="submit">Submit Job</button>
-  </form>
-
-  <p><a href="/">Back Home</a></p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Post a Job - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Post a Hauling Job</h2>
+    <hr>
+    <form method="POST" action="{{ url_for('customer_create') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Your Name</label>
+            <input name="customer_name" required value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Your Phone (optional)</label>
+            <input name="customer_phone">
+        </div>
+        <div class="form-group">
+            <label>Pickup Address</label>
+            <input name="pickup_address" required placeholder="Street, City, ZIP">
+        </div>
+        <div class="form-group">
+            <label>What needs hauled?</label>
+            <textarea name="job_description" required placeholder="Describe the items, quantity, and any special considerations..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Upload Photos (optional)</label>
+            <input type="file" name="photos" multiple accept="image/*">
+        </div>
+        <button type="submit" class="btn btn-success">Submit Job</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Welcome - JHE Haul{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 60px 40px;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">JHE Haul</h1>
+    <p style="font-size: 1.2rem; color: #666; margin-bottom: 40px;">Your trusted junk hauling marketplace. Post jobs, get bids, and hire haulers.</p>
+    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 40px;">Get Started</a>
+</div>
+{% endblock %}

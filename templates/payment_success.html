@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Payment Complete - JHE Haul{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 40px;">
+    {% if job.deposit_paid %}
+    <h2>Payment Already Confirmed</h2>
+    <p>This deposit has already been marked as paid.</p>
+    <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 20px;">View Job Details</a>
+    {% else %}
+    <h2>Payment Complete!</h2>
+    <p style="font-size: 1.2rem;"><strong>Thank you for your business!</strong></p>
+    <p>Your payment for Job #{{ job.id }} has been received.</p>
+    <p>Click the button below to confirm and unlock the address for your hauler:</p>
+    <form method="POST" action="{{ url_for('customer_mark_paid', job_id=job.id) }}">
+        <button type="submit" class="btn btn-success" style="padding: 20px 40px; font-size: 1.2rem; margin-top: 20px;">
+            Confirm Payment
+        </button>
+    </form>
+    <p style="margin-top: 20px; color: #666;"><small>This will notify the hauler and unlock the pickup address.</small></p>
+    {% endif %}
+</div>
+{% endblock %}

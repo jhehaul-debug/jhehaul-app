@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Bid Submitted - JHE Haul{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 40px;">
+    <h2>Bid Submitted!</h2>
+    <p>Your bid was sent to the customer. If they accept and pay the deposit, you'll get the pickup address.</p>
+    <div style="margin-top: 30px;">
+        <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary">View More Jobs</a>
+        <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-success" style="margin-left: 10px;">My Dashboard</a>
+    </div>
+</div>
+{% endblock %}

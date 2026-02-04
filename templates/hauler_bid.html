@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Bid on Job #{{ job.id }} - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Job #{{ job.id }}</h2>
+    <hr>
+    <p><strong>Description:</strong><br>{{ job.job_description }}</p>
+    <p><strong>Posted by:</strong> {{ job.customer_name }}</p>
+    
+    {% if job.photos %}
+    <h4>Photos</h4>
+    <div class="photo-grid">
+        {% for photo in job.photos %}
+        <img src="/uploads/{{ photo.filename }}" alt="Job photo">
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Submit Your Bid</h3>
+    <hr>
+    <form method="POST" action="{{ url_for('hauler_bid_submit', job_id=job.id) }}">
+        <div class="form-group">
+            <label>Your Name</label>
+            <input name="hauler_name" required value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Your Phone (optional)</label>
+            <input name="hauler_phone" value="{{ current_user.phone or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Quote Amount ($)</label>
+            <input name="quote_amount" type="number" step="0.01" required placeholder="Enter your price">
+        </div>
+        <div class="form-group">
+            <label>Message (optional)</label>
+            <textarea name="message" placeholder="Any additional details about your bid..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Submit Bid</button>
+    </form>
+</div>
+
+<p><a href="{{ url_for('hauler_jobs') }}">Back to Open Jobs</a></p>
+{% endblock %}

@@ -16,10 +16,15 @@ deploymentTarget = "cloudrun"
 
 [agent]
 expertMode = true
+integrations = ["python_log_in_with_replit:1.0.0"]
 
 [[ports]]
 localPort = 3000
 externalPort = 3000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
 
 [workflows]
 runButton = "Project"
@@ -37,10 +42,10 @@ args = "Flask App"
 name = "Flask App"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-waitForPort = 3000
-
-[workflows.workflow.metadata]
-outputType = "console"
+waitForPort = 5000

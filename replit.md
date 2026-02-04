@@ -2,7 +2,7 @@
 
 ## Overview
 
-JHE Haul is a web-based job posting and payment platform built with Flask. The application allows customers to post hauling jobs, receive quotes, and process payments through Stripe. It features a multi-tier pricing structure based on quote amounts and manages job workflows from submission through payment.
+JHE Haul is a web-based junk hauling marketplace built with Flask. Customers can post hauling jobs with photos, receive bids from haulers, and process payments through Stripe. Haulers can browse open jobs, submit bids, and view accepted job details after customers pay deposits.
 
 ## User Preferences
 
@@ -11,32 +11,51 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Backend Framework
-- **Flask** serves as the web framework, handling routing, form submissions, and template rendering
-- Uses Werkzeug utilities for secure file handling
+- **Flask** serves as the web framework with modular file structure
+- **Flask-SQLAlchemy** for ORM database operations
+- **Flask-Login** for session management
+- **Replit Auth** for user authentication (email/password, Google, GitHub, etc.)
+
+### File Structure
+- `app.py` - Flask app initialization and database configuration
+- `models.py` - SQLAlchemy database models
+- `routes.py` - All route handlers with role-based access control
+- `replit_auth.py` - Authentication blueprint and helpers
+- `main.py` - Application entry point
+- `templates/` - Jinja2 HTML templates
 
 ### Database
-- **SQLite** database stored in `data/jhe_haul.db`
-- Uses Python's built-in `sqlite3` module with row factory for dict-like row access
-- Database is auto-initialized with required tables on startup
+- **PostgreSQL** database (Neon-backed via Replit)
+- Models: User, OAuth, Job, JobPhoto, Bid
+- Users have `user_type` field (customer or hauler)
+- Jobs linked to customers via `customer_id`
+- Bids linked to haulers via `hauler_id`
+
+### Authentication
+- Uses Replit Auth (OpenID Connect)
+- Supports email/password, Google, GitHub, X, Apple login
+- Role selection after first login (customer or hauler)
+- Protected routes with `@require_role('customer')` or `@require_role('hauler')`
 
 ### File Storage
 - Local file uploads stored in `uploads/` directory
-- Files served via Flask's `send_from_directory` for uploaded content
+- Files served via Flask's `send_from_directory`
+- Photo filenames are UUID-generated for security
 
 ### Payment Processing
-- **Stripe** integration for payment handling
-- Three-tier payment link system based on quote amounts:
+- **Stripe** payment links for deposit collection
+- Three-tier pricing based on quote amounts:
   - Under $150
   - $150-$300
   - Over $300
-- Payment links stored in environment variables (Replit Secrets)
+- Payment confirmation redirects back to app
+- Address unlocks for hauler only after deposit confirmed
 
-### Geolocation
-- **pgeocode** library included for postal code/geographic functionality (likely for distance calculations or service area verification)
-
-### Template System
-- Jinja2 templates (Flask default) for HTML rendering
-- Templates stored in `templates/` directory
+### Security Features
+- Role-based access control (customers can't access hauler routes and vice versa)
+- Job ownership verification (customers only see their own jobs)
+- Pickup address hidden from haulers until deposit paid
+- Session-based authentication with database storage
 
 ## External Dependencies
 
@@ -44,15 +63,31 @@ Preferred communication style: Simple, everyday language.
 | Service | Purpose | Configuration |
 |---------|---------|---------------|
 | Stripe | Payment processing | Environment variables: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_OVER_300` |
+| Replit Auth | User authentication | Automatic via REPL_ID |
 
 ### Python Packages
 | Package | Purpose |
 |---------|---------|
 | Flask | Web framework |
+| Flask-SQLAlchemy | ORM |
+| Flask-Login | Session management |
+| Flask-Dance | OAuth integration |
+| PyJWT | Token handling |
+| psycopg2-binary | PostgreSQL driver |
 | pgeocode | Postal code geolocation |
 | stripe | Stripe API client |
 
 ### Environment Variables Required
+- `DATABASE_URL` - PostgreSQL connection string (auto-configured by Replit)
+- `SESSION_SECRET` - Session encryption key (auto-configured by Replit)
 - `PAY_LINK_UNDER_150` - Stripe payment link for quotes under $150
 - `PAY_LINK_150_300` - Stripe payment link for quotes $150-$300
 - `PAY_LINK_OVER_300` - Stripe payment link for quotes over $300
+
+## Recent Changes
+
+- **Feb 2026**: Migrated from SQLite to PostgreSQL
+- **Feb 2026**: Added Replit Auth for user authentication
+- **Feb 2026**: Implemented customer/hauler role system
+- **Feb 2026**: Added role-based access control on all routes
+- **Feb 2026**: Restructured from single main.py to modular file structure

@@ -2,3 +2,10 @@
 flask
 pgeocode
 stripe
+flask-dance
+flask-login
+oauthlib
+pyjwt
+werkzeug
+flask-sqlalchemy
+psycopg2-binary

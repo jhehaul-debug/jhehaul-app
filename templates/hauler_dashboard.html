@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard - JHE Haul{% endblock %}
+{% block content %}
+<h2>My Dashboard</h2>
+<p>Jobs where your bid was accepted:</p>
+
+{% if not jobs %}
+<div class="card">
+    <p>No accepted jobs yet. Keep bidding on open jobs!</p>
+    <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary" style="margin-top: 15px;">Browse Open Jobs</a>
+</div>
+{% else %}
+{% for job in jobs %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <h3>Job #{{ job.id }}</h3>
+        <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+    </div>
+    <hr>
+    <p><strong>Description:</strong> {{ job.job_description }}</p>
+    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    
+    {% if job.deposit_paid %}
+    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <strong>Pickup Address (UNLOCKED):</strong><br>
+        {{ job.pickup_address }}
+    </div>
+    {% else %}
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <strong>Pickup Address:</strong> LOCKED (waiting for customer deposit)
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Job #{{ job.id }} - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <h2>Job #{{ job.id }}</h2>
+        <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+    </div>
+    <hr>
+    <p><strong>Description:</strong><br>{{ job.job_description }}</p>
+    <p><strong>Address:</strong> {{ job.pickup_address }}</p>
+    
+    {% if job.photos %}
+    <div class="photo-grid">
+        {% for photo in job.photos %}
+        <img src="/uploads/{{ photo.filename }}" alt="Job photo">
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{% if job.status == 'accepted' and not job.deposit_paid and pay_link %}
+<div class="card" style="background: #fff3cd; border: 2px solid #ffc107;">
+    <h3>Payment Required</h3>
+    <p>You accepted a bid. Pay the deposit to unlock your address for the hauler.</p>
+    <a href="{{ pay_link }}" target="_blank" class="btn btn-success" style="margin-top: 15px;">Pay Deposit (Stripe)</a>
+</div>
+{% endif %}
+
+{% if job.deposit_paid %}
+<div class="card" style="background: #d4edda; border: 2px solid #28a745;">
+    <h3>Deposit Paid</h3>
+    <p>The hauler can now see your address and will contact you soon.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Bids ({{ bids|length }})</h3>
+    <hr>
+    {% if not bids %}
+    <p>No bids yet. Haulers will see your job and submit quotes.</p>
+    {% else %}
+    {% for bid in bids %}
+    <div style="border: 1px solid #eee; padding: 15px; margin-bottom: 15px; border-radius: 8px; {% if bid.status == 'accepted' %}background: #e8f5e9;{% endif %}">
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <strong>{{ bid.hauler_name }}</strong>
+                {% if bid.hauler_phone %}<br><small>{{ bid.hauler_phone }}</small>{% endif %}
+            </div>
+            <div style="text-align: right;">
+                <strong style="font-size: 1.3rem;">${{ "%.2f"|format(bid.quote_amount) }}</strong>
+                {% if bid.status == 'accepted' %}<br><span style="color: green;">Accepted</span>{% endif %}
+            </div>
+        </div>
+        {% if bid.message %}
+        <p style="margin-top: 10px; color: #666;">{{ bid.message }}</p>
+        {% endif %}
+        {% if job.status in ['open', 'bidding'] %}
+        <form method="POST" action="{{ url_for('customer_accept_bid', bid_id=bid.id) }}" style="margin-top: 10px;">
+            <button type="submit" class="btn btn-success">Accept This Bid</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+
+<p><a href="{{ url_for('customer_jobs') }}">Back to My Jobs</a></p>
+{% endblock %}

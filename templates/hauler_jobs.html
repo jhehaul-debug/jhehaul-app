@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Open Jobs - JHE Haul{% endblock %}
+{% block content %}
+<h2>Open Jobs</h2>
+
+{% if not jobs %}
+<div class="card">
+    <p>No open jobs at the moment. Check back soon!</p>
+</div>
+{% else %}
+{% for job in jobs %}
+<div class="card">
+    <h3>Job #{{ job.id }}</h3>
+    <hr>
+    <p><strong>Description:</strong> {{ job.job_description }}</p>
+    
+    {% if job.photos %}
+    <div class="photo-grid">
+        {% for photo in job.photos %}
+        <img src="/uploads/{{ photo.filename }}" alt="Job photo">
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <a href="{{ url_for('hauler_bid_form', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 15px;">View Details & Bid</a>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
