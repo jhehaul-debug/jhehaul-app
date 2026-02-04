@@ -148,10 +148,25 @@ def customer_create():
             return "Missing required fields", 400
 
         conn = db()
-        conn.execute("""
+        cursor = conn.execute("""
             INSERT INTO jobs (created_at, customer_name, customer_phone, pickup_address, job_description, status)
             VALUES (?, ?, ?, ?, ?, 'open')
         """, (datetime.utcnow().isoformat(), customer_name, customer_phone, pickup_address, job_description))
+        job_id = cursor.lastrowid
+        conn.commit()
+
+        photos = request.files.getlist("photos")
+        for photo in photos:
+            if photo and photo.filename:
+                from werkzeug.utils import secure_filename
+                import uuid
+                ext = os.path.splitext(photo.filename)[1]
+                filename = f"{uuid.uuid4().hex}{ext}"
+                photo.save(os.path.join(UPLOAD_FOLDER, filename))
+                conn.execute(
+                    "INSERT INTO job_photos (job_id, filename) VALUES (?, ?)",
+                    (job_id, filename)
+                )
         conn.commit()
         conn.close()
 
