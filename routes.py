@@ -224,3 +224,22 @@ def hauler_dashboard():
         Job.status.in_(['accepted', 'deposit_paid', 'completed'])
     ).order_by(Job.id.desc()).all()
     return render_template('hauler_dashboard.html', jobs=jobs)
+
+@app.route("/profile")
+@require_login
+def profile():
+    return render_template('profile.html')
+
+@app.route("/profile/update", methods=["POST"])
+@require_login
+def profile_update():
+    first_name = request.form.get("first_name", "").strip()
+    last_name = request.form.get("last_name", "").strip()
+    phone = request.form.get("phone", "").strip()
+    
+    current_user.first_name = first_name
+    current_user.last_name = last_name
+    current_user.phone = phone
+    db.session.commit()
+    
+    return redirect(url_for('profile'))

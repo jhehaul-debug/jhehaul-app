@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Profile - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>My Profile</h2>
+    <hr>
+    <form method="POST" action="{{ url_for('profile_update') }}">
+        <div class="form-group">
+            <label>First Name</label>
+            <input name="first_name" value="{{ current_user.first_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input name="last_name" value="{{ current_user.last_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input value="{{ current_user.email or '' }}" disabled>
+            <small style="color: #666;">Email cannot be changed</small>
+        </div>
+        <div class="form-group">
+            <label>Phone</label>
+            <input name="phone" value="{{ current_user.phone or '' }}" placeholder="Your phone number">
+        </div>
+        <div class="form-group">
+            <label>Account Type</label>
+            <input value="{{ current_user.user_type.title() if current_user.user_type else 'Not set' }}" disabled>
+        </div>
+        <button type="submit" class="btn btn-success">Save Changes</button>
+    </form>
+</div>
+{% endblock %}
