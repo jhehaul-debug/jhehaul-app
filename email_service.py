@@ -89,11 +89,16 @@ def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
     return send_email(hauler_email, subject, html_content)
 
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
+    import urllib.parse
+    full_address = f"{pickup_address}, {pickup_zip}"
+    maps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(full_address)}"
+    
     subject = f"Deposit Paid - Job #{job_id} Ready to Go!"
     html_content = f"""
     <h2>Great news! The deposit has been paid!</h2>
     <p>The customer has paid the deposit for Job #{job_id}. You can now view the pickup address and complete the job.</p>
-    <p><strong>Pickup Address:</strong><br>{pickup_address}<br>{pickup_zip}</p>
+    <p><strong>Pickup Address:</strong><br>{full_address}</p>
+    <p><a href="{maps_url}" style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Get Directions</a></p>
     <p>Log in to JHE Haul to view full job details.</p>
     <p>Thank you for using JHE Haul!</p>
     """

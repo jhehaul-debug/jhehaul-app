@@ -23,7 +23,14 @@
     {% if job.deposit_paid %}
     <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-top: 15px;">
         <strong>Pickup Address (UNLOCKED):</strong><br>
-        {{ job.pickup_address }}
+        {{ job.pickup_address }}, {{ job.pickup_zip }}
+        <br><br>
+        <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}" 
+           target="_blank" 
+           class="btn btn-primary" 
+           style="display: inline-block;">
+            Get Directions
+        </a>
     </div>
     {% else %}
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
