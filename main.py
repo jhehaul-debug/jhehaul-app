@@ -306,6 +306,34 @@ def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 
+@app.route("/hauler/jobs")
+def hauler_jobs():
+    conn = db()
+    rows = conn.execute(
+        "SELECT id, created_at, customer_name, pickup_address, job_description, status FROM jobs WHERE status='open' ORDER BY id DESC"
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return """
+        <h2>Hauler: Open Jobs</h2>
+        <p>No open jobs yet.</p>
+        <p><a href="/">Back Home</a></p>
+        """
+
+    html = "<h2>Hauler: Open Jobs</h2><ul>"
+    for r in rows:
+        html += f"""
+        <li>
+          <b>Job #{r['id']}</b><br>
+          <b>Description:</b> {r['job_description']}<br>
+          <a href="/hauler/bid/{r['id']}">View & Bid</a>
+        </li><hr>
+        """
+    html += "</ul><p><a href='/'>Back Home</a></p>"
+    return html
+
+
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
 def hauler_bid_form(job_id):
     conn = db()
