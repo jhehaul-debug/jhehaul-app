@@ -7,7 +7,15 @@ from datetime import datetime
 from flask import Flask, request, redirect, url_for
 
 app = Flask(__name__)
+import os
+from flask import send_from_directory
 
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 DB_PATH = os.path.join("data", "jhe_haul.db")
 
         # Pull Stripe links from Replit Secrets
@@ -119,7 +127,8 @@ def customer_new():
 
             <label>What needs hauled?</label><br>
             <textarea name="job_description" required></textarea><br><br>
-
+<label>Upload Photos</label><br>
+<input type="file" name="photos" multiple accept="image/*"><br><br>
             <!-- ✅ FILE UPLOAD MUST BE HERE -->
             <label>Upload Photos</label><br>
             <input type="file" name="photos" multiple accept="image/*"><br><br>
@@ -335,6 +344,10 @@ def hauler_jobs():
         <li>
           <b>Job #{r['id']}</b><br>
           <b>Description:</b> {r['job_description']}<br>
+          if photos:
+              html += "<h4>Job Photos</h4>"
+              for photo in photos:
+                  html += f'<img src="/uploads/{photo}" style="max-width:200px;margin:5px;"><br>'
           <a href="/hauler/bid/{r['id']}">View & Bid</a>
         </li><hr>
         """
@@ -362,6 +375,8 @@ def hauler_bid_form(job_id):
         html += "<p>No photos uploaded.</p>"
     else:
         for row in photos:
+            filename = row["filename"] if hasattr(row, "keys") else row[0]
+            html += f"<img src='/uploads/{filename}' style='max-width:300px; margin:10px; border:1px solid #ccc;'>"
             filename = row["filename"] if hasattr(row, "keys") else row[0]
             html += f"<img src='/uploads/{filename}' style='max-width:300px;margin:10px;border:1px solid #ccc;'>"
     html += f"""
