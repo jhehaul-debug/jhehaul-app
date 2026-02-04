@@ -113,6 +113,12 @@ Preferred communication style: Simple, everyday language.
 - **Hauler Reviews** - Customers rate haulers after job completion (1-5 stars)
 - **Earnings Dashboard** - Haulers see total earnings, job count, and average rating
 
+### Account Management
+- **Account Deletion** - Both customers and haulers can delete their accounts from the profile page
+- Customers must complete or cancel all active jobs before deleting
+- Haulers must complete all accepted jobs before deleting
+- Deletes all associated data (jobs, bids, reviews, photos)
+
 ## Recent Changes
 
 - **Feb 2026**: Migrated from SQLite to PostgreSQL
@@ -131,3 +137,4 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Added before/after photos upload for haulers
 - **Feb 2026**: Added SMS notifications via Twilio (optional)
 - **Feb 2026**: Added job cancellation feature for customers
+- **Feb 2026**: Added account deletion feature for customers and haulers

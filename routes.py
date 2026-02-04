@@ -335,6 +335,41 @@ def profile_update():
     
     return redirect(url_for('profile'))
 
+@app.route("/account/delete", methods=["POST"])
+@require_login
+def delete_account():
+    from models import OAuth, Bid, Review, CompletionPhoto
+    user_id = current_user.id
+    user_type = current_user.user_type
+    
+    if user_type == 'customer':
+        jobs = Job.query.filter_by(customer_id=user_id).all()
+        active_jobs = [j for j in jobs if j.status in ['open', 'bidding', 'accepted', 'deposit_paid']]
+        if active_jobs:
+            return "Cannot delete account with active jobs. Please complete or cancel all jobs first.", 400
+        for job in jobs:
+            JobPhoto.query.filter_by(job_id=job.id).delete()
+            Bid.query.filter_by(job_id=job.id).delete()
+            Review.query.filter_by(job_id=job.id).delete()
+            CompletionPhoto.query.filter_by(job_id=job.id).delete()
+            db.session.delete(job)
+    
+    if user_type == 'hauler':
+        active_bids = Bid.query.filter_by(hauler_id=user_id, status='accepted').all()
+        for bid in active_bids:
+            job = Job.query.get(bid.job_id)
+            if job and job.status in ['accepted', 'deposit_paid']:
+                return "Cannot delete account with active accepted jobs. Please complete all jobs first.", 400
+        Bid.query.filter_by(hauler_id=user_id).delete()
+        Review.query.filter_by(hauler_id=user_id).delete()
+        CompletionPhoto.query.filter_by(hauler_id=user_id).delete()
+    
+    OAuth.query.filter_by(user_id=user_id).delete()
+    db.session.delete(current_user)
+    db.session.commit()
+    
+    return redirect(url_for('index'))
+
 @app.route("/customer/complete/<int:job_id>", methods=["POST"])
 @require_role('customer')
 def customer_complete_job(job_id):
