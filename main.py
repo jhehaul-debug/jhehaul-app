@@ -131,7 +131,7 @@ def customer_new():
 <input type="file" name="photos" multiple accept="image/*"><br><br>
             <!-- ✅ FILE UPLOAD MUST BE HERE -->
             <label>Upload Photos</label><br>
-            <input type="file" name="photos" multiple accept="image/*"><br><br>
+            
 
             <button type="submit">Submit Job</button>
         </form>
