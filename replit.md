@@ -49,7 +49,7 @@ Preferred communication style: Simple, everyday language.
 - Four-tier pricing based on quote amounts:
   - Under $150
   - $150-$299
-  - $300 and over
+  - $300-$499
   - $500 and over ($49.99 deposit)
 - Payment confirmation redirects back to app
 - Address unlocks for hauler only after deposit confirmed
