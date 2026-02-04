@@ -90,6 +90,8 @@ Preferred communication style: Simple, everyday language.
 - Automatic notifications for:
   - Customers when they receive a new bid
   - Haulers when their bid is accepted
+  - Haulers when deposit is paid (includes pickup address)
+  - Haulers when a new job is posted within their travel range
 
 ## Recent Changes
 

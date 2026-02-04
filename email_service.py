@@ -88,6 +88,17 @@ def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
     """
     return send_email(hauler_email, subject, html_content)
 
+def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance_miles):
+    subject = f"New Hauling Job #{job_id} Near You!"
+    html_content = f"""
+    <h2>A new job was just posted in your area!</h2>
+    <p>A customer posted a hauling job about <strong>{distance_miles:.0f} miles</strong> from your location.</p>
+    <p><strong>Job Description:</strong><br>{job_description[:200]}{'...' if len(job_description) > 200 else ''}</p>
+    <p>Log in to JHE Haul to view details and submit your bid!</p>
+    <p>Thank you for using JHE Haul!</p>
+    """
+    return send_email(hauler_email, subject, html_content)
+
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
     import urllib.parse
     full_address = f"{pickup_address}, {pickup_zip}"

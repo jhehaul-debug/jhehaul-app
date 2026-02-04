@@ -9,7 +9,7 @@ from flask_login import current_user
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from replit_auth import require_login, make_replit_blueprint
 from models import User, Job, JobPhoto, Bid
-from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid
+from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid, notify_hauler_new_job_nearby
 
 def require_role(role):
     def decorator(f):
@@ -106,6 +106,26 @@ def customer_create():
             photo_record = JobPhoto(job_id=job.id, filename=filename)
             db.session.add(photo_record)
     db.session.commit()
+
+    if pickup_zip:
+        import pgeocode
+        haulers = User.query.filter(
+            User.user_type == 'hauler',
+            User.home_zip.isnot(None),
+            User.max_travel_miles.isnot(None),
+            User.email.isnot(None)
+        ).all()
+        
+        dist_calc = pgeocode.GeoDistance('us')
+        for hauler in haulers:
+            try:
+                distance_km = dist_calc.query_postal_code(hauler.home_zip, pickup_zip)
+                if distance_km == distance_km:
+                    distance_miles = distance_km * 0.621371
+                    if distance_miles <= hauler.max_travel_miles:
+                        notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+            except:
+                pass
 
     return redirect(url_for("customer_jobs"))
 
