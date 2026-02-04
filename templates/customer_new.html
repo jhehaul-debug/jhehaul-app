@@ -22,6 +22,19 @@
             <input name="pickup_zip" required placeholder="ZIP Code" maxlength="10">
         </div>
         <div class="form-group">
+            <label>Preferred Pickup Date (optional)</label>
+            <input type="date" name="preferred_date">
+        </div>
+        <div class="form-group">
+            <label>Preferred Pickup Time (optional)</label>
+            <select name="preferred_time">
+                <option value="">Any time</option>
+                <option value="morning">Morning (8am - 12pm)</option>
+                <option value="afternoon">Afternoon (12pm - 5pm)</option>
+                <option value="evening">Evening (5pm - 8pm)</option>
+            </select>
+        </div>
+        <div class="form-group">
             <label>What needs hauled?</label>
             <textarea name="job_description" required placeholder="Describe the items, quantity, and any special considerations..."></textarea>
         </div>

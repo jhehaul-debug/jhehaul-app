@@ -19,8 +19,14 @@
     <hr>
     <p><strong>Description:</strong> {{ job.job_description }}</p>
     <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    {% if job.preferred_date or job.preferred_time %}
+    <p><strong>Preferred Pickup:</strong> 
+        {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
+        {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
+    </p>
+    {% endif %}
     
-    {% if job.deposit_paid %}
+    {% if job.status == 'deposit_paid' %}
     <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-top: 15px;">
         <strong>Pickup Address (UNLOCKED):</strong><br>
         {{ job.pickup_address }}, {{ job.pickup_zip }}
@@ -31,6 +37,14 @@
            style="display: inline-block;">
             Get Directions
         </a>
+        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}" class="btn btn-secondary" style="display: inline-block; margin-left: 10px;">
+            Upload Photos
+        </a>
+    </div>
+    {% elif job.status == 'completed' %}
+    <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <strong>Job Completed!</strong>
+        {% if job.completed_at %}<br>Completed on {{ job.completed_at.strftime('%B %d, %Y') }}{% endif %}
     </div>
     {% else %}
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">

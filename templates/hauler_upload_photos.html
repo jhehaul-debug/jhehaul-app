@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Upload Photos - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Upload Photos for Job #{{ job.id }}</h2>
+    <hr>
+    <p><strong>Description:</strong> {{ job.job_description }}</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Before Photos</label>
+            <input type="file" name="before_photos" multiple accept="image/*">
+            <small style="color: #666;">Photos of items before removal</small>
+        </div>
+        <div class="form-group">
+            <label>After Photos</label>
+            <input type="file" name="after_photos" multiple accept="image/*">
+            <small style="color: #666;">Photos showing area cleared</small>
+        </div>
+        <button type="submit" class="btn btn-success">Upload Photos</button>
+        <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-secondary" style="margin-left: 10px;">Cancel</a>
+    </form>
+</div>
+
+{% if job.completion_photos %}
+<div class="card" style="margin-top: 20px;">
+    <h3>Uploaded Photos</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+        {% for photo in job.completion_photos %}
+        <div style="text-align: center;">
+            <img src="{{ url_for('uploaded_file', filename=photo.filename) }}" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
+            <p style="margin: 5px 0; font-size: 12px;">{{ photo.photo_type.title() }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

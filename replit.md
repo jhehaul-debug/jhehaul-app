@@ -26,10 +26,12 @@ Preferred communication style: Simple, everyday language.
 
 ### Database
 - **PostgreSQL** database (Neon-backed via Replit)
-- Models: User, OAuth, Job, JobPhoto, Bid
+- Models: User, OAuth, Job, JobPhoto, Bid, CompletionPhoto, Review
 - Users have `user_type` field (customer or hauler)
 - Jobs linked to customers via `customer_id`
 - Bids linked to haulers via `hauler_id`
+- Reviews linked to jobs, haulers, and customers
+- CompletionPhotos for before/after job documentation
 
 ### Authentication
 - Uses Replit Auth (OpenID Connect)
@@ -64,6 +66,8 @@ Preferred communication style: Simple, everyday language.
 |---------|---------|---------------|
 | Stripe | Payment processing | Environment variables: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_OVER_300` |
 | Replit Auth | User authentication | Automatic via REPL_ID |
+| SendGrid | Email notifications | Via Replit Connectors |
+| Twilio | SMS notifications | Via Replit Connectors (optional) |
 
 ### Python Packages
 | Package | Purpose |
@@ -76,6 +80,8 @@ Preferred communication style: Simple, everyday language.
 | psycopg2-binary | PostgreSQL driver |
 | pgeocode | Postal code geolocation |
 | stripe | Stripe API client |
+| sendgrid | Email API client |
+| twilio | SMS API client |
 
 ### Environment Variables Required
 - `DATABASE_URL` - PostgreSQL connection string (auto-configured by Replit)
@@ -90,8 +96,22 @@ Preferred communication style: Simple, everyday language.
 - Automatic notifications for:
   - Customers when they receive a new bid
   - Haulers when their bid is accepted
-  - Haulers when deposit is paid (includes pickup address)
+  - Haulers when deposit is paid (includes pickup address + directions link)
   - Haulers when a new job is posted within their travel range
+
+### SMS Service (Optional)
+- **Twilio** integration via Replit Connectors
+- `sms_service.py` - SMS helper functions
+- Users can opt-in to SMS notifications in their profile
+- Same notification events as email, sent via text message
+
+### Job Lifecycle Features
+- **Preferred Pickup Date/Time** - Customers can specify when they want pickup
+- **Job Completion** - Customers mark jobs as complete when done
+- **Job Cancellation** - Customers can cancel jobs before bid acceptance
+- **Before/After Photos** - Haulers can upload proof of work
+- **Hauler Reviews** - Customers rate haulers after job completion (1-5 stars)
+- **Earnings Dashboard** - Haulers see total earnings, job count, and average rating
 
 ## Recent Changes
 
@@ -104,3 +124,10 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Integrated SendGrid for email notifications
 - **Feb 2026**: Added Google Maps directions button for haulers
 - **Feb 2026**: Added hauler travel preferences (home ZIP, max miles)
+- **Feb 2026**: Added job completion workflow with customer confirmation
+- **Feb 2026**: Added hauler ratings and reviews system
+- **Feb 2026**: Added preferred pickup date/time to job posting
+- **Feb 2026**: Added earnings dashboard for haulers
+- **Feb 2026**: Added before/after photos upload for haulers
+- **Feb 2026**: Added SMS notifications via Twilio (optional)
+- **Feb 2026**: Added job cancellation feature for customers

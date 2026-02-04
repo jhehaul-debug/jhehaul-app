@@ -8,8 +8,9 @@ from flask_login import current_user
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from replit_auth import require_login, make_replit_blueprint
-from models import User, Job, JobPhoto, Bid
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review
 from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid, notify_hauler_new_job_nearby
+from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
 
 def require_role(role):
     def decorator(f):
@@ -80,6 +81,8 @@ def customer_create():
     customer_phone = request.form.get("customer_phone", "").strip()
     pickup_address = request.form.get("pickup_address", "").strip()
     pickup_zip = request.form.get("pickup_zip", "").strip()
+    preferred_date = request.form.get("preferred_date", "").strip()
+    preferred_time = request.form.get("preferred_time", "").strip()
     job_description = request.form.get("job_description", "").strip()
 
     if not customer_name or not pickup_address or not job_description or not pickup_zip:
@@ -91,6 +94,8 @@ def customer_create():
         customer_phone=customer_phone,
         pickup_address=pickup_address,
         pickup_zip=pickup_zip,
+        preferred_date=preferred_date if preferred_date else None,
+        preferred_time=preferred_time if preferred_time else None,
         job_description=job_description,
         status='open'
     )
@@ -125,6 +130,8 @@ def customer_create():
                     distance_miles = distance_km * 0.621371
                     if distance_miles <= hauler.max_travel_miles:
                         notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+                        if hauler.notify_sms and hauler.phone:
+                            notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
             except:
                 pass
 
@@ -177,6 +184,8 @@ def customer_accept_bid(bid_id):
     hauler = User.query.get(bid.hauler_id)
     if hauler and hauler.email:
         notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount)
+        if hauler.notify_sms and hauler.phone:
+            notify_hauler_bid_accepted_sms(hauler.phone, job.id)
     
     return redirect(url_for('customer_job_detail', job_id=job.id))
 
@@ -194,6 +203,8 @@ def customer_mark_paid(job_id):
         hauler = User.query.get(job.accepted_hauler_id)
         if hauler and hauler.email:
             notify_hauler_deposit_paid(hauler.email, job.id, job.pickup_address, job.pickup_zip)
+            if hauler.notify_sms and hauler.phone:
+                notify_hauler_deposit_paid_sms(hauler.phone, job.id)
     
     return redirect(url_for('customer_job_detail', job_id=job_id))
 
@@ -276,6 +287,8 @@ def hauler_bid_submit(job_id):
     customer = User.query.get(job.customer_id)
     if customer and customer.email:
         notify_customer_new_bid(customer.email, job_id, hauler_name, quote_amount)
+    if customer and customer.notify_sms and customer.phone:
+        notify_customer_new_bid_sms(customer.phone, job_id, hauler_name, quote_amount)
 
     return render_template('bid_success.html')
 
@@ -304,14 +317,136 @@ def profile_update():
     current_user.last_name = last_name
     current_user.phone = phone
     
+    if current_user.user_type == 'customer':
+        notify_sms = request.form.get("notify_sms") == "1"
+        current_user.notify_sms = notify_sms
+    
     if current_user.user_type == 'hauler':
         home_zip = request.form.get("home_zip", "").strip()
         max_travel_miles = request.form.get("max_travel_miles", "").strip()
         notify_new_jobs = request.form.get("notify_new_jobs") == "1"
+        notify_sms = request.form.get("notify_sms") == "1"
         current_user.home_zip = home_zip if home_zip else None
         current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
         current_user.notify_new_jobs = notify_new_jobs
+        current_user.notify_sms = notify_sms
     
     db.session.commit()
     
     return redirect(url_for('profile'))
+
+@app.route("/customer/complete/<int:job_id>", methods=["POST"])
+@require_role('customer')
+def customer_complete_job(job_id):
+    from datetime import datetime
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'deposit_paid':
+        return "Job cannot be completed yet", 400
+    job.status = 'completed'
+    job.completed_at = datetime.now()
+    db.session.commit()
+    return redirect(url_for('customer_job_detail', job_id=job_id))
+
+@app.route("/customer/cancel/<int:job_id>", methods=["POST"])
+@require_role('customer')
+def customer_cancel_job(job_id):
+    from datetime import datetime
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status not in ['open', 'bidding']:
+        return "Job cannot be cancelled at this stage", 400
+    job.status = 'cancelled'
+    job.cancelled_at = datetime.now()
+    db.session.commit()
+    return redirect(url_for('customer_jobs'))
+
+@app.route("/customer/review/<int:job_id>", methods=["GET", "POST"])
+@require_role('customer')
+def customer_review(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'completed':
+        return "Job must be completed before reviewing", 400
+    
+    existing_review = Review.query.filter_by(job_id=job_id).first()
+    if existing_review:
+        return redirect(url_for('customer_job_detail', job_id=job_id))
+    
+    if request.method == "POST":
+        rating = int(request.form.get("rating", 5))
+        if rating < 1 or rating > 5:
+            rating = 5
+        comment = request.form.get("comment", "").strip()
+        if not job.accepted_hauler_id:
+            return "No hauler to review", 400
+        review = Review(
+            job_id=job_id,
+            hauler_id=job.accepted_hauler_id,
+            customer_id=current_user.id,
+            rating=rating,
+            comment=comment
+        )
+        db.session.add(review)
+        db.session.commit()
+        return redirect(url_for('customer_job_detail', job_id=job_id))
+    
+    return render_template('customer_review.html', job=job)
+
+@app.route("/hauler/earnings")
+@require_role('hauler')
+def hauler_earnings():
+    completed_jobs = Job.query.filter(
+        Job.accepted_hauler_id == current_user.id,
+        Job.status == 'completed'
+    ).order_by(Job.completed_at.desc()).all()
+    
+    total_earnings = sum(job.accepted_quote or 0 for job in completed_jobs)
+    job_count = len(completed_jobs)
+    
+    reviews = Review.query.filter_by(hauler_id=current_user.id).all()
+    avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
+    
+    return render_template('hauler_earnings.html', 
+                           jobs=completed_jobs, 
+                           total_earnings=total_earnings,
+                           job_count=job_count,
+                           avg_rating=avg_rating,
+                           review_count=len(reviews))
+
+@app.route("/hauler/upload_photos/<int:job_id>", methods=["GET", "POST"])
+@require_role('hauler')
+def hauler_upload_photos(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.accepted_hauler_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'deposit_paid':
+        return "Cannot upload photos at this stage", 400
+    
+    if request.method == "POST":
+        before_photos = request.files.getlist("before_photos")
+        after_photos = request.files.getlist("after_photos")
+        
+        for photo in before_photos:
+            if photo and photo.filename:
+                ext = os.path.splitext(photo.filename)[1]
+                filename = f"{uuid.uuid4().hex}{ext}"
+                photo.save(os.path.join(UPLOAD_FOLDER, filename))
+                photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='before')
+                db.session.add(photo_record)
+        
+        for photo in after_photos:
+            if photo and photo.filename:
+                ext = os.path.splitext(photo.filename)[1]
+                filename = f"{uuid.uuid4().hex}{ext}"
+                photo.save(os.path.join(UPLOAD_FOLDER, filename))
+                photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='after')
+                db.session.add(photo_record)
+        
+        db.session.commit()
+        return redirect(url_for('hauler_dashboard'))
+    
+    return render_template('hauler_upload_photos.html', job=job)

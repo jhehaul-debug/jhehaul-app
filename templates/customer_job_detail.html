@@ -27,10 +27,35 @@
 </div>
 {% endif %}
 
-{% if job.deposit_paid %}
+{% if job.status == 'deposit_paid' %}
 <div class="card" style="background: #d4edda; border: 2px solid #28a745;">
     <h3>Deposit Paid</h3>
     <p>The hauler can now see your address and will contact you soon.</p>
+    <form method="POST" action="{{ url_for('customer_complete_job', job_id=job.id) }}" style="margin-top: 15px;">
+        <button type="submit" class="btn btn-success">Mark Job as Complete</button>
+    </form>
+</div>
+{% endif %}
+
+{% if job.status == 'completed' %}
+<div class="card" style="background: #e8f5e9; border: 2px solid #28a745;">
+    <h3>Job Completed!</h3>
+    <p>Completed on {{ job.completed_at.strftime('%B %d, %Y') if job.completed_at else 'N/A' }}</p>
+    {% set review = job.reviews|first if job.reviews else None %}
+    {% if review %}
+    <p style="margin-top: 10px;"><strong>Your Review:</strong> {{ review.rating }} stars</p>
+    {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+    {% else %}
+    <a href="{{ url_for('customer_review', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 10px;">Leave a Review</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if job.status in ['open', 'bidding'] %}
+<div class="card">
+    <form method="POST" action="{{ url_for('customer_cancel_job', job_id=job.id) }}" onsubmit="return confirm('Are you sure you want to cancel this job?');">
+        <button type="submit" class="btn btn-danger">Cancel This Job</button>
+    </form>
 </div>
 {% endif %}
 

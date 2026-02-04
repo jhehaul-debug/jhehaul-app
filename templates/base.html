@@ -31,6 +31,10 @@
         .status-bidding { background: #e3f2fd; color: #1565c0; }
         .status-accepted { background: #fff3e0; color: #ef6c00; }
         .status-deposit_paid { background: #e8f5e9; color: #2e7d32; }
+        .status-completed { background: #e8f5e9; color: #2e7d32; }
+        .status-cancelled { background: #ffebee; color: #c62828; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-secondary:hover { background: #7f8c8d; }
         .user-info { display: flex; align-items: center; gap: 10px; }
         .user-info img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
         hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
@@ -55,6 +59,7 @@
                         {% elif current_user.user_type == 'hauler' %}
                             <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
                             <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
+                            <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
                         {% endif %}
                         <a href="{{ url_for('profile') }}">Profile</a>
                         <a href="{{ url_for('replit_auth.logout') }}">Log Out</a>
