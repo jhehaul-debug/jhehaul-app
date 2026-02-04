@@ -68,8 +68,16 @@ def init_db():
                 FOREIGN KEY(job_id) REFERENCES jobs(id)
             )
         """)
-    # Job photos table (Number 6)
-    
+    # Job photos table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS job_photos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                FOREIGN KEY(job_id) REFERENCES jobs(id)
+            )
+        """)
+
         conn.commit()
         conn.close()
 
