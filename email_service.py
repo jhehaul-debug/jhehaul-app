@@ -87,3 +87,14 @@ def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
     <p>Thank you for using JHE Haul!</p>
     """
     return send_email(hauler_email, subject, html_content)
+
+def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
+    subject = f"Deposit Paid - Job #{job_id} Ready to Go!"
+    html_content = f"""
+    <h2>Great news! The deposit has been paid!</h2>
+    <p>The customer has paid the deposit for Job #{job_id}. You can now view the pickup address and complete the job.</p>
+    <p><strong>Pickup Address:</strong><br>{pickup_address}<br>{pickup_zip}</p>
+    <p>Log in to JHE Haul to view full job details.</p>
+    <p>Thank you for using JHE Haul!</p>
+    """
+    return send_email(hauler_email, subject, html_content)

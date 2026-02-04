@@ -9,7 +9,7 @@ from flask_login import current_user
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from replit_auth import require_login, make_replit_blueprint
 from models import User, Job, JobPhoto, Bid
-from email_service import notify_customer_new_bid, notify_hauler_bid_accepted
+from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid
 
 def require_role(role):
     def decorator(f):
@@ -166,6 +166,12 @@ def customer_mark_paid(job_id):
     job.deposit_paid = True
     job.status = 'deposit_paid'
     db.session.commit()
+    
+    if job.accepted_hauler_id:
+        hauler = User.query.get(job.accepted_hauler_id)
+        if hauler and hauler.email:
+            notify_hauler_deposit_paid(hauler.email, job.id, job.pickup_address, job.pickup_zip)
+    
     return redirect(url_for('customer_job_detail', job_id=job_id))
 
 @app.route("/payment_success/<int:job_id>")
