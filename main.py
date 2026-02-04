@@ -332,18 +332,27 @@ def hauler_jobs():
         """
 
     html = "<h2>Hauler: Open Jobs</h2><ul>"
+    conn = db()
     for r in rows:
+        photos = conn.execute(
+            "SELECT filename FROM job_photos WHERE job_id=? ORDER BY id DESC",
+            (r['id'],)
+        ).fetchall()
+        
         html += f"""
         <li>
           <b>Job #{r['id']}</b><br>
           <b>Description:</b> {r['job_description']}<br>
-          if photos:
-              html += "<h4>Job Photos</h4>"
-              for photo in photos:
-                  html += f'<img src="/uploads/{photo}" style="max-width:200px;margin:5px;"><br>'
+        """
+        if photos:
+            html += "<h4>Job Photos</h4>"
+            for photo in photos:
+                html += f'<img src="/uploads/{photo["filename"]}" style="max-width:200px;margin:5px;"><br>'
+        html += f"""
           <a href="/hauler/bid/{r['id']}">View & Bid</a>
         </li><hr>
         """
+    conn.close()
     html += "</ul><p><a href='/'>Back Home</a></p>"
     return html
 
