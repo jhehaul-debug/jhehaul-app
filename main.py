@@ -316,13 +316,6 @@ def customer_mark_paid(job_id):
     # -------------------------
 from flask import send_from_directory, request
 
-UPLOAD_FOLDER = "uploads"  # make sure /uploads folder exists
-
-@app.route("/uploads/<path:filename>")
-def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
-
-
 @app.route("/hauler/jobs")
 def hauler_jobs():
     conn = db()
