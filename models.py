@@ -20,8 +20,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
-    jobs = db.relationship('Job', backref='customer', lazy=True)
-    bids = db.relationship('Bid', backref='hauler', lazy=True)
+    jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
+    bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
 
 class OAuth(OAuthConsumerMixin, db.Model):
     user_id = db.Column(db.String, db.ForeignKey(User.id))
