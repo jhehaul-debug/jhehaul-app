@@ -180,7 +180,7 @@ def payment_success(job_id):
     job = Job.query.get_or_404(job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
-    return render_template('payment_success.html', job=job)
+    return redirect(url_for('customer_job_detail', job_id=job_id))
 
 @app.route("/hauler/jobs")
 @require_role('hauler')
