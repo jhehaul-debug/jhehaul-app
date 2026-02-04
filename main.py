@@ -333,7 +333,8 @@ def payment_success(job_id):
 
     return f"""
     <h2>Payment Complete!</h2>
-    <p>Thank you for your payment for Job #{job_id}.</p>
+    <p><b>Thank you for your business!</b></p>
+    <p>Your payment for Job #{job_id} has been received.</p>
     <p>Click the button below to confirm and unlock the address for your hauler:</p>
     <form method="POST" action="/customer/mark_paid/{job_id}">
         <button type="submit" style="background:#28a745;color:white;padding:15px 30px;font-size:18px;border:none;border-radius:5px;cursor:pointer;">
@@ -341,6 +342,7 @@ def payment_success(job_id):
         </button>
     </form>
     <p><small>This will notify the hauler and unlock the pickup address.</small></p>
+    <p style="margin-top:20px;"><i>Thank you for choosing JHE Haul!</i></p>
     """
 
 
