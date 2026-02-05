@@ -6,17 +6,41 @@
     <p style="font-size: 1.2rem; color: #666; margin-bottom: 40px;">Your trusted junk hauling marketplace. Post jobs, get bids, and hire haulers.</p>
     
     <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-        <a href="{{ url_for('replit_auth.login') }}?next=/customer/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-            Post a Job
-        </a>
-        <a href="{{ url_for('replit_auth.login') }}?next=/hauler/jobs" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-            Find Jobs
-        </a>
+        {% if current_user.is_authenticated %}
+            {% if current_user.user_type == 'customer' %}
+                <a href="{{ url_for('customer_new') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                    Post a Job
+                </a>
+                <a href="{{ url_for('customer_jobs') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                    My Jobs
+                </a>
+            {% elif current_user.user_type == 'hauler' %}
+                <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                    Find Jobs
+                </a>
+                <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                    My Dashboard
+                </a>
+            {% else %}
+                <a href="{{ url_for('choose_role') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                    Get Started
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('replit_auth.login') }}?next=/customer/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                Post a Job
+            </a>
+            <a href="{{ url_for('replit_auth.login') }}?next=/hauler/jobs" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+                Find Jobs
+            </a>
+        {% endif %}
     </div>
     
+    {% if not current_user.is_authenticated %}
     <p style="margin-top: 30px; color: #888; font-size: 0.9rem;">
         New here? Click either button to create an account.<br>
         Forgot password? Use the reset option on the login screen.
     </p>
+    {% endif %}
 </div>
 {% endblock %}
