@@ -1,14 +1,11 @@
 {% extends "base.html" %}
 {% block title %}My Jobs - JHE Haul{% endblock %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2>My Jobs</h2>
-    <a href="{{ url_for('customer_new') }}" class="btn btn-success">+ Post New Job</a>
-</div>
+<h2 style="margin-bottom: 20px;">My Jobs</h2>
 
 {% if not jobs %}
 <div class="card">
-    <p>You haven't posted any jobs yet. Click the "+ Post New Job" button above to get started!</p>
+    <p>You haven't posted any jobs yet. Use "Post Job" in the menu to get started!</p>
 </div>
 {% else %}
 {% for job in jobs %}
