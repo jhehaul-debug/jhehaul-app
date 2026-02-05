@@ -8,8 +8,7 @@
 
 {% if not jobs %}
 <div class="card">
-    <p>You haven't posted any jobs yet.</p>
-    <a href="{{ url_for('customer_new') }}" class="btn btn-primary" style="margin-top: 15px;">Post Your First Job</a>
+    <p>You haven't posted any jobs yet. Click the "+ Post New Job" button above to get started!</p>
 </div>
 {% else %}
 {% for job in jobs %}
