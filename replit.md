@@ -140,3 +140,4 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Added SMS notifications via Twilio (optional)
 - **Feb 2026**: Added job cancellation feature for customers
 - **Feb 2026**: Added account deletion feature for customers and haulers
+- **Feb 2026**: Added invite/share links for customers, haulers, and admins to invite new users
