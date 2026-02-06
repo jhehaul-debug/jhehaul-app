@@ -21,11 +21,22 @@ def require_role(role):
                 return redirect(url_for('replit_auth.login'))
             if not current_user.user_type:
                 return redirect(url_for('choose_role'))
-            if current_user.user_type != role:
+            if current_user.user_type != role and not current_user.is_admin:
                 return render_template('403.html'), 403
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def require_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            session["next_url"] = request.url
+            return redirect(url_for('replit_auth.login'))
+        if not current_user.is_admin:
+            return render_template('403.html'), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 
@@ -40,6 +51,8 @@ def uploaded_file(filename):
 @app.route("/")
 def home():
     if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
         if current_user.user_type == 'customer':
@@ -485,3 +498,67 @@ def hauler_upload_photos(job_id):
         return redirect(url_for('hauler_dashboard'))
     
     return render_template('hauler_upload_photos.html', job=job)
+
+@app.route("/admin")
+@require_admin
+def admin_dashboard():
+    total_users = User.query.count()
+    total_customers = User.query.filter_by(user_type='customer').count()
+    total_haulers = User.query.filter_by(user_type='hauler').count()
+    total_jobs = Job.query.count()
+    open_jobs = Job.query.filter_by(status='open').count()
+    active_jobs = Job.query.filter(Job.status.in_(['accepted', 'deposit_paid'])).count()
+    completed_jobs = Job.query.filter_by(status='completed').count()
+    cancelled_jobs = Job.query.filter_by(status='cancelled').count()
+    total_bids = Bid.query.count()
+    total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status == 'completed').scalar() or 0
+
+    jobs = Job.query.order_by(Job.id.desc()).all()
+    users = User.query.order_by(User.created_at.desc()).all()
+
+    return render_template('admin_dashboard.html',
+                           total_users=total_users,
+                           total_customers=total_customers,
+                           total_haulers=total_haulers,
+                           total_jobs=total_jobs,
+                           open_jobs=open_jobs,
+                           active_jobs=active_jobs,
+                           completed_jobs=completed_jobs,
+                           cancelled_jobs=cancelled_jobs,
+                           total_bids=total_bids,
+                           total_revenue=total_revenue,
+                           jobs=jobs,
+                           users=users)
+
+@app.route("/admin/delete-job/<int:job_id>", methods=["POST"])
+@require_admin
+def admin_delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    db.session.delete(job)
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
+
+@app.route("/admin/delete-user/<string:user_id>", methods=["POST"])
+@require_admin
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        return "Cannot delete admin", 400
+    user_jobs = Job.query.filter_by(customer_id=user_id).all()
+    for job in user_jobs:
+        db.session.delete(job)
+    hauler_jobs = Job.query.filter_by(accepted_hauler_id=user_id).all()
+    for job in hauler_jobs:
+        job.accepted_hauler_id = None
+        job.accepted_hauler = None
+        job.accepted_quote = None
+        job.status = 'open'
+        job.deposit_paid = False
+    Bid.query.filter_by(hauler_id=user_id).delete()
+    Review.query.filter_by(hauler_id=user_id).delete()
+    Review.query.filter_by(customer_id=user_id).delete()
+    from models import OAuth
+    OAuth.query.filter_by(user_id=user_id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))

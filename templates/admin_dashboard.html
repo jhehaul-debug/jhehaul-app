@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - JHE Haul{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">Admin Dashboard</h2>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+    <div class="card" style="text-align: center;">
+        <h3 style="font-size: 2rem; color: #3498db;">{{ total_users }}</h3>
+        <p>Total Users</p>
+        <p style="font-size: 0.85rem; color: #888;">{{ total_customers }} customers / {{ total_haulers }} haulers</p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <h3 style="font-size: 2rem; color: #27ae60;">{{ total_jobs }}</h3>
+        <p>Total Jobs</p>
+        <p style="font-size: 0.85rem; color: #888;">{{ open_jobs }} open / {{ active_jobs }} active</p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <h3 style="font-size: 2rem; color: #e67e22;">{{ completed_jobs }}</h3>
+        <p>Completed</p>
+        <p style="font-size: 0.85rem; color: #888;">{{ cancelled_jobs }} cancelled</p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <h3 style="font-size: 2rem; color: #9b59b6;">{{ total_bids }}</h3>
+        <p>Total Bids</p>
+    </div>
+    <div class="card" style="text-align: center;">
+        <h3 style="font-size: 2rem; color: #2ecc71;">${{ "%.2f"|format(total_revenue) }}</h3>
+        <p>Total Revenue</p>
+    </div>
+</div>
+
+<h3 style="margin-bottom: 15px;">All Jobs</h3>
+{% if jobs %}
+{% for job in jobs %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <h4>Job #{{ job.id }} - {{ job.customer_name }}</h4>
+            <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+        </div>
+        <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}" onsubmit="return confirm('Are you sure you want to delete this job?');">
+            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        </form>
+    </div>
+    <hr>
+    <p><strong>Description:</strong> {{ job.job_description[:200] }}</p>
+    <p><strong>Address:</strong> {{ job.pickup_address }}</p>
+    <p><strong>ZIP:</strong> {{ job.pickup_zip or 'N/A' }}</p>
+    {% if job.accepted_hauler %}
+    <p><strong>Hauler:</strong> {{ job.accepted_hauler }}</p>
+    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    {% endif %}
+    {% if job.deposit_paid %}
+    <p style="color: green;"><strong>Deposit Paid</strong></p>
+    {% endif %}
+    <p style="font-size: 0.85rem; color: #888;">Posted: {{ job.created_at.strftime('%b %d, %Y %I:%M %p') if job.created_at else 'N/A' }}</p>
+</div>
+{% endfor %}
+{% else %}
+<div class="card"><p>No jobs yet.</p></div>
+{% endif %}
+
+<h3 style="margin: 30px 0 15px;">All Users</h3>
+{% for user in users %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h4>{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}{% if user.is_admin %} <span style="color: #e74c3c; font-size: 0.8rem;">(Admin)</span>{% endif %}</h4>
+            <p style="color: #666;">{{ user.email or 'No email' }}</p>
+            <p><span class="status status-open">{{ user.user_type or 'No role' }}</span></p>
+            {% if user.phone %}<p style="font-size: 0.85rem;">Phone: {{ user.phone }}</p>{% endif %}
+        </div>
+        {% if not user.is_admin %}
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete this user and all their data?');">
+            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

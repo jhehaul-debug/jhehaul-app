@@ -17,6 +17,7 @@ class User(UserMixin, db.Model):
     max_travel_miles = db.Column(db.Integer, nullable=True)
     notify_new_jobs = db.Column(db.Boolean, default=True)
     notify_sms = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
