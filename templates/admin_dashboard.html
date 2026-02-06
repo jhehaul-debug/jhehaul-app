@@ -31,42 +31,43 @@
 
 <div class="card">
     <h3 style="margin-bottom: 15px;">Share Invite Links</h3>
-    <p style="color: #666; margin-bottom: 15px;">Share these links to invite new users to the platform.</p>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px;">
-        <div style="flex: 1; min-width: 250px;">
-            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Invite a Customer</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="admin-invite-customer" value="{{ request.host_url }}invite/customer" readonly style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #f9f9f9;">
-                <button onclick="copyLink('admin-invite-customer', this)" class="btn btn-primary" style="padding: 10px 16px; white-space: nowrap;">Copy</button>
-            </div>
-        </div>
-        <div style="flex: 1; min-width: 250px;">
-            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Invite a Hauler</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="admin-invite-hauler" value="{{ request.host_url }}invite/hauler" readonly style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #f9f9f9;">
-                <button onclick="copyLink('admin-invite-hauler', this)" class="btn btn-primary" style="padding: 10px 16px; white-space: nowrap;">Copy</button>
-            </div>
-        </div>
+    <p style="color: #666; margin-bottom: 15px;">Tap a button below to share an invite link via text, email, or any app.</p>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button onclick="shareInvite('customer')" class="btn btn-primary" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
+            Share - Invite a Customer
+        </button>
+        <button onclick="shareInvite('hauler')" class="btn btn-success" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
+            Share - Invite a Hauler
+        </button>
     </div>
-    <div style="margin-top: 10px;">
-        <label style="font-weight: 600; display: block; margin-bottom: 5px;">General Invite (they choose their role)</label>
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="admin-invite-general" value="{{ request.host_url }}invite" readonly style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background: #f9f9f9;">
-            <button onclick="copyLink('admin-invite-general', this)" class="btn btn-primary" style="padding: 10px 16px; white-space: nowrap;">Copy</button>
-        </div>
+    <div style="margin-top: 15px;">
+        <button onclick="shareInvite('general')" class="btn btn-secondary" style="padding: 12px 30px; font-size: 1rem; width: 100%;">
+            Share - General Invite (they pick their role)
+        </button>
     </div>
 </div>
 <script>
-function copyLink(inputId, btn) {
-    var input = document.getElementById(inputId);
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value).then(function() {
-        var originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        btn.style.background = '#27ae60';
-        setTimeout(function() { btn.textContent = originalText; btn.style.background = ''; }, 2000);
-    });
+function shareInvite(type) {
+    var baseUrl = '{{ request.host_url }}';
+    var url, title, text;
+    if (type === 'customer') {
+        url = baseUrl + 'invite/customer';
+        title = 'Join JHE Haul';
+        text = 'Sign up on JHE Haul to post junk hauling jobs and get bids from local haulers!';
+    } else if (type === 'hauler') {
+        url = baseUrl + 'invite/hauler';
+        title = 'Join JHE Haul';
+        text = 'Sign up on JHE Haul as a hauler to find junk hauling jobs in your area!';
+    } else {
+        url = baseUrl + 'invite';
+        title = 'Join JHE Haul';
+        text = 'Check out JHE Haul - the junk hauling marketplace!';
+    }
+    if (navigator.share) {
+        navigator.share({ title: title, text: text, url: url });
+    } else {
+        window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
+    }
 }
 </script>
 
