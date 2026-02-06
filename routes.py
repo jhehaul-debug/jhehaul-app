@@ -597,6 +597,45 @@ def admin_test_job():
     flash("Test job posted successfully!", "success")
     return redirect(url_for('admin_dashboard'))
 
+@app.route("/admin/test-bid/<int:job_id>", methods=["POST"])
+@require_admin
+def admin_test_bid(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.status not in ['open', 'bidding']:
+        flash("Can only bid on open jobs.", "error")
+        return redirect(url_for('admin_dashboard'))
+
+    hauler_name = request.form.get("hauler_name", "Test Hauler").strip()
+    quote_amount = request.form.get("quote_amount", "150").strip()
+    message = request.form.get("message", "").strip()
+
+    try:
+        quote_amount = float(quote_amount)
+    except ValueError:
+        flash("Invalid quote amount.", "error")
+        return redirect(url_for('admin_dashboard'))
+
+    if job.status == 'open':
+        job.status = 'bidding'
+
+    bid = Bid(
+        job_id=job_id,
+        hauler_id=current_user.id,
+        hauler_name=hauler_name,
+        hauler_phone=current_user.phone or '',
+        quote_amount=quote_amount,
+        message=message if message else None,
+        status='active'
+    )
+    db.session.add(bid)
+    db.session.commit()
+
+    if job.customer and job.customer.email:
+        notify_customer_new_bid(job.customer.email, job.id, hauler_name, quote_amount)
+
+    flash(f"Test bid of ${quote_amount:.2f} submitted on Job #{job_id}!", "success")
+    return redirect(url_for('admin_dashboard'))
+
 @app.route("/admin/test-email", methods=["POST"])
 @require_admin
 def admin_test_email():
