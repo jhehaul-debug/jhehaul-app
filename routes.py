@@ -61,6 +61,19 @@ def home():
             return redirect(url_for('hauler_jobs'))
     return render_template('landing.html')
 
+@app.route("/invite")
+@app.route("/invite/<role>")
+def invite(role=None):
+    if role in ['customer', 'hauler']:
+        session['invited_role'] = role
+    if current_user.is_authenticated:
+        if not current_user.user_type:
+            return redirect(url_for('choose_role'))
+        if current_user.user_type == 'customer':
+            return redirect(url_for('customer_jobs'))
+        return redirect(url_for('hauler_jobs'))
+    return redirect(url_for('replit_auth.login'))
+
 @app.route("/choose-role")
 @require_login
 def choose_role():
@@ -69,7 +82,8 @@ def choose_role():
             return redirect(url_for('customer_jobs'))
         else:
             return redirect(url_for('hauler_jobs'))
-    return render_template('choose_role.html')
+    invited_role = session.pop('invited_role', None)
+    return render_template('choose_role.html', invited_role=invited_role)
 
 @app.route("/set-role", methods=["POST"])
 @require_login

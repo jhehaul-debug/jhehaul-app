@@ -2,6 +2,31 @@
 {% block title %}Choose Your Role - JHE Haul{% endblock %}
 {% block content %}
 <div class="card" style="text-align: center; padding: 40px;">
+    {% if invited_role == 'customer' %}
+    <h2 style="margin-bottom: 20px;">Welcome to JHE Haul!</h2>
+    <p style="color: #666; margin-bottom: 30px;">You've been invited to join as a <strong>Customer</strong>. Confirm below to get started posting jobs.</p>
+    <form method="POST" action="{{ url_for('set_role') }}">
+        <input type="hidden" name="role" value="customer">
+        <button type="submit" class="btn btn-primary" style="padding: 20px 50px; font-size: 1.2rem;">
+            <strong>Join as Customer</strong><br>
+            <small style="font-weight: normal;">I need junk hauled</small>
+        </button>
+    </form>
+    <p style="margin-top: 20px; color: #888; font-size: 0.9rem;">Not a customer? Choose your role below instead.</p>
+    <hr>
+    {% elif invited_role == 'hauler' %}
+    <h2 style="margin-bottom: 20px;">Welcome to JHE Haul!</h2>
+    <p style="color: #666; margin-bottom: 30px;">You've been invited to join as a <strong>Hauler</strong>. Confirm below to start finding jobs.</p>
+    <form method="POST" action="{{ url_for('set_role') }}">
+        <input type="hidden" name="role" value="hauler">
+        <button type="submit" class="btn btn-success" style="padding: 20px 50px; font-size: 1.2rem;">
+            <strong>Join as Hauler</strong><br>
+            <small style="font-weight: normal;">I haul junk for pay</small>
+        </button>
+    </form>
+    <p style="margin-top: 20px; color: #888; font-size: 0.9rem;">Not a hauler? Choose your role below instead.</p>
+    <hr>
+    {% endif %}
     <h2 style="margin-bottom: 30px;">How will you use JHE Haul?</h2>
     <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
         <form method="POST" action="{{ url_for('set_role') }}">
