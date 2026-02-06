@@ -2,7 +2,7 @@ import os
 import uuid
 from datetime import datetime
 from functools import wraps
-from flask import session, redirect, url_for, request, send_from_directory, render_template
+from flask import session, redirect, url_for, request, send_from_directory, render_template, flash
 from werkzeug.utils import secure_filename
 from flask_login import current_user
 
@@ -543,6 +543,86 @@ def admin_dashboard():
                            total_revenue=total_revenue,
                            jobs=jobs,
                            users=users)
+
+@app.route("/admin/test-job", methods=["POST"])
+@require_admin
+def admin_test_job():
+    customer_name = request.form.get("customer_name", "").strip()
+    pickup_address = request.form.get("pickup_address", "").strip()
+    pickup_zip = request.form.get("pickup_zip", "").strip()
+    preferred_date = request.form.get("preferred_date", "").strip()
+    preferred_time = request.form.get("preferred_time", "").strip()
+    job_description = request.form.get("job_description", "").strip()
+
+    if not customer_name or not pickup_address or not job_description or not pickup_zip:
+        flash("Missing required fields for test job.", "error")
+        return redirect(url_for('admin_dashboard'))
+
+    job = Job(
+        customer_id=current_user.id,
+        customer_name=customer_name,
+        pickup_address=pickup_address,
+        pickup_zip=pickup_zip,
+        preferred_date=preferred_date if preferred_date else None,
+        preferred_time=preferred_time if preferred_time else None,
+        job_description=job_description,
+        status='open'
+    )
+    db.session.add(job)
+    db.session.commit()
+
+    if pickup_zip:
+        import pgeocode
+        haulers = User.query.filter(
+            User.user_type == 'hauler',
+            User.home_zip.isnot(None),
+            User.max_travel_miles.isnot(None),
+            User.email.isnot(None),
+            User.notify_new_jobs == True
+        ).all()
+
+        dist_calc = pgeocode.GeoDistance('us')
+        for hauler in haulers:
+            try:
+                distance_km = dist_calc.query_postal_code(hauler.home_zip, pickup_zip)
+                if distance_km == distance_km:
+                    distance_miles = distance_km * 0.621371
+                    if distance_miles <= hauler.max_travel_miles:
+                        notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+                        if hauler.notify_sms and hauler.phone:
+                            notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
+            except:
+                pass
+
+    flash("Test job posted successfully!", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route("/admin/test-email", methods=["POST"])
+@require_admin
+def admin_test_email():
+    email = request.form.get("email", "").strip()
+    notification_type = request.form.get("notification_type", "").strip()
+
+    if not email or not notification_type:
+        flash("Email and notification type are required.", "error")
+        return redirect(url_for('admin_dashboard'))
+
+    success = False
+    if notification_type == "new_bid":
+        success = notify_customer_new_bid(email, 999, "Test Hauler", 150.00)
+    elif notification_type == "bid_accepted":
+        success = notify_hauler_bid_accepted(email, 999, 150.00)
+    elif notification_type == "deposit_paid":
+        success = notify_hauler_deposit_paid(email, 999, "123 Test Street", "12345")
+    elif notification_type == "new_job_nearby":
+        success = notify_hauler_new_job_nearby(email, 999, "Test junk removal job", 5.0)
+
+    if success:
+        flash(f"Test email sent successfully to {email}!", "success")
+    else:
+        flash(f"Failed to send test email to {email}.", "error")
+
+    return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/delete-job/<int:job_id>", methods=["POST"])
 @require_admin

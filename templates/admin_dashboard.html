@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Admin Dashboard - JHE Haul{% endblock %}
 {% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div style="padding: 12px 20px; margin-bottom: 15px; border-radius: 8px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
 <h2 style="margin-bottom: 20px;">Admin Dashboard</h2>
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
@@ -70,6 +79,63 @@ function shareInvite(type) {
     }
 }
 </script>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Post Test Job</h3>
+    <form method="POST" action="{{ url_for('admin_test_job') }}">
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Customer Name</label>
+            <input type="text" name="customer_name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Pickup Address</label>
+            <input type="text" name="pickup_address" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Pickup ZIP</label>
+            <input type="text" name="pickup_zip" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Preferred Date</label>
+            <input type="date" name="preferred_date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Preferred Time</label>
+            <select name="preferred_time" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                <option value="">-- Select --</option>
+                <option value="Morning">Morning</option>
+                <option value="Afternoon">Afternoon</option>
+                <option value="Evening">Evening</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Job Description</label>
+            <textarea name="job_description" required rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Post Test Job</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px;">Send Test Notification</h3>
+    <form method="POST" action="{{ url_for('admin_test_email') }}">
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Recipient Email</label>
+            <input type="email" name="email" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Notification Type</label>
+            <select name="notification_type" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                <option value="">-- Select --</option>
+                <option value="new_bid">New Bid Notification</option>
+                <option value="bid_accepted">Bid Accepted Notification</option>
+                <option value="deposit_paid">Deposit Paid Notification</option>
+                <option value="new_job_nearby">New Job Nearby Notification</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Send Test Email</button>
+    </form>
+</div>
 
 <h3 style="margin-bottom: 15px;">All Jobs</h3>
 {% if jobs %}
