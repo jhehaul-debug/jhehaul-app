@@ -72,7 +72,7 @@ def invite(role=None):
         if current_user.user_type == 'customer':
             return redirect(url_for('customer_jobs'))
         return redirect(url_for('hauler_jobs'))
-    return redirect(url_for('replit_auth.login'))
+    return render_template('invite_landing.html', role=role)
 
 @app.route("/choose-role")
 @require_login
