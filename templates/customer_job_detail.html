@@ -44,6 +44,11 @@
 <div class="card" style="background: #d4edda; border: 2px solid #28a745;">
     <h3>Deposit Paid</h3>
     <p>The hauler can now see your address and will contact you soon.</p>
+    {% set accepted_bid = bids|selectattr('status', 'equalto', 'accepted')|first %}
+    {% if accepted_bid and accepted_bid.hauler_phone %}
+    <p style="margin-top: 10px;"><strong>Hauler:</strong> {{ accepted_bid.hauler_name }}</p>
+    <p><strong>Phone:</strong> {{ accepted_bid.hauler_phone_formatted }}</p>
+    {% endif %}
     <form method="POST" action="{{ url_for('customer_complete_job', job_id=job.id) }}" style="margin-top: 15px;">
         <button type="submit" class="btn btn-success">Mark Job as Complete</button>
     </form>
@@ -83,7 +88,9 @@
         <div style="display: flex; justify-content: space-between;">
             <div>
                 <strong>{{ bid.hauler_name }}</strong>
-                {% if bid.hauler_phone %}<br><small>{{ bid.hauler_phone }}</small>{% endif %}
+                {% if job.deposit_paid and bid.status == 'accepted' and bid.hauler_phone %}
+                <br><small style="color: #27ae60;">Phone: {{ bid.hauler_phone_formatted }}</small>
+                {% endif %}
             </div>
             <div style="text-align: right;">
                 <strong style="font-size: 1.3rem;">${{ "%.2f"|format(bid.quote_amount) }}</strong>

@@ -89,6 +89,15 @@ class Bid(db.Model):
     message = db.Column(db.Text, nullable=True)
     status = db.Column(db.String, default='active')
 
+    @property
+    def hauler_phone_formatted(self):
+        if not self.hauler_phone:
+            return ''
+        digits = ''.join(c for c in self.hauler_phone if c.isdigit())
+        if len(digits) == 10:
+            return f'({digits[:3]}) {digits[3:6]}-{digits[6:]}'
+        return self.hauler_phone
+
 class CompletionPhoto(db.Model):
     __tablename__ = 'completion_photos'
     id = db.Column(db.Integer, primary_key=True)
