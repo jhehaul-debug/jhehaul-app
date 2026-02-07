@@ -26,9 +26,10 @@
     </p>
     {% endif %}
     
-    {% if job.status in ['accepted', 'deposit_paid'] %}
+    {% if job.status == 'deposit_paid' %}
     <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-top: 15px;">
         <strong>Customer:</strong> {{ job.customer_name }}<br>
+        {% if job.customer_phone %}<strong>Phone:</strong> {{ job.customer_phone }}<br>{% endif %}
         <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}
         <br><br>
         <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}" 
@@ -43,13 +44,19 @@
     </div>
     {% elif job.status == 'completed' %}
     <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <strong>Customer:</strong> {{ job.customer_name }}<br>
         <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}<br>
         <strong>Job Completed!</strong>
         {% if job.completed_at %}<br>Completed on {{ job.completed_at.strftime('%B %d, %Y') }}{% endif %}
     </div>
+    {% elif job.status == 'accepted' %}
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        <strong>Waiting for customer deposit confirmation.</strong><br>
+        <small>The full address and customer info will unlock once the deposit is paid.</small>
+    </div>
     {% else %}
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
-        <strong>Customer info:</strong> Hidden until your bid is accepted
+        <strong>Exact address will unlock after booking confirmation.</strong>
     </div>
     {% endif %}
 </div>
