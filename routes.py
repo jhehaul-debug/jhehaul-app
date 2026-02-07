@@ -28,6 +28,8 @@ def require_role(role):
                 return redirect(url_for('choose_role'))
             if current_user.user_type != role and not current_user.is_admin:
                 return render_template('403.html'), 403
+            if current_user.user_type == 'hauler' and not current_user.is_admin and not current_user.home_zip and request.endpoint not in ('hauler_setup', 'hauler_setup_save'):
+                return redirect(url_for('hauler_setup'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -103,12 +105,60 @@ def set_role():
         current_user.agreed_to_hauler_terms = True
         current_user.agreed_to_hauler_terms_at = datetime.now()
         db.session.commit()
-        return redirect(url_for('hauler_jobs'))
+        return redirect(url_for('hauler_setup'))
     elif role == 'customer':
         current_user.user_type = role
         db.session.commit()
         return redirect(url_for('customer_jobs'))
     return redirect(url_for('choose_role'))
+
+@app.route("/hauler/setup")
+@require_role('hauler')
+def hauler_setup():
+    if current_user.home_zip and current_user.max_travel_miles:
+        return redirect(url_for('hauler_jobs'))
+    return render_template('hauler_setup.html')
+
+@app.route("/hauler/setup", methods=["POST"])
+@require_role('hauler')
+def hauler_setup_save():
+    import re
+    first_name = request.form.get("first_name", "").strip()
+    last_name = request.form.get("last_name", "").strip()
+    phone = strip_phone(request.form.get("phone", ""))
+    home_zip = request.form.get("home_zip", "").strip()
+    max_travel_miles = request.form.get("max_travel_miles", "").strip()
+    notify_new_jobs = request.form.get("notify_new_jobs") == "1"
+    notify_sms = request.form.get("notify_sms") == "1"
+
+    if not first_name or not last_name:
+        flash("Please enter your first and last name.", "error")
+        return redirect(url_for('hauler_setup'))
+
+    if not home_zip or not re.match(r'^\d{5}$', home_zip):
+        flash("Please enter a valid 5-digit ZIP code.", "error")
+        return redirect(url_for('hauler_setup'))
+
+    from models import ZipCode
+    if not ZipCode.query.get(home_zip):
+        flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
+        return redirect(url_for('hauler_setup'))
+
+    if not max_travel_miles:
+        flash("Please enter how far you're willing to drive.", "error")
+        return redirect(url_for('hauler_setup'))
+
+    current_user.first_name = first_name
+    current_user.last_name = last_name
+    current_user.phone = phone if phone else None
+    current_user.home_zip = home_zip
+    current_user.max_travel_miles = int(max_travel_miles)
+    current_user.notify_new_jobs = notify_new_jobs
+    current_user.notify_sms = notify_sms
+    db.session.commit()
+
+    flash("You're all set! Browse open jobs below.", "success")
+    return redirect(url_for('hauler_jobs'))
 
 @app.route("/about")
 def about():
