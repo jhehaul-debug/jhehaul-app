@@ -111,15 +111,27 @@ def make_replit_blueprint():
     return replit_bp
 
 def save_user(user_claims):
-    user = User()
-    user.id = user_claims['sub']
-    user.email = user_claims.get('email')
-    user.first_name = user_claims.get('first_name')
-    user.last_name = user_claims.get('last_name')
-    user.profile_image_url = user_claims.get('profile_image_url')
-    merged_user = db.session.merge(user)
-    db.session.commit()
-    return merged_user
+    user_id = user_claims['sub']
+    existing_user = db.session.get(User, user_id)
+    if existing_user:
+        existing_user.email = user_claims.get('email') or existing_user.email
+        if not existing_user.first_name:
+            existing_user.first_name = user_claims.get('first_name')
+        if not existing_user.last_name:
+            existing_user.last_name = user_claims.get('last_name')
+        existing_user.profile_image_url = user_claims.get('profile_image_url')
+        db.session.commit()
+        return existing_user
+    else:
+        user = User()
+        user.id = user_id
+        user.email = user_claims.get('email')
+        user.first_name = user_claims.get('first_name')
+        user.last_name = user_claims.get('last_name')
+        user.profile_image_url = user_claims.get('profile_image_url')
+        db.session.add(user)
+        db.session.commit()
+        return user
 
 @oauth_authorized.connect
 def logged_in(blueprint, token):

@@ -50,6 +50,13 @@ with app.app_context():
     db.create_all()
     logging.info("Database tables created")
 
+    from models import User
+    admin_user = db.session.get(User, '53919193')
+    if admin_user and not admin_user.is_admin:
+        admin_user.is_admin = True
+        db.session.commit()
+        logging.info("Admin flag restored for admin user")
+
     from models import ZipCode
     from load_zips import load_minnesota_zips
     count = ZipCode.query.count()
