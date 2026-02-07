@@ -115,6 +115,23 @@ Preferred communication style: Simple, everyday language.
 - **Hauler Reviews** - Customers rate haulers after job completion (1-5 stars)
 - **Earnings Dashboard** - Haulers see total earnings, job count, and average rating
 
+### Phone Number Formatting
+- All phone fields use masked input: `(###) ###-####` with placeholder `(555) 555-5555`
+- Phone numbers stored as digits only (10 digits) in the database
+- `User.phone_formatted` property returns display format `(XXX) XXX-XXXX`
+- `strip_phone()` helper in routes.py strips formatting before saving
+
+### ZIP Code & Distance Matching
+- **ZIP Code Database**: `zip_codes` table with 1,888 MN/WI ZIP codes (lat/lon coordinates)
+- **Distance Calculation**: `distance.py` uses Haversine formula for accurate mile calculations
+- **Customer Job Posting**: Required `pickup_zip` field (5 digits, validated against ZIP table)
+- **Hauler Profile**: `home_zip` (5 digits) + `max_travel_miles` (max distance willing to drive)
+- **Matching Rule**: Haulers only see jobs where `pickup_zip` is within their `max_travel_miles` radius from `home_zip`
+- **UI Display**: "Approx. X.X miles away" badge shown on job listings and bid pages
+- **Privacy**: Only ZIP code shown to haulers; full address locked until deposit is paid
+- **Validation**: ZIP must be exactly 5 digits; unsupported ZIPs show "ZIP not supported yet" error (no crash)
+- **Notifications**: New job alerts only sent to haulers within their travel radius
+
 ### Account Management
 - **Account Deletion** - Both customers and haulers can delete their accounts from the profile page
 - Customers must complete or cancel all active jobs before deleting
@@ -141,3 +158,6 @@ Preferred communication style: Simple, everyday language.
 - **Feb 2026**: Added job cancellation feature for customers
 - **Feb 2026**: Added account deletion feature for customers and haulers
 - **Feb 2026**: Added invite/share links for customers, haulers, and admins to invite new users
+- **Feb 2026**: Built true mile radius matching with custom ZIP code database (1,888 MN/WI ZIPs) and Haversine formula
+- **Feb 2026**: Added masked phone input (###) ###-#### across all forms with digits-only storage
+- **Feb 2026**: Added 5-digit ZIP validation with "ZIP not supported yet" error for missing ZIPs

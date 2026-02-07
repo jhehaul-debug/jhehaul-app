@@ -93,7 +93,7 @@ function shareInvite(type) {
         </div>
         <div style="margin-bottom: 12px;">
             <label style="display: block; margin-bottom: 4px; font-weight: bold;">Pickup ZIP</label>
-            <input type="text" name="pickup_zip" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+            <input type="text" name="pickup_zip" required placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
         </div>
         <div style="margin-bottom: 12px;">
             <label style="display: block; margin-bottom: 4px; font-weight: bold;">Preferred Date</label>

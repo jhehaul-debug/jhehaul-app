@@ -12,6 +12,11 @@ from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review
 from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid, notify_hauler_new_job_nearby
 from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
 
+def strip_phone(phone_str):
+    if not phone_str:
+        return ''
+    return ''.join(c for c in phone_str if c.isdigit())
+
 def require_role(role):
     def decorator(f):
         @wraps(f)
@@ -126,7 +131,7 @@ def customer_new():
 @require_role('customer')
 def customer_create():
     customer_name = request.form.get("customer_name", "").strip()
-    customer_phone = request.form.get("customer_phone", "").strip()
+    customer_phone = strip_phone(request.form.get("customer_phone", ""))
     pickup_address = request.form.get("pickup_address", "").strip()
     pickup_zip = request.form.get("pickup_zip", "").strip()
     preferred_date = request.form.get("preferred_date", "").strip()
@@ -140,6 +145,16 @@ def customer_create():
 
     if not customer_name or not pickup_address or not job_description or not pickup_zip:
         return "Missing required fields", 400
+
+    import re
+    if not re.match(r'^\d{5}$', pickup_zip):
+        flash("Please enter a valid 5-digit ZIP code.", "error")
+        return redirect(url_for('customer_new'))
+
+    from models import ZipCode
+    if not ZipCode.query.get(pickup_zip):
+        flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
+        return redirect(url_for('customer_new'))
 
     job = Job(
         customer_id=current_user.id,
@@ -354,7 +369,7 @@ def hauler_bid_form(job_id):
 @require_role('hauler')
 def hauler_bid_submit(job_id):
     hauler_name = request.form.get("hauler_name", "").strip()
-    hauler_phone = request.form.get("hauler_phone", "").strip()
+    hauler_phone = strip_phone(request.form.get("hauler_phone", ""))
     quote_amount = request.form.get("quote_amount", "").strip()
     message = request.form.get("message", "").strip()
 
@@ -409,28 +424,39 @@ def profile():
 def profile_update():
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
-    phone = request.form.get("phone", "").strip()
+    phone = strip_phone(request.form.get("phone", ""))
     
     current_user.first_name = first_name
     current_user.last_name = last_name
-    current_user.phone = phone
+    current_user.phone = phone if phone else None
     
     if current_user.user_type == 'customer':
         notify_sms = request.form.get("notify_sms") == "1"
         current_user.notify_sms = notify_sms
     
     if current_user.user_type == 'hauler':
+        import re
         home_zip = request.form.get("home_zip", "").strip()
         max_travel_miles = request.form.get("max_travel_miles", "").strip()
         notify_new_jobs = request.form.get("notify_new_jobs") == "1"
         notify_sms = request.form.get("notify_sms") == "1"
+        
+        if home_zip:
+            if not re.match(r'^\d{5}$', home_zip):
+                flash("Please enter a valid 5-digit ZIP code.", "error")
+                return redirect(url_for('profile'))
+            from models import ZipCode
+            if not ZipCode.query.get(home_zip):
+                flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
+                return redirect(url_for('profile'))
+        
         current_user.home_zip = home_zip if home_zip else None
         current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
         current_user.notify_new_jobs = notify_new_jobs
         current_user.notify_sms = notify_sms
     
     db.session.commit()
-    
+    flash("Profile updated successfully!", "success")
     return redirect(url_for('profile'))
 
 @app.route("/account/delete", methods=["POST"])
