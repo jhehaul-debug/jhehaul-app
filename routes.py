@@ -89,12 +89,25 @@ def choose_role():
 @require_login
 def set_role():
     role = request.form.get("role")
-    if role in ['customer', 'hauler']:
+    if role == 'hauler':
+        agree_terms = request.form.get("agree_terms")
+        if not agree_terms:
+            flash("You must read and agree to the JHE HAUL Hauler Agreement before creating a hauler account.", "error")
+            return redirect(url_for('choose_role'))
+        current_user.user_type = role
+        current_user.agreed_to_hauler_terms = True
+        current_user.agreed_to_hauler_terms_at = datetime.now()
+        db.session.commit()
+        return redirect(url_for('hauler_jobs'))
+    elif role == 'customer':
         current_user.user_type = role
         db.session.commit()
-    if role == 'customer':
         return redirect(url_for('customer_jobs'))
-    return redirect(url_for('hauler_jobs'))
+    return redirect(url_for('choose_role'))
+
+@app.route("/hauler-agreement")
+def hauler_agreement():
+    return render_template('hauler_agreement.html')
 
 @app.route("/customer/new", methods=["GET"])
 @require_role('customer')

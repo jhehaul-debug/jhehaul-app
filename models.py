@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     notify_new_jobs = db.Column(db.Boolean, default=True)
     notify_sms = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
+    agreed_to_hauler_terms = db.Column(db.Boolean, default=False)
+    agreed_to_hauler_terms_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
