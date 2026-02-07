@@ -232,9 +232,9 @@ def customer_accept_bid(bid_id):
     
     hauler = User.query.get(bid.hauler_id)
     if hauler and hauler.email:
-        notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount)
+        notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount, job.pickup_address, job.pickup_zip, job.customer_name)
         if hauler.notify_sms and hauler.phone:
-            notify_hauler_bid_accepted_sms(hauler.phone, job.id)
+            notify_hauler_bid_accepted_sms(hauler.phone, job.id, job.pickup_address, job.pickup_zip)
     
     return redirect(url_for('customer_job_detail', job_id=job.id))
 
@@ -672,7 +672,7 @@ def admin_test_email():
     if notification_type == "new_bid":
         success = notify_customer_new_bid(email, 999, "Test Hauler", 150.00)
     elif notification_type == "bid_accepted":
-        success = notify_hauler_bid_accepted(email, 999, 150.00)
+        success = notify_hauler_bid_accepted(email, 999, 150.00, "123 Test Street", "12345", "Test Customer")
     elif notification_type == "deposit_paid":
         success = notify_hauler_deposit_paid(email, 999, "123 Test Street", "12345")
     elif notification_type == "new_job_nearby":

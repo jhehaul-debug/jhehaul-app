@@ -77,13 +77,25 @@ def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
     """
     return send_email(customer_email, subject, html_content)
 
-def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
+def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount, pickup_address=None, pickup_zip=None, customer_name=None):
+    import urllib.parse
     subject = f"Your Bid Was Accepted - Job #{job_id}"
+
+    address_section = ""
+    if pickup_address and pickup_zip:
+        full_address = f"{pickup_address}, {pickup_zip}"
+        maps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(full_address)}"
+        address_section = f"""
+    <p><strong>Customer:</strong> {customer_name or 'N/A'}</p>
+    <p><strong>Pickup Address:</strong><br>{full_address}</p>
+    <p><a href="{maps_url}" style="display: inline-block; background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Get Directions</a></p>
+    """
+
     html_content = f"""
     <h2>Congratulations! Your bid was accepted!</h2>
     <p>The customer has accepted your bid of <strong>${quote_amount:.2f}</strong> for Job #{job_id}.</p>
-    <p>Once the customer pays the deposit, you'll be able to see the pickup address in your dashboard.</p>
-    <p>Log in to JHE Haul to view your accepted jobs.</p>
+    {address_section}
+    <p>Log in to JHE Haul to view your accepted jobs and full details.</p>
     <p>Thank you for using JHE Haul!</p>
     """
     return send_email(hauler_email, subject, html_content)

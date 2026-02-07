@@ -73,8 +73,14 @@ def notify_hauler_new_job_sms(phone, job_id, distance_miles):
     message = f"JHE Haul: New job #{job_id} posted {distance_miles:.0f} miles from you! Log in to view and bid."
     return send_sms(phone, message)
 
-def notify_hauler_bid_accepted_sms(phone, job_id):
-    message = f"JHE Haul: Your bid on job #{job_id} was accepted! The customer will pay the deposit, then you'll see the address."
+def notify_hauler_bid_accepted_sms(phone, job_id, pickup_address=None, pickup_zip=None):
+    import urllib.parse
+    if pickup_address and pickup_zip:
+        full_address = f"{pickup_address}, {pickup_zip}"
+        maps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(full_address)}"
+        message = f"JHE Haul: Your bid on job #{job_id} was accepted! Pickup: {full_address}. Directions: {maps_url}"
+    else:
+        message = f"JHE Haul: Your bid on job #{job_id} was accepted! Log in to see details."
     return send_sms(phone, message)
 
 def notify_hauler_deposit_paid_sms(phone, job_id):
