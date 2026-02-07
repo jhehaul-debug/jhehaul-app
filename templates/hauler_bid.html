@@ -5,7 +5,15 @@
     <h2>Job #{{ job.id }}</h2>
     <hr>
     <p><strong>Description:</strong><br>{{ job.job_description }}</p>
-    <p><strong>Posted by:</strong> {{ job.customer_name }}</p>
+    {% if job.pickup_zip %}
+    <p><strong>Area:</strong> {{ job.pickup_zip }}</p>
+    {% endif %}
+    {% if job.preferred_date or job.preferred_time %}
+    <p><strong>Preferred Pickup:</strong> 
+        {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
+        {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
+    </p>
+    {% endif %}
     
     {% if job.photos %}
     <h4>Photos</h4>
