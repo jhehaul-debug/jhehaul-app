@@ -109,6 +109,10 @@ def set_role():
 def hauler_agreement():
     return render_template('hauler_agreement.html')
 
+@app.route("/customer-terms")
+def customer_terms():
+    return render_template('customer_terms.html')
+
 @app.route("/customer/new", methods=["GET"])
 @require_role('customer')
 def customer_new():
@@ -124,6 +128,11 @@ def customer_create():
     preferred_date = request.form.get("preferred_date", "").strip()
     preferred_time = request.form.get("preferred_time", "").strip()
     job_description = request.form.get("job_description", "").strip()
+
+    agree_terms = request.form.get("agree_terms")
+    if not agree_terms:
+        flash("You must certify that you own or have legal authority over the property before posting a job.", "error")
+        return redirect(url_for('customer_new'))
 
     if not customer_name or not pickup_address or not job_description or not pickup_zip:
         return "Missing required fields", 400
