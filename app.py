@@ -49,3 +49,13 @@ with app.app_context():
     import models
     db.create_all()
     logging.info("Database tables created")
+
+    from models import ZipCode
+    from load_zips import load_minnesota_zips
+    count = ZipCode.query.count()
+    if count == 0:
+        logging.info("Loading ZIP codes into database...")
+        added = load_minnesota_zips(db, ZipCode)
+        logging.info(f"Loaded {added} ZIP codes")
+    else:
+        logging.info(f"ZIP codes already loaded: {count}")
