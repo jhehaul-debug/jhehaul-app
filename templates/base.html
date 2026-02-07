@@ -82,6 +82,7 @@
                         <a href="{{ url_for('replit_auth.logout') }}">Log Out</a>
                     </div>
                 {% else %}
+                    <a href="{{ url_for('about') }}">About Us</a>
                     <a href="{{ url_for('replit_auth.login') }}">Log In</a>
                 {% endif %}
             </nav>
@@ -92,6 +93,7 @@
     </main>
     <footer style="background: #2c3e50; color: white; padding: 30px 0; margin-top: 50px; text-align: center;">
         <div class="container">
+            <p style="margin-bottom: 10px;"><a href="{{ url_for('about') }}" style="color: white; text-decoration: underline;">About Us</a></p>
             <p style="margin-bottom: 10px;">Questions or need help? Contact us:</p>
             <p><a href="mailto:incorporateiq@gmail.com" style="color: #3498db;">Contact Support</a></p>
             <p style="margin-top: 20px; font-size: 0.9rem; color: #95a5a6;">&copy; 2026 JHE Haul. All rights reserved.</p>

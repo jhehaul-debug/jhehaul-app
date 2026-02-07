@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}About Us - JHE Haul{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="text-align: center; margin-bottom: 10px;">JHE HAUL</h2>
+    <p style="text-align: center; color: #666; font-size: 1.1rem; margin-bottom: 5px;">On-Demand Junk Removal Marketplace</p>
+    <p style="text-align: center; font-weight: 600; font-size: 1.2rem; color: #2c3e50; margin-bottom: 20px;">Post the job. Get bids. Choose the price.</p>
+
+    <p>JHE HAUL is an app-based hauling service that connects customers with local, independent haulers ready to remove unwanted items quickly and professionally.</p>
+    <p>We act as the bridge between customers who need junk removed and haulers who are available to do the work.</p>
+    <p>Instead of calling around for quotes or overpaying for one company, you simply post what you need removed and receive multiple offers. You choose the hauler and price that fits your needs and your budget.</p>
+    <p style="font-weight: 600; margin-top: 10px;">You're in control from start to finish.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h3>HOW IT WORKS</h3>
+    <hr>
+    <div style="margin-top: 15px;">
+        <p><strong>1. Post Your Job</strong><br>Upload photos and describe what you need removed.</p>
+        <p><strong>2. Receive Bids</strong><br>Local haulers submit their price offers to complete your job.</p>
+        <p><strong>3. Pick Your Hauler</strong><br>Compare prices, reviews, and availability. Choose the best option for you.</p>
+        <p><strong>4. Get It Hauled Away</strong><br>Your selected hauler arrives, removes the items, and completes the job.</p>
+    </div>
+    <p style="font-weight: 600; margin-top: 15px;">Simple. Fast. No stress.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h3>WHAT CAN BE REMOVED</h3>
+    <hr>
+    <p style="margin-top: 15px;">Through the JHE HAUL network, you can request removal of:</p>
+    <ul style="margin: 15px 0; padding-left: 20px; line-height: 2;">
+        <li>Furniture</li>
+        <li>Appliances</li>
+        <li>Household junk</li>
+        <li>Garage & attic cleanouts</li>
+        <li>Yard debris</li>
+        <li>Construction debris</li>
+        <li>Electronics</li>
+        <li>Storage unit cleanouts</li>
+        <li>Office equipment & cubicles</li>
+        <li>Hot tubs & large items</li>
+        <li>Move-out cleanups</li>
+        <li>Property cleanouts</li>
+        <li>Curbside pickup items</li>
+        <li>Light demolition debris</li>
+    </ul>
+    <p style="font-weight: 600;">If it needs gone — post it.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h3>WHY USE JHE HAUL</h3>
+    <hr>
+    <div style="margin-top: 15px;">
+        <h4 style="color: #2c3e50;">Choose Your Own Price</h4>
+        <p>You are not locked into one company or one quote. Haulers compete for your job, allowing you to select the lowest price or the best service option that fits your budget.</p>
+
+        <h4 style="color: #2c3e50; margin-top: 15px;">Affordable Professional Service</h4>
+        <p>Our goal is to provide customers with professional hauling services at an affordable rate by creating a competitive marketplace between haulers.</p>
+
+        <h4 style="color: #2c3e50; margin-top: 15px;">Fast Scheduling</h4>
+        <p>Many jobs can be accepted the same day or next day depending on hauler availability.</p>
+
+        <h4 style="color: #2c3e50; margin-top: 15px;">Local Independent Haulers</h4>
+        <p>We work with local haulers in your area, helping support small businesses while giving customers more service options.</p>
+
+        <h4 style="color: #2c3e50; margin-top: 15px;">Convenient & Easy</h4>
+        <p>No phone calls. No waiting for estimates. No pressure. Everything is handled directly inside the app.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h3>SAFE & RELIABLE</h3>
+    <hr>
+    <p style="margin-top: 15px;">Haulers agree to platform standards for professionalism and communication. Customers can view bids and select the provider they feel most comfortable with before booking.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h3>OUR MISSION</h3>
+    <hr>
+    <p style="margin-top: 15px;">JHE HAUL was created to make junk removal simple, affordable, and fair.</p>
+    <p>We connect people who need items removed with hardworking haulers looking for jobs — giving customers better pricing and giving haulers more opportunities.</p>
+    <p>Instead of one company deciding the price, the marketplace works for you.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto; text-align: center; background: #2c3e50; color: white;">
+    <h3>GET STARTED</h3>
+    <p style="margin: 15px 0;">Post your job today and start receiving offers within minutes.</p>
+    <p style="font-weight: 600; font-size: 1.1rem;">JHE HAUL — Where Customers and Haulers Connect.</p>
+    {% if not current_user.is_authenticated %}
+    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-success" style="margin-top: 15px; font-size: 1.1rem; padding: 15px 30px;">Sign Up Now</a>
+    {% elif current_user.user_type == 'customer' %}
+    <a href="{{ url_for('customer_new') }}" class="btn btn-success" style="margin-top: 15px; font-size: 1.1rem; padding: 15px 30px;">Post a Job</a>
+    {% endif %}
+</div>
+{% endblock %}

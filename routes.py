@@ -105,6 +105,10 @@ def set_role():
         return redirect(url_for('customer_jobs'))
     return redirect(url_for('choose_role'))
 
+@app.route("/about")
+def about():
+    return render_template('about.html')
+
 @app.route("/hauler-agreement")
 def hauler_agreement():
     return render_template('hauler_agreement.html')
