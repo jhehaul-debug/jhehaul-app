@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}JHE Haul{% endblock %}</title>
-    <meta property="og:title" content="JHE Haul - Junk Hauling Marketplace">
+    {% block og_meta %}
+    <meta property="og:title" content="JHE Haul - Local Junk Removal & Hauling Network">
     <meta property="og:description" content="Post junk hauling jobs, get bids from local haulers, and get your junk removed fast.">
     <meta property="og:image" content="https://jhehaul.com/static/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://jhehaul.com">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="JHE Haul">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="JHE Haul - Junk Hauling Marketplace">
+    <meta name="twitter:title" content="JHE Haul - Local Junk Removal & Hauling Network">
     <meta name="twitter:description" content="Post junk hauling jobs, get bids from local haulers, and get your junk removed fast.">
     <meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
+    {% endblock %}
     <link rel="icon" type="image/png" href="/static/og-image.png">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
