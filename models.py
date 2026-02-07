@@ -88,6 +88,14 @@ class CompletionPhoto(db.Model):
     photo_type = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+class ZipCode(db.Model):
+    __tablename__ = 'zip_codes'
+    zip = db.Column(db.String, primary_key=True)
+    city = db.Column(db.String, nullable=True)
+    state = db.Column(db.String, nullable=True)
+    lat = db.Column(db.Float, nullable=False)
+    lon = db.Column(db.Float, nullable=False)
+
 class Review(db.Model):
     __tablename__ = 'reviews'
     id = db.Column(db.Integer, primary_key=True)

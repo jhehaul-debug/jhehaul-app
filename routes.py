@@ -166,27 +166,29 @@ def customer_create():
     db.session.commit()
 
     if pickup_zip:
-        import pgeocode
-        haulers = User.query.filter(
-            User.user_type == 'hauler',
-            User.home_zip.isnot(None),
-            User.max_travel_miles.isnot(None),
-            User.email.isnot(None),
-            User.notify_new_jobs == True
-        ).all()
-        
-        dist_calc = pgeocode.GeoDistance('us')
-        for hauler in haulers:
-            try:
-                distance_km = dist_calc.query_postal_code(hauler.home_zip, pickup_zip)
-                if distance_km == distance_km:
-                    distance_miles = distance_km * 0.621371
-                    if distance_miles <= hauler.max_travel_miles:
-                        notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
-                        if hauler.notify_sms and hauler.phone:
-                            notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
-            except:
-                pass
+        from models import ZipCode
+        from distance import haversine_miles
+        job_zip_loc = ZipCode.query.get(pickup_zip)
+        if job_zip_loc:
+            haulers = User.query.filter(
+                User.user_type == 'hauler',
+                User.home_zip.isnot(None),
+                User.max_travel_miles.isnot(None),
+                User.email.isnot(None),
+                User.notify_new_jobs == True
+            ).all()
+
+            for hauler in haulers:
+                try:
+                    hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
+                    if hauler_zip_loc:
+                        distance_miles = haversine_miles(hauler_zip_loc.lat, hauler_zip_loc.lon, job_zip_loc.lat, job_zip_loc.lon)
+                        if distance_miles <= hauler.max_travel_miles:
+                            notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+                            if hauler.notify_sms and hauler.phone:
+                                notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
+                except:
+                    pass
 
     return redirect(url_for("customer_jobs"))
 
@@ -293,38 +295,60 @@ def payment_success(job_id):
 @app.route("/hauler/jobs")
 @require_role('hauler')
 def hauler_jobs():
-    all_jobs = Job.query.filter_by(status='open').order_by(Job.id.desc()).all()
-    
+    from models import ZipCode
+    from distance import haversine_miles
+
+    all_jobs = Job.query.filter(Job.status.in_(['open', 'bidding'])).order_by(Job.id.desc()).all()
+
+    job_distances = {}
+
     if current_user.home_zip and current_user.max_travel_miles:
-        import pgeocode
-        nomi = pgeocode.Nominatim('us')
-        hauler_loc = nomi.query_postal_code(current_user.home_zip)
-        
-        if hauler_loc is not None and not (hasattr(hauler_loc, 'latitude') and hauler_loc.latitude != hauler_loc.latitude):
+        hauler_zip = ZipCode.query.get(current_user.home_zip)
+
+        if hauler_zip:
             filtered_jobs = []
             for job in all_jobs:
                 if job.pickup_zip:
-                    job_loc = nomi.query_postal_code(job.pickup_zip)
-                    if job_loc is not None and not (job_loc.latitude != job_loc.latitude):
-                        dist = pgeocode.GeoDistance('us')
-                        miles = dist.query_postal_code(current_user.home_zip, job.pickup_zip) * 0.621371
+                    job_zip = ZipCode.query.get(job.pickup_zip)
+                    if job_zip:
+                        miles = haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon)
                         if miles <= current_user.max_travel_miles:
+                            job_distances[job.id] = round(miles, 1)
                             filtered_jobs.append(job)
+                    else:
+                        filtered_jobs.append(job)
                 else:
                     filtered_jobs.append(job)
             jobs = filtered_jobs
         else:
             jobs = all_jobs
     else:
+        if current_user.home_zip:
+            hauler_zip = ZipCode.query.get(current_user.home_zip)
+            if hauler_zip:
+                for job in all_jobs:
+                    if job.pickup_zip:
+                        job_zip = ZipCode.query.get(job.pickup_zip)
+                        if job_zip:
+                            miles = haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon)
+                            job_distances[job.id] = round(miles, 1)
         jobs = all_jobs
-    
-    return render_template('hauler_jobs.html', jobs=jobs)
+
+    return render_template('hauler_jobs.html', jobs=jobs, job_distances=job_distances)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
 @require_role('hauler')
 def hauler_bid_form(job_id):
+    from models import ZipCode
+    from distance import haversine_miles
     job = Job.query.get_or_404(job_id)
-    return render_template('hauler_bid.html', job=job)
+    approx_miles = None
+    if current_user.home_zip and job.pickup_zip:
+        hauler_zip = ZipCode.query.get(current_user.home_zip)
+        job_zip = ZipCode.query.get(job.pickup_zip)
+        if hauler_zip and job_zip:
+            approx_miles = round(haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon), 1)
+    return render_template('hauler_bid.html', job=job, approx_miles=approx_miles)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["POST"])
 @require_role('hauler')
@@ -619,27 +643,29 @@ def admin_test_job():
     db.session.commit()
 
     if pickup_zip:
-        import pgeocode
-        haulers = User.query.filter(
-            User.user_type == 'hauler',
-            User.home_zip.isnot(None),
-            User.max_travel_miles.isnot(None),
-            User.email.isnot(None),
-            User.notify_new_jobs == True
-        ).all()
+        from models import ZipCode
+        from distance import haversine_miles
+        job_zip_loc = ZipCode.query.get(pickup_zip)
+        if job_zip_loc:
+            haulers = User.query.filter(
+                User.user_type == 'hauler',
+                User.home_zip.isnot(None),
+                User.max_travel_miles.isnot(None),
+                User.email.isnot(None),
+                User.notify_new_jobs == True
+            ).all()
 
-        dist_calc = pgeocode.GeoDistance('us')
-        for hauler in haulers:
-            try:
-                distance_km = dist_calc.query_postal_code(hauler.home_zip, pickup_zip)
-                if distance_km == distance_km:
-                    distance_miles = distance_km * 0.621371
-                    if distance_miles <= hauler.max_travel_miles:
-                        notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
-                        if hauler.notify_sms and hauler.phone:
-                            notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
-            except:
-                pass
+            for hauler in haulers:
+                try:
+                    hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
+                    if hauler_zip_loc:
+                        distance_miles = haversine_miles(hauler_zip_loc.lat, hauler_zip_loc.lon, job_zip_loc.lat, job_zip_loc.lon)
+                        if distance_miles <= hauler.max_travel_miles:
+                            notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+                            if hauler.notify_sms and hauler.phone:
+                                notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
+                except:
+                    pass
 
     flash("Test job posted successfully!", "success")
     return redirect(url_for('admin_dashboard'))

@@ -5,14 +5,30 @@
 
 {% if not jobs %}
 <div class="card">
-    <p>No open jobs at the moment. Check back soon!</p>
+    <p>No open jobs in your area at the moment. Check back soon!</p>
 </div>
 {% else %}
 {% for job in jobs %}
 <div class="card">
-    <h3>Job #{{ job.id }}</h3>
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <h3>Job #{{ job.id }}</h3>
+        {% if job.id in job_distances %}
+        <span style="background: #e3f2fd; color: #1565c0; padding: 4px 12px; border-radius: 15px; font-size: 0.85rem; font-weight: 600;">
+            Approx. {{ job_distances[job.id] }} miles away
+        </span>
+        {% endif %}
+    </div>
     <hr>
     <p><strong>Description:</strong> {{ job.job_description }}</p>
+    {% if job.pickup_zip %}
+    <p><strong>Area:</strong> {{ job.pickup_zip }}</p>
+    {% endif %}
+    {% if job.preferred_date or job.preferred_time %}
+    <p><strong>Preferred Pickup:</strong> 
+        {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
+        {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
+    </p>
+    {% endif %}
     
     {% if job.photos %}
     <div class="photo-grid">
@@ -21,8 +37,10 @@
         {% endfor %}
     </div>
     {% endif %}
+
+    <p style="color: #888; font-size: 0.85rem; margin-top: 10px;">Exact address will unlock after booking confirmation.</p>
     
-    <a href="{{ url_for('hauler_bid_form', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 15px;">View Details & Bid</a>
+    <a href="{{ url_for('hauler_bid_form', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 10px;">View Details & Bid</a>
 </div>
 {% endfor %}
 {% endif %}

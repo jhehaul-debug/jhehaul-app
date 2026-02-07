@@ -6,7 +6,13 @@
     <hr>
     <p><strong>Description:</strong><br>{{ job.job_description }}</p>
     {% if job.pickup_zip %}
-    <p><strong>Area:</strong> {{ job.pickup_zip }}</p>
+    <p><strong>Area:</strong> {{ job.pickup_zip }}
+        {% if approx_miles is not none %}
+        <span style="background: #e3f2fd; color: #1565c0; padding: 2px 10px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; margin-left: 8px;">
+            Approx. {{ approx_miles }} miles away
+        </span>
+        {% endif %}
+    </p>
     {% endif %}
     {% if job.preferred_date or job.preferred_time %}
     <p><strong>Preferred Pickup:</strong> 
@@ -14,6 +20,7 @@
         {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
     </p>
     {% endif %}
+    <p style="color: #888; font-size: 0.85rem;">Exact address will unlock after booking confirmation.</p>
     
     {% if job.photos %}
     <h4>Photos</h4>
