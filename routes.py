@@ -211,6 +211,27 @@ def customer_job_detail(job_id):
     
     return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link)
 
+@app.route("/customer/upload_photos/<int:job_id>", methods=["POST"])
+@require_role('customer')
+def customer_upload_photos(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status not in ['open', 'bidding', 'accepted', 'deposit_paid']:
+        return "Cannot upload photos at this stage", 400
+
+    photos = request.files.getlist("photos")
+    for photo in photos:
+        if photo and photo.filename:
+            ext = os.path.splitext(photo.filename)[1]
+            filename = f"{uuid.uuid4().hex}{ext}"
+            photo.save(os.path.join(UPLOAD_FOLDER, filename))
+            photo_record = JobPhoto(job_id=job.id, filename=filename)
+            db.session.add(photo_record)
+
+    db.session.commit()
+    return redirect(url_for('customer_job_detail', job_id=job.id))
+
 @app.route("/customer/accept_bid/<int:bid_id>", methods=["POST"])
 @require_role('customer')
 def customer_accept_bid(bid_id):

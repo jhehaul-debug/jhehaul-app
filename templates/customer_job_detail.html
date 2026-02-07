@@ -11,10 +11,23 @@
     <p><strong>Address:</strong> {{ job.pickup_address }}</p>
     
     {% if job.photos %}
+    <h4>Photos</h4>
     <div class="photo-grid">
         {% for photo in job.photos %}
         <img src="/uploads/{{ photo.filename }}" alt="Job photo">
         {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if job.status in ['open', 'bidding', 'accepted', 'deposit_paid'] %}
+    <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <h4>Add More Photos</h4>
+        <form method="POST" action="{{ url_for('customer_upload_photos', job_id=job.id) }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" name="photos" multiple accept="image/*">
+            </div>
+            <button type="submit" class="btn btn-primary">Upload Photos</button>
+        </form>
     </div>
     {% endif %}
 </div>
