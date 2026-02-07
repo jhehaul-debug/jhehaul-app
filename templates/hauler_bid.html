@@ -42,7 +42,7 @@
         </div>
         <div class="form-group">
             <label>Your Phone (optional)</label>
-            <input name="hauler_phone" value="{{ current_user.phone or '' }}">
+            <input name="hauler_phone" type="tel" value="{{ current_user.phone_formatted if current_user.phone else '' }}" placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
         </div>
         <div class="form-group">
             <label>Quote Amount ($)</label>
@@ -57,4 +57,13 @@
 </div>
 
 <p><a href="{{ url_for('hauler_jobs') }}">Back to Open Jobs</a></p>
+<script>
+function maskPhone(input) {
+    var x = input.value.replace(/\D/g, '').slice(0, 10);
+    if (x.length === 0) { input.value = ''; return; }
+    if (x.length <= 3) { input.value = '(' + x; }
+    else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
+    else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
+}
+</script>
 {% endblock %}

@@ -26,6 +26,15 @@ class User(UserMixin, db.Model):
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
 
+    @property
+    def phone_formatted(self):
+        if not self.phone:
+            return ''
+        digits = ''.join(c for c in self.phone if c.isdigit())
+        if len(digits) == 10:
+            return f'({digits[:3]}) {digits[3:6]}-{digits[6:]}'
+        return self.phone
+
 class OAuth(OAuthConsumerMixin, db.Model):
     user_id = db.Column(db.String, db.ForeignKey(User.id))
     browser_session_key = db.Column(db.String, nullable=False)
