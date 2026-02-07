@@ -65,8 +65,12 @@
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
                         {% if current_user.is_admin %}
                             <a href="{{ url_for('admin_dashboard') }}">Admin</a>
-                        {% endif %}
-                        {% if current_user.user_type == 'customer' %}
+                            <a href="{{ url_for('customer_new') }}">Post Job</a>
+                            <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
+                            <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
+                            <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
+                            <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
+                        {% elif current_user.user_type == 'customer' %}
                             <a href="{{ url_for('customer_new') }}">Post Job</a>
                             <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
                         {% elif current_user.user_type == 'hauler' %}
