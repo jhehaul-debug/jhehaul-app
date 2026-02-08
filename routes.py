@@ -1,10 +1,13 @@
 import os
 import uuid
+import stripe
 from datetime import datetime
 from functools import wraps
 from flask import session, redirect, url_for, request, send_from_directory, render_template, flash
 from werkzeug.utils import secure_filename
 from flask_login import current_user
+
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from replit_auth import require_login, make_replit_blueprint
@@ -273,14 +276,21 @@ def customer_job_detail(job_id):
     bids = Bid.query.filter_by(job_id=job_id).order_by(Bid.quote_amount.asc()).all()
     
     pay_link = None
+    checkout_over500_url = None
+    accepted_bid = None
     if job.status == "accepted" and not job.deposit_paid:
-        pay_link = choose_pay_link(job.accepted_quote)
-        if pay_link:
-            domain = os.environ.get("REPLIT_DEV_DOMAIN", "")
-            success_url = f"https://{domain}/payment_success/{job.id}"
-            pay_link = f"{pay_link}?success_url={success_url}"
+        accepted_bid = Bid.query.filter_by(job_id=job_id, status='accepted').first()
+        quote = float(job.accepted_quote or 0)
+        if quote > 500 and accepted_bid:
+            checkout_over500_url = url_for('checkout_over500', bid_id=accepted_bid.id)
+        else:
+            pay_link = choose_pay_link(job.accepted_quote)
+            if pay_link:
+                domain = os.environ.get("REPLIT_DEV_DOMAIN", "")
+                success_url = f"https://{domain}/payment_success/{job.id}"
+                pay_link = f"{pay_link}?success_url={success_url}"
     
-    return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link)
+    return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link, checkout_over500_url=checkout_over500_url)
 
 @app.route("/customer/upload_photos/<int:job_id>", methods=["POST"])
 @require_role('customer')
@@ -356,6 +366,99 @@ def payment_success(job_id):
     if job.customer_id != current_user.id:
         return "Access denied", 403
     return redirect(url_for('customer_job_detail', job_id=job_id))
+
+@app.route("/checkout/over500/<int:bid_id>")
+@require_role('customer')
+def checkout_over500(bid_id):
+    bid = Bid.query.get_or_404(bid_id)
+    job = Job.query.get_or_404(bid.job_id)
+
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'accepted' or job.deposit_paid:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+    quote_amount = float(bid.quote_amount or 0)
+    if quote_amount <= 500:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+    platform_fee = 49.99 + (quote_amount - 500) * 0.10
+    fee_cents = int(round(platform_fee * 100))
+
+    domain = os.environ.get("REPLIT_DEPLOYMENT_URL", os.environ.get("REPLIT_DEV_DOMAIN", ""))
+    if domain and not domain.startswith("http"):
+        domain = f"https://{domain}"
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': f'JHE Haul - Platform Fee (Job #{job.id})',
+                        'description': f'Deposit for hauling quote of ${quote_amount:.2f}',
+                    },
+                    'unit_amount': fee_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f"{domain}/checkout/over500/success?session_id={{CHECKOUT_SESSION_ID}}&job_id={job.id}",
+            cancel_url=f"{domain}/customer/job/{job.id}",
+            metadata={
+                'job_id': str(job.id),
+                'bid_id': str(bid.id),
+                'quote_amount': str(quote_amount),
+                'platform_fee': str(platform_fee),
+            },
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        import logging
+        logging.error(f"Stripe checkout error: {e}")
+        flash("Payment error. Please try again.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+@app.route("/checkout/over500/success")
+@require_role('customer')
+def checkout_over500_success():
+    session_id = request.args.get('session_id')
+    job_id = request.args.get('job_id', type=int)
+
+    if not session_id or not job_id:
+        return redirect(url_for('customer_jobs'))
+
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+
+    if job.deposit_paid:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+    try:
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        if checkout_session.payment_status == 'paid':
+            job.deposit_paid = True
+            job.status = 'deposit_paid'
+            db.session.commit()
+
+            if job.accepted_hauler_id:
+                hauler = User.query.get(job.accepted_hauler_id)
+                if hauler and hauler.email:
+                    notify_hauler_deposit_paid(hauler.email, job.id, job.pickup_address, job.pickup_zip)
+                    if hauler.notify_sms and hauler.phone:
+                        notify_hauler_deposit_paid_sms(hauler.phone, job.id)
+
+            return redirect(url_for('customer_job_detail', job_id=job.id))
+        else:
+            flash("Payment not completed. Please try again.", "error")
+            return redirect(url_for('customer_job_detail', job_id=job.id))
+    except Exception as e:
+        import logging
+        logging.error(f"Stripe session verify error: {e}")
+        flash("Could not verify payment. Please contact support.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
 
 @app.route("/hauler/jobs")
 @require_role('hauler')

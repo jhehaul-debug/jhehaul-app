@@ -32,11 +32,15 @@
     {% endif %}
 </div>
 
-{% if job.status == 'accepted' and not job.deposit_paid and pay_link %}
+{% if job.status == 'accepted' and not job.deposit_paid and (pay_link or checkout_over500_url) %}
 <div class="card" style="background: #fff3cd; border: 2px solid #ffc107;">
     <h3>Payment Required</h3>
     <p>You accepted a bid. Pay the deposit to unlock your address for the hauler.</p>
+    {% if checkout_over500_url %}
+    <a href="{{ checkout_over500_url }}" class="btn btn-success" style="margin-top: 15px;">Pay Deposit (Stripe)</a>
+    {% else %}
     <a href="{{ pay_link }}" target="_blank" class="btn btn-success" style="margin-top: 15px;">Pay Deposit (Stripe)</a>
+    {% endif %}
 </div>
 {% endif %}
 
