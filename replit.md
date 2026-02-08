@@ -47,10 +47,15 @@ Preferred communication style: Simple, everyday language.
 ### Payment Processing
 - **Stripe** payment links for deposit collection
 - Four-tier pricing based on quote amounts:
-  - Under $150
-  - $150-$299
-  - $300-$499
-  - $500 and over ($49.99 deposit)
+  - Under $150 (static payment link)
+  - $150-$299 (static payment link)
+  - $300-$499 (static payment link)
+  - $500 exactly (static payment link, $49.99 deposit)
+  - Over $500: Dynamic Stripe Checkout Session
+    - Fee formula: $49.99 + (quote - 500) × 0.10
+    - Route: `/checkout/over500/<bid_id>` creates session, redirects to Stripe
+    - Success: `/checkout/over500/success` auto-confirms payment (no manual button)
+    - Uses `STRIPE_SECRET_KEY` for API calls
 - Payment confirmation redirects back to app
 - Address unlocks for hauler only after deposit confirmed
 
@@ -65,7 +70,7 @@ Preferred communication style: Simple, everyday language.
 ### Third-Party Services
 | Service | Purpose | Configuration |
 |---------|---------|---------------|
-| Stripe | Payment processing | Environment variables: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_OVER_300` |
+| Stripe | Payment processing | Static links: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_OVER_300`, `PAY_LINK_OVER_500`; Dynamic checkout: `STRIPE_SECRET_KEY` |
 | Replit Auth | User authentication | Automatic via REPL_ID |
 | SendGrid | Email notifications | Via Replit Connectors |
 | Twilio | SMS notifications | Via Replit Connectors (optional) |
