@@ -1,0 +1,119 @@
+REPLIT AGENT TASK (DO NOT BREAK ANYTHING ELSE):
+
+I need you to fix/verify the Admin Dashboard counters so they correctly track:
+	•	Total Users
+	•	Customers count
+	•	Haulers count
+	•	Total Jobs (open/active)
+	•	Completed (and cancelled if present)
+	•	Total Bids
+	•	Total Revenue
+
+✅ Important rules:
+	1.	Do NOT change any payment links, invite links, job posting flow, bid flow, photo upload logic, or route paths unless required to count correctly.
+	2.	Do NOT rename existing routes.
+	3.	Only add what’s missing to make the counts accurate.
+	4.	Keep the current Admin layout (cards: Total Users, Total Jobs, Completed, Total Bids, Total Revenue, and the All Users list with Customers + Haulers sections).
+
+⸻
+
+1) Confirm current database tables + columns (DO NOT MIGRATE unless missing)
+
+Scan db() / schema setup and confirm we have these (or equivalent):
+
+Users storage
+
+A table that tracks accounts, example:
+	•	users
+	•	id
+	•	email
+	•	name
+	•	role (must be "customer" or "hauler" OR equivalent field like user_type)
+	•	created_at
+
+If role is currently stored differently (ex: separate tables), use that, but still calculate counts correctly.
+
+Jobs storage
+	•	jobs
+	•	id
+	•	status (at least: open, active, completed, optionally cancelled)
+	•	total_price or accepted_bid_amount or similar (if revenue exists)
+
+Bids storage
+	•	bids
+	•	id
+	•	job_id
+	•	hauler_id
+	•	amount
+	•	status (optional)
+
+Payments storage (if revenue is tracked)
+	•	payments or transactions
+	•	id
+	•	job_id
+	•	amount_total (or similar)
+	•	platform_fee
+	•	created_at
+If there is NO payments table, then Total Revenue should be calculated from accepted jobs/bids if those amounts exist.
+
+⸻
+
+2) Fix counts by using database queries (source of truth = DB)
+
+Inside the /admin route (or the function that renders admin dashboard):
+
+Add/ensure these queries exist right before HTML is built, using ONE db connection:
+	•	total_users = COUNT(*) from users
+	•	customer_count = COUNT(*) from users where role='customer'
+	•	hauler_count = COUNT(*) from users where role='hauler'
+	•	total_jobs = COUNT(*) from jobs
+	•	open_jobs = COUNT(*) from jobs where status='open'
+	•	active_jobs = COUNT(*) from jobs where status='active'
+	•	completed_jobs = COUNT(*) from jobs where status='completed'
+	•	cancelled_jobs = COUNT(*) from jobs where status='cancelled' (only if status exists)
+	•	total_bids = COUNT(*) from bids
+	•	total_revenue = SUM(platform_fee OR amount_total)
+Use best available:
+	1.	SUM(payments.amount_total) if exists
+	2.	else SUM(jobs.platform_fee) if stored
+	3.	else SUM(accepted_bid_amount) if that’s what you have
+If none exist, display $0.00 but do not crash.
+
+⸻
+
+3) Ensure counts update when users sign up (IMPORTANT)
+
+Verify the signup flow writes to the users table with:
+	•	correct role value (customer or hauler)
+	•	a created timestamp
+
+If role isn’t being saved, fix ONLY that assignment:
+	•	When invite link sets role, ensure it is stored in session and written into DB on account creation.
+
+⸻
+
+4) Admin “All Users” list must match the counts
+
+On the Admin page where it shows:
+	•	“Haulers (0)” list
+	•	“Customers (1)” list
+
+Ensure those lists are generated from:
+	•	SELECT * FROM users WHERE role='hauler' ORDER BY created_at DESC
+	•	SELECT * FROM users WHERE role='customer' ORDER BY created_at DESC
+
+So the list count always matches the card count.
+
+⸻
+
+5) No breaking changes
+
+After implementing, run these tests:
+	1.	Create 1 new hauler account → Admin should show:
+	•	Customers: 1
+	•	Haulers: 1
+	•	Total Users: 2
+	2.	Create 1 new customer account → counts update again.
+	3.	Refresh /admin and ensure no errors, and layout stays exactly the same.
+
+Only commit changes related to tracking + counting.
