@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+  <h2>Upload Completion Photos</h2>
+  <p>Job #{{ job.id }}</p>
+
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="photos" multiple required>
+    <br><br>
+    <button class="btn btn-primary">Upload Photos</button>
+  </form>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,88 @@
+✅ REPLIT AGENT TASK: FIX USER COUNTS (DO NOT BREAK ANYTHING ELSE)
+
+Problem: Admin dashboard is not accurately tracking how many Customers and Haulers have created accounts. This must be correct so I can know when to expand zones.
+
+Rules (VERY IMPORTANT):
+	•	✅ Do NOT refactor the app
+	•	✅ Do NOT change routing, payments, bids, photo uploads, invite links, or Google Maps feature
+	•	✅ ONLY fix the counting logic + data persistence for users (customers/haulers)
+	•	✅ Keep the current UI layout exactly the same (Admin cards + “All Users” section)
+
+⸻
+
+1) Identify the source of truth for “users”
+
+Search main.py for:
+	•	the table name used for accounts (likely users)
+	•	the code that runs on signup / create account / register
+	•	any fields like: role, user_type, is_hauler, account_type, created_at
+
+The count MUST come from the database, not from session, not from cached lists.
+
+⸻
+
+2) Enforce a role field that is saved at signup (NO duplicates)
+
+At the moment an account is created, the app must save:
+	•	role = "customer" OR "hauler"
+	•	created_at timestamp (optional but recommended)
+
+✅ If the table already has a role column, use it.
+✅ If role is not being stored consistently, fix the insert/update at signup only.
+
+Do NOT create a second users table. Do NOT create another signup route.
+
+⸻
+
+3) Fix Admin dashboard counts (use SQL counts)
+
+On the /admin route, calculate counts like this (conceptually):
+	•	total_users = COUNT(*) from users
+	•	total_customers = COUNT(*) from users where role=‘customer’
+	•	total_haulers = COUNT(*) from users where role=‘hauler’
+
+Then display exactly like my screenshot:
+	•	“Total Users”
+	•	“X customers / Y haulers”
+
+✅ These numbers must match the “All Users” list section.
+
+⸻
+
+4) Fix “All Users” list to match the same role logic
+
+The “All Users” section must list:
+	•	Customers under Customers
+	•	Haulers under Haulers
+
+If a user is showing as customer by default when they’re actually hauler:
+	•	That means role isn’t stored correctly or role is being overwritten.
+	•	Fix that at signup or role assignment.
+
+⸻
+
+5) Add a safety check so role can’t be blank
+
+If role is missing or null in the DB:
+	•	Default should NOT silently label them customer.
+	•	Instead: set role based on the invite link flow / selection at registration time.
+	•	If absolutely unknown: show under a small “Unknown Role” section in admin (optional), but better is to fix the root at signup.
+
+⸻
+
+6) Testing checklist (must pass)
+	1.	Create a new Customer account → admin shows customers +1
+	2.	Create a new Hauler account → admin shows haulers +1
+	3.	Both accounts appear under correct list groupings
+	4.	Counts remain correct after refresh/restart (proves DB persistence)
+
+⸻
+
+Outcome Required
+
+After this fix, I should always see accurate counts for:
+	•	Total Users
+	•	Total Customers
+	•	Total Haulers
+
+WITHOUT breaking anything else.

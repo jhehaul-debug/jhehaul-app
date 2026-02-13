@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Complete Your Profile - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Welcome, Hauler! Let's finish setting up.</h2>
+    <p style="color: #666; margin-bottom: 20px;">We need a few details so we can match you with jobs in your area.</p>
+    <hr>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding: 12px 20px; margin-bottom: 15px; border-radius: 6px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <form method="POST" action="{{ url_for('hauler_setup_save') }}">
+        <div class="form-group">
+            <label>First Name</label>
+            <input name="first_name" required value="{{ current_user.first_name or '' }}" placeholder="Your first name">
+        </div>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input name="last_name" required value="{{ current_user.last_name or '' }}" placeholder="Your last name">
+        </div>
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input name="phone" type="tel" placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)" value="{{ current_user.phone_formatted if current_user.phone else '' }}">
+        </div>
+        <div class="form-group">
+            <label>Your Home ZIP Code</label>
+            <input name="home_zip" required placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
+            <small style="color: #666;">We use this to find jobs near you</small>
+        </div>
+        <div class="form-group">
+            <label>How far are you willing to drive? (miles)</label>
+            <input name="max_travel_miles" type="number" min="1" max="500" required placeholder="e.g. 25">
+            <small style="color: #666;">You'll only see jobs within this distance from your ZIP code</small>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_new_jobs" value="1" checked>
+                Email me when new jobs are posted in my area
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_sms" value="1">
+                Also send me text message notifications (requires phone number)
+            </label>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 15px; font-size: 1.1rem;">Start Finding Jobs</button>
+    </form>
+</div>
+<script>
+function maskPhone(input) {
+    var x = input.value.replace(/\D/g, '').slice(0, 10);
+    if (x.length === 0) { input.value = ''; return; }
+    if (x.length <= 3) { input.value = '(' + x; }
+    else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
+    else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
+}
+</script>
+{% endblock %}

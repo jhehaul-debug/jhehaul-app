@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Jobs - JHE Haul{% endblock %}
+{% block content %}
+<h2 style="margin-bottom: 20px;">My Jobs</h2>
+
+{% if not jobs %}
+<div class="card">
+    <p>You haven't posted any jobs yet. Use "Post Job" in the menu to get started!</p>
+</div>
+{% else %}
+{% for job in jobs %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <h3>Job #{{ job.id }}</h3>
+            <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+        </div>
+        <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary">View Details</a>
+    </div>
+    <hr>
+    <p><strong>Description:</strong> {{ job.job_description[:150] }}{% if job.job_description|length > 150 %}...{% endif %}</p>
+    {% if job.accepted_hauler %}
+    <p><strong>Accepted Hauler:</strong> {{ job.accepted_hauler }}</p>
+    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    {% endif %}
+    {% if job.deposit_paid %}
+    <p style="color: green;"><strong>Deposit Paid</strong></p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

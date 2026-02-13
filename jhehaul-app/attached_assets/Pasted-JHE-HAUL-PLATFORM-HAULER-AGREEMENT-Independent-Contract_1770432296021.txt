@@ -1,0 +1,214 @@
+JHE HAUL PLATFORM HAULER AGREEMENT
+
+Independent Contractor, Marketplace Participation & Non-Circumvention Agreement
+
+Company: JHE HAUL, operated by J Hunter Enterprises Inc. (“Company”)
+Platform: JHE HAUL mobile and web application (“Platform”)
+User: Independent junk removal service provider (“Hauler”)
+Effective Date: Upon account registration
+
+⸻
+
+1. LEGAL ACCEPTANCE
+
+By creating an account, logging in, bidding on a job, or accepting a job through the Platform, the Hauler agrees to this Agreement.
+
+These actions constitute a legally binding electronic signature under the Electronic Signatures in Global and National Commerce Act (15 U.S.C. §7001).
+
+If the Hauler does not agree, they must not use the Platform.
+
+⸻
+
+2. INDEPENDENT CONTRACTOR STATUS
+
+The Hauler is an independent contractor and not an employee, agent, partner, or representative of the Company.
+
+The Company:
+• Does not hire the Hauler
+• Does not supervise work
+• Does not control job performance
+• Does not provide equipment or labor
+• Does not guarantee jobs
+
+The Hauler alone is responsible for:
+• Licenses
+• Insurance
+• Taxes
+• Workers
+• Vehicles
+• Disposal compliance
+• All applicable laws
+
+⸻
+
+3. PLATFORM ROLE
+
+JHE HAUL is a technology marketplace only that connects customers with independent haulers.
+
+The Company is NOT:
+• a junk removal company
+• a moving company
+• a contractor
+• a subcontractor
+• a carrier
+
+The service contract exists solely between the Customer and the Hauler.
+
+⸻
+
+4. IN-APP COMMUNICATION REQUIREMENT
+
+All communication must occur inside the Platform.
+
+The Hauler shall not:
+• Exchange phone numbers
+• Exchange emails
+• Leave business cards
+• Provide outside contact information
+• Direct the customer off the app
+
+⸻
+
+5. NON-CIRCUMVENTION
+
+The Hauler may not bypass the Platform.
+
+The Hauler shall not perform services outside the Platform for any customer introduced through JHE HAUL.
+
+This applies:
+• During use of the Platform
+• For two (2) years after leaving the Platform
+
+Includes:
+• Repeat customers
+• Property managers
+• Referrals
+• Associated persons
+
+Cancelling a job in the app and completing it privately is circumvention.
+
+⸻
+
+6. LIQUIDATED DAMAGES
+
+Violation of Section 5 results in:
+
+$2,500 per violation OR three (3) times the job value, whichever is greater.
+
+The Company may also:
+• Remove the Hauler
+• Restrict access
+• Seek legal enforcement
+
+⸻
+
+7. BOOKING FEE, BID ACCEPTANCE & CUSTOMER PAYMENT
+
+Hauler Bid
+
+The Hauler submits a price (“Bid”) for a job through the Platform. The Bid represents the total service price the Hauler is willing to perform the job for.
+
+The Company does not set or control the Hauler’s price.
+
+⸻
+
+Customer Booking Fee (Platform Fee)
+
+When a customer accepts a Hauler’s Bid, the customer must pay a required booking/platform fee to the Company in order to reserve the job.
+
+The booking fee:
+
+• Is paid directly to JHE HAUL
+• Is not payment for junk removal services
+• Is a technology access, scheduling, and lead-generation fee
+• Is deducted from the Hauler’s total Bid price
+
+The Hauler has no control over the platform fee amount.
+
+The booking fee is generally non-refundable except if:
+• The Hauler cancels the job, OR
+• The Company cannot provide a hauler for the scheduled service
+
+⸻
+
+Remaining Balance Paid to Hauler
+
+After the job is completed, the customer pays the remaining balance of the Hauler’s Bid directly to the Hauler.
+
+The Company:
+• Does not collect the hauling payment
+• Does not hold hauling funds
+• Does not distribute hauling funds
+• Is not an escrow agent
+
+The Hauler is solely responsible for:
+• Collecting the remaining payment
+• Refunds
+• Disputes
+• Receipts
+• Taxes
+
+⸻
+
+No Payment Obligation Owed by Hauler to Company
+
+The Hauler does not pay the platform fee and never owes payment to the Company for a completed job.
+
+The platform fee is paid solely by the customer as a booking and lead reservation fee associated with the Hauler’s accepted Bid.
+
+⸻
+
+8. ACCOUNT TERMINATION
+
+The Company may suspend or terminate the Hauler for:
+• Complaints
+• Fraud
+• Safety issues
+• Harassment
+• Off-platform contact
+• Circumvention
+
+⸻
+
+9. LIABILITY DISCLAIMER
+
+JHE HAUL is not responsible for:
+• Property damage
+• Injury
+• Disposal legality
+• Hauler conduct
+• Worker actions
+• Job performance
+
+All risks belong solely to the Hauler performing services.
+
+⸻
+
+10. INDEMNIFICATION
+
+The Hauler agrees to indemnify and hold harmless JHE HAUL and J Hunter Enterprises Inc. from any claims, damages, lawsuits, or liabilities arising from the Hauler’s services.
+
+⸻
+
+11. GOVERNING LAW
+
+This Agreement is governed by the laws of the State of Minnesota.
+All disputes must be brought in Minnesota courts.
+
+⸻
+
+12. DIGITAL SIGNATURE
+
+By clicking “Create Account” or “I Agree”, the Hauler provides a legally enforceable electronic signature equivalent to a handwritten signature.
+
+⸻
+
+13. MODIFICATIONS
+
+The Company may update this Agreement at any time. Continued use of the Platform constitutes acceptance.
+
+⸻
+
+REQUIRED SIGNUP CHECKBOX
+
+Your registration page must include:

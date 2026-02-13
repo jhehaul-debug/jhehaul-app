@@ -152,13 +152,7 @@ function shareInvite(type) {
     </div>
     <hr>
     <p><strong>Description:</strong> {{ job.job_description[:200] }}</p>
-    <p><strong>Address:</strong>
-      {% if job.deposit_paid %}
-        {{ job.pickup_address }}
-      {% else %}
-        🔒 Hidden until deposit is paid
-      {% endif %}
-    </p>
+    <p><strong>Address:</strong> {{ job.pickup_address }}</p>
     <p><strong>ZIP:</strong> {{ job.pickup_zip or 'N/A' }}</p>
     {% if job.accepted_hauler %}
     <p><strong>Hauler:</strong> {{ job.accepted_hauler }}</p>

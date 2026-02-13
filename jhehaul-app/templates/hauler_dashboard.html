@@ -38,31 +38,16 @@
            style="display: inline-block;">
             Get Directions
         </a>
-        
+        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}" class="btn btn-secondary" style="display: inline-block; margin-left: 10px;">
+            Upload Photos
+        </a>
     </div>
     {% elif job.status == 'completed' %}
     <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
         <strong>Customer:</strong> {{ job.customer_name }}<br>
-        <strong>Pickup Address:</strong>
-        {% if job.deposit_paid %}
-          {{ job.pickup_address }}, {{ job.pickup_zip }}<br>
-        {% else %}
-          🔒 Hidden until customer deposit is paid<br>
-        {% endif %}
+        <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}<br>
         <strong>Job Completed!</strong>
         {% if job.completed_at %}<br>Completed on {{ job.completed_at.strftime('%B %d, %Y') }}{% endif %}
-        <br><br>
-        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
-           class="btn btn-secondary"
-           style="display:inline-block;">
-          Upload Photos
-        </a>
-    <div style="margin-top:12px;">
-        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
-           class="btn btn-secondary">
-           Upload Completion Photos
-        </a>
-    </div>
     </div>
     {% elif job.status == 'accepted' %}
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">

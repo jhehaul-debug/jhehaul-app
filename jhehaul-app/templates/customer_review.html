@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review Hauler - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Review Hauler for Job #{{ job.id }}</h2>
+    <hr>
+    <p><strong>Hauler:</strong> {{ job.accepted_hauler }}</p>
+    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Rating</label>
+            <div style="font-size: 24px;">
+                <select name="rating" required style="font-size: 18px; padding: 10px;">
+                    <option value="5">5 Stars - Excellent</option>
+                    <option value="4">4 Stars - Very Good</option>
+                    <option value="3">3 Stars - Good</option>
+                    <option value="2">2 Stars - Fair</option>
+                    <option value="1">1 Star - Poor</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Comments (optional)</label>
+            <textarea name="comment" placeholder="Share your experience with this hauler..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Submit Review</button>
+        <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-secondary" style="margin-left: 10px;">Cancel</a>
+    </form>
+</div>
+{% endblock %}

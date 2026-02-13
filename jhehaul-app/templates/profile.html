@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}My Profile - JHE Haul{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>My Profile</h2>
+    <hr>
+    <form method="POST" action="{{ url_for('profile_update') }}">
+        <div class="form-group">
+            <label>First Name</label>
+            <input name="first_name" value="{{ current_user.first_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input name="last_name" value="{{ current_user.last_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input value="{{ current_user.email or '' }}" disabled>
+            <small style="color: #666;">Email cannot be changed</small>
+        </div>
+        <div class="form-group">
+            <label>Phone</label>
+            <input name="phone" type="tel" value="{{ current_user.phone_formatted if current_user.phone else '' }}" placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
+        </div>
+        <div class="form-group">
+            <label>Account Type</label>
+            <input value="{{ current_user.user_type.title() if current_user.user_type else 'Not set' }}" disabled>
+        </div>
+        {% if current_user.user_type == 'customer' %}
+        <hr>
+        <h3>Notification Preferences</h3>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_sms" value="1" {% if current_user.notify_sms %}checked{% endif %}>
+                Send me text message notifications (requires phone number)
+            </label>
+        </div>
+        {% endif %}
+        {% if current_user.user_type == 'hauler' %}
+        <hr>
+        <h3>Travel Preferences</h3>
+        <div class="form-group">
+            <label>Your Home ZIP Code</label>
+            <input name="home_zip" value="{{ current_user.home_zip or '' }}" placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
+        </div>
+        <div class="form-group">
+            <label>Max Travel Distance (miles)</label>
+            <input name="max_travel_miles" type="number" min="1" max="500" value="{{ current_user.max_travel_miles or '' }}" placeholder="e.g. 25">
+            <small style="color: #666;">Jobs beyond this distance won't be shown to you</small>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_new_jobs" value="1" {% if current_user.notify_new_jobs != False %}checked{% endif %}>
+                Email me when new jobs are posted in my area
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="notify_sms" value="1" {% if current_user.notify_sms %}checked{% endif %}>
+                Also send me text message notifications (requires phone number)
+            </label>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-success">Save Changes</button>
+    </form>
+    
+    <hr>
+    <h3>Invite Others to JHE Haul</h3>
+    <p style="color: #666; margin-bottom: 15px;">Tap a button below to share an invite link via text, email, or any app.</p>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button onclick="shareInvite('customer')" class="btn btn-primary" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
+            Share - Invite a Customer
+        </button>
+        <button onclick="shareInvite('hauler')" class="btn btn-success" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
+            Share - Invite a Hauler
+        </button>
+    </div>
+    <div style="margin-top: 15px;">
+        <button onclick="shareInvite('general')" class="btn btn-secondary" style="padding: 12px 30px; font-size: 1rem; width: 100%;">
+            Share - General Invite (they pick their role)
+        </button>
+    </div>
+    <script>
+    function shareInvite(type) {
+        var baseUrl = 'https://jhehaul.com/';
+        var url, title, text;
+        if (type === 'customer') {
+            url = baseUrl + 'invite/customer';
+            title = 'Join JHE Haul';
+            text = 'Sign up on JHE Haul to post junk hauling jobs and get bids from local haulers!';
+        } else if (type === 'hauler') {
+            url = baseUrl + 'invite/hauler';
+            title = 'Join JHE Haul';
+            text = 'Sign up on JHE Haul as a hauler to find junk hauling jobs in your area!';
+        } else {
+            url = baseUrl + 'invite';
+            title = 'Join JHE Haul';
+            text = 'Check out JHE Haul - the junk hauling marketplace!';
+        }
+        if (navigator.share) {
+            navigator.share({ title: title, text: text, url: url });
+        } else {
+            window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
+        }
+    }
+    </script>
+    
+    <script>
+    function maskPhone(input) {
+        var x = input.value.replace(/\D/g, '').slice(0, 10);
+        if (x.length === 0) { input.value = ''; return; }
+        if (x.length <= 3) { input.value = '(' + x; }
+        else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
+        else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
+    }
+    </script>
+    
+    <hr>
+    <h3>Delete Account</h3>
+    <p style="color: #666;">This will permanently delete your account and all associated data. This action cannot be undone.</p>
+    <form method="POST" action="{{ url_for('delete_account') }}" onsubmit="return confirm('Are you sure you want to delete your account? This cannot be undone.');">
+        <button type="submit" class="btn" style="background-color: #dc3545; color: white;">Delete My Account</button>
+    </form>
+</div>
+{% endblock %}

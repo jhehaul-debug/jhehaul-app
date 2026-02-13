@@ -8,15 +8,7 @@
     </div>
     <hr>
     <p><strong>Description:</strong><br>{{ job.job_description }}</p>
-    {% if job.deposit_paid %}
-
-    {% else %}
-
-    <div style="padding:12px; background:#fff3cd; border-radius:8px; margin:10px 0;">
-    🔒 Address hidden until customer deposit is paid
-    </div>
-
-    {% endif %}
+    <p><strong>Address:</strong> {{ job.pickup_address }}</p>
     
     {% if job.photos %}
     <h4>Photos</h4>

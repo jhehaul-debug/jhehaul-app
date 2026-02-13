@@ -1,0 +1,161 @@
+True Miles Radius — Feature Spec (Add-ons to implement)
+
+Goal
+
+Match customers to haulers by real driving distance (miles radius), starting in Twin Cities, Minnesota, but built so you can add new zones (cities/states) as you grow.
+
+⸻
+
+1) Data you must collect
+
+Customer (each job)
+
+Add a required field to every job:
+	•	pickup_zip (5-digit ZIP code)
+
+Optional fields (nice to have):
+	•	pickup_address (string)
+	•	city/state (optional)
+
+Reason: ZIP lets the system locate a job in a consistent way without forcing full addresses.
+
+⸻
+
+Hauler (each account)
+
+Add two required fields to every hauler profile:
+	•	home_zip (5-digit ZIP code)
+	•	max_miles (number) = the farthest they’re willing to drive (radius)
+
+Optional fields:
+	•	work_zones / preferred counties (optional)
+	•	min_job_price (optional)
+
+⸻
+
+2) ZIP → Location lookup (required for miles)
+
+True miles requires converting ZIP to a latitude/longitude.
+
+Add a ZIP lookup source (choose one approach):
+
+Option A (recommended, fast)
+
+Create a database table like:
+	•	zip_codes: zip, city, state, lat, lon
+
+Load only Minnesota ZIPs at first to keep it lightweight.
+
+Option B (API lookup)
+
+Use a ZIP geocoding API to get lat/lon per ZIP (caching results into your db so you don’t keep calling the API).
+
+Important: Always cache results in your DB.
+
+⸻
+
+3) Distance Calculation (True Miles)
+
+Implement a miles calculation function:
+	•	Use the Haversine formula to compute straight-line miles between two ZIP lat/lon points.
+	•	If you want “true driving miles,” later you can replace it with Google Maps Distance Matrix / Mapbox Directions, but Haversine is the standard MVP and works well for radius targeting.
+
+So the system does:
+	1.	Get hauler lat/lon from hauler.home_zip
+	2.	Get job lat/lon from job.pickup_zip
+	3.	Compute distance in miles
+	4.	Show only jobs where:
+distance <= hauler.max_miles
+
+⸻
+
+4) Filtering behavior in /hauler/jobs (View Open Jobs)
+
+When a hauler views open jobs:
+
+The page should:
+	•	Display only open jobs that are within the hauler’s radius
+	•	Show the distance next to each job (example: “12.4 miles away”)
+	•	Still allow viewing all jobs if admin mode is enabled (optional)
+
+Filtering logic:
+	•	pull all jobs with status = “open”
+	•	join/lookup each job’s pickup_zip lat/lon
+	•	compute miles to hauler home_zip lat/lon
+	•	keep only those within radius
+
+⸻
+
+5) Expandable “Zones” (Twin Cities first, then nationwide)
+
+Growth-ready setup:
+
+Add a “zones” concept:
+	•	A Zone represents a city/market area you operate in.
+	•	A zone can be defined by:
+	•	state + list of ZIPs, OR
+	•	lat/lon centerpoint + radius, OR
+	•	polygon boundary (advanced later)
+
+How it works:
+	•	Jobs belong to a zone based on pickup_zip
+	•	Haulers can be enabled/active in one or multiple zones
+	•	Your system can restrict matching to:
+	•	only active zones
+	•	only haulers active in that zone
+
+Start simple:
+	•	Add “Twin Cities” zone = MN ZIPs you support
+	•	Later add more zones like:
+	•	“Chicago”
+	•	“Milwaukee”
+	•	“Dallas”
+etc.
+
+⸻
+
+6) Hauler matching / Notifications (optional but ideal)
+
+Once filtering works:
+	•	When a job is posted:
+	•	find haulers within radius
+	•	optionally notify them (email/text/push later)
+	•	or just let them see it appear in their filtered list
+
+⸻
+
+7) Photos visibility (for haulers)
+
+If customers upload photos:
+	•	Each uploaded image file should be saved with:
+	•	job_id reference
+	•	filename/path
+	•	Hauler pages that display jobs should:
+	•	query photos for that job_id
+	•	render them using the existing upload-serving route
+
+Critical rule: Only one upload-serving route should exist (no duplicates), otherwise Flask errors occur.
+
+⸻
+
+8) Minimum database requirements (what Replit should add)
+
+Replit agent should ensure these exist:
+
+jobs table needs:
+	•	pickup_zip TEXT NOT NULL
+	•	(pickup_address, description, status already exist)
+
+haulers table needs:
+	•	home_zip TEXT NOT NULL
+	•	max_miles REAL NOT NULL
+
+job_photos table needs:
+	•	job_id INTEGER
+	•	filename TEXT
+
+zip_codes table needs:
+	•	zip TEXT PRIMARY KEY
+	•	lat REAL
+	•	lon REAL
+	•	city

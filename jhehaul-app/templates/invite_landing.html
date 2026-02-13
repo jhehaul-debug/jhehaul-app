@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}
+{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul{% elif role == 'hauler' %}Become a Hauler - JHE Haul{% else %}Join JHE Haul{% endif %}
+{% endblock %}
+{% block og_meta %}
+<meta property="og:title" content="{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul{% elif role == 'hauler' %}Become a Hauler - JHE Haul{% else %}JHE Haul - Local Junk Removal & Hauling Network{% endif %}">
+<meta property="og:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul.{% else %}The easy way to post junk hauling jobs or find hauling work in your area.{% endif %}">
+<meta property="og:image" content="https://jhehaul.com/static/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://jhehaul.com{% if role %}/invite/{{ role }}{% else %}/invite{% endif %}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JHE Haul">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul{% elif role == 'hauler' %}Become a Hauler - JHE Haul{% else %}JHE Haul - Local Junk Removal & Hauling Network{% endif %}">
+<meta name="twitter:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul.{% else %}The easy way to post junk hauling jobs or find hauling work in your area.{% endif %}">
+<meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
+{% endblock %}
+{% block content %}
+<div class="card" style="text-align: center; padding: 60px 40px;">
+    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">JHE Haul</h1>
+    {% if role == 'customer' %}
+    <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to post a junk hauling job!</p>
+    <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">Create your free account, post photos of what needs hauling, and get bids from local haulers.</p>
+    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
+        Get Started
+    </a>
+    {% elif role == 'hauler' %}
+    <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to join as a hauler!</p>
+    <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">Create your free account, browse jobs in your area, submit bids, and start earning.</p>
+    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-success" style="font-size: 1.2rem; padding: 18px 50px;">
+        Get Started
+    </a>
+    {% else %}
+    <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to join JHE Haul!</p>
+    <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">The easy way to post junk hauling jobs or find hauling work in your area.</p>
+    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
+        Get Started
+    </a>
+    {% endif %}
+    <p style="margin-top: 30px; color: #888; font-size: 0.9rem;">
+        Already have an account? Tap the button above to log in.<br>
+        Forgot password? Use the reset option on the login screen.
+    </p>
+</div>
+{% endblock %}
