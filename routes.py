@@ -949,42 +949,4 @@ def admin_delete_user(user_id):
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
 
-    @app.route("/hauler/job/<int:job_id>/upload", methods=["GET", "POST"])
-    @require_login
-    def hauler_upload_photos(job_id):
-        if current_user.user_type != "hauler":
-            return "Unauthorized", 403
-
-        job = Job.query.get_or_404(job_id)
-
-        # make sure this hauler actually owns the accepted bid
-        bid = Bid.query.filter_by(job_id=job.id, hauler_id=current_user.id, status="accepted").first()
-        if not bid:
-            return "You are not assigned to this job.", 403
-
-        if request.method == "POST":
-            before_files = request.files.getlist("before_photos")
-            after_files = request.files.getlist("after_photos")
-
-            for file in before_files:
-                if file and file.filename:
-                    filename = secure_filename(str(uuid.uuid4()) + "_" + file.filename)
-                    file.save(os.path.join(UPLOAD_FOLDER, filename))
-                    photo = CompletionPhoto(job_id=job.id, filename=filename, photo_type="before")
-                    db.session.add(photo)
-
-            for file in after_files:
-                if file and file.filename:
-                    filename = secure_filename(str(uuid.uuid4()) + "_" + file.filename)
-                    file.save(os.path.join(UPLOAD_FOLDER, filename))
-                    photo = CompletionPhoto(job_id=job.id, filename=filename, photo_type="after")
-                    db.session.add(photo)
-
-            job.status = "completed"
-            job.completed_at = datetime.utcnow()
-
-            db.session.commit()
-            flash("Job marked complete and photos uploaded!", "success")
-            return redirect(url_for("hauler_dashboard"))
-
-        return render_template("hauler_upload_photos.html", job=job)
+    

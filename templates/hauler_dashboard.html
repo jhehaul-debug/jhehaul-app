@@ -57,12 +57,7 @@
            style="display:inline-block;">
           Upload Photos
         </a>
-    <div style="margin-top:12px;">
-        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
-           class="btn btn-secondary">
-           Upload Completion Photos
-        </a>
-    </div>
+    
     </div>
     {% elif job.status == 'accepted' %}
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
