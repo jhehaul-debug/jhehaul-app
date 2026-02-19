@@ -13,4 +13,4 @@ if __name__ == "__main__":
             logging.info(f"Loaded {added} ZIP codes")
         else:
             logging.info(f"ZIP codes already loaded: {count}")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
