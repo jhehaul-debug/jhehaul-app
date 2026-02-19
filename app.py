@@ -11,6 +11,9 @@ class Base(DeclarativeBase):
     pass
 
 app = Flask(__name__)
+@app.route("/")
+def index():
+    return "JHE HAUL IS LIVE"
 app.secret_key = os.environ.get("SESSION_SECRET")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
@@ -75,6 +78,6 @@ with app.app_context():
         logging.info(f"Loaded {added} ZIP codes")
     else:
         logging.info(f"ZIP codes already loaded: {count}")
-@app.route("/")
-def home():
-    return "JHE Haul server is running"
+    @app.route("/")
+    def home():
+        return "JHE HAUL SERVER RUNNING"
