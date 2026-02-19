@@ -75,3 +75,6 @@ with app.app_context():
         logging.info(f"Loaded {added} ZIP codes")
     else:
         logging.info(f"ZIP codes already loaded: {count}")
+@app.route("/")
+def home():
+    return "JHE Haul server is running"
