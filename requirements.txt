@@ -13,3 +13,4 @@ Flask-Login
 Flask-Dance
 oauthlib
 PyJWT
+psycopg2-binary
