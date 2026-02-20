@@ -81,3 +81,6 @@ with app.app_context():
     @app.route("/")
     def home():
         return "JHE HAUL SERVER RUNNING"
+        @app.route("/health")
+        def health():
+            return "ok", 200
