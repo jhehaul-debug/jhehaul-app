@@ -62,15 +62,18 @@ if admin_user and not admin_user.is_admin:
             db.session.commit()
             logging.info("Admin flag restored for admin user")
 
-from models import ZipCode
-from load_zips import load_minnesota_zips
-count = ZipCode.query.count()
-if count == 0:
-            logging.info("Loading ZIP codes into database...")
-            added = load_minnesota_zips(db, ZipCode)
-            logging.info(f"Loaded {added} ZIP codes")
-else:
-            logging.info(f"ZIP codes already loaded: {count}")
+    @app.before_first_request
+    def startup():
+        from load_zips import load_minnesota_zips
+        with app.app_context():
+            db.create_all()
+            try:
+                count = ZipCode.query.count()
+                if count == 0:
+                    print("Loading ZIP codes...")
+                    load_minnesota_zips(db, ZipCode)
+            except Exception as e:
+                print("Database startup skipped:", e)
     from flask import render_template
 
 @app.route("/")
@@ -79,3 +82,5 @@ def home():
 @app.route("/health")
 def health():
                 return "ok", 200
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=8080)
