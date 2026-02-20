@@ -62,8 +62,8 @@ if admin_user and not admin_user.is_admin:
             db.session.commit()
             logging.info("Admin flag restored for admin user")
 
-    @app.before_first_request
-    def startup():
+@app.before_first_request
+def startup():
         from load_zips import load_minnesota_zips
         with app.app_context():
             db.create_all()
@@ -82,5 +82,5 @@ def home():
 @app.route("/health")
 def health():
                 return "ok", 200
-    if __name__ == "__main__":
+if __name__ == "__main__":
         app.run(host="0.0.0.0", port=8080)
