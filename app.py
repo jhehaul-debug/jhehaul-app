@@ -16,6 +16,7 @@ app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
 # Database configuration (DigitalOcean fix)
 # --- DATABASE (ONLY ONE CONFIGURATION) ---
 
+# --- DATABASE (ONLY ONE CONFIGURATION) ---
 database_url = os.environ.get("DATABASE_URL")
 
 if database_url:
@@ -50,9 +51,12 @@ def choose_pay_link(accepted_quote):
             return PAY_LINK_300_500
         else:
             return PAY_LINK_OVER_500
-with app.app_context():
-    import models
-    db.create_all()
+    try:
+        with app.app_context():
+            import models
+            db.create_all()
+    except Exception as e:
+        logging.exception("Startup DB init failed: %s", e)
     logging.info("Database tables created")
 
 from models import User
@@ -62,23 +66,16 @@ if admin_user and not admin_user.is_admin:
             db.session.commit()
             logging.info("Admin flag restored for admin user")
 
-@app.before_first_request
-def startup():
-        from load_zips import load_minnesota_zips
-        with app.app_context():
-            db.create_all()
-            try:
-                count = ZipCode.query.count()
-                if count == 0:
-                    print("Loading ZIP codes...")
-                    load_minnesota_zips(db, ZipCode)
-            except Exception as e:
-                print("Database startup skipped:", e)
-    from flask import render_template
+with app.app_context():
+    try:
+        db.create_all()
+        print("Database initialized")
+    except Exception as e:
+        print("Database init skipped:", e)
 
-@app.route("/")
-def home():
-        return render_template("index.html")
+    @app.route("/")
+    def home():
+        return "JHE HAUL SERVER RUNNING"
 @app.route("/health")
 def health():
                 return "ok", 200
