@@ -1,28 +1,31 @@
+import os
+import logging
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
-import os
 from werkzeug.middleware.proxy_fix import ProxyFix
-import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
-        pass
+    pass
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# Secret key
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
 
-# Database configuration (DigitalOcean fix)
-# --- DATABASE (ONLY ONE CONFIGURATION) ---
-
-# --- DATABASE (ONLY ONE CONFIGURATION) ---
+# ---- DATABASE (ONLY ONE CONFIGURATION) ----
 database_url = os.environ.get("DATABASE_URL")
 
-if database_url:
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-else:
+# DigitalOcean/Heroku sometimes provide "postgres://"
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+# Fallback for local/dev (keeps app from crashing)
+if not database_url:
     database_url = "sqlite:///jhehaul.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
@@ -30,54 +33,26 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app, model_class=Base)
 
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-PAY_LINK_UNDER_150 = os.environ.get("PAY_LINK_UNDER_150", "")
-PAY_LINK_150_300 = os.environ.get("PAY_LINK_150_300", "")
-PAY_LINK_300_500 = os.environ.get("PAY_LINK_OVER_300", "")
-PAY_LINK_OVER_500 = os.environ.get("PAY_LINK_OVER_500", "")
-
-def choose_pay_link(accepted_quote):
-        try:
-            q = float(accepted_quote or 0)
-        except:
-            q = 0
-        if q < 150:
-            return PAY_LINK_UNDER_150
-        elif q < 300:
-            return PAY_LINK_150_300
-        elif q < 500:
-            return PAY_LINK_300_500
-        else:
-            return PAY_LINK_OVER_500
-    try:
-        with app.app_context():
-            import models
-            db.create_all()
-    except Exception as e:
-        logging.exception("Startup DB init failed: %s", e)
-    logging.info("Database tables created")
-
-from models import User
-admin_user = db.session.get(User, '53919193')
-if admin_user and not admin_user.is_admin:
-            admin_user.is_admin = True
-            db.session.commit()
-            logging.info("Admin flag restored for admin user")
-
-with app.app_context():
-    try:
+# ---- Startup DB init (safe) ----
+try:
+    with app.app_context():
+        import models  # make sure your models register
         db.create_all()
-        print("Database initialized")
-    except Exception as e:
-        print("Database init skipped:", e)
+        logging.info("Database initialized.")
+except Exception as e:
+    logging.exception("Startup DB init skipped: %s", e)
 
-    @app.route("/")
-    def home():
-        return "JHE HAUL SERVER RUNNING"
+# ---- Routes ----
+@app.route("/")
+def home():
+    return "JHE HAUL SERVER RUNNING", 200
+
 @app.route("/health")
 def health():
-                return "ok", 200
+    return "ok", 200
+
+
+# Local run only (DigitalOcean uses gunicorn)
 if __name__ == "__main__":
-        app.run(host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port)
