@@ -1,7 +1,7 @@
 import os
 import logging
 
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -43,9 +43,11 @@ except Exception as e:
     logging.exception("Startup DB init skipped: %s", e)
 
 # ---- Routes ----
+
+
 @app.route("/")
 def home():
-    return "JHE HAUL SERVER RUNNING", 200
+    return render_template("index.html")
 
 @app.route("/health")
 def health():
