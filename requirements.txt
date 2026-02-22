@@ -10,3 +10,4 @@ twilio
 Flask-Login
 oauthlib
 PyJWT
+Flask-Dance==7.0.0
