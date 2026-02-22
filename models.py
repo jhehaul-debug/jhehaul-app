@@ -22,7 +22,7 @@ class User(UserMixin, db.Model):
     agreed_to_hauler_terms_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    
+
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
 
@@ -65,7 +65,7 @@ class Job(db.Model):
     preferred_time = db.Column(db.String, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
-    
+
     photos = db.relationship('JobPhoto', backref='job', lazy=True, cascade='all, delete-orphan')
     bids = db.relationship('Bid', backref='job', lazy=True, cascade='all, delete-orphan')
     completion_photos = db.relationship('CompletionPhoto', backref='job', lazy=True, cascade='all, delete-orphan')
