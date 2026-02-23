@@ -26,7 +26,7 @@ if database_url and database_url.startswith("postgres://"):
 
 # Fallback for local/dev (keeps app from crashing)
 if not database_url:
-    database_url = "sqlite:///jhehaul.db"
+    database_url = "sqlite:////tmp/jhehaul.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
