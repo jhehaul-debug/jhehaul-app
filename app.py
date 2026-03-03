@@ -6,13 +6,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user
-class User(UserMixin, Base):
-    __tablename__ = "users"
+
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    @login_manager.user_loader
-    def load_user(user_id):
-        return db.session.get(User, int(user_id))
     password_hash = db.Column(db.String(255), nullable=False)
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +23,9 @@ login_manager.login_view = "login"
 login_manager.init_app(app)
 # Secret key
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
-
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 # ---- DATABASE (ONLY ONE CONFIGURATION) ----
 database_url = os.environ.get("DATABASE_URL")
 
@@ -42,7 +41,11 @@ app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app, model_class=Base)
+from models import User
 
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 # ---- Startup DB init (safe) ----
 try:
     with app.app_context():
@@ -57,23 +60,23 @@ except Exception as e:
 
 @app.route("/")
 def home():
-        return render_template("marketplace.html")
+    return render_template("marketplace.html")
 
 @app.route("/marketplace")
 def marketplace():
-        return render_template("marketplace.html")
+    return render_template("marketplace.html")
 
 @app.route("/customer")
 def customer_dashboard():
-        return render_template("customer_dashboard.html")
+    return render_template("customer_dashboard.html")
 
 @app.route("/hauler")
 def hauler_dashboard():
-        return render_template("hauler_dashboard.html")
+    return render_template("hauler_dashboard.html")
 
 @app.route("/health")
 def health():
-        return "ok", 200
+    return "ok", 200
 
 
 # Local run only (DigitalOcean uses gunicorn
