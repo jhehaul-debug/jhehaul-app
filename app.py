@@ -45,24 +45,25 @@ except Exception as e:
 # ---- Routes ----
 
 
-@app.route("/")
-def home():
-    return render_template("marketplace.html")
+    @app.route("/")
+    def home():
+        return render_template("marketplace.html")
 
-@app.route("/marketplace")
-def marketplace():
-    return render_template("marketplace.html")
+    @app.route("/marketplace")
+    def marketplace():
+        return render_template("marketplace.html")
 
-@app.route("/customer")
-def customer_dashboard():
-    return render_template("customer_dashboard.html")
+    @app.route("/customer")
+    def customer_dashboard():
+        return render_template("customer_dashboard.html")
 
-@app.route("/hauler")
-def hauler_dashboard():
-    return render_template("hauler_dashboard.html")
-@app.route("/health")
-def health():
-    return "ok", 200
+    @app.route("/hauler")
+    def hauler_dashboard():
+        return render_template("hauler_dashboard.html")
+
+    @app.route("/health")
+    def health():
+        return "ok", 200
 
 
 # Local run only (DigitalOcean uses gunicorn
