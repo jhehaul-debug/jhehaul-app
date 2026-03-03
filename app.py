@@ -5,7 +5,15 @@ from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
-
+from flask_login import LoginManager, UserMixin, login_required, current_user, login_user
+class User(UserMixin, Base):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(User, int(user_id))
+    password_hash = db.Column(db.String(255), nullable=False)
 logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
@@ -13,7 +21,9 @@ class Base(DeclarativeBase):
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
 # Secret key
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
 
