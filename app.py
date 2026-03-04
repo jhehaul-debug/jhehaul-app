@@ -68,11 +68,11 @@ def marketplace():
 
 @app.route("/customer")
 def customer_dashboard():
-    return render_template("customer_dashboard.html")
+        return render_template("customer_dashboard.html", current_user=current_user)
 
 @app.route("/hauler")
 def hauler_dashboard():
-    return render_template("hauler_dashboard.html")
+        return render_template("hauler_dashboard.html", current_user=current_user)
 
 @app.route("/health")
 def health():
