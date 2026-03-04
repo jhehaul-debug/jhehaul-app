@@ -8,9 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user
 
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+
 logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
@@ -23,9 +21,7 @@ login_manager.login_view = "login"
 login_manager.init_app(app)
 # Secret key
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
+
 # ---- DATABASE (ONLY ONE CONFIGURATION) ----
 database_url = os.environ.get("DATABASE_URL")
 
