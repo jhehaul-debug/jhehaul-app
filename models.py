@@ -34,7 +34,38 @@ class User(UserMixin, db.Model):
         if len(digits) == 10:
             return f'({digits[:3]}) {digits[3:6]}-{digits[6:]}'
         return self.phone
+class Job(db.Model):
+    __tablename__ = "jobs"
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    pickup_city = db.Column(db.String(120))
+    dropoff_city = db.Column(db.String(120))
+
+    status = db.Column(db.String(50), default="open")
+
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    customer_id = db.Column(db.String, db.ForeignKey("users.id"))
+    class Bid(db.Model):
+        __tablename__ = "bids"
+
+        id = db.Column(db.Integer, primary_key=True)
+
+        amount = db.Column(db.Float, nullable=False)
+
+        message = db.Column(db.Text)
+
+        created_at = db.Column(db.DateTime, default=datetime.now)
+
+        status = db.Column(db.String(50), default="pending")
+
+        job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
+
+        hauler_id = db.Column(db.String, db.ForeignKey("users.id"))
 class OAuth(OAuthConsumerMixin, db.Model):
     user_id = db.Column(db.String, db.ForeignKey(User.id))
     browser_session_key = db.Column(db.String, nullable=False)
