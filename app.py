@@ -54,9 +54,6 @@ except Exception as e:
 # ---- Routes ----
 
 
-@app.route("/")
-def home():
-    return render_template("marketplace.html")
 
 @app.route("/marketplace")
 def marketplace():
