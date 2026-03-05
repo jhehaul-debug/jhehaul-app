@@ -66,7 +66,9 @@ def customer_dashboard():
 @app.route("/hauler")
 def hauler_dashboard():
         return render_template("hauler_dashboard.html", current_user=current_user)
-
+@app.route("/hauler/jobs")
+def hauler_jobs():
+    return render_template("hauler_jobs.html", current_user=current_user)
 @app.route("/")
 def home():
         return render_template("marketplace.html")
