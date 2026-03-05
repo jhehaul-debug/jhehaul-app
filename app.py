@@ -69,7 +69,9 @@ def customer_dashboard():
 @app.route("/hauler")
 def hauler_dashboard():
         return render_template("hauler_dashboard.html", current_user=current_user)
-
+@app.route("/")
+def home():
+    return render_template("marketplace.html")
 @app.route("/health")
 def health():
     return "ok", 200
