@@ -45,7 +45,7 @@ def load_user(user_id):
 # ---- Startup DB init (safe) ----
 try:
     with app.app_context():
-        import models  # make sure your models register
+        import models  # make sure your models registe
         db.create_all()
         logging.info("Database initialized.")
 except Exception as e:
