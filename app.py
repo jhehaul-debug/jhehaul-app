@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer, String, Text
-from models import Job
+
 from werkzeug.security import generate_password_hash, check_password_hash 
 logging.basicConfig(level=logging.INFO)
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, logout_user
@@ -108,11 +108,17 @@ db.session.add(new_job)
 db.session.commit()
 
 return redirect(url_for("customer_jobs"))
-@app.route("/customer/jobs")
-def customer_jobs():
-        
+    @app.route("/customer/jobs")
+    def customer_jobs():
+        from models import Job
+
         jobs = db.session.query(Job).order_by(Job.id.desc()).all()
-        return render_template("customer_jobs.html", current_user=current_user, jobs=jobs)
+
+        return render_template(
+            "customer_jobs.html",
+            current_user=current_user,
+            jobs=jobs
+        )
 
 @app.route("/hauler/earnings")
 def hauler_earnings():
