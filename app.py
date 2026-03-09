@@ -6,14 +6,14 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, logout_user
-login_manager.login_view = "login"
+from sqlalchemy import Column, Integer, String, Text
+app = Flask(__name__)
 
 
 logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
     pass
-from sqlalchemy import Column, Integer, String, Text
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -30,8 +30,8 @@ class Job(Base):
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 login_manager = LoginManager()
-login_manager.login_view = "login"
 login_manager.init_app(app)
+login_manager.login_view = "login"
 # Secret key
 app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
 
