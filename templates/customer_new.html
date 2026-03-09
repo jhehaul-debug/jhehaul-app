@@ -53,7 +53,9 @@
         </div>
         <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
             <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                <input type="checkbox" name="agree_terms" value="1" id="customerTermsCheckbox" style="margin-top: 4px; width: 20px; height: 20px; flex-shrink: 0;">
+                <input type="checkbox"
+                name="agree_terms" value="1" required
+                id="customerTermsCheckbox" style="margin-top: 4px; width: 20px; height: 20px; flex-shrink: 0;">
                 <span style="font-size: 0.9rem;">I certify I own or have legal authority over the property and authorize removal of all items. I understand removed items cannot be returned and this forms a legally binding agreement. <a href="{{ url_for('customer_terms') }}" target="_blank" style="color: #007bff; text-decoration: underline;">Read Full Terms</a></span>
             </label>
         </div>

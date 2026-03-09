@@ -58,7 +58,7 @@ def load_user(user_id):
 # ---- Startup DB init (safe) ----
 try:
     with app.app_context():
-        import models  # make sure your models registe
+          # make sure your models registe
         db.create_all()
         logging.info("Database initialized.")
 except Exception as e:
@@ -97,7 +97,9 @@ def about():
 def customer_new():
     return render_template("customer_new.html", current_user=current_user)
 
-
+@app.route("/customer/terms")
+def customer_terms():
+    return render_template("customer_terms.html", current_user=current_user)
 @app.route("/customer/create", methods=["POST"])
 def create_customer_job():
     new_job = Job(
@@ -117,7 +119,7 @@ def create_customer_job():
     return redirect(url_for("customer_jobs"))
 @app.route("/customer/jobs")
 def customer_jobs():
-    jobs = Job.query.order_by(Job.id.desc()).all()
+    jobs = db.session.query(Job).order_by(Job.id.desc()).all()
     return render_template("customer_jobs.html", current_user=current_user, jobs=jobs)
 
 @app.route("/hauler/earnings")
