@@ -78,7 +78,9 @@ def home():
 @app.route("/about")
 def about():
     return render_template("about.html", current_user=current_user)
-
+@app.route("/customer")
+def customer_dashboard():
+    return render_template("customer_dashboard.html", current_user=current_user)
 @app.route("/customer/new")
 def customer_new():
     return render_template("customer_new.html", current_user=current_user)
