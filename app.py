@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_login import LoginManager, UserMixin, login_required, current_user, login_user
+from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, logout_user
 login_manager.login_view = "login"
 
 
@@ -115,7 +115,11 @@ def register():
 @app.route("/marketplace")
 def marketplace():
     return render_template("marketplace.html", current_user=current_user)
-
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("marketplace"))
 @app.route("/customer")
 @login_required
 def customer_dashboard():
