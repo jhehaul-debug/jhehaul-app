@@ -57,24 +57,47 @@ except Exception as e:
 
 @app.route("/marketplace")
 def marketplace():
-        return render_template("marketplace.html")
+    return render_template("marketplace.html", current_user=current_user)
 
 @app.route("/customer")
 def customer_dashboard():
-        return render_template("customer_dashboard.html", current_user=current_user)
+    return render_template("customer_dashboard.html", current_user=current_user)
 
 @app.route("/hauler")
 def hauler_dashboard():
-        return render_template("hauler_dashboard.html", current_user=current_user)
+        jobs = []
+    return render_template("hauler_dashboard.html", current_user=current_user, jobs=jobs)
+
 @app.route("/hauler/jobs")
 def hauler_jobs():
     return render_template("hauler_jobs.html", current_user=current_user)
+
 @app.route("/")
 def home():
-        return render_template("marketplace.html")
+    return render_template("marketplace.html", current_user=current_user)
+
 @app.route("/about")
 def about():
-        return render_template("about.html")
+    return render_template("about.html", current_user=current_user)
+@app.route("/customer/new")
+def customer_new():
+    return render_template("customer_new.html", current_user=current_user)
+
+@app.route("/customer/jobs")
+def customer_jobs():
+    return render_template("customer_jobs.html", current_user=current_user)
+
+@app.route("/hauler/earnings")
+def hauler_earnings():
+    return render_template("hauler_earnings.html", current_user=current_user)
+
+@app.route("/profile")
+def profile():
+    return render_template("profile.html", current_user=current_user)
+
+@app.route("/admin")
+def admin_dashboard():
+    return render_template("admin_dashboard.html", current_user=current_user)
 @app.route("/health")
 def health():
     return "ok", 200
