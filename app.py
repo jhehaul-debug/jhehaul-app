@@ -65,7 +65,7 @@ def customer_dashboard():
 
 @app.route("/hauler")
 def hauler_dashboard():
-        jobs = []
+    jobs = []
     return render_template("hauler_dashboard.html", current_user=current_user, jobs=jobs)
 
 @app.route("/hauler/jobs")
