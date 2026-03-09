@@ -108,8 +108,8 @@ db.session.add(new_job)
 db.session.commit()
 
 return redirect(url_for("customer_jobs"))
-    @app.route("/customer/jobs")
-    def customer_jobs():
+@app.route("/customer/jobs")
+def customer_jobs():
         from models import Job
 
         jobs = db.session.query(Job).order_by(Job.id.desc()).all()
