@@ -13,7 +13,7 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <form method="POST" action="{{ url_for('customer_create') }}" enctype="multipart/form-data" onsubmit="return validateCustomerForm(this);">
+        <form method="POST" action="{{ url_for('create_customer_job') }}" enctype="multipart/form-data" onsubmit="return validateCustomerForm(this);">
         <div class="form-group">
             <label>Your Name</label>
             <input name="customer_name" required value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}">

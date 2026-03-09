@@ -1,7 +1,7 @@
 import os
 import logging
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -13,7 +13,20 @@ logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
     pass
+from sqlalchemy import Column, Integer, String, Text
 
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True)
+    customer_name = Column(String(120))
+    customer_phone = Column(String(30))
+    pickup_address = Column(String(255))
+    pickup_zip = Column(String(10))
+    job_description = Column(Text)
+    preferred_date = Column(String(20))
+    preferred_time = Column(String(20))
+    status = Column(String(20), default="open")
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 login_manager = LoginManager()
@@ -37,7 +50,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app, model_class=Base)
-from models import User
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -84,9 +97,28 @@ def about():
 def customer_new():
     return render_template("customer_new.html", current_user=current_user)
 
+
+@app.route("/customer/create", methods=["POST"])
+def create_customer_job():
+    new_job = Job(
+        customer_name=request.form.get("customer_name"),
+        customer_phone=request.form.get("customer_phone"),
+        pickup_address=request.form.get("pickup_address"),
+        pickup_zip=request.form.get("pickup_zip"),
+        job_description=request.form.get("job_description"),
+        preferred_date=request.form.get("preferred_date"),
+        preferred_time=request.form.get("preferred_time"),
+        status="open"
+    )
+
+    db.session.add(new_job)
+    db.session.commit()
+
+    return redirect(url_for("customer_jobs"))
 @app.route("/customer/jobs")
 def customer_jobs():
-    return render_template("customer_jobs.html", current_user=current_user)
+    jobs = Job.query.order_by(Job.id.desc()).all()
+    return render_template("customer_jobs.html", current_user=current_user, jobs=jobs)
 
 @app.route("/hauler/earnings")
 def hauler_earnings():
