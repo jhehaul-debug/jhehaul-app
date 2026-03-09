@@ -7,28 +7,15 @@ from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, logout_user
 from sqlalchemy import Column, Integer, String, Text
-app = Flask(__name__)
-
-
+from werkzeug.security import generate_password_hash, check_password_hash 
 logging.basicConfig(level=logging.INFO)
 
 class Base(DeclarativeBase):
     pass
 
-class Job(Base):
-    __tablename__ = "jobs"
-
-    id = Column(Integer, primary_key=True)
-    customer_name = Column(String(120))
-    customer_phone = Column(String(30))
-    pickup_address = Column(String(255))
-    pickup_zip = Column(String(10))
-    job_description = Column(Text)
-    preferred_date = Column(String(20))
-    preferred_time = Column(String(20))
-    status = Column(String(20), default="open")
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
