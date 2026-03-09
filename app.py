@@ -93,32 +93,36 @@ def customer_terms():
     return render_template("customer_terms.html", current_user=current_user)
 @app.route("/customer/create", methods=["POST"])
 def create_customer_job():
-    
-    customer_name=request.form.get("customer_name"),
-    customer_phone=request.form.get("customer_phone"),
-    pickup_address=request.form.get("pickup_address"),
-    pickup_zip=request.form.get("pickup_zip"),
-    job_description=request.form.get("job_description"),
-    preferred_date=request.form.get("preferred_date"),
-    preferred_time=request.form.get("preferred_time"),
-    status="open"
-)
+    from models import Job
 
-db.session.add(new_job)
-db.session.commit()
+    new_job = Job(
+        customer_name=request.form.get("customer_name"),
+        customer_phone=request.form.get("customer_phone"),
+        pickup_address=request.form.get("pickup_address"),
+        pickup_zip=request.form.get("pickup_zip"),
+        job_description=request.form.get("job_description"),
+        preferred_date=request.form.get("preferred_date"),
+        preferred_time=request.form.get("preferred_time"),
+        status="open"
+    )
 
-return redirect(url_for("customer_jobs"))
+    db.session.add(new_job)
+    db.session.commit()
+
+    return redirect(url_for("customer_jobs"))
+
+
 @app.route("/customer/jobs")
 def customer_jobs():
-        from models import Job
+    from models import Job
 
-        jobs = db.session.query(Job).order_by(Job.id.desc()).all()
+    jobs = db.session.query(Job).order_by(Job.id.desc()).all()
 
-        return render_template(
-            "customer_jobs.html",
-            current_user=current_user,
-            jobs=jobs
-        )
+    return render_template(
+        "customer_jobs.html",
+        current_user=current_user,
+        jobs=jobs
+    )
 
 @app.route("/hauler/earnings")
 def hauler_earnings():
