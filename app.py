@@ -79,6 +79,7 @@ def home():
 @app.route("/about")
 def about():
     return render_template("about.html", current_user=current_user)
+
 @app.route("/customer/new")
 def customer_new():
     return render_template("customer_new.html", current_user=current_user)
@@ -98,9 +99,7 @@ def profile():
 @app.route("/admin")
 def admin_dashboard():
     return render_template("admin_dashboard.html", current_user=current_user)
+
 @app.route("/health")
 def health():
     return "ok", 200
-
-
-# Local run only (DigitalOcean uses gunicorn
