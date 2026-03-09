@@ -108,8 +108,8 @@ db.session.add(new_job)
 db.session.commit()
 
 return redirect(url_for("customer_jobs"))
-    @app.route("/customer/jobs")
-    def customer_jobs():
+@app.route("/customer/jobs")
+def customer_jobs():
         
         jobs = db.session.query(Job).order_by(Job.id.desc()).all()
         return render_template("customer_jobs.html", current_user=current_user, jobs=jobs)
