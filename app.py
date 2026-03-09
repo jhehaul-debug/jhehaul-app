@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user
-
+login_manager.login_view = "login"
 
 
 logging.basicConfig(level=logging.INFO)
@@ -66,17 +66,63 @@ except Exception as e:
 
 # ---- Routes ----
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
 
+        email = request.form.get("email")
+        password = request.form.get("password")
 
+        user = db.session.query(User).filter_by(email=email).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+
+            if user.user_type == "customer":
+                return redirect(url_for("customer_dashboard"))
+            else:
+                return redirect(url_for("hauler_dashboard"))
+
+        return render_template("login.html", error="Invalid login", current_user=current_user)
+
+    return render_template("login.html", current_user=current_user)
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        email = request.form.get("email")
+        password = request.form.get("password")
+        user_type = request.form.get("user_type")
+
+        new_user = User(
+            email=email,
+            password_hash=generate_password_hash(password),
+            user_type=user_type
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        login_user(new_user)
+
+        if user_type == "customer":
+            return redirect(url_for("customer_dashboard"))
+        else:
+            return redirect(url_for("hauler_dashboard"))
+
+    return render_template("register.html", current_user=current_user)
 @app.route("/marketplace")
 def marketplace():
     return render_template("marketplace.html", current_user=current_user)
 
 @app.route("/customer")
+@login_required
 def customer_dashboard():
     return render_template("customer_dashboard.html", current_user=current_user)
 
 @app.route("/hauler")
+@login_required
 def hauler_dashboard():
     jobs = []
     return render_template("hauler_dashboard.html", current_user=current_user, jobs=jobs)
