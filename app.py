@@ -9,17 +9,11 @@ from sqlalchemy import Column, Integer, String, Text
 from werkzeug.security import generate_password_hash, check_password_hash 
 logging.basicConfig(level=logging.INFO)
 from flask_login import LoginManager, UserMixin, login_required, current_user, login_user, logout_user
+from models import User, Job
 from werkzeug.middleware.proxy_fix import ProxyFix
 class Base(DeclarativeBase):
     pass
-class User(Base, UserMixin):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(120))
-    email = Column(String(120), unique=True)
-    password = Column(String(200))
-    user_type = Column(String(20))  # customer or hauler
+  # customer or hauler
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
