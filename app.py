@@ -63,7 +63,6 @@ except Exception as e:
 
 
 @app.route("/hauler")
-@login_required
 def hauler_dashboard():
     jobs = []
     return render_template("hauler_dashboard.html", current_user=current_user, jobs=jobs)
