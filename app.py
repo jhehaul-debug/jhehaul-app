@@ -96,7 +96,7 @@ new_job = Job(
     preferred_date=request.form.get("preferred_date"),
     preferred_time=request.form.get("preferred_time"),
     status="open"
-    )
+)
 
 
 db.session.add(new_job)
