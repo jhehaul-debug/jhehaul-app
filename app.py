@@ -87,21 +87,22 @@ def customer_terms():
 def create_customer_job():
     from models import Job
 
-    new_job = Job(
-        customer_name=request.form.get("customer_name"),
-        customer_phone=request.form.get("customer_phone"),
-        pickup_address=request.form.get("pickup_address"),
-        pickup_zip=request.form.get("pickup_zip"),
-        job_description=request.form.get("job_description"),
-        preferred_date=request.form.get("preferred_date"),
-        preferred_time=request.form.get("preferred_time"),
-        status="open"
+new_job = Job(
+    customer_name=request.form.get("customer_name"),
+    customer_phone=request.form.get("customer_phone"),
+    pickup_address=request.form.get("pickup_address"),
+    pickup_zip=request.form.get("pickup_zip"),
+    job_description=request.form.get("job_description"),
+    preferred_date=request.form.get("preferred_date"),
+    preferred_time=request.form.get("preferred_time"),
+    status="open"
     )
 
-    db.session.add(new_job)
-    db.session.commit()
 
-    return redirect(url_for("customer_jobs"))
+db.session.add(new_job)
+db.session.commit()
+
+return redirect(url_for("customer_jobs"))
 
 
 @app.route("/customer/jobs")
@@ -120,7 +121,7 @@ def customer_jobs():
 def hauler_earnings():
     return render_template("hauler_earnings.html", current_user=current_user)
 
-@app.route("/profile")
+
 def profile():
     return render_template("profile.html", current_user=current_user)
 
