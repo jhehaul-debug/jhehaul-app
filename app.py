@@ -117,18 +117,25 @@ def customer_jobs():
         jobs=jobs
     )
 @app.route("/customer/jobs/<int:job_id>")
-def customer_job_detail(job_id):
-    from models import Job
+    def customer_job_detail(job_id):
+        from models import Job
 
-    job = db.session.query(Job).get(job_id)
-    if not job:
-        return "Job not found", 404
+        job = db.session.query(Job).get(job_id)
+        if not job:
+            return "Job not found", 404
 
-    return render_template(
-        "customer_job_detail.html",
-        current_user=current_user,
-        job=job
-    )
+        bids = []
+        pay_link = None
+        checkout_over500_url = None
+
+        return render_template(
+            "customer_job_detail.html",
+            current_user=current_user,
+            job=job,
+            bids=bids,
+            pay_link=pay_link,
+            checkout_over500_url=checkout_over500_url
+        )
 @app.route("/hauler/earnings")
 def hauler_earnings():
     return render_template("hauler_earnings.html", current_user=current_user)
