@@ -117,7 +117,7 @@ def customer_jobs():
         jobs=jobs
     )
 @app.route("/customer/jobs/<int:job_id>")
-    def customer_job_detail(job_id):
+def customer_job_detail(job_id):
         from models import Job
 
         job = db.session.query(Job).get(job_id)
@@ -136,6 +136,50 @@ def customer_jobs():
             pay_link=pay_link,
             checkout_over500_url=checkout_over500_url
         )
+    # =========================
+    # CUSTOMER ACTION ROUTES
+    # =========================
+
+@app.route("/customer/upload-photos/<int:job_id>", methods=["POST"])
+def customer_upload_photos(job_id):
+        # TODO: handle file uploads later
+        return redirect(url_for("customer_job_detail", job_id=job_id))
+
+
+@app.route("/customer/complete-job/<int:job_id>", methods=["POST"])
+def customer_complete_job(job_id):
+        from models import Job
+
+        job = db.session.query(Job).get(job_id)
+        if job:
+            job.status = "completed"
+            db.session.commit()
+
+        return redirect(url_for("customer_job_detail", job_id=job_id))
+
+
+@app.route("/customer/cancel-job/<int:job_id>", methods=["POST"])
+def customer_cancel_job(job_id):
+        from models import Job
+
+        job = db.session.query(Job).get(job_id)
+        if job:
+            job.status = "cancelled"
+            db.session.commit()
+
+        return redirect(url_for("customer_jobs"))
+
+
+@app.route("/customer/review/<int:job_id>")
+def customer_review(job_id):
+        # placeholder page for now
+        return f"Review page for job {job_id}"
+
+
+@app.route("/customer/accept-bid/<int:bid_id>", methods=["POST"])
+def customer_accept_bid(bid_id):
+        # placeholder logic
+        return redirect(url_for("customer_jobs"))
 @app.route("/hauler/earnings")
 def hauler_earnings():
     return render_template("hauler_earnings.html", current_user=current_user)
