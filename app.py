@@ -116,12 +116,24 @@ def customer_jobs():
         current_user=current_user,
         jobs=jobs
     )
+@app.route("/customer/jobs/<int:job_id>")
+def customer_job_detail(job_id):
+    from models import Job
 
+    job = db.session.query(Job).get(job_id)
+    if not job:
+        return "Job not found", 404
+
+    return render_template(
+        "customer_job_detail.html",
+        current_user=current_user,
+        job=job
+    )
 @app.route("/hauler/earnings")
 def hauler_earnings():
     return render_template("hauler_earnings.html", current_user=current_user)
 
-
+@app.route("/profile")
 def profile():
     return render_template("profile.html", current_user=current_user)
 
