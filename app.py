@@ -57,14 +57,33 @@ except Exception as e:
 
 
 
-@app.route("/hauler")
-def hauler_dashboard():
-    jobs = []
-    return render_template("hauler_dashboard.html", current_user=current_user, jobs=jobs)
+    @app.route("/hauler")
+    def hauler_dashboard():
+        from models import Job
+
+        jobs = db.session.query(Job).filter(
+            Job.status.in_(["open", "bidding"])
+        ).order_by(Job.id.desc()).all()
+
+        return render_template(
+            "hauler_dashboard.html",
+            current_user=current_user,
+            jobs=jobs
+        )
 
 @app.route("/hauler/jobs")
 def hauler_jobs():
-    return render_template("hauler_jobs.html", current_user=current_user)
+        from models import Job
+
+        jobs = db.session.query(Job).filter(
+            Job.status.in_(["open", "bidding"])
+        ).order_by(Job.id.desc()).all()
+
+        return render_template(
+            "hauler_jobs.html",
+            current_user=current_user,
+            jobs=jobs
+        )
 
 @app.route("/")
 def home():
