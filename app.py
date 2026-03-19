@@ -225,9 +225,7 @@ def make_me_admin():
         db.session.commit()
         return "You are now admin."
 
-@app.route("/health")
-def health():
-        return "ok", 200
+
 
 @app.route("/health")
 def health():
