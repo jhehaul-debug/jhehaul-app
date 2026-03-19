@@ -208,8 +208,26 @@ def profile():
     return render_template("profile.html", current_user=current_user)
 
 @app.route("/admin")
+@login_required
 def admin_dashboard():
-    return render_template("admin_dashboard.html", current_user=current_user)
+        if not current_user.is_admin:
+            return "Unauthorized", 403
+
+        return render_template(
+            "admin_dashboard.html",
+            current_user=current_user
+        )
+
+@app.route("/make-me-admin")
+@login_required
+def make_me_admin():
+        current_user.is_admin = True
+        db.session.commit()
+        return "You are now admin."
+
+@app.route("/health")
+def health():
+        return "ok", 200
 
 @app.route("/health")
 def health():
