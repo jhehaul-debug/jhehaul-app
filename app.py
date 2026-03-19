@@ -57,8 +57,8 @@ except Exception as e:
 
 
 
-    @app.route("/hauler")
-    def hauler_dashboard():
+@app.route("/hauler")
+def hauler_dashboard():
         from models import Job
 
         jobs = db.session.query(Job).filter(
