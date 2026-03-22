@@ -219,7 +219,6 @@ def admin_dashboard():
         )
 
 @app.route("/make-me-admin")
-@login_required
 def make_me_admin():
         current_user.is_admin = True
         db.session.commit()
