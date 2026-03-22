@@ -15,6 +15,7 @@ class Base(DeclarativeBase):
     pass
   # customer or hauler
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY")#
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 login_manager = LoginManager()
@@ -22,7 +23,6 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 # Secret key
-app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "dev-secret")
 
 # ---- DATABASE (ONLY ONE CONFIGURATION) ----
 database_url = os.environ.get("DATABASE_URL")
