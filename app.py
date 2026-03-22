@@ -237,7 +237,28 @@ def make_me_admin():
         db.session.commit()
         return "You are now admin."
 
+@app.route("/create-user")
+def create_user():
+    from models import User
 
+    email = "jhehaul@gmail.com"
+
+    existing = db.session.query(User).filter_by(email=email).first()
+
+    if existing:
+        return "User already exists."
+
+    new_user = User(
+        id=email,
+        email=email,
+        first_name="Admin",
+        last_name="User"
+    )
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return "User created successfully."
 
 @app.route("/health")
 def health():
