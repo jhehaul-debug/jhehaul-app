@@ -43,7 +43,7 @@ from models import User, Job
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+        return db.session.get(User, user_id)
 # ---- Startup DB init (safe) ----
 try:
     with app.app_context():
