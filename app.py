@@ -206,7 +206,20 @@ def hauler_earnings():
 @app.route("/profile")
 def profile():
     return render_template("profile.html", current_user=current_user)
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    from models import User
 
+    if request.method == "POST":
+        email = request.form.get("email")
+
+        user = db.session.query(User).filter_by(email=email).first()
+
+        if user:
+            login_user(user)
+            return redirect(url_for("home"))
+
+    return render_template("login.html")
 @app.route("/admin")
 @login_required
 def admin_dashboard():
