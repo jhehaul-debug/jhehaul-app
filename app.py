@@ -208,18 +208,24 @@ def profile():
     return render_template("profile.html", current_user=current_user)
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    from models import User
+        from models import User
 
-    if request.method == "POST":
-        email = request.form.get("email")
+        if request.method == "POST":
+            email = request.form.get("email").strip().lower()
 
-        user = db.session.query(User).filter_by(email=email).first()
+            user = db.session.query(User).filter_by(email=email).first()
 
-        if user:
+            # 👉 CREATE USER IF NOT FOUND
+            if not user:
+                user = User(email=email, is_admin=False)
+                db.session.add(user)
+                db.session.commit()
+
             login_user(user)
             return redirect(url_for("home"))
 
-    return render_template("login.html")
+return render_template("login.html")
+
 @app.route("/admin")
 @login_required
 def admin_dashboard():
@@ -232,6 +238,7 @@ def admin_dashboard():
         )
 
 @app.route("/make-me-admin")
+@login_required
 def make_me_admin():
         current_user.is_admin = True
         db.session.commit()
