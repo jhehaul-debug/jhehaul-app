@@ -222,11 +222,35 @@ def login():
         return render_template("login.html")
 
 
-@app.route("/choose-role")
+    def choose_role():
+        return render_template(
+            "choose_role.html",
+            current_user=current_user,
+            invited_role=None
+        )
+@app.route("/hauler-agreement")
 @login_required
-def choose_role():
-        return render_template("choose_role.html", current_user=current_user)
+def hauler_agreement():
+    return "<h2>Hauler Agreement</h2><p>You agree to terms.</p>"
 
+
+@app.route("/set-role", methods=["POST"])
+@login_required
+def set_role():
+    role = request.form.get("role")
+
+    if role == "customer":
+        return redirect(url_for("customer_dashboard"))
+
+    if role == "hauler":
+        if not request.form.get("agree_terms"):
+            return redirect(url_for("choose_role"))
+
+        current_user.user_type = "hauler"
+        db.session.commit()
+        return redirect(url_for("hauler_dashboard"))
+
+    return redirect(url_for("choose_role"))
 @app.route("/make-me-admin")
 @login_required
 def make_me_admin():
