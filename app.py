@@ -222,7 +222,7 @@ def login():
         return render_template("login.html")
 
 
-    def choose_role():
+def choose_role():
         return render_template(
             "choose_role.html",
             current_user=current_user,
