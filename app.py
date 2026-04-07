@@ -211,31 +211,21 @@ def login():
         from models import User
 
         if request.method == "POST":
-            email = request.form.get("email").strip().lower()
+            email = request.form.get("email")
 
             user = db.session.query(User).filter_by(email=email).first()
 
-            # 👉 CREATE USER IF NOT FOUND
-            if not user:
-                user = User(email=email, is_admin=False)
-                db.session.add(user)
-                db.session.commit()
+            if user:
+                login_user(user)
+                return redirect(url_for("choose_role"))
 
-            login_user(user)
-            return redirect(url_for("home"))
+        return render_template("login.html")
 
-return render_template("login.html")
 
-@app.route("/admin")
+@app.route("/choose-role")
 @login_required
-def admin_dashboard():
-        if not current_user.is_admin:
-            return "Unauthorized", 403
-
-        return render_template(
-            "admin_dashboard.html",
-            current_user=current_user
-        )
+def choose_role():
+        return render_template("choose_role.html", current_user=current_user)
 
 @app.route("/make-me-admin")
 @login_required
