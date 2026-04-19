@@ -92,6 +92,15 @@
         </div>
     </header>
     <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div style="padding: 12px 20px; margin-bottom: 15px; border-radius: 8px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
     <footer style="background: #2c3e50; color: white; padding: 30px 0; margin-top: 50px; text-align: center;">

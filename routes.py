@@ -736,13 +736,14 @@ def hauler_upload_photos(job_id):
     job = Job.query.get_or_404(job_id)
     if job.accepted_hauler_id != current_user.id:
         return "Access denied", 403
-        if job.status not in ['deposit_paid', 'completed']:
-            return "Cannot upload photos at this stage", 400
-    
+    if job.status not in ['deposit_paid', 'completed']:
+        return "Cannot upload photos at this stage", 400
+
     if request.method == "POST":
         before_photos = request.files.getlist("before_photos")
         after_photos = request.files.getlist("after_photos")
-        
+
+        saved_after = 0
         for photo in before_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
@@ -750,7 +751,7 @@ def hauler_upload_photos(job_id):
                 photo.save(os.path.join(UPLOAD_FOLDER, filename))
                 photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='before')
                 db.session.add(photo_record)
-        
+
         for photo in after_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
@@ -758,10 +759,19 @@ def hauler_upload_photos(job_id):
                 photo.save(os.path.join(UPLOAD_FOLDER, filename))
                 photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='after')
                 db.session.add(photo_record)
-        
+                saved_after += 1
+
+        if saved_after == 0:
+            db.session.rollback()
+            flash("You must upload at least one AFTER photo to submit completion proof.", "error")
+            return render_template('hauler_upload_photos.html', job=job)
+
+        job.status = 'completed'
+        job.completed_at = datetime.now()
         db.session.commit()
+        flash("Completion proof submitted. Customer has been notified and payment can now be released.", "success")
         return redirect(url_for('hauler_dashboard'))
-    
+
     return render_template('hauler_upload_photos.html', job=job)
 
 @app.route("/admin")
