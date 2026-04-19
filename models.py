@@ -1,6 +1,6 @@
 from datetime import datetime
 from app import db
-from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
+
 
 from sqlalchemy import UniqueConstraint
 from flask_login import UserMixin
@@ -8,6 +8,9 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.String, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=True)
+    password = db.Column(db.String(255))
+    is_admin = db.Column(db.Boolean, default=False)
+    agreed_to_hauler_terms = db.Column(db.Boolean, default=False)
     first_name = db.Column(db.String, nullable=True)
     last_name = db.Column(db.String, nullable=True)
     profile_image_url = db.Column(db.String, nullable=True)
