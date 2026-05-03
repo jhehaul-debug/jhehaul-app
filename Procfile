@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: gunicorn -w 2 --timeout 60 -b 0.0.0.0:${PORT:-8080} wsgi:application

@@ -1,0 +1,71 @@
+name: jhe-haul
+region: nyc
+
+services:
+  - name: web
+    dockerfile_path: Dockerfile
+    github:
+      repo: your-org/jhe-haul          # ← update to your GitHub repo
+      branch: main
+      deploy_on_push: true
+    http_port: 8080
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+    envs:
+      - key: SESSION_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: APP_BASE_URL
+        scope: RUN_TIME
+        value: https://jhehaul.com
+      - key: ADMIN_EMAIL
+        scope: RUN_TIME
+        value: incorporateiq@gmail.com
+      - key: GOOGLE_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: GOOGLE_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: GITHUB_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: GITHUB_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: STRIPE_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: PAY_LINK_UNDER_150
+        scope: RUN_TIME
+        type: SECRET
+      - key: PAY_LINK_150_300
+        scope: RUN_TIME
+        type: SECRET
+      - key: PAY_LINK_OVER_300
+        scope: RUN_TIME
+        type: SECRET
+      - key: PAY_LINK_OVER_500
+        scope: RUN_TIME
+        type: SECRET
+      - key: SENDGRID_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: SENDGRID_FROM_EMAIL
+        scope: RUN_TIME
+        value: noreply@jhehaul.com
+      - key: TWILIO_ACCOUNT_SID
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_AUTH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+      - key: TWILIO_FROM_NUMBER
+        scope: RUN_TIME
+        type: SECRET

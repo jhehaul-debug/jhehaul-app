@@ -10,7 +10,7 @@ from flask_login import current_user
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
-from replit_auth import require_login, make_replit_blueprint
+from auth import require_login
 from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review
 from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid, notify_hauler_new_job_nearby
 from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
@@ -26,7 +26,7 @@ def require_role(role):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 session["next_url"] = request.url
-                return redirect(url_for('replit_auth.login'))
+                return redirect(url_for('auth.login'))
             if not current_user.user_type:
                 return redirect(url_for('choose_role'))
             if current_user.user_type != role and not current_user.is_admin:
@@ -42,13 +42,11 @@ def require_admin(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             session["next_url"] = request.url
-            return redirect(url_for('replit_auth.login'))
+            return redirect(url_for('auth.login'))
         if not current_user.is_admin:
             return render_template('403.html'), 403
         return f(*args, **kwargs)
     return decorated_function
-
-app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
 
 @app.before_request
 def make_session_permanent():
@@ -287,8 +285,8 @@ def customer_job_detail(job_id):
         else:
             pay_link = choose_pay_link(job.accepted_quote)
             if pay_link:
-                domain = os.environ.get("REPLIT_DEV_DOMAIN", "")
-                success_url = f"https://{domain}/payment_success/{job.id}"
+                base_url = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+                success_url = f"{base_url}/payment_success/{job.id}"
                 pay_link = f"{pay_link}?success_url={success_url}"
     
     return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link, checkout_over500_url=checkout_over500_url)
@@ -386,9 +384,7 @@ def checkout_over500(bid_id):
     platform_fee = 49.99 + (quote_amount - 500) * 0.10
     fee_cents = int(round(platform_fee * 100))
 
-    domain = os.environ.get("REPLIT_DEPLOYMENT_URL", os.environ.get("REPLIT_DEV_DOMAIN", ""))
-    if domain and not domain.startswith("http"):
-        domain = f"https://{domain}"
+    domain = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
 
     try:
         checkout_session = stripe.checkout.Session.create(
@@ -646,7 +642,7 @@ def delete_account():
     db.session.delete(current_user)
     db.session.commit()
     
-    return redirect(url_for('index'))
+    return redirect(url_for('home'))
 
 @app.route("/customer/complete/<int:job_id>", methods=["POST"])
 @require_role('customer')

@@ -14,15 +14,20 @@ Preferred communication style: Simple, everyday language.
 - **Flask** serves as the web framework with modular file structure
 - **Flask-SQLAlchemy** for ORM database operations
 - **Flask-Login** for session management
-- **Replit Auth** for user authentication (email/password, Google, GitHub, etc.)
+- **Google + GitHub OAuth2** via Flask-Dance for user authentication (portable — works on any host)
 
 ### File Structure
 - `app.py` - Flask app initialization and database configuration
 - `models.py` - SQLAlchemy database models
 - `routes.py` - All route handlers with role-based access control
-- `replit_auth.py` - Authentication blueprint and helpers
-- `main.py` - Application entry point
+- `auth.py` - OAuth2 authentication (Google + GitHub via Flask-Dance) — replaces Replit-only auth
+- `main.py` - Development entry point (python main.py)
+- `wsgi.py` - Production WSGI entry point (used by gunicorn)
 - `templates/` - Jinja2 HTML templates
+- `Dockerfile` - Docker container definition for Digital Ocean
+- `docker-compose.yml` - Local development with PostgreSQL container
+- `.do/app.yaml` - Digital Ocean App Platform deployment spec
+- `.env.example` - All required environment variables documented
 
 ### Database
 - **PostgreSQL** database (Neon-backed via Replit)
@@ -34,10 +39,13 @@ Preferred communication style: Simple, everyday language.
 - CompletionPhotos for before/after job documentation
 
 ### Authentication
-- Uses Replit Auth (OpenID Connect)
-- Supports email/password, Google, GitHub, X, Apple login
+- Uses Google OAuth2 and GitHub OAuth2 via Flask-Dance (`auth.py`)
+- Login page at `/auth/login` with "Continue with Google" and "Continue with GitHub" buttons
 - Role selection after first login (customer or hauler)
 - Protected routes with `@require_role('customer')` or `@require_role('hauler')`
+- `require_login` decorator in `auth.py` for any-role protected routes
+- Email-based user matching on login — existing users keep their accounts when migrating
+- OAuth callback URLs: `/auth/google/authorized` and `/auth/github/authorized`
 
 ### File Storage
 - Local file uploads stored in `uploads/` directory
@@ -90,16 +98,32 @@ Preferred communication style: Simple, everyday language.
 | twilio | SMS API client |
 
 ### Environment Variables Required
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured by Replit)
-- `SESSION_SECRET` - Session encryption key (auto-configured by Replit)
+- `DATABASE_URL` - PostgreSQL connection string
+- `SESSION_SECRET` - Session encryption key
+- `APP_BASE_URL` - Public URL of the app, e.g. `https://jhehaul.com` (used in Stripe redirect URLs)
+- `ADMIN_EMAIL` - Email of the admin user (default: incorporateiq@gmail.com)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth app credentials
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` - GitHub OAuth app credentials (optional)
+- `STRIPE_SECRET_KEY` - Stripe API key for dynamic checkout (quotes >$500)
 - `PAY_LINK_UNDER_150` - Stripe payment link for quotes under $150
 - `PAY_LINK_150_300` - Stripe payment link for quotes $150-$300
 - `PAY_LINK_OVER_300` - Stripe payment link for quotes $301-$500
-- `PAY_LINK_OVER_500` - Stripe payment link for quotes over $500 ($49.99)
+- `PAY_LINK_OVER_500` - Stripe payment link for quotes at $500
+- `SENDGRID_API_KEY` - SendGrid API key for email notifications
+- `SENDGRID_FROM_EMAIL` - Sender email address (must be verified in SendGrid)
+- `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` - Twilio SMS (optional)
+
+### Digital Ocean Deployment
+- **Dockerfile** - Multi-stage build with python:3.11-slim, runs gunicorn on port 8080
+- **`.do/app.yaml`** - App Platform spec (update `github.repo` to your repo path)
+- **`docker-compose.yml`** - Local dev with PostgreSQL container
+- **`Procfile`** - `gunicorn -w 2 --timeout 60 -b 0.0.0.0:${PORT:-8080} wsgi:application`
+- **`wsgi.py`** - WSGI entry point that imports both `auth` and `routes` modules
 
 ### Email Service
-- **SendGrid** integration via Replit Connectors
+- **SendGrid** via direct `SENDGRID_API_KEY` env var (no Replit Connectors dependency)
 - `email_service.py` - Email helper functions
+- `SENDGRID_FROM_EMAIL` env var controls the sender address (default: noreply@jhehaul.com)
 - Automatic notifications for:
   - Customers when they receive a new bid
   - Haulers when their bid is accepted
@@ -107,8 +131,8 @@ Preferred communication style: Simple, everyday language.
   - Haulers when a new job is posted within their travel range
 
 ### SMS Service (Optional)
-- **Twilio** integration via Replit Connectors
-- `sms_service.py` - SMS helper functions
+- **Twilio** via direct env vars: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+- `sms_service.py` - SMS helper functions (no Replit Connectors dependency)
 - Users can opt-in to SMS notifications in their profile
 - Same notification events as email, sent via text message
 

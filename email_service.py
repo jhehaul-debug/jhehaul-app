@@ -1,71 +1,37 @@
 import os
 import logging
-import requests
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-def get_sendgrid_credentials():
-    hostname = os.environ.get('REPLIT_CONNECTORS_HOSTNAME')
-    repl_identity = os.environ.get('REPL_IDENTITY')
-    web_repl_renewal = os.environ.get('WEB_REPL_RENEWAL')
-    
-    if repl_identity:
-        x_replit_token = 'repl ' + repl_identity
-    elif web_repl_renewal:
-        x_replit_token = 'depl ' + web_repl_renewal
-    else:
-        logging.warning("No Replit token found for SendGrid")
-        return None, None
-    
-    try:
-        response = requests.get(
-            f'https://{hostname}/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-            headers={
-                'Accept': 'application/json',
-                'X_REPLIT_TOKEN': x_replit_token
-            }
-        )
-        data = response.json()
-        connection = data.get('items', [{}])[0]
-        settings = connection.get('settings', {})
-        api_key = settings.get('api_key')
-        from_email = settings.get('from_email')
-        
-        if not api_key or not from_email:
-            logging.warning("SendGrid credentials not found")
-            return None, None
-            
-        return api_key, from_email
-    except Exception as e:
-        logging.error(f"Failed to get SendGrid credentials: {e}")
-        return None, None
 
 def send_email(to_email, subject, html_content):
-    api_key, from_email = get_sendgrid_credentials()
-    
-    if not api_key or not from_email:
-        logging.warning("SendGrid not configured, skipping email")
+    api_key = os.environ.get("SENDGRID_API_KEY")
+    from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
+
+    if not api_key:
+        logging.warning("SENDGRID_API_KEY not set, skipping email to %s", to_email)
         return False
-    
+
     if not to_email:
-        logging.warning("No recipient email, skipping")
+        logging.warning("No recipient email, skipping send")
         return False
-    
+
     message = Mail(
         from_email=from_email,
         to_emails=to_email,
         subject=subject,
         html_content=html_content
     )
-    
+
     try:
         sg = SendGridAPIClient(api_key)
         response = sg.send(message)
-        logging.info(f"Email sent to {to_email}, status: {response.status_code}")
+        logging.info("Email sent to %s, status: %s", to_email, response.status_code)
         return True
     except Exception as e:
-        logging.error(f"Failed to send email: {e}")
+        logging.error("Failed to send email to %s: %s", to_email, e)
         return False
+
 
 def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
     subject = f"New Bid on Your Hauling Job #{job_id}"
@@ -76,6 +42,7 @@ def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
     <p>Thank you for using JHE Haul!</p>
     """
     return send_email(customer_email, subject, html_content)
+
 
 def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
     subject = f"Your Bid Was Accepted - Job #{job_id}"
@@ -88,6 +55,7 @@ def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
     """
     return send_email(hauler_email, subject, html_content)
 
+
 def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance_miles):
     subject = f"New Hauling Job #{job_id} Near You!"
     html_content = f"""
@@ -99,11 +67,12 @@ def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance
     """
     return send_email(hauler_email, subject, html_content)
 
+
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
     import urllib.parse
     full_address = f"{pickup_address}, {pickup_zip}"
     maps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(full_address)}"
-    
+
     subject = f"Deposit Paid - Job #{job_id} Ready to Go!"
     html_content = f"""
     <h2>Great news! The deposit has been paid!</h2>

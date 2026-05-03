@@ -27,10 +27,10 @@
                 </a>
             {% endif %}
         {% else %}
-            <a href="{{ url_for('replit_auth.login') }}?next=/customer/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+            <a href="{{ url_for('auth.login') }}?next=/customer/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
                 Post a Job
             </a>
-            <a href="{{ url_for('replit_auth.login') }}?next=/hauler/jobs" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
+            <a href="{{ url_for('auth.login') }}?next=/hauler/jobs" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
                 Find Jobs
             </a>
         {% endif %}

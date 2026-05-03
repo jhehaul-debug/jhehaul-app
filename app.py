@@ -76,10 +76,11 @@ with app.app_context():
 
     try:
         from models import User
-        admin = User.query.filter_by(email="incorporateiq@gmail.com").first()
+        admin_email = os.environ.get("ADMIN_EMAIL", "incorporateiq@gmail.com")
+        admin = User.query.filter_by(email=admin_email).first()
         if admin and not admin.is_admin:
             admin.is_admin = True
             db.session.commit()
-            logging.info("Admin flag restored for incorporateiq@gmail.com")
+            logging.info("Admin flag restored for %s", admin_email)
     except Exception as e:
         logging.exception("Admin flag restore skipped: %s", e)

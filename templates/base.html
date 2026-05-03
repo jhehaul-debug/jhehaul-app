@@ -85,8 +85,10 @@
                         {% endif %}
                         <a href="{{ url_for('profile') }}">Profile</a>
                         <a href="{{ url_for('home') }}">Home</a>
-                    <a href="{{ url_for('about') }}">About Us</a>
-                        
+                        <a href="{{ url_for('about') }}">About Us</a>
+                        <a href="{{ url_for('auth.logout') }}">Sign Out</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Sign In</a>
                 {% endif %}
             </nav>
         </div>

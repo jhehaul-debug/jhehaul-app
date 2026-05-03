@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://jhehaul:jhehaul@db:5432/jhehaul
+      - SESSION_SECRET=dev-secret-change-in-production
+      - APP_BASE_URL=http://localhost:8080
+      - OAUTHLIB_INSECURE_TRANSPORT=1
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: jhehaul
+      POSTGRES_USER: jhehaul
+      POSTGRES_PASSWORD: jhehaul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jhehaul"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  uploads_data:
