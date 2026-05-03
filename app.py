@@ -2,16 +2,9 @@ import os
 import logging
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 logging.basicConfig(level=logging.INFO)
-
-
-class Base(DeclarativeBase):
-    pass
-
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET") or os.environ.get("SECRET_KEY") or "dev-secret-change-me"
@@ -31,7 +24,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
-db = SQLAlchemy(app, model_class=Base)
+# Import db from models (single source of truth) and bind to this app
+from models import db  # noqa: E402
+db.init_app(app)
 
 # ---- Upload folder ----
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
@@ -60,14 +55,14 @@ def choose_pay_link(accepted_quote):
         return PAY_LINK_OVER_500
 
 
-# ---- Initialize tables and load ZIP codes (for production gunicorn) ----
+# ---- Initialize tables and load ZIP codes ----
 with app.app_context():
-    import models  # noqa: F401
+    import models as _models  # noqa: F401
     db.create_all()
     logging.info("Database tables created")
 
     try:
-        from models import User, ZipCode
+        from models import ZipCode
         from load_zips import load_minnesota_zips
         count = ZipCode.query.count()
         if count == 0:
@@ -79,8 +74,8 @@ with app.app_context():
     except Exception as e:
         logging.exception("ZIP code load skipped: %s", e)
 
-    # Restore admin flag for hardcoded admin email
     try:
+        from models import User
         admin = User.query.filter_by(email="incorporateiq@gmail.com").first()
         if admin and not admin.is_admin:
             admin.is_admin = True

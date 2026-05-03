@@ -1,16 +1,14 @@
 from datetime import datetime
-from app import db
-
+from flask_sqlalchemy import SQLAlchemy
 
 from sqlalchemy import UniqueConstraint
 from flask_login import UserMixin
+
+db = SQLAlchemy()
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.String, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=True)
-    password = db.Column(db.String(255))
-    is_admin = db.Column(db.Boolean, default=False)
-    agreed_to_hauler_terms = db.Column(db.Boolean, default=False)
     first_name = db.Column(db.String, nullable=True)
     last_name = db.Column(db.String, nullable=True)
     profile_image_url = db.Column(db.String, nullable=True)
@@ -39,16 +37,7 @@ class User(UserMixin, db.Model):
         return self.phone
 
     
-class OAuth(OAuthConsumerMixin, db.Model):
-    user_id = db.Column(db.String, db.ForeignKey(User.id))
-    browser_session_key = db.Column(db.String, nullable=False)
-    user = db.relationship(User)
-    __table_args__ = (UniqueConstraint(
-        'user_id',
-        'browser_session_key',
-        'provider',
-        name='uq_user_browser_session_key_provider',
-    ),)
+
 
 class Job(db.Model):
     __tablename__ = 'jobs'
@@ -126,4 +115,14 @@ class Review(db.Model):
     customer_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class OAuth(db.Model):
+    __tablename__ = 'oauth'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    browser_session_key = db.Column(db.String, nullable=False)
+    provider = db.Column(db.String, nullable=False)
+    token = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)

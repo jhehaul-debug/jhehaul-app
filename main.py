@@ -1,5 +1,5 @@
 from app import app, db
-import routes
+import routes  # noqa: F401 - registers all routes with the app
 import logging
 
 if __name__ == "__main__":
