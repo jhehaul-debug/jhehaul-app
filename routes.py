@@ -954,7 +954,8 @@ def admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
-@app.route("/")
-def home():
-    return
-    
+
+
+@app.route("/health")
+def health():
+    return "ok", 200
