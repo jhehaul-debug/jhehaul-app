@@ -19,99 +19,145 @@
     <meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
     {% endblock %}
     <link rel="icon" type="image/png" href="/static/og-image.png">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-        header { background: #2c3e50; color: white; padding: 15px 0; margin-bottom: 30px; }
-        header .container { display: flex; justify-content: space-between; align-items: center; }
-        header h1 { font-size: 1.5rem; }
-        header a { color: white; text-decoration: none; }
-        nav a { margin-left: 20px; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 5px; }
-        nav a:hover { background: rgba(255,255,255,0.2); }
-        .card { background: white; border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .btn { display: inline-block; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 1rem; }
-        .btn-primary { background: #3498db; color: white; }
-        .btn-primary:hover { background: #2980b9; }
-        .btn-success { background: #27ae60; color: white; }
-        .btn-success:hover { background: #219a52; }
-        .btn-danger { background: #e74c3c; color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
-        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .form-group textarea { min-height: 100px; resize: vertical; }
-        .status { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; }
-        .status-open { background: #e8f5e9; color: #2e7d32; }
-        .status-bidding { background: #e3f2fd; color: #1565c0; }
-        .status-accepted { background: #fff3e0; color: #ef6c00; }
-        .status-deposit_paid { background: #e8f5e9; color: #2e7d32; }
-        .status-completed { background: #e8f5e9; color: #2e7d32; }
-        .status-cancelled { background: #ffebee; color: #c62828; }
-        .btn-secondary { background: #95a5a6; color: white; }
-        .btn-secondary:hover { background: #7f8c8d; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .user-info img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
-        hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
-        .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
-        .photo-grid img { max-width: 200px; border-radius: 8px; border: 1px solid #ddd; }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1><a href="/">JHE Haul</a></h1>
-            <nav>
+
+<header>
+    <div class="container">
+        <div class="header-inner">
+            <a href="/" class="brand">🚛 JHE Haul</a>
+
+            <!-- Desktop nav -->
+            <nav class="nav-desktop">
                 {% if current_user.is_authenticated %}
-                    <div class="user-info">
+                    <div class="user-chip">
                         {% if current_user.profile_image_url %}
                             <img src="{{ current_user.profile_image_url }}" alt="Profile">
                         {% endif %}
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
-                        {% if current_user.is_admin %}
-                            <a href="{{ url_for('admin_dashboard') }}">Admin</a>
-                            <a href="{{ url_for('customer_new') }}">Post Job</a>
-                            <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
-                            <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
-                            <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
-                            <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
-                        {% elif current_user.user_type == 'customer' %}
-                            <a href="{{ url_for('customer_new') }}">Post Job</a>
-                            <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
-                        {% elif current_user.user_type == 'hauler' %}
-                            <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
-                            <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
-                            <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
-                        {% endif %}
-                        <a href="{{ url_for('profile') }}">Profile</a>
-                        <a href="{{ url_for('home') }}">Home</a>
-                        <a href="{{ url_for('about') }}">About Us</a>
-                        <a href="{{ url_for('auth.logout') }}">Sign Out</a>
+                    </div>
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">⚙ Admin</a>
+                        <a href="{{ url_for('customer_new') }}">Post Job</a>
+                        <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
+                        <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
+                        <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
+                    {% elif current_user.user_type == 'customer' %}
+                        <a href="{{ url_for('customer_new') }}">Post Job</a>
+                        <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
+                    {% elif current_user.user_type == 'hauler' %}
+                        <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
+                        <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
+                    {% endif %}
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-signout">Sign Out</a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}">Sign In</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
                 {% endif %}
             </nav>
+
+            <!-- Mobile hamburger -->
+            <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
-    </header>
-    <main class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
+    </div>
+
+    <!-- Mobile nav drawer -->
+    <nav class="nav-mobile" id="mobileNav">
+        {% if current_user.is_authenticated %}
+            <div class="nav-mobile-user">
+                {{ current_user.first_name or current_user.email or 'User' }}
+                {% if current_user.user_type %} · {{ current_user.user_type.title() }}{% endif %}
+            </div>
+            {% if current_user.is_admin %}
+                <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
+                <a href="{{ url_for('customer_new') }}">📋 Post Job</a>
+                <a href="{{ url_for('customer_jobs') }}">📦 My Jobs</a>
+                <a href="{{ url_for('hauler_jobs') }}">🔍 Open Jobs</a>
+                <a href="{{ url_for('hauler_dashboard') }}">🏠 Dashboard</a>
+                <a href="{{ url_for('hauler_earnings') }}">💰 Earnings</a>
+            {% elif current_user.user_type == 'customer' %}
+                <a href="{{ url_for('customer_new') }}">📋 Post Job</a>
+                <a href="{{ url_for('customer_jobs') }}">📦 My Jobs</a>
+            {% elif current_user.user_type == 'hauler' %}
+                <a href="{{ url_for('hauler_jobs') }}">🔍 Open Jobs</a>
+                <a href="{{ url_for('hauler_dashboard') }}">🏠 Dashboard</a>
+                <a href="{{ url_for('hauler_earnings') }}">💰 Earnings</a>
+            {% endif %}
+            <a href="{{ url_for('profile') }}">👤 Profile</a>
+            <a href="{{ url_for('about') }}">ℹ About Us</a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-signout">⬅ Sign Out</a>
+        {% else %}
+            <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
+            <a href="{{ url_for('about') }}">ℹ About Us</a>
+        {% endif %}
+    </nav>
+</header>
+
+<main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
         {% for category, message in messages %}
-        <div style="padding: 12px 20px; margin-bottom: 15px; border-radius: 8px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
-            {{ message }}
+        <div class="flash {% if category == 'error' %}flash-error{% else %}flash-success{% endif %}">
+            {% if category == 'error' %}⚠{% else %}✓{% endif %} {{ message }}
         </div>
         {% endfor %}
-        {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-    </main>
-    <footer style="background: #2c3e50; color: white; padding: 30px 0; margin-top: 50px; text-align: center;">
-        <div class="container">
-            <p style="margin-bottom: 10px;"><a href="{{ url_for('about') }}" style="color: white; text-decoration: underline;">About Us</a></p>
-            <p style="margin-bottom: 10px;">Questions or need help? Contact us:</p>
-            <p><a href="mailto:incorporateiq@gmail.com" style="color: #3498db;">Contact Support</a></p>
-            <p style="margin-top: 20px; font-size: 0.9rem; color: #95a5a6;">&copy; 2026 JHE Haul. All rights reserved.</p>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    <div class="container">
+        <div class="footer-inner">
+            <div>
+                <span class="footer-brand">🚛 JHE Haul</span>
+                <p class="footer-desc">The local junk hauling marketplace. Post jobs, get bids, and get your junk removed fast.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="{{ url_for('about') }}">About Us</a>
+                <a href="{{ url_for('customer_terms') }}">Customer Terms</a>
+                <a href="{{ url_for('hauler_agreement') }}">Hauler Agreement</a>
+            </div>
+            <div class="footer-col">
+                <h4>Support</h4>
+                <a href="mailto:incorporateiq@gmail.com">Contact Support</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('profile') }}">My Profile</a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}">Sign In</a>
+                {% endif %}
+            </div>
         </div>
-    </footer>
+        <div class="footer-bottom">
+            &copy; 2026 JHE Haul. All rights reserved.
+        </div>
+    </div>
+</footer>
+
+<script>
+(function() {
+    var btn = document.getElementById('hamburgerBtn');
+    var nav = document.getElementById('mobileNav');
+    if (btn && nav) {
+        btn.addEventListener('click', function() {
+            nav.classList.toggle('open');
+        });
+        document.addEventListener('click', function(e) {
+            if (!btn.contains(e.target) && !nav.contains(e.target)) {
+                nav.classList.remove('open');
+            }
+        });
+    }
+})();
+</script>
 </body>
 </html>

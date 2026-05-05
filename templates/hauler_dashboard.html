@@ -1,67 +1,79 @@
 {% extends "base.html" %}
 {% block title %}My Dashboard - JHE Haul{% endblock %}
 {% block content %}
-<h2>My Dashboard</h2>
-<p>Jobs where your bid was accepted:</p>
+
+<div class="page-header">
+    <h2 class="page-title">My Dashboard</h2>
+    <a href="{{ url_for('hauler_earnings') }}" class="btn btn-outline btn-sm">💰 Earnings</a>
+</div>
 
 {% if not jobs %}
 <div class="card">
-    <p>No accepted jobs yet. Keep bidding on open jobs!</p>
-    <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary" style="margin-top: 15px;">Browse Open Jobs</a>
+    <div class="empty-state">
+        <div class="empty-icon">🚛</div>
+        <p>No accepted jobs yet. Start bidding on open jobs!</p>
+        <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary btn-lg">Browse Open Jobs</a>
+    </div>
 </div>
 {% else %}
+<p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Jobs where your bid was accepted:</p>
 {% for job in jobs %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: start;">
-        <h3>Job #{{ job.id }}</h3>
-        <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+    <div class="card-header">
+        <div>
+            <h3 style="margin-bottom:6px;">Job #{{ job.id }}</h3>
+            <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+        </div>
+        <div style="text-align:right;">
+            <span style="font-size:1.3rem;font-weight:800;color:#27ae60;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
+        </div>
     </div>
     <hr>
-    <p><strong>Description:</strong> {{ job.job_description }}</p>
-    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    <p style="color:#4a5568;margin-bottom:10px;">{{ job.job_description }}</p>
+
     {% if job.preferred_date or job.preferred_time %}
-    <p><strong>Preferred Pickup:</strong> 
+    <p style="font-size:0.87rem;color:#718096;margin-bottom:12px;">
+        📅 Preferred:
         {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
         {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
     </p>
     {% endif %}
-    
+
     {% if job.status == 'deposit_paid' %}
-    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-top: 15px;">
-        <strong>Customer:</strong> {{ job.customer_name }}<br>
-        {% if job.customer_phone %}<strong>Phone:</strong> {{ job.customer_phone }}<br>{% endif %}
-        <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}
-        <br><br>
-        <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}" 
-           target="_blank" 
-           class="btn btn-primary" 
-           style="display: inline-block;">
-            Get Directions
-        </a>
-        <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
-           class="btn btn-success"
-           style="display: inline-block; margin-left: 10px;">
-            Submit Completion Proof
-        </a>
+    <div class="banner banner-success">
+        <div style="margin-bottom:10px;">
+            <strong>Customer:</strong> {{ job.customer_name }}<br>
+            {% if job.customer_phone %}<strong>Phone:</strong> {{ job.customer_phone }}<br>{% endif %}
+            <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}"
+               target="_blank" class="btn btn-primary btn-sm">🗺 Get Directions</a>
+            <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
+               class="btn btn-success btn-sm">📷 Submit Completion Proof</a>
+        </div>
     </div>
+
     {% elif job.status == 'completed' %}
-    <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px;">
-        <strong>Customer:</strong> {{ job.customer_name }}<br>
-        <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}<br>
-        <strong>Job Completed!</strong>
-        {% if job.completed_at %}<br>Completed on {{ job.completed_at.strftime('%B %d, %Y') }}{% endif %}
+    <div class="banner banner-complete">
+        <strong>✅ Job Completed!</strong><br>
+        <span style="font-size:0.88rem;">{{ job.customer_name }} · {{ job.pickup_address }}, {{ job.pickup_zip }}</span>
+        {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at.strftime('%B %d, %Y') }}</span>{% endif %}
     </div>
+
     {% elif job.status == 'accepted' %}
-    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
-        <strong>Waiting for customer deposit confirmation.</strong><br>
-        <small>The full address and customer info will unlock once the deposit is paid.</small>
+    <div class="banner banner-warning">
+        <strong>⏳ Waiting for customer deposit</strong><br>
+        <span style="font-size:0.87rem;">The full address and customer info will unlock once the deposit is paid.</span>
     </div>
+
     {% else %}
-    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
-        <strong>Exact address will unlock after booking confirmation.</strong>
+    <div class="banner banner-info">
+        <strong>🔒 Address unlocks after booking confirmation.</strong>
     </div>
     {% endif %}
 </div>
 {% endfor %}
 {% endif %}
+
 {% endblock %}

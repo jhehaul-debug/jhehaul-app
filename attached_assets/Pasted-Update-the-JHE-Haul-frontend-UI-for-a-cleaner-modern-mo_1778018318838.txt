@@ -1,0 +1,98 @@
+Update the JHE Haul frontend UI for a cleaner modern mobile-first marketplace layout while preserving ALL backend functionality, Flask routes, database models, OAuth, admin permissions, and DigitalOcean deployment compatibility.
+
+Goals:
+- Improve mobile responsiveness
+- Modernize the admin dashboard
+- Clean up navigation
+- Improve spacing and consistency
+- Keep current blue/white branding
+- Do NOT break any routes or functionality
+
+Tasks:
+
+1. MOBILE NAVIGATION
+- Replace crowded top navbar buttons with a responsive hamburger menu on mobile
+- Keep desktop navigation visible on larger screens
+- Menu should include:
+  - Dashboard
+  - Post Job
+  - My Jobs
+  - Admin
+  - Logout
+- Ensure menu collapses correctly on phones
+
+2. DASHBOARD CARDS
+- Improve admin dashboard cards
+- Use responsive grid layout:
+  - 2 cards per row on tablets/desktops
+  - 1 card per row on phones
+- Add subtle hover effects
+- Add icons for:
+  - Users
+  - Jobs
+  - Revenue
+  - Bids
+- Maintain clean spacing and rounded corners
+
+3. BUTTON SYSTEM
+- Create consistent button styles:
+  - Primary blue
+  - Success green
+  - Danger red
+  - Secondary gray
+- Ensure all buttons have equal padding, border radius, and font sizing
+- Improve mobile tap spacing
+
+4. FORMS
+- Improve spacing between labels and fields
+- Make all inputs full width on mobile
+- Improve dropdown styling
+- Add focus glow/border on active fields
+
+5. TYPOGRAPHY
+- Improve heading hierarchy
+- Make dashboard headers cleaner and bolder
+- Improve readability on mobile screens
+
+6. ADMIN DASHBOARD
+- Add “Quick Actions” section near top:
+  - Post Test Job
+  - Invite Customer
+  - Invite Hauler
+  - Send Notification
+- Keep all existing functionality connected
+
+7. FOOTER
+- Modernize footer layout
+- Improve spacing
+- Keep About Us and Contact Support links
+
+8. CSS ORGANIZATION
+- Consolidate styles into main stylesheet if possible
+- Remove duplicate CSS
+- Keep code clean and maintainable
+
+9. IMPORTANT
+- Do NOT rename Flask routes
+- Do NOT modify database schema
+- Do NOT break OAuth login
+- Do NOT change DigitalOcean gunicorn configuration
+- Do NOT remove existing functionality
+- Keep app compatible with:
+  gunicorn app:app --bind 0.0.0.0:$PORT
+
+10. FILES TO UPDATE
+Primarily:
+- templates/base.html
+- templates/admin_dashboard.html
+- templates/*.html
+- static/style.css
+or static/css/style.css
+
+11. FINAL STEP
+After updates:
+- Verify all templates render correctly
+- Verify admin dashboard still loads
+- Verify OAuth login still works
+- Verify mobile layout responsiveness
+- Prepare changes for git commit and DigitalOcean redeploy

@@ -1,38 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Upload Photos - JHE Haul{% endblock %}
 {% block content %}
+
+<a href="{{ url_for('hauler_dashboard') }}" class="back-link">← Back to Dashboard</a>
+
 <div class="card">
-    <h2>Upload Photos for Job #{{ job.id }}</h2>
+    <h2 style="margin-bottom:4px;">Upload Completion Photos</h2>
+    <p style="color:#718096;margin-bottom:16px;font-size:0.92rem;">Job #{{ job.id }} — document the work before and after.</p>
     <hr>
-    <p><strong>Description:</strong> {{ job.job_description }}</p>
-    
+    <p style="color:#4a5568;margin-bottom:18px;"><strong>Description:</strong> {{ job.job_description }}</p>
+
     <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label>Before Photos</label>
-            <input type="file" name="before_photos" multiple accept="image/*">
-            <small style="color: #666;">Photos of items before removal</small>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Before Photos</label>
+                <input type="file" name="before_photos" multiple accept="image/*"
+                       style="background:white;padding:8px;">
+                <small>Photos of items before removal</small>
+            </div>
+            <div class="form-group">
+                <label>After Photos</label>
+                <input type="file" name="after_photos" multiple accept="image/*"
+                       style="background:white;padding:8px;">
+                <small>Photos showing area cleared</small>
+            </div>
         </div>
-        <div class="form-group">
-            <label>After Photos</label>
-            <input type="file" name="after_photos" multiple accept="image/*">
-            <small style="color: #666;">Photos showing area cleared</small>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            <button type="submit" class="btn btn-success">Upload Photos</button>
+            <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
-        <button type="submit" class="btn btn-success">Upload Photos</button>
-        <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-secondary" style="margin-left: 10px;">Cancel</a>
     </form>
 </div>
 
 {% if job.completion_photos %}
-<div class="card" style="margin-top: 20px;">
-    <h3>Uploaded Photos</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+<div class="card">
+    <h3 style="margin-bottom:14px;">Uploaded Photos</h3>
+    <div class="photo-grid">
         {% for photo in job.completion_photos %}
-        <div style="text-align: center;">
-            <img src="{{ url_for('uploaded_file', filename=photo.filename) }}" style="max-width: 150px; max-height: 150px; border-radius: 8px;">
-            <p style="margin: 5px 0; font-size: 12px;">{{ photo.photo_type.title() }}</p>
+        <div style="text-align:center;">
+            <img src="{{ url_for('uploaded_file', filename=photo.filename) }}"
+                 style="width:130px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+            <p style="font-size:0.78rem;color:#718096;margin-top:4px;">{{ photo.photo_type.title() }}</p>
         </div>
         {% endfor %}
     </div>
 </div>
 {% endif %}
+
 {% endblock %}

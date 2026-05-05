@@ -1,57 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Admin Dashboard - JHE Haul{% endblock %}
 {% block content %}
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div style="padding: 12px 20px; margin-bottom: 15px; border-radius: 8px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
-    {{ message }}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-<h2 style="margin-bottom: 20px;">Admin Dashboard</h2>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-    <div class="card" style="text-align: center;">
-        <h3 style="font-size: 2rem; color: #3498db;">{{ total_users }}</h3>
-        <p>Total Users</p>
-        <p style="font-size: 0.85rem; color: #888;">{{ total_customers }} customers / {{ total_haulers }} haulers</p>
-    </div>
-    <div class="card" style="text-align: center;">
-        <h3 style="font-size: 2rem; color: #27ae60;">{{ total_jobs }}</h3>
-        <p>Total Jobs</p>
-        <p style="font-size: 0.85rem; color: #888;">{{ open_jobs }} open / {{ active_jobs }} active</p>
-    </div>
-    <div class="card" style="text-align: center;">
-        <h3 style="font-size: 2rem; color: #e67e22;">{{ completed_jobs }}</h3>
-        <p>Completed</p>
-        <p style="font-size: 0.85rem; color: #888;">{{ cancelled_jobs }} cancelled</p>
-    </div>
-    <div class="card" style="text-align: center;">
-        <h3 style="font-size: 2rem; color: #9b59b6;">{{ total_bids }}</h3>
-        <p>Total Bids</p>
-    </div>
-    <div class="card" style="text-align: center;">
-        <h3 style="font-size: 2rem; color: #2ecc71;">${{ "%.2f"|format(total_revenue) }}</h3>
-        <p>Total Revenue</p>
-    </div>
+<div class="page-header">
+    <h2 class="page-title">⚙ Admin Dashboard</h2>
 </div>
 
+<!-- Stat Cards -->
+<div class="stat-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" style="color:#3498db;">{{ total_users }}</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-sub">{{ total_customers }} customers · {{ total_haulers }} haulers</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value" style="color:#27ae60;">{{ total_jobs }}</div>
+        <div class="stat-label">Total Jobs</div>
+        <div class="stat-sub">{{ open_jobs }} open · {{ active_jobs }} active</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" style="color:#e67e22;">{{ completed_jobs }}</div>
+        <div class="stat-label">Completed</div>
+        <div class="stat-sub">{{ cancelled_jobs }} cancelled</div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon">🏷</div>
+        <div class="stat-value" style="color:#9b59b6;">{{ total_bids }}</div>
+        <div class="stat-label">Total Bids</div>
+    </div>
+    <div class="stat-card teal">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" style="color:#1abc9c;">${{ "%.0f"|format(total_revenue) }}</div>
+        <div class="stat-label">Revenue</div>
+        <div class="stat-sub">${{ "%.2f"|format(total_revenue) }} total</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
 <div class="card">
-    <h3 style="margin-bottom: 15px;">Share Invite Links</h3>
-    <p style="color: #666; margin-bottom: 15px;">Tap a button below to share an invite link via text, email, or any app.</p>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button onclick="shareInvite('customer')" class="btn btn-primary" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
-            Share - Invite a Customer
+    <h3 style="margin-bottom:14px;">⚡ Quick Actions</h3>
+    <div class="quick-actions">
+        <a href="#post-test-job" onclick="document.getElementById('post-test-job').scrollIntoView({behavior:'smooth'});return false;"
+           class="btn btn-primary">📋 Post Test Job</a>
+        <button onclick="shareInvite('customer')" class="btn btn-outline">👤 Invite Customer</button>
+        <button onclick="shareInvite('hauler')" class="btn btn-success">🚛 Invite Hauler</button>
+        <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;"
+           class="btn btn-secondary">📧 Send Notification</a>
+        <button onclick="shareInvite('general')" class="btn btn-secondary">🔗 General Invite</button>
+    </div>
+</div>
+
+<!-- Share Invite Links -->
+<div class="card">
+    <h3 style="margin-bottom:8px;">📣 Share Invite Links</h3>
+    <p style="color:#718096;margin-bottom:16px;font-size:0.92rem;">Share invite links via text, email, or any app.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button onclick="shareInvite('customer')" class="btn btn-primary" style="flex:1;min-width:180px;">
+            👤 Invite a Customer
         </button>
-        <button onclick="shareInvite('hauler')" class="btn btn-success" style="padding: 15px 30px; font-size: 1rem; flex: 1; min-width: 200px;">
-            Share - Invite a Hauler
+        <button onclick="shareInvite('hauler')" class="btn btn-success" style="flex:1;min-width:180px;">
+            🚛 Invite a Hauler
         </button>
     </div>
-    <div style="margin-top: 15px;">
-        <button onclick="shareInvite('general')" class="btn btn-secondary" style="padding: 12px 30px; font-size: 1rem; width: 100%;">
-            Share - General Invite (they pick their role)
+    <div style="margin-top:10px;">
+        <button onclick="shareInvite('general')" class="btn btn-secondary btn-block">
+            🔗 General Invite (they pick their role)
         </button>
     </div>
 </div>
@@ -80,120 +96,132 @@ function shareInvite(type) {
 }
 </script>
 
-<div class="card">
-    <h3 style="margin-bottom: 15px;">Post Test Job</h3>
+<!-- Post Test Job -->
+<div class="card" id="post-test-job">
+    <h3 style="margin-bottom:16px;">📋 Post Test Job</h3>
     <form method="POST" action="{{ url_for('admin_test_job') }}">
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Customer Name</label>
-            <input type="text" name="customer_name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" name="customer_name" required placeholder="Test Customer">
+            </div>
+            <div class="form-group">
+                <label>Pickup ZIP</label>
+                <input type="text" name="pickup_zip" required placeholder="55401" maxlength="5"
+                       pattern="\d{5}" inputmode="numeric"
+                       oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
+            </div>
         </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Pickup Address</label>
-            <input type="text" name="pickup_address" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        <div class="form-group">
+            <label>Pickup Address</label>
+            <input type="text" name="pickup_address" required placeholder="Street Address, City, State">
         </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Pickup ZIP</label>
-            <input type="text" name="pickup_zip" required placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Preferred Date</label>
+                <input type="date" name="preferred_date">
+            </div>
+            <div class="form-group">
+                <label>Preferred Time</label>
+                <select name="preferred_time">
+                    <option value="">-- Select --</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Afternoon">Afternoon</option>
+                    <option value="Evening">Evening</option>
+                </select>
+            </div>
         </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Preferred Date</label>
-            <input type="date" name="preferred_date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        <div class="form-group">
+            <label>Job Description</label>
+            <textarea name="job_description" required rows="3" placeholder="Describe the items to be hauled..."></textarea>
         </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Preferred Time</label>
-            <select name="preferred_time" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-                <option value="">-- Select --</option>
-                <option value="Morning">Morning</option>
-                <option value="Afternoon">Afternoon</option>
-                <option value="Evening">Evening</option>
-            </select>
-        </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Job Description</label>
-            <textarea name="job_description" required rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Post Test Job</button>
+        <button type="submit" class="btn btn-primary">Post Test Job</button>
     </form>
 </div>
 
-<div class="card">
-    <h3 style="margin-bottom: 15px;">Send Test Notification</h3>
+<!-- Send Test Notification -->
+<div class="card" id="send-notification">
+    <h3 style="margin-bottom:16px;">📧 Send Test Notification</h3>
     <form method="POST" action="{{ url_for('admin_test_email') }}">
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Recipient Email</label>
-            <input type="email" name="email" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Recipient Email</label>
+                <input type="email" name="email" required placeholder="test@example.com">
+            </div>
+            <div class="form-group">
+                <label>Notification Type</label>
+                <select name="notification_type" required>
+                    <option value="">-- Select --</option>
+                    <option value="new_bid">New Bid Notification</option>
+                    <option value="bid_accepted">Bid Accepted Notification</option>
+                    <option value="deposit_paid">Deposit Paid Notification</option>
+                    <option value="new_job_nearby">New Job Nearby Notification</option>
+                </select>
+            </div>
         </div>
-        <div style="margin-bottom: 12px;">
-            <label style="display: block; margin-bottom: 4px; font-weight: bold;">Notification Type</label>
-            <select name="notification_type" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-                <option value="">-- Select --</option>
-                <option value="new_bid">New Bid Notification</option>
-                <option value="bid_accepted">Bid Accepted Notification</option>
-                <option value="deposit_paid">Deposit Paid Notification</option>
-                <option value="new_job_nearby">New Job Nearby Notification</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Send Test Email</button>
+        <button type="submit" class="btn btn-primary">Send Test Email</button>
     </form>
 </div>
 
-<h3 style="margin-bottom: 15px;">All Jobs</h3>
+<!-- All Jobs -->
+<div class="section-header">
+    <span class="section-title">All Jobs ({{ jobs|length }})</span>
+</div>
 {% if jobs %}
 {% for job in jobs %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: start;">
+    <div class="card-header">
         <div>
-            <h4>Job #{{ job.id }} - {{ job.customer_name }}</h4>
+            <h4 style="margin-bottom:4px;">Job #{{ job.id }} — {{ job.customer_name }}</h4>
             <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
         </div>
-        <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}" onsubmit="return confirm('Are you sure you want to delete this job?');">
-            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}"
+              onsubmit="return confirm('Delete job #{{ job.id }}?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
     </div>
     <hr>
-    <p><strong>Description:</strong> {{ job.job_description[:200] }}</p>
+    <p><strong>Description:</strong> {{ job.job_description[:200] }}{% if job.job_description|length > 200 %}…{% endif %}</p>
     <p><strong>Address:</strong>
-      {% if job.deposit_paid %}
-        {{ job.pickup_address }}
-      {% else %}
-        🔒 Hidden until deposit is paid
-      {% endif %}
+        {% if job.deposit_paid %}{{ job.pickup_address }}{% else %}<span style="color:#a0aec0;">🔒 Hidden until deposit paid</span>{% endif %}
     </p>
     <p><strong>ZIP:</strong> {{ job.pickup_zip or 'N/A' }}</p>
     {% if job.accepted_hauler %}
-    <p><strong>Hauler:</strong> {{ job.accepted_hauler }}</p>
-    <p><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
+    <p><strong>Hauler:</strong> {{ job.accepted_hauler }} &nbsp;·&nbsp; <strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
     {% endif %}
     {% if job.deposit_paid %}
-    <p style="color: green;"><strong>Deposit Paid</strong></p>
+    <p style="color:#27ae60;font-weight:600;">✓ Deposit Paid</p>
     {% endif %}
-    <p style="font-size: 0.85rem; color: #888;">Posted: {{ job.created_at.strftime('%b %d, %Y %I:%M %p') if job.created_at else 'N/A' }}</p>
+    <p style="font-size:0.82rem;color:#a0aec0;margin-top:4px;">Posted: {{ job.created_at.strftime('%b %d, %Y %I:%M %p') if job.created_at else 'N/A' }}</p>
     {% if job.bids %}
     <hr>
-    <p><strong>Bids ({{ job.bids|length }}):</strong></p>
+    <p style="font-weight:600;margin-bottom:6px;">Bids ({{ job.bids|length }})</p>
     {% for bid in job.bids %}
-    <p style="font-size: 0.9rem; margin-left: 15px;">{{ bid.hauler_name }} - ${{ "%.2f"|format(bid.quote_amount) }} <span style="color: #888;">({{ bid.status }})</span></p>
+    <p style="font-size:0.88rem;margin-left:12px;color:#4a5568;">
+        {{ bid.hauler_name }} — <strong>${{ "%.2f"|format(bid.quote_amount) }}</strong>
+        <span style="color:#a0aec0;">({{ bid.status }})</span>
+    </p>
     {% endfor %}
     {% endif %}
     {% if job.status in ['open', 'bidding'] %}
     <hr>
-    <details style="margin-top: 10px;">
-        <summary style="cursor: pointer; color: #007bff; font-weight: bold;">Submit Test Bid on This Job</summary>
-        <form method="POST" action="{{ url_for('admin_test_bid', job_id=job.id) }}" style="margin-top: 10px;">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
-                <div style="flex: 1; min-width: 150px;">
-                    <label style="display: block; margin-bottom: 4px; font-size: 0.85rem;">Hauler Name</label>
-                    <input type="text" name="hauler_name" required value="Test Hauler" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+    <details style="margin-top:6px;">
+        <summary style="cursor:pointer;color:#3498db;font-weight:600;font-size:0.9rem;">Submit Test Bid</summary>
+        <form method="POST" action="{{ url_for('admin_test_bid', job_id=job.id) }}" style="margin-top:12px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                <div style="flex:1;min-width:140px;" class="form-group" style="margin-bottom:0">
+                    <label style="font-size:0.82rem;">Hauler Name</label>
+                    <input type="text" name="hauler_name" required value="Test Hauler">
                 </div>
-                <div style="flex: 1; min-width: 120px;">
-                    <label style="display: block; margin-bottom: 4px; font-size: 0.85rem;">Quote ($)</label>
-                    <input type="number" name="quote_amount" step="0.01" required value="150.00" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                <div style="flex:1;min-width:110px;" class="form-group" style="margin-bottom:0">
+                    <label style="font-size:0.82rem;">Quote ($)</label>
+                    <input type="number" name="quote_amount" step="0.01" required value="150.00">
                 </div>
-                <div style="flex: 2; min-width: 200px;">
-                    <label style="display: block; margin-bottom: 4px; font-size: 0.85rem;">Message (optional)</label>
-                    <input type="text" name="message" placeholder="I can do this job today" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                <div style="flex:2;min-width:180px;" class="form-group" style="margin-bottom:0">
+                    <label style="font-size:0.82rem;">Message (optional)</label>
+                    <input type="text" name="message" placeholder="I can do this job today">
                 </div>
-                <button type="submit" class="btn btn-success" style="padding: 6px 16px; font-size: 0.85rem;">Submit Bid</button>
+                <button type="submit" class="btn btn-success btn-sm">Submit Bid</button>
             </div>
         </form>
     </details>
@@ -201,75 +229,107 @@ function shareInvite(type) {
 </div>
 {% endfor %}
 {% else %}
-<div class="card"><p>No jobs yet.</p></div>
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <p>No jobs posted yet.</p>
+    </div>
+</div>
 {% endif %}
 
-<h3 style="margin: 30px 0 15px;">All Users ({{ users|length }})</h3>
+<!-- All Users -->
+<div class="section-header" style="margin-top:32px;">
+    <span class="section-title">All Users ({{ users|length }})</span>
+</div>
 
-<h4 style="margin-bottom: 10px; color: #27ae60;">Haulers ({{ users|selectattr('user_type', 'equalto', 'hauler')|list|length }})</h4>
+<!-- Haulers -->
+<h4 style="color:#27ae60;margin:16px 0 10px;font-size:1rem;">
+    🚛 Haulers ({{ users|selectattr('user_type', 'equalto', 'hauler')|list|length }})
+</h4>
 {% for user in users if user.user_type == 'hauler' %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h4>{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}{% if user.is_admin %} <span style="color: #e74c3c; font-size: 0.8rem;">(Admin)</span>{% endif %}</h4>
-            <p style="color: #666;">{{ user.email or 'No email' }}</p>
-            <p><span class="status status-open">Hauler</span>
-                {% if not user.home_zip %}<span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; margin-left: 5px;">Setup Incomplete</span>{% endif %}
-            </p>
-            {% if user.phone %}<p style="font-size: 0.85rem;">Phone: {{ user.phone_formatted }}</p>{% endif %}
-            {% if user.home_zip %}<p style="font-size: 0.85rem;">ZIP: {{ user.home_zip }} | Range: {{ user.max_travel_miles or 'N/A' }} miles</p>{% endif %}
-            <p style="font-size: 0.8rem; color: #888;">Joined: {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</p>
+<div class="card" style="padding:16px 20px;">
+    <div class="user-row">
+        <div class="user-meta">
+            <div class="user-name">
+                {{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}
+                {% if user.is_admin %}<span style="color:#e74c3c;font-size:0.78rem;font-weight:600;"> (Admin)</span>{% endif %}
+                <span class="status badge-hauler" style="margin-left:6px;">Hauler</span>
+                {% if not user.home_zip %}<span class="status badge-setup" style="margin-left:4px;">Setup Incomplete</span>{% endif %}
+            </div>
+            <div class="user-email">{{ user.email or 'No email' }}</div>
+            <div class="user-detail">
+                {% if user.phone %}📞 {{ user.phone_formatted }} &nbsp;{% endif %}
+                {% if user.home_zip %}📍 ZIP {{ user.home_zip }} · {{ user.max_travel_miles or '?' }} mi range{% endif %}
+                &nbsp;· Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+            </div>
         </div>
         {% if not user.is_admin %}
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete this user and all their data?');">
-            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+              onsubmit="return confirm('Delete {{ user.first_name or user.email }} and all their data?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
         {% endif %}
     </div>
 </div>
 {% else %}
-<div class="card"><p>No haulers yet.</p></div>
+<div class="card"><p style="color:#a0aec0;">No haulers yet.</p></div>
 {% endfor %}
 
-<h4 style="margin: 20px 0 10px; color: #3498db;">Customers ({{ users|selectattr('user_type', 'equalto', 'customer')|list|length }})</h4>
+<!-- Customers -->
+<h4 style="color:#3498db;margin:20px 0 10px;font-size:1rem;">
+    👤 Customers ({{ users|selectattr('user_type', 'equalto', 'customer')|list|length }})
+</h4>
 {% for user in users if user.user_type == 'customer' %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h4>{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}{% if user.is_admin %} <span style="color: #e74c3c; font-size: 0.8rem;">(Admin)</span>{% endif %}</h4>
-            <p style="color: #666;">{{ user.email or 'No email' }}</p>
-            <p><span class="status status-bidding">Customer</span></p>
-            {% if user.phone %}<p style="font-size: 0.85rem;">Phone: {{ user.phone_formatted }}</p>{% endif %}
-            <p style="font-size: 0.8rem; color: #888;">Joined: {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</p>
+<div class="card" style="padding:16px 20px;">
+    <div class="user-row">
+        <div class="user-meta">
+            <div class="user-name">
+                {{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}
+                {% if user.is_admin %}<span style="color:#e74c3c;font-size:0.78rem;font-weight:600;"> (Admin)</span>{% endif %}
+                <span class="status badge-customer" style="margin-left:6px;">Customer</span>
+            </div>
+            <div class="user-email">{{ user.email or 'No email' }}</div>
+            <div class="user-detail">
+                {% if user.phone %}📞 {{ user.phone_formatted }} &nbsp;{% endif %}
+                Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+            </div>
         </div>
         {% if not user.is_admin %}
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete this user and all their data?');">
-            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+              onsubmit="return confirm('Delete {{ user.first_name or user.email }} and all their data?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
         {% endif %}
     </div>
 </div>
 {% else %}
-<div class="card"><p>No customers yet.</p></div>
+<div class="card"><p style="color:#a0aec0;">No customers yet.</p></div>
 {% endfor %}
 
+<!-- Pending / No Role -->
 {% set no_role_users = users|rejectattr('user_type')|list %}
 {% if no_role_users %}
-<h4 style="margin: 20px 0 10px; color: #888;">Pending (No Role Selected) ({{ no_role_users|length }})</h4>
+<h4 style="color:#a0aec0;margin:20px 0 10px;font-size:1rem;">
+    ⏳ Pending — No Role Selected ({{ no_role_users|length }})
+</h4>
 {% for user in no_role_users %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h4>{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</h4>
-            <p style="color: #666;">{{ user.email or 'No email' }}</p>
-            <p><span style="background: #f0f0f0; color: #666; padding: 4px 12px; border-radius: 15px; font-size: 0.85rem;">No role selected</span></p>
-            <p style="font-size: 0.8rem; color: #888;">Joined: {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</p>
+<div class="card" style="padding:16px 20px;">
+    <div class="user-row">
+        <div class="user-meta">
+            <div class="user-name">{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</div>
+            <div class="user-email">{{ user.email or 'No email' }}</div>
+            <div class="user-detail">
+                <span class="status badge-pending">No role selected</span>
+                &nbsp;· Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+            </div>
         </div>
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete this user and all their data?');">
-            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">Delete</button>
+        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+              onsubmit="return confirm('Delete this user and all their data?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
     </div>
 </div>
 {% endfor %}
 {% endif %}
+
 {% endblock %}

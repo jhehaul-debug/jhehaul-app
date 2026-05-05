@@ -1,44 +1,52 @@
 {% extends "base.html" %}
 {% block title %}My Earnings - JHE Haul{% endblock %}
 {% block content %}
-<h2>My Earnings</h2>
 
-<div class="card" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
-    <div style="display: flex; justify-content: space-around; text-align: center;">
-        <div>
-            <h1 style="margin: 0;">${{ "%.2f"|format(total_earnings) }}</h1>
-            <p style="margin: 5px 0;">Total Earnings</p>
-        </div>
-        <div>
-            <h1 style="margin: 0;">{{ job_count }}</h1>
-            <p style="margin: 5px 0;">Jobs Completed</p>
-        </div>
-        <div>
-            <h1 style="margin: 0;">{{ "%.1f"|format(avg_rating) }}</h1>
-            <p style="margin: 5px 0;">Avg Rating ({{ review_count }} reviews)</p>
-        </div>
+<div class="page-header">
+    <h2 class="page-title">My Earnings</h2>
+    <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-outline btn-sm">← Dashboard</a>
+</div>
+
+<div class="earnings-hero">
+    <div>
+        <div class="val">${{ "%.2f"|format(total_earnings) }}</div>
+        <div class="lbl">Total Earned</div>
+    </div>
+    <div>
+        <div class="val">{{ job_count }}</div>
+        <div class="lbl">Jobs Completed</div>
+    </div>
+    <div>
+        <div class="val">{{ "%.1f"|format(avg_rating) }}★</div>
+        <div class="lbl">Avg Rating ({{ review_count }} reviews)</div>
     </div>
 </div>
 
-<h3 style="margin-top: 30px;">Completed Jobs</h3>
+<div class="section-header">
+    <span class="section-title">Completed Jobs</span>
+</div>
+
 {% if not jobs %}
 <div class="card">
-    <p>No completed jobs yet. Complete jobs to see your earnings history.</p>
+    <div class="empty-state">
+        <div class="empty-icon">💰</div>
+        <p>No completed jobs yet. Your earnings will appear here.</p>
+        <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary">Browse Open Jobs</a>
+    </div>
 </div>
 {% else %}
 {% for job in jobs %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: start;">
+    <div class="card-header">
         <div>
-            <h4 style="margin: 0;">Job #{{ job.id }}</h4>
-            <p style="color: #666; margin: 5px 0;">{{ job.completed_at.strftime('%B %d, %Y') if job.completed_at else 'N/A' }}</p>
+            <h4 style="margin-bottom:2px;">Job #{{ job.id }}</h4>
+            <p style="color:#718096;font-size:0.87rem;margin:0;">{{ job.completed_at.strftime('%B %d, %Y') if job.completed_at else 'N/A' }}</p>
         </div>
-        <div style="text-align: right;">
-            <span style="font-size: 20px; font-weight: bold; color: #28a745;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
-        </div>
+        <span style="font-size:1.3rem;font-weight:800;color:#27ae60;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
     </div>
-    <p><strong>Description:</strong> {{ job.job_description[:100] }}{% if job.job_description|length > 100 %}...{% endif %}</p>
+    <p style="color:#4a5568;font-size:0.9rem;">{{ job.job_description[:100] }}{% if job.job_description|length > 100 %}…{% endif %}</p>
 </div>
 {% endfor %}
 {% endif %}
+
 {% endblock %}

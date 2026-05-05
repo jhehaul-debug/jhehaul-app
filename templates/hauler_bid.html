@@ -1,29 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Bid on Job #{{ job.id }} - JHE Haul{% endblock %}
 {% block content %}
+
+<a href="{{ url_for('hauler_jobs') }}" class="back-link">← Back to Open Jobs</a>
+
 <div class="card">
-    <h2>Job #{{ job.id }}</h2>
-    <hr>
-    <p><strong>Description:</strong><br>{{ job.job_description }}</p>
-    {% if job.pickup_zip %}
-    <p><strong>Area:</strong> {{ job.pickup_zip }}
+    <div class="card-header">
+        <h2 style="margin-bottom:0;">Job #{{ job.id }}</h2>
         {% if approx_miles is not none %}
-        <span style="background: #e3f2fd; color: #1565c0; padding: 2px 10px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; margin-left: 8px;">
-            Approx. {{ approx_miles }} miles away
+        <span class="distance-badge">📍 {{ approx_miles }} mi away</span>
+        {% endif %}
+    </div>
+    <hr>
+    <p style="color:#4a5568;line-height:1.6;margin-bottom:12px;"><strong>Description:</strong><br>{{ job.job_description }}</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:0.88rem;color:#718096;">
+        {% if job.pickup_zip %}
+        <span>📮 Area: <strong style="color:#4a5568;">{{ job.pickup_zip }}</strong></span>
+        {% endif %}
+        {% if job.preferred_date or job.preferred_time %}
+        <span>📅 Preferred:
+            {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
+            {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
         </span>
         {% endif %}
-    </p>
-    {% endif %}
-    {% if job.preferred_date or job.preferred_time %}
-    <p><strong>Preferred Pickup:</strong> 
-        {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
-        {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
-    </p>
-    {% endif %}
-    <p style="color: #888; font-size: 0.85rem;">Exact address will unlock after booking confirmation.</p>
-    
+    </div>
+
+    <p style="color:#a0aec0;font-size:0.83rem;">🔒 Exact address unlocks after booking confirmation.</p>
+
     {% if job.photos %}
-    <h4>Photos</h4>
+    <h4 style="margin-top:16px;margin-bottom:8px;">Photos</h4>
     <div class="photo-grid">
         {% for photo in job.photos %}
         <img src="/uploads/{{ photo.filename }}" alt="Job photo">
@@ -33,30 +39,33 @@
 </div>
 
 <div class="card">
-    <h3>Submit Your Bid</h3>
-    <hr>
+    <h3 style="margin-bottom:16px;">Submit Your Bid</h3>
     <form method="POST" action="{{ url_for('hauler_bid_submit', job_id=job.id) }}">
-        <div class="form-group">
-            <label>Your Name</label>
-            <input name="hauler_name" required value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Your Name</label>
+                <input name="hauler_name" required
+                       value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Your Phone <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+                <input name="hauler_phone" type="tel"
+                       value="{{ current_user.phone_formatted if current_user.phone else '' }}"
+                       placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
+            </div>
         </div>
-        <div class="form-group">
-            <label>Your Phone (optional)</label>
-            <input name="hauler_phone" type="tel" value="{{ current_user.phone_formatted if current_user.phone else '' }}" placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
-        </div>
-        <div class="form-group">
+        <div class="form-group" style="max-width:240px;">
             <label>Quote Amount ($)</label>
-            <input name="quote_amount" type="number" step="0.01" required placeholder="Enter your price">
+            <input name="quote_amount" type="number" step="0.01" required placeholder="e.g. 150.00">
         </div>
         <div class="form-group">
-            <label>Message (optional)</label>
-            <textarea name="message" placeholder="Any additional details about your bid..."></textarea>
+            <label>Message <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+            <textarea name="message" placeholder="Tell the customer about your experience, availability, or any questions..."></textarea>
         </div>
-        <button type="submit" class="btn btn-success">Submit Bid</button>
+        <button type="submit" class="btn btn-success btn-lg">Submit Bid</button>
     </form>
 </div>
 
-<p><a href="{{ url_for('hauler_jobs') }}">Back to Open Jobs</a></p>
 <script>
 function maskPhone(input) {
     var x = input.value.replace(/\D/g, '').slice(0, 10);

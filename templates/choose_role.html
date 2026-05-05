@@ -1,72 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Choose Your Role - JHE Haul{% endblock %}
 {% block content %}
-<div class="card" style="text-align: center; padding: 40px;">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div style="padding: 12px 20px; margin-bottom: 20px; border-radius: 6px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
-        {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
+
+<div style="max-width:600px;margin:0 auto;">
 
     {% if invited_role == 'customer' %}
-    <h2 style="margin-bottom: 20px;">Welcome to JHE Haul!</h2>
-    <p style="color: #666; margin-bottom: 30px;">You've been invited to join as a <strong>Customer</strong>. Confirm below to get started posting jobs.</p>
-    <form method="POST" action="{{ url_for('set_role') }}">
-        <input type="hidden" name="role" value="customer">
-        <button type="submit" class="btn btn-primary" style="padding: 20px 50px; font-size: 1.2rem;">
-            <strong>Join as Customer</strong><br>
-            <small style="font-weight: normal;">I need junk hauled</small>
-        </button>
-    </form>
-    <p style="margin-top: 20px; color: #888; font-size: 0.9rem;">Not a customer? Choose your role below instead.</p>
-    <hr>
-    {% elif invited_role == 'hauler' %}
-    <h2 style="margin-bottom: 20px;">Welcome to JHE Haul!</h2>
-    <p style="color: #666; margin-bottom: 30px;">You've been invited to join as a <strong>Hauler</strong>. Confirm below to start finding jobs.</p>
-    <form method="POST" action="{{ url_for('set_role') }}" onsubmit="return validateHaulerForm(this);">
-        <input type="hidden" name="role" value="hauler">
-        <div style="text-align: left; margin: 20px auto; max-width: 500px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                <input type="checkbox" name="agree_terms" value="1" style="margin-top: 4px; width: 20px; height: 20px; flex-shrink: 0;">
-                <span style="font-size: 0.9rem;">I have read and agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank" style="color: #007bff; text-decoration: underline;">JHE HAUL Hauler Agreement</a> and understand that creating an account forms a legally binding contract.</span>
-            </label>
-        </div>
-        <button type="submit" class="btn btn-success" style="padding: 20px 50px; font-size: 1.2rem;">
-            <strong>Join as Hauler</strong><br>
-            <small style="font-weight: normal;">I haul junk for pay</small>
-        </button>
-    </form>
-    <p style="margin-top: 20px; color: #888; font-size: 0.9rem;">Not a hauler? Choose your role below instead.</p>
-    <hr>
-    {% endif %}
-    <h2 style="margin-bottom: 30px;">How will you use JHE Haul?</h2>
-    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+    <div class="card" style="text-align:center;padding:32px 28px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">👤</div>
+        <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
+        <p style="color:#718096;margin-bottom:24px;">You've been invited to join as a <strong>Customer</strong>. Confirm below to start posting jobs.</p>
         <form method="POST" action="{{ url_for('set_role') }}">
             <input type="hidden" name="role" value="customer">
-            <button type="submit" class="btn btn-primary" style="padding: 30px 50px; font-size: 1.2rem;">
-                <strong>I'm a Customer</strong><br>
-                <small style="font-weight: normal;">I need junk hauled</small>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                Join as Customer — I need junk hauled
             </button>
         </form>
+        <p style="margin-top:16px;color:#a0aec0;font-size:0.88rem;">Not a customer? Choose your role below.</p>
+    </div>
+    <hr style="margin:8px 0;">
+    {% elif invited_role == 'hauler' %}
+    <div class="card" style="text-align:center;padding:32px 28px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🚛</div>
+        <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
+        <p style="color:#718096;margin-bottom:24px;">You've been invited to join as a <strong>Hauler</strong>. Confirm below to start finding jobs.</p>
         <form method="POST" action="{{ url_for('set_role') }}" onsubmit="return validateHaulerForm(this);">
             <input type="hidden" name="role" value="hauler">
-            <div style="text-align: left; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" name="agree_terms" value="1" style="margin-top: 4px; width: 20px; height: 20px; flex-shrink: 0;">
-                    <span style="font-size: 0.85rem;">I have read and agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank" style="color: #007bff; text-decoration: underline;">JHE HAUL Hauler Agreement</a> and understand that creating an account forms a legally binding contract.</span>
+            <div class="terms-box" style="text-align:left;margin-bottom:20px;">
+                <label class="check-label">
+                    <input type="checkbox" name="agree_terms" value="1">
+                    <span>I have read and agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank">JHE HAUL Hauler Agreement</a> and understand this forms a legally binding contract.</span>
                 </label>
             </div>
-            <button type="submit" class="btn btn-success" style="padding: 30px 50px; font-size: 1.2rem;">
-                <strong>I'm a Hauler</strong><br>
-                <small style="font-weight: normal;">I haul junk for pay</small>
+            <button type="submit" class="btn btn-success btn-lg btn-block">
+                Join as Hauler — I haul junk for pay
             </button>
         </form>
+        <p style="margin-top:16px;color:#a0aec0;font-size:0.88rem;">Not a hauler? Choose your role below.</p>
+    </div>
+    <hr style="margin:8px 0;">
+    {% endif %}
+
+    <div class="card" style="text-align:center;padding:32px 28px;">
+        <h2 style="margin-bottom:6px;">How will you use JHE Haul?</h2>
+        <p style="color:#718096;margin-bottom:28px;">Choose your role to get started.</p>
+
+        <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+            <form method="POST" action="{{ url_for('set_role') }}" style="flex:1;min-width:200px;">
+                <input type="hidden" name="role" value="customer">
+                <button type="submit" class="btn btn-primary btn-block" style="padding:22px 20px;font-size:1.05rem;flex-direction:column;gap:4px;">
+                    <span style="font-size:1.8rem;">👤</span>
+                    <strong>I'm a Customer</strong>
+                    <small style="font-weight:400;opacity:0.85;">I need junk hauled</small>
+                </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('set_role') }}" onsubmit="return validateHaulerForm(this);" style="flex:1;min-width:200px;">
+                <input type="hidden" name="role" value="hauler">
+                <div class="terms-box" style="margin-bottom:12px;text-align:left;">
+                    <label class="check-label">
+                        <input type="checkbox" name="agree_terms" value="1">
+                        <span style="font-size:0.84rem;">I agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank">Hauler Agreement</a></span>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-success btn-block" style="padding:22px 20px;font-size:1.05rem;flex-direction:column;gap:4px;">
+                    <span style="font-size:1.8rem;">🚛</span>
+                    <strong>I'm a Hauler</strong>
+                    <small style="font-weight:400;opacity:0.85;">I haul junk for pay</small>
+                </button>
+            </form>
+        </div>
     </div>
 </div>
+
 <script>
 function validateHaulerForm(form) {
     var checkbox = form.querySelector('input[name="agree_terms"]');

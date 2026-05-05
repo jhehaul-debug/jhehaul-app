@@ -1,22 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Payment Complete - JHE Haul{% endblock %}
 {% block content %}
-<div class="card" style="text-align: center; padding: 40px;">
+
+<div class="card" style="max-width:520px;margin:40px auto;text-align:center;padding:40px 32px;">
     {% if job.deposit_paid %}
-    <h2>Payment Already Confirmed</h2>
-    <p>This deposit has already been marked as paid.</p>
-    <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary" style="margin-top: 20px;">View Job Details</a>
+    <div style="font-size:3rem;margin-bottom:16px;">✅</div>
+    <h2 style="margin-bottom:8px;">Payment Already Confirmed</h2>
+    <p style="color:#718096;margin-bottom:24px;">This deposit has already been marked as paid.</p>
+    <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary btn-lg">
+        View Job Details →
+    </a>
     {% else %}
-    <h2>Payment Complete!</h2>
-    <p style="font-size: 1.2rem;"><strong>Thank you for your business!</strong></p>
-    <p>Your payment for Job #{{ job.id }} has been received.</p>
-    <p>Click the button below to confirm and unlock the address for your hauler:</p>
+    <div style="font-size:3rem;margin-bottom:16px;">🎉</div>
+    <h2 style="margin-bottom:8px;">Payment Received!</h2>
+    <p style="font-size:1.1rem;color:#4a5568;margin-bottom:8px;"><strong>Thank you for your business!</strong></p>
+    <p style="color:#718096;margin-bottom:24px;">Your payment for Job #{{ job.id }} has been received. Click below to confirm and unlock the pickup address for your hauler.</p>
     <form method="POST" action="{{ url_for('customer_mark_paid', job_id=job.id) }}">
-        <button type="submit" class="btn btn-success" style="padding: 20px 40px; font-size: 1.2rem; margin-top: 20px;">
-            Confirm Payment
+        <button type="submit" class="btn btn-success btn-lg btn-block">
+            ✓ Confirm Payment & Unlock Address
         </button>
     </form>
-    <p style="margin-top: 20px; color: #666;"><small>This will notify the hauler and unlock the pickup address.</small></p>
+    <p style="margin-top:16px;color:#a0aec0;font-size:0.84rem;">This notifies the hauler and shares your pickup address.</p>
     {% endif %}
 </div>
+
 {% endblock %}
