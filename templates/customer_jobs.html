@@ -17,22 +17,41 @@
 </div>
 {% else %}
 {% for job in jobs %}
-<div class="card">
+<div class="card" style="{% if job.status == 'bidding' and job.bids|length > 0 %}border:2px solid #1565c0;{% endif %}">
     <div class="card-header">
         <div>
             <h3 style="margin-bottom:6px;">Job #{{ job.id }}</h3>
             <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+            {% if job.status == 'bidding' %}
+            <span style="display:inline-block;margin-left:8px;background:#1565c0;color:#fff;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">
+                {{ job.bids|length }} Bid{% if job.bids|length != 1 %}s{% endif %}
+            </span>
+            {% endif %}
         </div>
+        {% if job.status == 'bidding' and job.bids|length > 0 %}
+        <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-success btn-sm">Review Bids →</a>
+        {% else %}
         <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">View Details</a>
+        {% endif %}
     </div>
     <hr>
     <p style="color:#4a5568;">{{ job.job_description[:150] }}{% if job.job_description|length > 150 %}…{% endif %}</p>
+
+    {% if job.status == 'bidding' and job.bids|length > 0 %}
+    <div class="banner banner-info" style="margin-top:10px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>💬 <strong>{{ job.bids|length }} hauler{% if job.bids|length != 1 %}s have{% else %} has{% endif %} submitted a quote.</strong> Review and accept a bid to move forward.</span>
+        <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-success btn-sm" style="white-space:nowrap;">Review Bids →</a>
+    </div>
+    {% endif %}
+
     {% if job.accepted_hauler %}
     <p style="margin-top:10px;"><strong>Hauler:</strong> {{ job.accepted_hauler }}
         &nbsp;·&nbsp; <strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</p>
     {% endif %}
     {% if job.deposit_paid %}
     <p style="color:#27ae60;font-weight:600;margin-top:6px;">✓ Deposit Paid</p>
+    {% elif job.status == 'accepted' %}
+    <p style="color:#e65100;font-weight:600;margin-top:6px;">⏳ Deposit pending — <a href="{{ url_for('customer_job_detail', job_id=job.id) }}">pay now</a></p>
     {% endif %}
     {% if job.preferred_date or job.preferred_time %}
     <p style="font-size:0.87rem;color:#718096;margin-top:6px;">
