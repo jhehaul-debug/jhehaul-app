@@ -828,6 +828,16 @@ def admin_test_job():
     db.session.add(job)
     db.session.commit()
 
+    photos = request.files.getlist("photos")
+    for photo in photos:
+        if photo and photo.filename:
+            ext = os.path.splitext(photo.filename)[1]
+            filename = f"{uuid.uuid4().hex}{ext}"
+            photo.save(os.path.join(UPLOAD_FOLDER, filename))
+            photo_record = JobPhoto(job_id=job.id, filename=filename)
+            db.session.add(photo_record)
+    db.session.commit()
+
     if pickup_zip:
         from models import ZipCode
         from distance import haversine_miles
