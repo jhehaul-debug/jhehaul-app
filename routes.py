@@ -27,7 +27,7 @@ def require_role(role):
             if not current_user.is_authenticated:
                 session["next_url"] = request.url
                 return redirect(url_for('auth.login'))
-            if not current_user.user_type:
+            if not current_user.user_type and not current_user.is_admin:
                 return redirect(url_for('choose_role'))
             if current_user.user_type != role and not current_user.is_admin:
                 return render_template('403.html'), 403
@@ -276,6 +276,7 @@ def customer_job_detail(job_id):
     
     pay_link = None
     checkout_over500_url = None
+    pay_link_missing = False
     accepted_bid = None
     if job.status == "accepted" and not job.deposit_paid:
         accepted_bid = Bid.query.filter_by(job_id=job_id, status='accepted').first()
@@ -288,8 +289,12 @@ def customer_job_detail(job_id):
                 base_url = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
                 success_url = f"{base_url}/payment_success/{job.id}"
                 pay_link = f"{pay_link}?success_url={success_url}"
-    
-    return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link, checkout_over500_url=checkout_over500_url)
+            else:
+                pay_link_missing = True
+                app.logger.warning("No pay link configured for job %s, quote=$%.2f", job_id, quote)
+
+    return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link,
+                           checkout_over500_url=checkout_over500_url, pay_link_missing=pay_link_missing)
 
 @app.route("/customer/upload_photos/<int:job_id>", methods=["POST"])
 @require_role('customer')
@@ -317,26 +322,42 @@ def customer_upload_photos(job_id):
 def customer_accept_bid(bid_id):
     bid = Bid.query.get_or_404(bid_id)
     job = Job.query.get_or_404(bid.job_id)
-    
+
     if job.customer_id != current_user.id:
+        app.logger.warning("Access denied: user %s tried to accept bid %s on job %s owned by %s",
+                           current_user.id, bid_id, job.id, job.customer_id)
         return "Access denied", 403
 
-    job.status = 'accepted'
-    job.accepted_hauler = bid.hauler_name
-    job.accepted_hauler_id = bid.hauler_id
-    job.accepted_quote = bid.quote_amount
-    
-    bid.status = 'accepted'
-    Bid.query.filter(Bid.job_id == job.id, Bid.id != bid_id).update({'status': 'rejected'})
-    
-    db.session.commit()
-    
-    hauler = User.query.get(bid.hauler_id)
-    if hauler and hauler.email:
-        notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount)
-        if hauler.notify_sms and hauler.phone:
+    try:
+        job.status = 'accepted'
+        job.accepted_hauler = bid.hauler_name
+        job.accepted_hauler_id = bid.hauler_id
+        job.accepted_quote = bid.quote_amount
+
+        bid.status = 'accepted'
+        Bid.query.filter(
+            Bid.job_id == job.id, Bid.id != bid_id
+        ).update({'status': 'rejected'}, synchronize_session=False)
+
+        db.session.commit()
+        app.logger.info("Bid %s accepted for job %s, quote=$%.2f by user %s",
+                        bid_id, job.id, float(bid.quote_amount), current_user.id)
+        flash("Bid accepted! Pay the deposit below to confirm your booking.", "success")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error("Error accepting bid %s for job %s: %s", bid_id, bid.job_id, e)
+        flash("Something went wrong accepting the bid. Please try again.", "error")
+        return redirect(url_for('customer_job_detail', job_id=bid.job_id))
+
+    try:
+        hauler = User.query.get(bid.hauler_id)
+        if hauler and hauler.email:
+            notify_hauler_bid_accepted(hauler.email, job.id, bid.quote_amount)
+        if hauler and hauler.notify_sms and hauler.phone:
             notify_hauler_bid_accepted_sms(hauler.phone, job.id)
-    
+    except Exception as e:
+        app.logger.error("Notification failed after accepting bid %s: %s", bid_id, e)
+
     return redirect(url_for('customer_job_detail', job_id=job.id))
 
 @app.route("/customer/mark_paid/<int:job_id>", methods=["POST"])

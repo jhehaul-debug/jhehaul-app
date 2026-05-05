@@ -40,14 +40,18 @@
     {% endif %}
 </div>
 
-{% if job.status == 'accepted' and not job.deposit_paid and (pay_link or checkout_over500_url) %}
+{% if job.status == 'accepted' and not job.deposit_paid %}
 <div class="card" style="border:2px solid #ffc107;background:#fffde7;">
     <h3 style="margin-bottom:8px;">💳 Payment Required</h3>
     <p style="color:#5d4037;margin-bottom:16px;">You accepted a bid! Pay the deposit to unlock your address for the hauler and confirm the booking.</p>
     {% if checkout_over500_url %}
     <a href="{{ checkout_over500_url }}" class="btn btn-success btn-lg">Pay Deposit via Stripe →</a>
-    {% else %}
+    {% elif pay_link %}
     <a href="{{ pay_link }}" target="_blank" class="btn btn-success btn-lg">Pay Deposit via Stripe →</a>
+    {% elif pay_link_missing %}
+    <div class="banner banner-warning" style="margin-bottom:0;">
+        ⚠️ Payment link not configured for this quote amount. Please contact support or set the <strong>PAY_LINK_*</strong> environment variables.
+    </div>
     {% endif %}
 </div>
 {% endif %}
