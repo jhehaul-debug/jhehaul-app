@@ -179,11 +179,23 @@ function shareInvite(type) {
         <div>
             <h4 style="margin-bottom:4px;">Job #{{ job.id }} — {{ job.customer_name }}</h4>
             <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
+            {% if job.bids %}
+            <span style="display:inline-block;margin-left:6px;background:#1565c0;color:#fff;font-size:0.76rem;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle;">
+                {{ job.bids|length }} bid{% if job.bids|length != 1 %}s{% endif %}
+            </span>
+            {% endif %}
         </div>
-        <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}"
-              onsubmit="return confirm('Delete job #{{ job.id }}?');">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            {% if job.bids and job.status in ['open', 'bidding', 'accepted'] %}
+            <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-success btn-sm">Review Bids →</a>
+            {% else %}
+            <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">View Job</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}"
+                  onsubmit="return confirm('Delete job #{{ job.id }}?');">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
     </div>
     <hr>
     <p><strong>Description:</strong> {{ job.job_description[:200] }}{% if job.job_description|length > 200 %}…{% endif %}</p>
