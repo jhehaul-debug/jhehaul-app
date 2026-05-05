@@ -29,7 +29,7 @@ google_bp = make_google_blueprint(
            "https://www.googleapis.com/auth/userinfo.email",
            "https://www.googleapis.com/auth/userinfo.profile"],
 )
-app.register_blueprint(google_bp, url_prefix="/auth/google")
+app.register_blueprint(google_bp, url_prefix="/auth")
 
 # GitHub OAuth blueprint
 github_bp = make_github_blueprint(
