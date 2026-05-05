@@ -36,7 +36,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # ---- Stripe payment links ----
 PAY_LINK_UNDER_150 = os.environ.get("PAY_LINK_UNDER_150", "")
 PAY_LINK_150_300 = os.environ.get("PAY_LINK_150_300", "")
-PAY_LINK_300_500 = os.environ.get("PAY_LINK_OVER_300", "")
+PAY_LINK_300_500 = os.environ.get("PAY_LINK_300_500", "")
 PAY_LINK_OVER_500 = os.environ.get("PAY_LINK_OVER_500", "")
 
 
