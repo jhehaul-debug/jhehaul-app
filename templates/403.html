@@ -1,9 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Access Denied - JHE Haul{% endblock %}
 {% block content %}
-<div class="card" style="text-align: center; padding: 40px;">
-    <h2>Access Denied</h2>
-    <p>You don't have permission to access this page.</p>
-    <a href="/" class="btn btn-primary" style="margin-top: 20px;">Go Home</a>
+<div class="card" style="max-width:480px;margin:48px auto;text-align:center;padding:40px 32px;">
+    <div style="font-size:3rem;margin-bottom:12px;">🚫</div>
+    <h2 style="margin-bottom:8px;">Access Denied</h2>
+    <p style="color:#718096;margin-bottom:28px;">
+        You don't have permission to view that page.
+    </p>
+    {% if current_user.is_authenticated %}
+        {% if current_user.user_type == 'customer' %}
+            <a href="{{ url_for('customer_jobs') }}" class="btn btn-primary">Go to My Jobs</a>
+        {% elif current_user.user_type == 'hauler' %}
+            <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary">Go to Available Jobs</a>
+        {% else %}
+            <a href="/" class="btn btn-primary">Go Home</a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Sign In</a>
+    {% endif %}
 </div>
 {% endblock %}

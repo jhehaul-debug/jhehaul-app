@@ -38,18 +38,15 @@
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
                     </div>
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">⚙ Admin</a>
-                        <a href="{{ url_for('customer_new') }}">Post Job</a>
-                        <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
-                        <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
-                        <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
-                        <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin Dashboard</a>
+                        <a href="{{ url_for('admin_dashboard') }}#users" class="nav-admin">User Management</a>
+                        <a href="{{ url_for('admin_dashboard') }}#jobs" class="nav-admin">Job Monitoring</a>
                     {% elif current_user.user_type == 'customer' %}
                         <a href="{{ url_for('customer_new') }}">Post Job</a>
                         <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
                     {% elif current_user.user_type == 'hauler' %}
-                        <a href="{{ url_for('hauler_jobs') }}">Open Jobs</a>
-                        <a href="{{ url_for('hauler_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('hauler_jobs') }}">Available Jobs</a>
+                        <a href="{{ url_for('hauler_dashboard') }}">My Dashboard</a>
                         <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
                     {% endif %}
                     <a href="{{ url_for('profile') }}">Profile</a>
@@ -73,21 +70,18 @@
         {% if current_user.is_authenticated %}
             <div class="nav-mobile-user">
                 {{ current_user.first_name or current_user.email or 'User' }}
-                {% if current_user.user_type %} · {{ current_user.user_type.title() }}{% endif %}
+                {% if current_user.is_admin %} · Admin{% elif current_user.user_type %} · {{ current_user.user_type.title() }}{% endif %}
             </div>
             {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
-                <a href="{{ url_for('customer_new') }}">📋 Post Job</a>
-                <a href="{{ url_for('customer_jobs') }}">📦 My Jobs</a>
-                <a href="{{ url_for('hauler_jobs') }}">🔍 Open Jobs</a>
-                <a href="{{ url_for('hauler_dashboard') }}">🏠 Dashboard</a>
-                <a href="{{ url_for('hauler_earnings') }}">💰 Earnings</a>
+                <a href="{{ url_for('admin_dashboard') }}#users">👥 User Management</a>
+                <a href="{{ url_for('admin_dashboard') }}#jobs">📦 Job Monitoring</a>
             {% elif current_user.user_type == 'customer' %}
                 <a href="{{ url_for('customer_new') }}">📋 Post Job</a>
                 <a href="{{ url_for('customer_jobs') }}">📦 My Jobs</a>
             {% elif current_user.user_type == 'hauler' %}
-                <a href="{{ url_for('hauler_jobs') }}">🔍 Open Jobs</a>
-                <a href="{{ url_for('hauler_dashboard') }}">🏠 Dashboard</a>
+                <a href="{{ url_for('hauler_jobs') }}">🔍 Available Jobs</a>
+                <a href="{{ url_for('hauler_dashboard') }}">🏠 My Dashboard</a>
                 <a href="{{ url_for('hauler_earnings') }}">💰 Earnings</a>
             {% endif %}
             <a href="{{ url_for('profile') }}">👤 Profile</a>
