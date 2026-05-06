@@ -146,6 +146,14 @@ def hauler_setup_save():
         flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
         return redirect(url_for('hauler_setup'))
 
+    from launch_zone import in_launch_zone
+    allowed, _ = in_launch_zone(home_zip)
+    if not allowed:
+        app.logger.warning("launch_zone: hauler setup rejected ZIP %s for user %s", home_zip, current_user.id)
+        flash("JHE Haul is currently launching in select Minnesota areas. "
+              "We're not in your area just yet — check back soon as we expand!", "error")
+        return redirect(url_for('hauler_setup'))
+
     if not max_travel_miles:
         flash("Please enter how far you're willing to drive.", "error")
         return redirect(url_for('hauler_setup'))
@@ -206,6 +214,14 @@ def customer_create():
     from models import ZipCode
     if not ZipCode.query.get(pickup_zip):
         flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
+        return redirect(url_for('customer_new'))
+
+    from launch_zone import in_launch_zone
+    allowed, _ = in_launch_zone(pickup_zip)
+    if not allowed:
+        app.logger.warning("launch_zone: job posting rejected ZIP %s for user %s", pickup_zip, current_user.id)
+        flash("JHE Haul is currently launching in select Minnesota areas. "
+              "We're not in your area just yet — check back soon as we expand!", "error")
         return redirect(url_for('customer_new'))
 
     job = Job(
