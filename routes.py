@@ -185,7 +185,15 @@ def customer_terms():
 @app.route("/customer/new", methods=["GET"])
 @require_role('customer')
 def customer_new():
-    return render_template('customer_new.html')
+    from launch_zone import _CENTER_ZIP, _RADIUS_MILES, _DISABLED
+    lz_debug = {
+        "disabled": _DISABLED,
+        "center_zip": _CENTER_ZIP,
+        "radius_miles": _RADIUS_MILES,
+    }
+    app.logger.info("customer_new: launch_zone debug — center=%s radius=%s mi disabled=%s",
+                    _CENTER_ZIP, _RADIUS_MILES, _DISABLED)
+    return render_template('customer_new.html', lz_debug=lz_debug)
 
 @app.route("/customer/create", methods=["POST"])
 @require_role('customer')
@@ -542,7 +550,15 @@ def hauler_jobs():
         current_user.id, current_user.home_zip, max_miles, len(filtered_jobs), len(all_jobs)
     )
 
-    return render_template('hauler_jobs.html', jobs=filtered_jobs, job_distances=job_distances)
+    radius_debug = {
+        "hauler_zip": current_user.home_zip,
+        "max_miles": max_miles,
+        "shown": len(filtered_jobs),
+        "total": len(all_jobs),
+        "filtered_out": len(all_jobs) - len(filtered_jobs),
+    }
+    return render_template('hauler_jobs.html', jobs=filtered_jobs,
+                           job_distances=job_distances, radius_debug=radius_debug)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
 @require_role('hauler')

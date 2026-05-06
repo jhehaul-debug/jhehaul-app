@@ -6,6 +6,20 @@
     <h2 class="page-title">Open Jobs Near You</h2>
 </div>
 
+<!-- DEBUG BANNER — remove before launch -->
+<div style="background:#1a365d;color:#bee3f8;padding:12px 16px;border-radius:8px;
+            margin-bottom:18px;font-size:0.85rem;font-family:monospace;line-height:1.7;">
+    <strong style="color:#90cdf4;">🔍 Radius Filter — ACTIVE</strong><br>
+    Your home ZIP: <strong>{{ radius_debug.hauler_zip }}</strong> &nbsp;|&nbsp;
+    Max travel: <strong>{{ radius_debug.max_miles }} miles</strong><br>
+    Showing <strong>{{ radius_debug.shown }}</strong> of
+    <strong>{{ radius_debug.total }}</strong> open jobs &nbsp;|&nbsp;
+    Filtered out: <strong>{{ radius_debug.filtered_out }}</strong>
+    {% if radius_debug.filtered_out > 0 %}
+    (outside your {{ radius_debug.max_miles }}-mile radius)
+    {% endif %}
+</div>
+
 {% if not jobs %}
 <div class="card">
     <div class="empty-state">
