@@ -20,7 +20,7 @@
     <div class="card-header">
         <h3 style="margin-bottom:0;">Job #{{ job.id }}</h3>
         {% if job.id in job_distances %}
-        <span class="distance-badge">📍 {{ job_distances[job.id] }} mi away</span>
+        <span class="distance-badge">📍 Approx. {{ job_distances[job.id] }} miles away</span>
         {% endif %}
     </div>
     <hr>

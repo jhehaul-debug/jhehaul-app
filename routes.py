@@ -31,7 +31,7 @@ def require_role(role):
                 return redirect(url_for('choose_role'))
             if current_user.user_type != role and not current_user.is_admin:
                 return render_template('403.html'), 403
-            if current_user.user_type == 'hauler' and not current_user.is_admin and not current_user.home_zip and request.endpoint not in ('hauler_setup', 'hauler_setup_save'):
+            if current_user.user_type == 'hauler' and not current_user.is_admin and not (current_user.home_zip and current_user.max_travel_miles) and request.endpoint not in ('hauler_setup', 'hauler_setup_save'):
                 return redirect(url_for('hauler_setup'))
             return f(*args, **kwargs)
         return decorated_function
@@ -487,40 +487,46 @@ def hauler_jobs():
     all_jobs = Job.query.filter(Job.status.in_(['open', 'bidding'])).order_by(Job.id.desc()).all()
 
     job_distances = {}
+    filtered_jobs = []
+    max_miles = current_user.max_travel_miles or 0
+    hauler_zip_rec = ZipCode.query.get(current_user.home_zip) if current_user.home_zip else None
 
-    if current_user.home_zip and current_user.max_travel_miles:
-        hauler_zip = ZipCode.query.get(current_user.home_zip)
-
-        if hauler_zip:
-            filtered_jobs = []
-            for job in all_jobs:
-                if job.pickup_zip:
-                    job_zip = ZipCode.query.get(job.pickup_zip)
-                    if job_zip:
-                        miles = haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon)
-                        if miles <= current_user.max_travel_miles:
-                            job_distances[job.id] = round(miles, 1)
-                            filtered_jobs.append(job)
-                    else:
-                        filtered_jobs.append(job)
-                else:
+    for job in all_jobs:
+        if hauler_zip_rec and job.pickup_zip:
+            job_zip_rec = ZipCode.query.get(job.pickup_zip)
+            if job_zip_rec:
+                miles = round(haversine_miles(
+                    hauler_zip_rec.lat, hauler_zip_rec.lon,
+                    job_zip_rec.lat, job_zip_rec.lon
+                ), 1)
+                included = miles <= max_miles
+                app.logger.info(
+                    "Radius filter — Job #%s: hauler_zip=%s job_zip=%s distance=%.1f mi max=%s mi → %s",
+                    job.id, current_user.home_zip, job.pickup_zip, miles, max_miles,
+                    "INCLUDED" if included else "FILTERED OUT"
+                )
+                if included:
+                    job_distances[job.id] = miles
                     filtered_jobs.append(job)
-            jobs = filtered_jobs
+            else:
+                app.logger.info(
+                    "Radius filter — Job #%s: pickup_zip=%s not in ZIP table → INCLUDED (no coords)",
+                    job.id, job.pickup_zip
+                )
+                filtered_jobs.append(job)
         else:
-            jobs = all_jobs
-    else:
-        if current_user.home_zip:
-            hauler_zip = ZipCode.query.get(current_user.home_zip)
-            if hauler_zip:
-                for job in all_jobs:
-                    if job.pickup_zip:
-                        job_zip = ZipCode.query.get(job.pickup_zip)
-                        if job_zip:
-                            miles = haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon)
-                            job_distances[job.id] = round(miles, 1)
-        jobs = all_jobs
+            app.logger.info(
+                "Radius filter — Job #%s: missing hauler_zip or job pickup_zip → INCLUDED (no coords)",
+                job.id
+            )
+            filtered_jobs.append(job)
 
-    return render_template('hauler_jobs.html', jobs=jobs, job_distances=job_distances)
+    app.logger.info(
+        "hauler_jobs result: user=%s home_zip=%s max=%s mi — showing %d of %d open jobs",
+        current_user.id, current_user.home_zip, max_miles, len(filtered_jobs), len(all_jobs)
+    )
+
+    return render_template('hauler_jobs.html', jobs=filtered_jobs, job_distances=job_distances)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
 @require_role('hauler')
