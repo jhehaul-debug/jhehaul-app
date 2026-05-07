@@ -123,7 +123,7 @@ function maskPhone(input) {
     else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
 }
 function shareInvite(type) {
-    var baseUrl = 'https://jhehaul.com/';
+    var baseUrl = window.location.origin + '/';
     var url, title, text;
     if (type === 'customer') {
         url = baseUrl + 'invite/customer'; title = 'Join JHE Haul';

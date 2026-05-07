@@ -22,19 +22,19 @@
     {% if role == 'customer' %}
     <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to post a junk hauling job!</p>
     <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">Create your free account, post photos of what needs hauling, and get bids from local haulers.</p>
-    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
         Get Started
     </a>
     {% elif role == 'hauler' %}
     <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to join as a hauler!</p>
     <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">Create your free account, browse jobs in your area, submit bids, and start earning.</p>
-    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-success" style="font-size: 1.2rem; padding: 18px 50px;">
+    <a href="{{ url_for('auth.login') }}" class="btn btn-success" style="font-size: 1.2rem; padding: 18px 50px;">
         Get Started
     </a>
     {% else %}
     <p style="font-size: 1.2rem; color: #666; margin-bottom: 15px;">You've been invited to join JHE Haul!</p>
     <p style="font-size: 1rem; color: #888; margin-bottom: 40px;">The easy way to post junk hauling jobs or find hauling work in your area.</p>
-    <a href="{{ url_for('replit_auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 18px 50px;">
         Get Started
     </a>
     {% endif %}
