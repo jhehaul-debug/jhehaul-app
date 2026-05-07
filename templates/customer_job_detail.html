@@ -99,14 +99,13 @@
     <div class="card-header" style="margin-bottom:14px;">
         <h3 style="margin-bottom:0;">
             Bids
-            {% if bids %}
             <span style="background:#e3f2fd;color:#1565c0;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;">{{ bids|length }}</span>
-            {% endif %}
         </h3>
-        {% if job.status == 'bidding' and bids %}
+        {% if job.status in ['open', 'bidding'] and bids %}
         <span style="font-size:0.88rem;color:#1565c0;font-weight:600;">Click "Accept" to choose a hauler</span>
         {% endif %}
     </div>
+    <p style="font-size:0.8rem;color:#a0aec0;margin:-8px 0 12px;">Bids found: {{ bids|length }}</p>
     <hr>
 
     {% if not bids %}

@@ -339,7 +339,7 @@ def customer_accept_bid(bid_id):
     bid = Bid.query.get_or_404(bid_id)
     job = Job.query.get_or_404(bid.job_id)
 
-    if job.customer_id != current_user.id:
+    if job.customer_id != current_user.id and not current_user.is_admin:
         app.logger.warning("Access denied: user %s tried to accept bid %s on job %s owned by %s",
                            current_user.id, bid_id, job.id, job.customer_id)
         return "Access denied", 403
