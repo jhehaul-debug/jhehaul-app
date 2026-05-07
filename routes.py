@@ -285,9 +285,9 @@ def customer_jobs():
 @require_role('customer')
 def customer_job_detail(job_id):
     job = Job.query.get_or_404(job_id)
-    if job.customer_id != current_user.id:
+    if job.customer_id != current_user.id and not current_user.is_admin:
         return "Access denied", 403
-    
+
     bids = Bid.query.filter_by(job_id=job_id).order_by(Bid.quote_amount.asc()).all()
     
     pay_link = None
