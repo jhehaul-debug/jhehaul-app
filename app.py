@@ -76,7 +76,7 @@ with app.app_context():
 
     try:
         from models import User
-        admin_email = os.environ.get("ADMIN_EMAIL", "incorporateiq@gmail.com")
+        admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()
         if admin and not admin.is_admin:
             admin.is_admin = True

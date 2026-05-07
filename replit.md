@@ -101,7 +101,7 @@ Preferred communication style: Simple, everyday language.
 - `DATABASE_URL` - PostgreSQL connection string
 - `SESSION_SECRET` - Session encryption key
 - `APP_BASE_URL` - Public URL of the app, e.g. `https://jhehaul.com` (used in Stripe redirect URLs)
-- `ADMIN_EMAIL` - Email of the admin user (default: incorporateiq@gmail.com)
+- `ADMIN_EMAIL` - Email of the admin user (default: jhehaul@gmail.com)
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth app credentials
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` - GitHub OAuth app credentials (optional)
 - `STRIPE_SECRET_KEY` - Stripe API key for dynamic checkout (quotes >$500)
