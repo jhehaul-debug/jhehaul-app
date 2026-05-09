@@ -45,14 +45,22 @@ def choose_pay_link(accepted_quote):
         q = float(accepted_quote or 0)
     except Exception:
         q = 0
+
     if q < 150:
-        return PAY_LINK_UNDER_150
+        var_name, link = "PAY_LINK_UNDER_150", PAY_LINK_UNDER_150
     elif q < 300:
-        return PAY_LINK_150_300
+        var_name, link = "PAY_LINK_150_300", PAY_LINK_150_300
     elif q <= 500:
-        return PAY_LINK_300_500
+        var_name, link = "PAY_LINK_300_500", PAY_LINK_300_500
     else:
-        return PAY_LINK_OVER_500
+        var_name, link = "PAY_LINK_OVER_500", PAY_LINK_OVER_500
+
+    import logging
+    logging.info(
+        "choose_pay_link: quote=$%.2f → bracket=%s env_var=%s link_set=%s",
+        q, var_name, var_name, bool(link)
+    )
+    return link
 
 
 # ---- Initialize tables and load ZIP codes ----

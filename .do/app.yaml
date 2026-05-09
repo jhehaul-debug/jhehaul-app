@@ -48,10 +48,7 @@ services:
       - key: PAY_LINK_150_300
         scope: RUN_TIME
         type: SECRET
-      - key: PAY_LINK_OVER_300
-        scope: RUN_TIME
-        type: SECRET
-      - key: PAY_LINK_OVER_500
+      - key: PAY_LINK_300_500
         scope: RUN_TIME
         type: SECRET
       - key: SENDGRID_API_KEY

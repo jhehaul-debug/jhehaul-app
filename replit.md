@@ -78,7 +78,7 @@ Preferred communication style: Simple, everyday language.
 ### Third-Party Services
 | Service | Purpose | Configuration |
 |---------|---------|---------------|
-| Stripe | Payment processing | Static links: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_OVER_300`, `PAY_LINK_OVER_500`; Dynamic checkout: `STRIPE_SECRET_KEY` |
+| Stripe | Payment processing | Static links: `PAY_LINK_UNDER_150`, `PAY_LINK_150_300`, `PAY_LINK_300_500`; Dynamic checkout: `STRIPE_SECRET_KEY` |
 | Replit Auth | User authentication | Automatic via REPL_ID |
 | SendGrid | Email notifications | Via Replit Connectors |
 | Twilio | SMS notifications | Via Replit Connectors (optional) |
@@ -106,9 +106,9 @@ Preferred communication style: Simple, everyday language.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` - GitHub OAuth app credentials (optional)
 - `STRIPE_SECRET_KEY` - Stripe API key for dynamic checkout (quotes >$500)
 - `PAY_LINK_UNDER_150` - Stripe payment link for quotes under $150
-- `PAY_LINK_150_300` - Stripe payment link for quotes $150-$300
-- `PAY_LINK_OVER_300` - Stripe payment link for quotes $301-$500
-- `PAY_LINK_OVER_500` - Stripe payment link for quotes at $500
+- `PAY_LINK_150_300` - Stripe payment link for quotes $150-$299.99
+- `PAY_LINK_300_500` - Stripe payment link for quotes $300-$500 inclusive
+- (over $500 uses dynamic Stripe checkout — no static link needed)
 - `SENDGRID_API_KEY` - SendGrid API key for email notifications
 - `SENDGRID_FROM_EMAIL` - Sender email address (must be verified in SendGrid)
 - `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` - Twilio SMS (optional)

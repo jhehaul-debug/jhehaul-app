@@ -301,13 +301,21 @@ def customer_job_detail(job_id):
             checkout_over500_url = url_for('checkout_over500', bid_id=accepted_bid.id)
         else:
             pay_link = choose_pay_link(job.accepted_quote)
+            app.logger.info(
+                "Payment bracket resolved: job=%s quote=$%.2f pay_link_present=%s",
+                job_id, quote, bool(pay_link)
+            )
             if pay_link:
                 base_url = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
                 success_url = f"{base_url}/payment_success/{job.id}"
                 pay_link = f"{pay_link}?success_url={success_url}"
             else:
                 pay_link_missing = True
-                app.logger.warning("No pay link configured for job %s, quote=$%.2f", job_id, quote)
+                app.logger.warning(
+                    "No pay link configured: job=%s quote=$%.2f — "
+                    "check PAY_LINK_UNDER_150 / PAY_LINK_150_300 / PAY_LINK_300_500 env vars",
+                    job_id, quote
+                )
 
     return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link,
                            checkout_over500_url=checkout_over500_url, pay_link_missing=pay_link_missing)
