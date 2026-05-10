@@ -53,3 +53,8 @@ outputType = "webview"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+APP_BASE_URL = "https://jhehaul.com"
