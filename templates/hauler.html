@@ -1,12 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Hauler - Find Jobs</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="font-family: Arial; padding: 30px;">
-  <h1>Hauler</h1>
-  <p>This is where haulers will browse jobs and place bids.</p>
-  <a href="/">← Back</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Hauler - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2 class="page-title">Hauler Area</h2>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary">🔍 Browse Open Jobs</a>
+    <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-outline">📊 My Dashboard</a>
+</div>
+
+{% endblock %}
