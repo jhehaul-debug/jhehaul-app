@@ -1,10 +1,22 @@
-<form method="POST">
-    <h2>Create Account</h2>
-    <input type="email" name="email" placeholder="Enter email" required>
-    <button type="submit">Sign Up</button>
-</form>
-<form method="POST">
-    <h2>Create Account</h2>
-    <input type="email" name="email" placeholder="Enter email" required>
-    <button type="submit">Sign Up</button>
-</form>
+{% extends "base.html" %}
+{% block title %}Sign Up - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="card" style="max-width: 420px; margin: 40px auto; text-align: center; padding: 40px;">
+    <h2 style="margin-bottom: 8px;">Create an Account</h2>
+    <p style="color: #666; margin-bottom: 30px;">Sign in with Google to get started — no password needed.</p>
+
+    <a href="{{ url_for('auth.login') }}"
+       style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;
+              padding: 14px 20px; margin-bottom: 14px; border-radius: 6px; font-size: 1rem;
+              background: #4285F4; color: white; text-decoration: none; font-weight: 600;">
+        Continue with Google
+    </a>
+
+    <p style="font-size: 0.85rem; color: #888; margin-top: 20px;">
+        By signing up you agree to our
+        <a href="{{ url_for('customer_terms') }}" style="color: #3498db;">Terms of Service</a>.
+    </p>
+</div>
+
+{% endblock %}

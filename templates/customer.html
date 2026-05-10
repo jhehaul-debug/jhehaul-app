@@ -1,12 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Customer - Post a Job</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="font-family: Arial; padding: 30px;">
-  <h1>Customer</h1>
-  <p>This is where customers will post a job.</p>
-  <a href="/">← Back</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Customer - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2 class="page-title">Customer Area</h2>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('customer_new') }}" class="btn btn-primary">📋 Post a Job</a>
+    <a href="{{ url_for('customer_jobs') }}" class="btn btn-outline">📦 My Jobs</a>
+</div>
+
+{% endblock %}

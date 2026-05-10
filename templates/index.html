@@ -1,61 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JHE Haul</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding-top: 70px;
-    }
-    .card {
-      background: #1e293b;
-      padding: 32px;
-      border-radius: 16px;
-      width: 92%;
-      max-width: 560px;
-      margin: auto;
-      box-shadow: 0 0 22px rgba(0,0,0,.45);
-    }
-    h1 { color: #22c55e; margin: 0 0 10px; }
-    p { color: #cbd5e1; }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 14px 16px;
-      margin-top: 14px;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-    }
-    .btn-customer { background: #22c55e; color: #0b1220; }
-    .btn-hauler   { background: #38bdf8; color: #0b1220; }
-    .btn-login    { background: transparent; color: white; border: 2px solid #334155; }
-    .note { margin-top: 18px; font-size: 14px; color: #94a3b8; }
-  </style>
-</head>
+{% extends "base.html" %}
+{% block title %}JHE Haul - Local Junk Removal & Hauling{% endblock %}
+{% block content %}
 
-<body>
-  <div class="card">
-    <h1>JHE HAUL</h1>
-    <p>Choose your side to get started.</p>
+<div class="card" style="text-align: center; padding: 60px 40px; max-width: 680px; margin: 40px auto;">
+    <h1 style="font-size: 2.4rem; margin-bottom: 16px;">Local Junk Removal, Made Easy</h1>
+    <p style="font-size: 1.1rem; color: #718096; margin-bottom: 36px;">
+        Post your hauling job, get competitive bids from local haulers, and get your junk removed fast.
+    </p>
 
-    <a class="btn primary" href="/customer">I’m a Customer (Post a Job)</a>
-
-    <a class="btn secondary" href="/hauler">I’m a Hauler (Find Jobs)</a>
-
-    <a class="btn btn-login" href="/login">Already have an account? Log in</a>
-
-    <div class="note">
-      If you see this page, your deployment + templates are working correctly.
+    <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px;">
+        {% if current_user.is_authenticated %}
+            {% if current_user.user_type == 'customer' %}
+                <a href="{{ url_for('customer_new') }}" class="btn btn-primary btn-lg">📋 Post a Job</a>
+                <a href="{{ url_for('customer_jobs') }}" class="btn btn-outline btn-lg">📦 My Jobs</a>
+            {% elif current_user.user_type == 'hauler' %}
+                <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary btn-lg">🔍 Find Jobs</a>
+                <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-outline btn-lg">📊 My Dashboard</a>
+            {% else %}
+                <a href="{{ url_for('choose_role') }}" class="btn btn-primary btn-lg">Get Started</a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Post a Job</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">Find Jobs to Haul</a>
+        {% endif %}
     </div>
-  </div>
-</body>
-</html>
+
+    {% if not current_user.is_authenticated %}
+    <p style="font-size: 0.88rem; color: #a0aec0;">
+        Sign in with Google to get started — no password needed.
+    </p>
+    {% endif %}
+</div>
+
+{% endblock %}
