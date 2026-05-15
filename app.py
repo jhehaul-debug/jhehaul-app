@@ -83,6 +83,16 @@ with app.app_context():
         logging.exception("ZIP code load skipped: %s", e)
 
     try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS truck_type VARCHAR"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS trailer_type VARCHAR"))
+        db.session.commit()
+        logging.info("Column migration: truck_type/trailer_type ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration skipped: %s", _e)
+
+    try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()

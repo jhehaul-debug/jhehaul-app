@@ -4,51 +4,78 @@
 
 <div style="max-width:600px;margin:0 auto;">
 
-    {% if invited_role == 'customer' %}
-    <div class="card" style="text-align:center;padding:32px 28px;">
-        <div style="font-size:2.5rem;margin-bottom:12px;">👤</div>
+{% if invited_role == 'hauler' %}
+
+    <!-- Hauler invite: only show hauler path, offer customer as a small escape hatch -->
+    <div class="card" style="text-align:center;padding:40px 32px;">
+        <div style="font-size:3rem;margin-bottom:14px;">🚛</div>
         <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
-        <p style="color:#718096;margin-bottom:24px;">You've been invited to join as a <strong>Customer</strong>. Confirm below to start posting jobs.</p>
-        <form method="POST" action="{{ url_for('set_role') }}">
-            <input type="hidden" name="role" value="customer">
-            <button type="submit" class="btn btn-primary btn-lg btn-block">
-                Join as Customer — I need junk hauled
-            </button>
-        </form>
-        <p style="margin-top:16px;color:#a0aec0;font-size:0.88rem;">Not a customer? Choose your role below.</p>
-    </div>
-    <hr style="margin:8px 0;">
-    {% elif invited_role == 'hauler' %}
-    <div class="card" style="text-align:center;padding:32px 28px;">
-        <div style="font-size:2.5rem;margin-bottom:12px;">🚛</div>
-        <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
-        <p style="color:#718096;margin-bottom:24px;">You've been invited to join as a <strong>Hauler</strong>. Confirm below to start finding jobs.</p>
+        <p style="color:#718096;margin-bottom:28px;">
+            You were invited to join as a <strong>Hauler</strong>. Confirm below to set up your profile and start finding jobs.
+        </p>
         <form method="POST" action="{{ url_for('set_role') }}" onsubmit="return validateHaulerForm(this);">
             <input type="hidden" name="role" value="hauler">
-            <div class="terms-box" style="text-align:left;margin-bottom:20px;">
+            <div class="terms-box" style="text-align:left;margin-bottom:22px;">
                 <label class="check-label">
                     <input type="checkbox" name="agree_terms" value="1">
                     <span>I have read and agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank">JHE HAUL Hauler Agreement</a> and understand this forms a legally binding contract.</span>
                 </label>
             </div>
             <button type="submit" class="btn btn-success btn-lg btn-block">
-                Join as Hauler — I haul junk for pay
+                Join as Hauler — Start Finding Jobs 🚛
             </button>
         </form>
-        <p style="margin-top:16px;color:#a0aec0;font-size:0.88rem;">Not a hauler? Choose your role below.</p>
+        <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
+            Not here to haul?
+            <form method="POST" action="{{ url_for('set_role') }}" style="display:inline;">
+                <input type="hidden" name="role" value="customer">
+                <button type="submit" style="background:none;border:none;color:#3182ce;cursor:pointer;padding:0;font-size:0.85rem;text-decoration:underline;">
+                    Join as a Customer instead
+                </button>
+            </form>
+        </p>
     </div>
-    <hr style="margin:8px 0;">
-    {% endif %}
 
-    <div class="card" style="text-align:center;padding:32px 28px;">
+{% elif invited_role == 'customer' %}
+
+    <!-- Customer invite: only show customer path, offer hauler as escape hatch -->
+    <div class="card" style="text-align:center;padding:40px 32px;">
+        <div style="font-size:3rem;margin-bottom:14px;">👤</div>
+        <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
+        <p style="color:#718096;margin-bottom:28px;">
+            You were invited to join as a <strong>Customer</strong>. Confirm below to start posting jobs and getting bids.
+        </p>
+        <form method="POST" action="{{ url_for('set_role') }}">
+            <input type="hidden" name="role" value="customer">
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                Join as Customer — Post a Job 📦
+            </button>
+        </form>
+        <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
+            Actually here to haul?
+            <form method="POST" action="{{ url_for('set_role') }}" style="display:inline;" onsubmit="return validateHaulerForm(this);">
+                <input type="hidden" name="role" value="hauler">
+                <input type="hidden" name="agree_terms" value="">
+                <button type="button" onclick="switchToHauler()" style="background:none;border:none;color:#3182ce;cursor:pointer;padding:0;font-size:0.85rem;text-decoration:underline;">
+                    Join as a Hauler instead
+                </button>
+            </form>
+        </p>
+    </div>
+
+{% else %}
+
+    <!-- General role selector (no invite) -->
+    <div class="card" style="text-align:center;padding:36px 28px;">
         <h2 style="margin-bottom:6px;">How will you use JHE Haul?</h2>
         <p style="color:#718096;margin-bottom:28px;">Choose your role to get started.</p>
 
         <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+
             <form method="POST" action="{{ url_for('set_role') }}" style="flex:1;min-width:200px;">
                 <input type="hidden" name="role" value="customer">
-                <button type="submit" class="btn btn-primary btn-block" style="padding:22px 20px;font-size:1.05rem;flex-direction:column;gap:4px;">
-                    <span style="font-size:1.8rem;">👤</span>
+                <button type="submit" class="btn btn-primary btn-block" style="padding:24px 20px;font-size:1.05rem;display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <span style="font-size:2rem;">👤</span>
                     <strong>I'm a Customer</strong>
                     <small style="font-weight:400;opacity:0.85;">I need junk hauled</small>
                 </button>
@@ -62,24 +89,45 @@
                         <span style="font-size:0.84rem;">I agree to the <a href="{{ url_for('hauler_agreement') }}" target="_blank">Hauler Agreement</a></span>
                     </label>
                 </div>
-                <button type="submit" class="btn btn-success btn-block" style="padding:22px 20px;font-size:1.05rem;flex-direction:column;gap:4px;">
-                    <span style="font-size:1.8rem;">🚛</span>
+                <button type="submit" class="btn btn-success btn-block" style="padding:24px 20px;font-size:1.05rem;display:flex;flex-direction:column;align-items:center;gap:6px;">
+                    <span style="font-size:2rem;">🚛</span>
                     <strong>I'm a Hauler</strong>
                     <small style="font-weight:400;opacity:0.85;">I haul junk for pay</small>
                 </button>
             </form>
+
         </div>
     </div>
+
+{% endif %}
+
 </div>
 
 <script>
 function validateHaulerForm(form) {
     var checkbox = form.querySelector('input[name="agree_terms"]');
-    if (!checkbox.checked) {
+    if (!checkbox || !checkbox.checked) {
         alert('You must read and agree to the JHE HAUL Hauler Agreement before creating a hauler account.');
         return false;
     }
     return true;
+}
+
+function switchToHauler() {
+    var agreed = confirm('To join as a Hauler you must agree to the Hauler Agreement at jhehaul.com/hauler-agreement.\n\nDo you agree to the Hauler Agreement and want to join as a Hauler?');
+    if (agreed) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("set_role") }}';
+        var roleInput = document.createElement('input');
+        roleInput.type = 'hidden'; roleInput.name = 'role'; roleInput.value = 'hauler';
+        var termsInput = document.createElement('input');
+        termsInput.type = 'hidden'; termsInput.name = 'agree_terms'; termsInput.value = '1';
+        form.appendChild(roleInput);
+        form.appendChild(termsInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 {% endblock %}
