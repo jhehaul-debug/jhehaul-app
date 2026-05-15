@@ -1032,3 +1032,62 @@ def admin_delete_user(user_id):
 @app.route("/health")
 def health():
     return "ok", 200
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+    content = f"""User-agent: *
+Allow: /
+Allow: /invite
+Allow: /invite/customer
+Allow: /invite/hauler
+Allow: /about
+Allow: /hauler-agreement
+Allow: /customer-terms
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /customer/
+Disallow: /hauler/
+Disallow: /auth/
+Disallow: /profile
+Disallow: /profile/
+Disallow: /checkout/
+Disallow: /uploads/
+Disallow: /choose-role
+Disallow: /set-role
+Disallow: /payment_success/
+Disallow: /account/
+
+Sitemap: {base}/sitemap.xml
+"""
+    from flask import Response
+    return Response(content.strip(), mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+    today = datetime.now().strftime("%Y-%m-%d")
+    urls = [
+        (f"{base}/",                  today,  "weekly",  "1.0"),
+        (f"{base}/invite",            today,  "monthly", "0.8"),
+        (f"{base}/invite/customer",   today,  "monthly", "0.8"),
+        (f"{base}/invite/hauler",     today,  "monthly", "0.8"),
+        (f"{base}/about",             today,  "monthly", "0.5"),
+        (f"{base}/hauler-agreement",  today,  "yearly",  "0.3"),
+        (f"{base}/customer-terms",    today,  "yearly",  "0.3"),
+    ]
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc, lastmod, changefreq, priority in urls:
+        lines.append(f"""  <url>
+    <loc>{loc}</loc>
+    <lastmod>{lastmod}</lastmod>
+    <changefreq>{changefreq}</changefreq>
+    <priority>{priority}</priority>
+  </url>""")
+    lines.append("</urlset>")
+    from flask import Response
+    return Response("\n".join(lines), mimetype="application/xml")
