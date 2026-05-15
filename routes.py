@@ -1070,34 +1070,5 @@ def robots_txt():
 
 @app.route("/sitemap.xml")
 def sitemap_xml():
-    base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
-    today = datetime.now().strftime("%Y-%m-%d")
-    pages = [
-        (f"{base}/",                 "weekly",  "1.0"),
-        (f"{base}/invite",           "monthly", "0.8"),
-        (f"{base}/invite/customer",  "monthly", "0.8"),
-        (f"{base}/invite/hauler",    "monthly", "0.8"),
-        (f"{base}/about",            "monthly", "0.5"),
-        (f"{base}/hauler-agreement", "yearly",  "0.3"),
-        (f"{base}/customer-terms",   "yearly",  "0.3"),
-    ]
-    lines = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ]
-    for loc, changefreq, priority in pages:
-        lines += [
-            "  <url>",
-            f"    <loc>{loc}</loc>",
-            f"    <lastmod>{today}</lastmod>",
-            f"    <changefreq>{changefreq}</changefreq>",
-            f"    <priority>{priority}</priority>",
-            "  </url>",
-        ]
-    lines.append("</urlset>")
-    xml = "\n".join(lines)
-    resp = make_response(xml)
-    resp.headers["Content-Type"] = "application/xml; charset=utf-8"
-    resp.headers["X-Content-Type-Options"] = "nosniff"
-    resp.headers["Cache-Control"] = "public, max-age=3600"
-    return resp
+    root = os.path.abspath(os.path.dirname(__file__))
+    return send_from_directory(root, "sitemap.xml", mimetype="application/xml")
