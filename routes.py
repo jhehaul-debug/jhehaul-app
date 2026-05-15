@@ -87,16 +87,23 @@ def invite(role=None):
 @app.route("/choose-role")
 @require_login
 def choose_role():
-    invited_role = session.pop("invited_role", None)
-    if current_user.user_type:
-        if current_user.user_type == "hauler":
-            return redirect(url_for("hauler_jobs"))
+    if current_user.is_admin:
+        session.pop("invited_role", None)
+        return redirect(url_for("admin_dashboard"))
+    if current_user.user_type == "hauler":
+        session.pop("invited_role", None)
+        return redirect(url_for("hauler_jobs"))
+    if current_user.user_type == "customer":
+        session.pop("invited_role", None)
         return redirect(url_for("customer_jobs"))
+    invited_role = session.pop("invited_role", None)
     return render_template("choose_role.html", invited_role=invited_role)
 
 @app.route("/set-role", methods=["POST"])
 @require_login
 def set_role():
+    if current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
     role = request.form.get("role")
     if role == 'hauler':
         agree_terms = request.form.get("agree_terms")
