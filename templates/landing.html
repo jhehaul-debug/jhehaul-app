@@ -1,46 +1,116 @@
 {% extends "base.html" %}
-{% block title %}Welcome - JHE Haul{% endblock %}
+
+{% block title %}JHE Haul | Junk Removal & Hauling Marketplace{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">{% endblock %}
+
+{% block og_meta %}
+<meta property="og:title" content="JHE Haul | Junk Removal & Hauling Marketplace">
+<meta property="og:description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">
+<meta property="og:image" content="https://jhehaul.com/static/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://jhehaul.com">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JHE Haul">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JHE Haul | Junk Removal & Hauling Marketplace">
+<meta name="twitter:description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">
+<meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
+{% endblock %}
+
 {% block content %}
-<div class="card" style="text-align: center; padding: 60px 40px;">
-    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">JHE Haul</h1>
-    <p style="font-size: 1.2rem; color: #666; margin-bottom: 40px;">Your trusted junk hauling marketplace. Post jobs, get bids, and hire haulers.</p>
-    
-    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+
+<!-- Hero -->
+<div class="card" style="text-align: center; padding: 56px 40px 48px;">
+    <h1 style="font-size: 2.4rem; margin-bottom: 16px;">🚛 JHE Haul</h1>
+    <p style="font-size: 1.15rem; color: #4a5568; margin-bottom: 36px; max-width: 560px; margin-left: auto; margin-right: auto;">
+        Your local junk removal and hauling marketplace. Post a job, get bids from nearby haulers, and get your junk removed fast.
+    </p>
+
+    <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px;">
         {% if current_user.is_authenticated %}
             {% if current_user.user_type == 'customer' %}
-                <a href="{{ url_for('customer_new') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                    Post a Job
-                </a>
-                <a href="{{ url_for('customer_jobs') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                    My Jobs
-                </a>
+                <a href="{{ url_for('customer_new') }}" class="btn btn-primary btn-lg">📋 Post a Job</a>
+                <a href="{{ url_for('customer_jobs') }}" class="btn btn-outline btn-lg">📦 My Jobs</a>
             {% elif current_user.user_type == 'hauler' %}
-                <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                    Find Jobs
-                </a>
-                <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                    My Dashboard
-                </a>
+                <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary btn-lg">🔍 Find Jobs</a>
+                <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-outline btn-lg">📊 My Dashboard</a>
             {% else %}
-                <a href="{{ url_for('choose_role') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                    Get Started
-                </a>
+                <a href="{{ url_for('choose_role') }}" class="btn btn-primary btn-lg">Get Started</a>
             {% endif %}
         {% else %}
-            <a href="{{ url_for('auth.login') }}?next=/customer/new" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                Post a Job
-            </a>
-            <a href="{{ url_for('auth.login') }}?next=/hauler/jobs" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 35px;">
-                Find Jobs
-            </a>
+            <a href="{{ url_for('auth.login') }}?next=/customer/new" class="btn btn-primary btn-lg">Post a Job</a>
+            <a href="{{ url_for('auth.login') }}?next=/hauler/jobs" class="btn btn-outline btn-lg">Find Jobs to Haul</a>
         {% endif %}
     </div>
-    
+
     {% if not current_user.is_authenticated %}
-    <p style="margin-top: 30px; color: #888; font-size: 0.9rem;">
-        New here? Click either button to create an account.<br>
-        Forgot password? Use the reset option on the login screen.
+    <p style="color: #a0aec0; font-size: 0.88rem;">
+        Sign in with Google to get started — no password needed.
     </p>
     {% endif %}
 </div>
+
+<!-- SEO: About / keyword section -->
+<div class="card" style="padding: 36px 40px;">
+    <h2 style="font-size: 1.25rem; margin-bottom: 14px; color: #2d3748;">Local Junk Removal Made Simple</h2>
+    <p style="color: #4a5568; line-height: 1.75; margin-bottom: 0;">
+        JHE Haul is a junk removal and hauling marketplace connecting customers with local haulers for
+        furniture removal, trash removal, appliance pickup, cleanouts, moving help, and debris hauling.
+        Whether you need a single item hauled away or a full property cleanout, local haulers in your area
+        are ready to bid on your job.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 28px;">
+        <div style="background: #f7fafc; border-radius: 10px; padding: 18px 16px;">
+            <div style="font-size: 1.6rem; margin-bottom: 8px;">🛋️</div>
+            <strong style="display: block; margin-bottom: 4px; color: #2d3748;">Furniture Removal</strong>
+            <span style="font-size: 0.87rem; color: #718096;">Couches, mattresses, tables, and more picked up fast.</span>
+        </div>
+        <div style="background: #f7fafc; border-radius: 10px; padding: 18px 16px;">
+            <div style="font-size: 1.6rem; margin-bottom: 8px;">🏠</div>
+            <strong style="display: block; margin-bottom: 4px; color: #2d3748;">Property Cleanouts</strong>
+            <span style="font-size: 0.87rem; color: #718096;">Garage, basement, estate, and hoarding cleanouts.</span>
+        </div>
+        <div style="background: #f7fafc; border-radius: 10px; padding: 18px 16px;">
+            <div style="font-size: 1.6rem; margin-bottom: 8px;">🔌</div>
+            <strong style="display: block; margin-bottom: 4px; color: #2d3748;">Appliance Pickup</strong>
+            <span style="font-size: 0.87rem; color: #718096;">Fridges, washers, dryers, and large appliances removed.</span>
+        </div>
+        <div style="background: #f7fafc; border-radius: 10px; padding: 18px 16px;">
+            <div style="font-size: 1.6rem; margin-bottom: 8px;">🪚</div>
+            <strong style="display: block; margin-bottom: 4px; color: #2d3748;">Debris Hauling</strong>
+            <span style="font-size: 0.87rem; color: #718096;">Construction debris, yard waste, and bulk trash hauled away.</span>
+        </div>
+    </div>
+</div>
+
+<!-- How it works -->
+<div class="card" style="padding: 36px 40px;">
+    <h2 style="font-size: 1.25rem; margin-bottom: 24px; color: #2d3748;">How It Works</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; text-align: center;">
+        <div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">📸</div>
+            <strong style="display: block; margin-bottom: 6px; color: #2d3748;">1. Post Your Job</strong>
+            <span style="font-size: 0.88rem; color: #718096;">Describe what needs hauling and add photos. Takes about 2 minutes.</span>
+        </div>
+        <div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">💬</div>
+            <strong style="display: block; margin-bottom: 6px; color: #2d3748;">2. Get Bids</strong>
+            <span style="font-size: 0.88rem; color: #718096;">Local haulers in your area review your job and send competitive quotes.</span>
+        </div>
+        <div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">✅</div>
+            <strong style="display: block; margin-bottom: 6px; color: #2d3748;">3. Accept & Pay Deposit</strong>
+            <span style="font-size: 0.88rem; color: #718096;">Choose the best bid, pay a small deposit, and your hauler gets your address.</span>
+        </div>
+        <div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">🚛</div>
+            <strong style="display: block; margin-bottom: 6px; color: #2d3748;">4. Junk Gone</strong>
+            <span style="font-size: 0.88rem; color: #718096;">Your hauler shows up and removes the items. Done.</span>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
