@@ -75,24 +75,24 @@ def invite(role=None):
     if role in ['customer', 'hauler']:
         session['invited_role'] = role
     if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-        if current_user.user_type == 'customer':
-            return redirect(url_for('customer_jobs'))
-        return redirect(url_for('hauler_jobs'))
+        if current_user.user_type == 'hauler':
+            return redirect(url_for('hauler_jobs'))
+        return redirect(url_for('customer_jobs'))
     return render_template('invite_landing.html', role=role)
 
 @app.route("/choose-role")
 @require_login
 def choose_role():
-        if current_user.user_type:
-            if current_user.user_type == "customer":
-                return redirect(url_for("customer_jobs"))
-            else:
-                return redirect(url_for("hauler_jobs"))
-
-        invited_role = session.pop("invited_role", None)
-        return render_template("choose_role.html", invited_role=invited_role)
+    invited_role = session.pop("invited_role", None)
+    if current_user.user_type:
+        if current_user.user_type == "hauler":
+            return redirect(url_for("hauler_jobs"))
+        return redirect(url_for("customer_jobs"))
+    return render_template("choose_role.html", invited_role=invited_role)
 
 @app.route("/set-role", methods=["POST"])
 @require_login
@@ -117,7 +117,7 @@ def set_role():
 @app.route("/hauler/setup")
 @require_role('hauler')
 def hauler_setup():
-    if current_user.home_zip and current_user.max_travel_miles:
+    if current_user.home_zip and current_user.max_travel_miles and current_user.truck_type:
         return redirect(url_for('hauler_jobs'))
     return render_template('hauler_setup.html')
 
@@ -132,6 +132,8 @@ def hauler_setup_save():
     max_travel_miles = request.form.get("max_travel_miles", "").strip()
     notify_new_jobs = request.form.get("notify_new_jobs") == "1"
     notify_sms = request.form.get("notify_sms") == "1"
+    truck_type = request.form.get("truck_type", "").strip()
+    trailer_type = request.form.get("trailer_type", "").strip()
 
     if not first_name or not last_name:
         flash("Please enter your first and last name.", "error")
@@ -165,6 +167,8 @@ def hauler_setup_save():
     current_user.max_travel_miles = int(max_travel_miles)
     current_user.notify_new_jobs = notify_new_jobs
     current_user.notify_sms = notify_sms
+    current_user.truck_type = truck_type if truck_type else None
+    current_user.trailer_type = trailer_type if trailer_type else None
     db.session.commit()
 
     flash("You're all set! Browse open jobs below.", "success")

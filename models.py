@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     max_travel_miles = db.Column(db.Integer, nullable=True)
     notify_new_jobs = db.Column(db.Boolean, default=True)
     notify_sms = db.Column(db.Boolean, default=False)
+    truck_type = db.Column(db.String, nullable=True)
+    trailer_type = db.Column(db.String, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     agreed_to_hauler_terms = db.Column(db.Boolean, default=False)
     agreed_to_hauler_terms_at = db.Column(db.DateTime, nullable=True)
