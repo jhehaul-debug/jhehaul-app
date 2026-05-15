@@ -249,13 +249,13 @@ def customer_create():
     db.session.add(job)
     db.session.commit()
 
+    from storage import upload_file as _upload_file
     photos = request.files.getlist("photos")
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
-            filename = f"{uuid.uuid4().hex}{ext}"
-            photo.save(os.path.join(UPLOAD_FOLDER, filename))
-            photo_record = JobPhoto(job_id=job.id, filename=filename)
+            filename, storage_url = _upload_file(photo, ext)
+            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
             db.session.add(photo_record)
     db.session.commit()
 
@@ -340,13 +340,13 @@ def customer_upload_photos(job_id):
     if job.status not in ['open', 'bidding', 'accepted', 'deposit_paid']:
         return "Cannot upload photos at this stage", 400
 
+    from storage import upload_file as _upload_file
     photos = request.files.getlist("photos")
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
-            filename = f"{uuid.uuid4().hex}{ext}"
-            photo.save(os.path.join(UPLOAD_FOLDER, filename))
-            photo_record = JobPhoto(job_id=job.id, filename=filename)
+            filename, storage_url = _upload_file(photo, ext)
+            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
             db.session.add(photo_record)
 
     db.session.commit()
@@ -802,21 +802,20 @@ def hauler_upload_photos(job_id):
         before_photos = request.files.getlist("before_photos")
         after_photos = request.files.getlist("after_photos")
 
+        from storage import upload_file as _upload_file
         saved_after = 0
         for photo in before_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
-                filename = f"{uuid.uuid4().hex}{ext}"
-                photo.save(os.path.join(UPLOAD_FOLDER, filename))
-                photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='before')
+                filename, storage_url = _upload_file(photo, ext)
+                photo_record = CompletionPhoto(job_id=job.id, filename=filename, storage_url=storage_url, photo_type='before')
                 db.session.add(photo_record)
 
         for photo in after_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
-                filename = f"{uuid.uuid4().hex}{ext}"
-                photo.save(os.path.join(UPLOAD_FOLDER, filename))
-                photo_record = CompletionPhoto(job_id=job.id, filename=filename, photo_type='after')
+                filename, storage_url = _upload_file(photo, ext)
+                photo_record = CompletionPhoto(job_id=job.id, filename=filename, storage_url=storage_url, photo_type='after')
                 db.session.add(photo_record)
                 saved_after += 1
 
@@ -891,13 +890,13 @@ def admin_test_job():
     db.session.add(job)
     db.session.commit()
 
+    from storage import upload_file as _upload_file
     photos = request.files.getlist("photos")
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
-            filename = f"{uuid.uuid4().hex}{ext}"
-            photo.save(os.path.join(UPLOAD_FOLDER, filename))
-            photo_record = JobPhoto(job_id=job.id, filename=filename)
+            filename, storage_url = _upload_file(photo, ext)
+            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
             db.session.add(photo_record)
     db.session.commit()
 
