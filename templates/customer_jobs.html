@@ -37,6 +37,16 @@
     <hr>
     <p style="color:#4a5568;">{{ job.job_description[:150] }}{% if job.job_description|length > 150 %}…{% endif %}</p>
 
+    {% if job.photos %}
+    <div class="photo-grid" style="margin-bottom:10px;">
+        {% for photo in job.photos %}
+        <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}"
+             alt="Job photo"
+             onerror="this.style.display='none'">
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% if job.status == 'bidding' and job.bids|length > 0 %}
     <div class="banner banner-info" style="margin-top:10px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span>💬 <strong>{{ job.bids|length }} hauler{% if job.bids|length != 1 %}s have{% else %} has{% endif %} submitted a quote.</strong> Review and accept a bid to move forward.</span>

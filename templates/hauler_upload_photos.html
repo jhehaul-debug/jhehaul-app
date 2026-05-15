@@ -39,7 +39,8 @@
         {% for photo in job.completion_photos %}
         <div style="text-align:center;">
             <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}"
-                 style="width:130px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+                 style="width:130px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"
+                 onerror="this.style.display='none'">
             <p style="font-size:0.78rem;color:#718096;margin-top:4px;">{{ photo.photo_type.title() }}</p>
         </div>
         {% endfor %}

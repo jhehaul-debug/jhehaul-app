@@ -32,7 +32,9 @@
     <h4 style="margin-top:16px;margin-bottom:8px;">Photos</h4>
     <div class="photo-grid">
         {% for photo in job.photos %}
-        <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}" alt="Job photo">
+        <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}"
+             alt="Job photo"
+             onerror="this.style.display='none'">
         {% endfor %}
     </div>
     {% endif %}
