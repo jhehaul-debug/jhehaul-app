@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}
-{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul
-{% elif role == 'hauler' %}Become a Hauler - JHE Haul
-{% else %}Join JHE Haul{% endif %}
+{% if role == 'customer' %}Post a Junk Removal Job Near You - JHE Haul
+{% elif role == 'hauler' %}Become a Local Hauler &amp; Earn - JHE Haul
+{% else %}Join JHE Haul | Local Junk Removal Marketplace{% endif %}
+{% endblock %}
+{% block meta_description %}
+{% if role == 'customer' %}<meta name="description" content="Post your junk removal job on JHE Haul. Upload photos, get bids from local haulers, pay a secure deposit, and get same-day or scheduled junk pickup near you.">
+{% elif role == 'hauler' %}<meta name="description" content="Become a local hauler on JHE Haul. Browse junk removal jobs in your area, submit competitive bids, and earn on your own schedule. No subscription fees.">
+{% else %}<meta name="description" content="Join JHE Haul — the local junk removal marketplace. Post jobs and get bids from local haulers, or sign up as a hauler to find junk removal jobs near you.">
+{% endif %}
 {% endblock %}
 {% block og_meta %}
-<meta property="og:title" content="{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul{% elif role == 'hauler' %}Become a Hauler - JHE Haul{% else %}JHE Haul - Local Junk Removal & Hauling Network{% endif %}">
-<meta property="og:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul.{% else %}The easy way to post junk hauling jobs or find hauling work in your area.{% endif %}">
+<meta property="og:title" content="{% if role == 'customer' %}Post a Junk Removal Job Near You - JHE Haul{% elif role == 'hauler' %}Become a Local Hauler &amp; Earn - JHE Haul{% else %}Join JHE Haul | Local Junk Removal Marketplace{% endif %}">
+<meta property="og:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast. Same-day pickup available.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul. No subscription fees.{% else %}The easy way to post junk hauling jobs or find hauling work near you.{% endif %}">
 <meta property="og:image" content="https://jhehaul.com/static/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -14,51 +20,87 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JHE Haul">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{% if role == 'customer' %}Post a Junk Hauling Job - JHE Haul{% elif role == 'hauler' %}Become a Hauler - JHE Haul{% else %}JHE Haul - Local Junk Removal & Hauling Network{% endif %}">
-<meta name="twitter:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul.{% else %}The easy way to post junk hauling jobs or find hauling work in your area.{% endif %}">
+<meta name="twitter:title" content="{% if role == 'customer' %}Post a Junk Removal Job - JHE Haul{% elif role == 'hauler' %}Become a Local Hauler - JHE Haul{% else %}Join JHE Haul{% endif %}">
+<meta name="twitter:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs near you, submit bids, and start earning.{% else %}Post jobs or find hauling work near you.{% endif %}">
 <meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jhehaul.com{% if role %}/invite/{{ role }}{% else %}/invite{% endif %}">
 {% endblock %}
 {% block content %}
-<div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:56px 40px 48px;">
 
-    {% if role == 'hauler' %}
+{% if role == 'hauler' %}
+<div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
     <div style="font-size:3rem;margin-bottom:16px;">🚛</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">You're invited to haul!</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Browse hauling jobs near you, submit bids, and start earning on your schedule.</p>
-    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.2;">
+    <h1 style="font-size:2rem;margin-bottom:12px;">Become a Local Hauler</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Find junk removal jobs near you, submit bids, and earn on your own schedule.</p>
+    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.4;text-align:left;display:inline-block;">
         <li>✅ Set your travel radius — only see jobs near you</li>
         <li>✅ Submit bids on jobs that fit your truck and schedule</li>
-        <li>✅ Get paid per job — no subscription fees</li>
+        <li>✅ Get paid per job — no subscription or monthly fees</li>
+        <li>✅ Upload before/after photos to confirm completion</li>
+        <li>✅ Build your reputation with customer ratings</li>
     </ul>
     <a href="{{ url_for('auth.login') }}?next=/choose-role" class="btn btn-success" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
         Create Hauler Account
     </a>
-
-    {% elif role == 'customer' %}
-    <div style="font-size:3rem;margin-bottom:16px;">📦</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">You're invited to post a job!</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Post what needs hauling, get bids from local haulers, and get it done.</p>
-    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.2;">
-        <li>✅ Post photos and a description — takes 2 minutes</li>
-        <li>✅ Receive bids from haulers in your area</li>
-        <li>✅ Pay a small deposit when you accept a bid</li>
-    </ul>
-    <a href="{{ url_for('auth.login') }}?next=/choose-role" class="btn btn-primary" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
-        Create Customer Account
-    </a>
-
-    {% else %}
-    <div style="font-size:3rem;margin-bottom:16px;">👋</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">You're invited to JHE Haul!</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:32px;">Post hauling jobs or find hauling work near you.</p>
-    <a href="{{ url_for('auth.login') }}?next=/choose-role" class="btn btn-primary" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
-        Get Started
-    </a>
-    {% endif %}
-
-    <p style="margin-top:28px;color:#a0aec0;font-size:0.85rem;">
+    <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
         Sign in with Google — no password needed.<br>
         Already have an account? Tap the button above to log in.
     </p>
 </div>
+
+{% elif role == 'customer' %}
+<div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
+    <div style="font-size:3rem;margin-bottom:16px;">📦</div>
+    <h1 style="font-size:2rem;margin-bottom:12px;">Post a Junk Removal Job</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Post what needs hauling, get bids from local haulers, and get it removed fast.</p>
+    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.4;text-align:left;display:inline-block;">
+        <li>✅ Post photos and a description — takes about 2 minutes</li>
+        <li>✅ Receive bids from local haulers in your area</li>
+        <li>✅ Pay a small secure deposit when you accept a bid</li>
+        <li>✅ Same-day and next-day pickup options available</li>
+        <li>✅ Your address stays private until after deposit</li>
+    </ul>
+    <a href="{{ url_for('auth.login') }}?next=/choose-role" class="btn btn-primary" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
+        Create Customer Account
+    </a>
+    <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
+        Sign in with Google — no password needed.<br>
+        Already have an account? Tap the button above to log in.
+    </p>
+</div>
+
+{% else %}
+<div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
+    <div style="font-size:3rem;margin-bottom:16px;">👋</div>
+    <h1 style="font-size:2rem;margin-bottom:12px;">Welcome to JHE Haul</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:8px;">The local junk removal marketplace.</p>
+    <p style="color:#718096;font-size:0.92rem;margin-bottom:32px;">Post hauling jobs and get bids from local haulers, or sign up as a hauler to find work near you.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
+        <a href="{{ url_for('invite', role='customer') }}" class="btn btn-primary" style="font-size:1rem;padding:14px 32px;">📦 Post a Job</a>
+        <a href="{{ url_for('invite', role='hauler') }}" class="btn btn-outline" style="font-size:1rem;padding:14px 32px;">🚛 Find Hauling Jobs</a>
+    </div>
+    <p style="margin-top:8px;color:#a0aec0;font-size:0.85rem;">
+        Sign in with Google — no password needed.<br>
+        Already have an account? Tap a button above to log in.
+    </p>
+</div>
+{% endif %}
+
+<!-- Internal links for SEO -->
+<div style="max-width:560px;margin:0 auto;">
+    <div class="card" style="padding:20px 24px;">
+        <p style="font-size:0.85rem;color:#718096;margin-bottom:12px;font-weight:600;">LEARN MORE</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <a href="{{ url_for('home') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">🏠 How It Works</a>
+            <span style="color:#e2e8f0;">|</span>
+            <a href="{{ url_for('about') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">ℹ About JHE Haul</a>
+            <span style="color:#e2e8f0;">|</span>
+            <a href="{{ url_for('customer_terms') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">📋 Customer Terms</a>
+            <span style="color:#e2e8f0;">|</span>
+            <a href="{{ url_for('hauler_agreement') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">📄 Hauler Agreement</a>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
