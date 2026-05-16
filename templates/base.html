@@ -118,6 +118,12 @@
                 <p class="footer-desc">The local junk hauling marketplace. Post jobs, get bids, and get your junk removed fast.</p>
             </div>
             <div class="footer-col">
+                <h4>Get Started</h4>
+                <a href="{{ url_for('invite', role='customer') }}">Post a Job</a>
+                <a href="{{ url_for('invite', role='hauler') }}">Become a Hauler</a>
+                <a href="{{ url_for('invite') }}">Join JHE Haul</a>
+            </div>
+            <div class="footer-col">
                 <h4>Company</h4>
                 <a href="{{ url_for('about') }}">About Us</a>
                 <a href="{{ url_for('customer_terms') }}">Customer Terms</a>

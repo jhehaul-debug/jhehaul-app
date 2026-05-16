@@ -1,9 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Customer Terms of Service - JHE Haul{% endblock %}
+{% block title %}Customer Terms of Service - JHE Haul Junk Removal{% endblock %}
+{% block meta_description %}<meta name="description" content="JHE Haul customer terms of service covering property removal authorization, liability, deposits, and platform rules for junk removal customers in Minnesota and Wisconsin.">{% endblock %}
+{% block og_meta %}
+<meta property="og:title" content="Customer Terms of Service - JHE Haul">
+<meta property="og:description" content="JHE Haul customer terms of service covering property removal authorization, deposits, and platform rules.">
+<meta property="og:url" content="https://jhehaul.com/customer-terms">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JHE Haul">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jhehaul.com/customer-terms">
+{% endblock %}
 {% block content %}
 <div class="card" style="padding: 30px; max-width: 800px; margin: 0 auto;">
-    <h2 style="margin-bottom: 20px; text-align: center;">JHE HAUL CUSTOMER TERMS OF SERVICE</h2>
-    <p style="text-align: center; color: #666; margin-bottom: 30px;">Property Removal Authorization & Liability Waiver</p>
+    <h1 style="margin-bottom: 8px; text-align: center; font-size: 1.4rem;">JHE Haul Customer Terms of Service</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 30px;">Property Removal Authorization &amp; Liability Waiver</p>
+
+    <!-- Internal nav -->
+    <div style="background:#f7fafc;border-radius:8px;padding:14px 18px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+        <span style="font-size:0.82rem;color:#718096;font-weight:600;">RELATED:</span>
+        <a href="{{ url_for('home') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">🏠 Home</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('about') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">ℹ About</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('hauler_agreement') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">📄 Hauler Agreement</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('invite', role='customer') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">📦 Post a Job</a>
+    </div>
 
     <div style="line-height: 1.8; font-size: 0.95rem;">
         <p><strong>Company:</strong> JHE HAUL, operated by J Hunter Enterprises Inc. ("Company")<br>
@@ -13,14 +35,14 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>1. ACCEPTANCE OF TERMS</h3>
+        <h2 style="font-size:1.05rem;">1. Acceptance of Terms</h2>
         <p>By creating an account, posting a job, requesting service, scheduling an appointment, or communicating with a hauler through the Platform, the Customer agrees to these Terms of Service.</p>
         <p>Selecting "I Agree," "Book Job," or similar confirmation constitutes a legally binding electronic signature under the Electronic Signatures in Global and National Commerce Act (15 U.S.C. §7001).</p>
         <p>If the Customer does not agree, they must not use the Platform.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>2. PLATFORM ROLE (VERY IMPORTANT)</h3>
+        <h2 style="font-size:1.05rem;">2. Platform Role (Very Important)</h2>
         <p>JHE HAUL is a technology marketplace that connects Customers with independent junk removal service providers ("Haulers").</p>
         <p>The Company:</p>
         <ul>
@@ -34,7 +56,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>3. PROPERTY REMOVAL AUTHORIZATION</h3>
+        <h2 style="font-size:1.05rem;">3. Property Removal Authorization</h2>
         <p>By posting a job and scheduling service, the Customer represents and warrants:</p>
         <ol>
             <li>They are the legal owner of the property to be removed OR</li>
@@ -53,7 +75,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>4. WRONG ITEM / THEFT CLAIM PROTECTION</h3>
+        <h2 style="font-size:1.05rem;">4. Wrong Item / Theft Claim Protection</h2>
         <p>The Customer acknowledges:</p>
         <p><strong>Junk removal is irreversible.</strong></p>
         <p>The Customer is solely responsible for ensuring all items they wish to keep are removed from the removal area prior to the hauler's arrival.</p>
@@ -69,7 +91,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>5. TENANT, LANDLORD & THIRD-PARTY PROPERTY</h3>
+        <h2 style="font-size:1.05rem;">5. Tenant, Landlord &amp; Third-Party Property</h2>
         <p>If the job involves:</p>
         <ul>
             <li>A rental unit</li>
@@ -93,7 +115,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>6. HAZARDOUS MATERIALS</h3>
+        <h2 style="font-size:1.05rem;">6. Hazardous Materials</h2>
         <p>The Customer agrees NOT to include:</p>
         <ul>
             <li>Chemicals</li>
@@ -114,7 +136,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>7. BOOKING FEE / DEPOSIT</h3>
+        <h2 style="font-size:1.05rem;">7. Booking Fee / Deposit</h2>
         <p>To reserve a scheduled appointment, the Customer must pay a booking fee to JHE HAUL through the Platform.</p>
         <p>The booking fee:</p>
         <ul>
@@ -131,7 +153,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>8. PAYMENT TO HAULER</h3>
+        <h2 style="font-size:1.05rem;">8. Payment to Hauler</h2>
         <p>The Customer pays the remaining balance directly to the Hauler after the job is completed.</p>
         <p>JHE HAUL:</p>
         <ul>
@@ -144,7 +166,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>9. LIABILITY DISCLAIMER</h3>
+        <h2 style="font-size:1.05rem;">9. Liability Disclaimer</h2>
         <p>To the fullest extent permitted by law, JHE HAUL is not liable for:</p>
         <ul>
             <li>Property damage</li>
@@ -158,12 +180,12 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>10. LIMITATION OF DAMAGES</h3>
+        <h2 style="font-size:1.05rem;">10. Limitation of Damages</h2>
         <p>The Company's maximum liability, if any, shall not exceed the amount of the booking fee paid by the Customer.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>11. INDEMNIFICATION</h3>
+        <h2 style="font-size:1.05rem;">11. Indemnification</h2>
         <p>The Customer agrees to defend, indemnify, and hold harmless JHE HAUL and J Hunter Enterprises Inc. from any claims, lawsuits, damages, or losses arising from:</p>
         <ul>
             <li>Property ownership disputes</li>
@@ -175,14 +197,25 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>12. GOVERNING LAW</h3>
+        <h2 style="font-size:1.05rem;">12. Governing Law</h2>
         <p>These Terms are governed by the laws of the State of Minnesota.</p>
         <p>Any dispute shall be brought exclusively in Minnesota courts.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>13. DIGITAL SIGNATURE</h3>
+        <h2 style="font-size:1.05rem;">13. Digital Signature</h2>
         <p>By selecting "I Agree" or "Book Job," the Customer provides a legally binding electronic signature and agrees this is equivalent to signing a written contract.</p>
+    </div>
+
+    <!-- Bottom nav -->
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:12px;">
+        <a href="{{ url_for('home') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">← Back to Home</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('invite', role='customer') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">Post a Job</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('hauler_agreement') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">Hauler Agreement</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('about') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">About Us</a>
     </div>
 </div>
 {% endblock %}

@@ -1,9 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Hauler Agreement - JHE Haul{% endblock %}
+{% block title %}Hauler Agreement - JHE Haul Junk Removal Marketplace{% endblock %}
+{% block meta_description %}<meta name="description" content="JHE Haul hauler agreement covering independent contractor status, non-circumvention, bidding, payment, and platform rules for local junk removal haulers in Minnesota and Wisconsin.">{% endblock %}
+{% block og_meta %}
+<meta property="og:title" content="Hauler Agreement - JHE Haul">
+<meta property="og:description" content="JHE Haul hauler agreement covering independent contractor status, bidding, non-circumvention, and platform rules for local haulers.">
+<meta property="og:url" content="https://jhehaul.com/hauler-agreement">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JHE Haul">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jhehaul.com/hauler-agreement">
+{% endblock %}
 {% block content %}
 <div class="card" style="padding: 30px; max-width: 800px; margin: 0 auto;">
-    <h2 style="margin-bottom: 20px; text-align: center;">JHE HAUL PLATFORM HAULER AGREEMENT</h2>
-    <p style="text-align: center; color: #666; margin-bottom: 30px;">Independent Contractor, Marketplace Participation & Non-Circumvention Agreement</p>
+    <h1 style="margin-bottom: 8px; text-align: center; font-size:1.4rem;">JHE Haul Platform Hauler Agreement</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 30px;">Independent Contractor, Marketplace Participation &amp; Non-Circumvention Agreement</p>
+
+    <!-- Internal nav -->
+    <div style="background:#f7fafc;border-radius:8px;padding:14px 18px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+        <span style="font-size:0.82rem;color:#718096;font-weight:600;">RELATED:</span>
+        <a href="{{ url_for('home') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">🏠 Home</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('about') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">ℹ About</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('customer_terms') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">📋 Customer Terms</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('invite', role='hauler') }}" style="font-size:0.85rem;color:#3182ce;text-decoration:none;">🚛 Become a Hauler</a>
+    </div>
 
     <div style="line-height: 1.8; font-size: 0.95rem;">
         <p><strong>Company:</strong> JHE HAUL, operated by J Hunter Enterprises Inc. ("Company")<br>
@@ -13,14 +35,14 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>1. LEGAL ACCEPTANCE</h3>
+        <h2 style="font-size:1.05rem;">1. Legal Acceptance</h2>
         <p>By creating an account, logging in, bidding on a job, or accepting a job through the Platform, the Hauler agrees to this Agreement.</p>
         <p>These actions constitute a legally binding electronic signature under the Electronic Signatures in Global and National Commerce Act (15 U.S.C. §7001).</p>
         <p>If the Hauler does not agree, they must not use the Platform.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>2. INDEPENDENT CONTRACTOR STATUS</h3>
+        <h2 style="font-size:1.05rem;">2. Independent Contractor Status</h2>
         <p>The Hauler is an independent contractor and not an employee, agent, partner, or representative of the Company.</p>
         <p>The Company:</p>
         <ul>
@@ -43,7 +65,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>3. PLATFORM ROLE</h3>
+        <h2 style="font-size:1.05rem;">3. Platform Role</h2>
         <p>JHE HAUL is a technology marketplace only that connects customers with independent haulers.</p>
         <p>The Company is NOT:</p>
         <ul>
@@ -57,7 +79,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>4. IN-APP COMMUNICATION REQUIREMENT</h3>
+        <h2 style="font-size:1.05rem;">4. In-App Communication Requirement</h2>
         <p>All communication must occur inside the Platform.</p>
         <p>The Hauler shall not:</p>
         <ul>
@@ -70,7 +92,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>5. NON-CIRCUMVENTION</h3>
+        <h2 style="font-size:1.05rem;">5. Non-Circumvention</h2>
         <p>The Hauler may not bypass the Platform.</p>
         <p>The Hauler shall not perform services outside the Platform for any customer introduced through JHE HAUL.</p>
         <p>This applies:</p>
@@ -89,7 +111,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>6. LIQUIDATED DAMAGES</h3>
+        <h2 style="font-size:1.05rem;">6. Liquidated Damages</h2>
         <p>Violation of Section 5 results in:</p>
         <p><strong>$2,500 per violation OR three (3) times the job value, whichever is greater.</strong></p>
         <p>The Company may also:</p>
@@ -101,12 +123,12 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>7. BOOKING FEE, BID ACCEPTANCE & CUSTOMER PAYMENT</h3>
-        <h4>Hauler Bid</h4>
+        <h2 style="font-size:1.05rem;">7. Booking Fee, Bid Acceptance &amp; Customer Payment</h2>
+        <h3 style="font-size:0.97rem;margin-top:12px;">Hauler Bid</h3>
         <p>The Hauler submits a price ("Bid") for a job through the Platform. The Bid represents the total service price the Hauler is willing to perform the job for.</p>
         <p>The Company does not set or control the Hauler's price.</p>
 
-        <h4>Customer Booking Fee (Platform Fee)</h4>
+        <h3 style="font-size:0.97rem;margin-top:12px;">Customer Booking Fee (Platform Fee)</h3>
         <p>When a customer accepts a Hauler's Bid, the customer must pay a required booking/platform fee to the Company in order to reserve the job.</p>
         <p>The booking fee:</p>
         <ul>
@@ -122,7 +144,7 @@
             <li>The Company cannot provide a hauler for the scheduled service</li>
         </ul>
 
-        <h4>Remaining Balance Paid to Hauler</h4>
+        <h3 style="font-size:0.97rem;margin-top:12px;">Remaining Balance Paid to Hauler</h3>
         <p>After the job is completed, the customer pays the remaining balance of the Hauler's Bid directly to the Hauler.</p>
         <p>The Company:</p>
         <ul>
@@ -140,13 +162,13 @@
             <li>Taxes</li>
         </ul>
 
-        <h4>No Payment Obligation Owed by Hauler to Company</h4>
+        <h3 style="font-size:0.97rem;margin-top:12px;">No Payment Obligation Owed by Hauler to Company</h3>
         <p>The Hauler does not pay the platform fee and never owes payment to the Company for a completed job.</p>
         <p>The platform fee is paid solely by the customer as a booking and lead reservation fee associated with the Hauler's accepted Bid.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>8. ACCOUNT TERMINATION</h3>
+        <h2 style="font-size:1.05rem;">8. Account Termination</h2>
         <p>The Company may suspend or terminate the Hauler for:</p>
         <ul>
             <li>Complaints</li>
@@ -159,7 +181,7 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>9. LIABILITY DISCLAIMER</h3>
+        <h2 style="font-size:1.05rem;">9. Liability Disclaimer</h2>
         <p>JHE HAUL is not responsible for:</p>
         <ul>
             <li>Property damage</li>
@@ -173,23 +195,34 @@
 
         <hr style="margin: 20px 0;">
 
-        <h3>10. INDEMNIFICATION</h3>
+        <h2 style="font-size:1.05rem;">10. Indemnification</h2>
         <p>The Hauler agrees to indemnify and hold harmless JHE HAUL and J Hunter Enterprises Inc. from any claims, damages, lawsuits, or liabilities arising from the Hauler's services.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>11. GOVERNING LAW</h3>
+        <h2 style="font-size:1.05rem;">11. Governing Law</h2>
         <p>This Agreement is governed by the laws of the State of Minnesota. All disputes must be brought in Minnesota courts.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>12. DIGITAL SIGNATURE</h3>
+        <h2 style="font-size:1.05rem;">12. Digital Signature</h2>
         <p>By clicking "Create Account" or "I Agree", the Hauler provides a legally enforceable electronic signature equivalent to a handwritten signature.</p>
 
         <hr style="margin: 20px 0;">
 
-        <h3>13. MODIFICATIONS</h3>
+        <h2 style="font-size:1.05rem;">13. Modifications</h2>
         <p>The Company may update this Agreement at any time. Continued use of the Platform constitutes acceptance.</p>
+    </div>
+
+    <!-- Bottom nav -->
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:12px;">
+        <a href="{{ url_for('home') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">← Back to Home</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('invite', role='hauler') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">Become a Hauler</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('customer_terms') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">Customer Terms</a>
+        <span style="color:#e2e8f0;">|</span>
+        <a href="{{ url_for('about') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">About Us</a>
     </div>
 </div>
 {% endblock %}
