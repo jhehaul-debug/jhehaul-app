@@ -12,7 +12,11 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
 from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review
-from email_service import notify_customer_new_bid, notify_hauler_bid_accepted, notify_hauler_deposit_paid, notify_hauler_new_job_nearby
+from email_service import (notify_customer_new_bid, notify_hauler_bid_accepted,
+                           notify_hauler_deposit_paid, notify_hauler_new_job_nearby,
+                           notify_admin_new_customer, notify_admin_new_hauler,
+                           notify_admin_new_job, notify_admin_new_bid,
+                           notify_admin_bid_accepted, notify_admin_job_completed)
 from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
 
 def strip_phone(phone_str):
@@ -118,6 +122,13 @@ def set_role():
     elif role == 'customer':
         current_user.user_type = role
         db.session.commit()
+        try:
+            notify_admin_new_customer(
+                current_user.display_name or current_user.email,
+                current_user.email
+            )
+        except Exception as e:
+            app.logger.error("Admin notify failed (new customer): %s", e)
         return redirect(url_for('customer_jobs'))
     return redirect(url_for('choose_role'))
 
@@ -177,6 +188,16 @@ def hauler_setup_save():
     current_user.truck_type = truck_type if truck_type else None
     current_user.trailer_type = trailer_type if trailer_type else None
     db.session.commit()
+
+    try:
+        notify_admin_new_hauler(
+            f"{current_user.first_name} {current_user.last_name}".strip() or current_user.email,
+            current_user.email,
+            home_zip,
+            truck_type
+        )
+    except Exception as e:
+        app.logger.error("Admin notify failed (new hauler): %s", e)
 
     flash("You're all set! Browse open jobs below.", "success")
     return redirect(url_for('hauler_jobs'))
@@ -248,6 +269,11 @@ def customer_create():
     )
     db.session.add(job)
     db.session.commit()
+
+    try:
+        notify_admin_new_job(job.id, customer_name, pickup_zip, job_description)
+    except Exception as e:
+        app.logger.error("Admin notify failed (new job #%s): %s", job.id, e)
 
     from storage import upload_file as _upload_file
     photos = request.files.getlist("photos")
@@ -392,6 +418,16 @@ def customer_accept_bid(bid_id):
             notify_hauler_bid_accepted_sms(hauler.phone, job.id)
     except Exception as e:
         app.logger.error("Notification failed after accepting bid %s: %s", bid_id, e)
+
+    try:
+        notify_admin_bid_accepted(
+            job.id,
+            current_user.display_name or current_user.email,
+            bid.hauler_name,
+            float(bid.quote_amount)
+        )
+    except Exception as e:
+        app.logger.error("Admin notify failed (bid accepted job #%s): %s", job.id, e)
 
     return redirect(url_for('customer_job_detail', job_id=job.id))
 
@@ -616,6 +652,11 @@ def hauler_bid_submit(job_id):
     if customer and customer.notify_sms and customer.phone:
         notify_customer_new_bid_sms(customer.phone, job_id, hauler_name, quote_amount)
 
+    try:
+        notify_admin_new_bid(job_id, hauler_name, quote_amount)
+    except Exception as e:
+        app.logger.error("Admin notify failed (new bid on job #%s): %s", job_id, e)
+
     return render_template('bid_success.html')
 
 @app.route("/hauler/dashboard")
@@ -719,6 +760,17 @@ def customer_complete_job(job_id):
     job.status = 'completed'
     job.completed_at = datetime.now()
     db.session.commit()
+
+    try:
+        notify_admin_job_completed(
+            job.id,
+            job.customer_name,
+            job.accepted_hauler,
+            job.accepted_quote
+        )
+    except Exception as e:
+        app.logger.error("Admin notify failed (job #%s completed by customer): %s", job.id, e)
+
     return redirect(url_for('customer_job_detail', job_id=job_id))
 
 @app.route("/customer/cancel/<int:job_id>", methods=["POST"])
@@ -827,6 +879,17 @@ def hauler_upload_photos(job_id):
         job.status = 'completed'
         job.completed_at = datetime.now()
         db.session.commit()
+
+        try:
+            notify_admin_job_completed(
+                job.id,
+                job.customer_name,
+                job.accepted_hauler,
+                job.accepted_quote
+            )
+        except Exception as e:
+            app.logger.error("Admin notify failed (job #%s completed by hauler): %s", job.id, e)
+
         flash("Completion proof submitted. Customer has been notified and payment can now be released.", "success")
         return redirect(url_for('hauler_dashboard'))
 

@@ -68,6 +68,92 @@ def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance
     return send_email(hauler_email, subject, html_content)
 
 
+def notify_admin(subject, html_content):
+    admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
+    return send_email(admin_email, subject, html_content)
+
+
+def notify_admin_new_customer(user_name, user_email):
+    return notify_admin(
+        f"[JHE Haul] New Customer Signed Up: {user_name}",
+        f"""
+        <h2>New Customer Account</h2>
+        <p><strong>Name:</strong> {user_name}</p>
+        <p><strong>Email:</strong> {user_email}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
+def notify_admin_new_hauler(user_name, user_email, home_zip, truck_type):
+    return notify_admin(
+        f"[JHE Haul] New Hauler Signed Up: {user_name}",
+        f"""
+        <h2>New Hauler Account</h2>
+        <p><strong>Name:</strong> {user_name}</p>
+        <p><strong>Email:</strong> {user_email}</p>
+        <p><strong>Home ZIP:</strong> {home_zip}</p>
+        <p><strong>Truck Type:</strong> {truck_type or 'Not specified'}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
+def notify_admin_new_job(job_id, customer_name, pickup_zip, description):
+    return notify_admin(
+        f"[JHE Haul] New Job Posted: #{job_id}",
+        f"""
+        <h2>New Job Posted</h2>
+        <p><strong>Job #:</strong> {job_id}</p>
+        <p><strong>Customer:</strong> {customer_name}</p>
+        <p><strong>Pickup ZIP:</strong> {pickup_zip}</p>
+        <p><strong>Description:</strong><br>{description[:300]}{'...' if len(description) > 300 else ''}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
+def notify_admin_new_bid(job_id, hauler_name, quote_amount):
+    return notify_admin(
+        f"[JHE Haul] New Bid on Job #{job_id}: ${quote_amount:.2f}",
+        f"""
+        <h2>New Bid Submitted</h2>
+        <p><strong>Job #:</strong> {job_id}</p>
+        <p><strong>Hauler:</strong> {hauler_name}</p>
+        <p><strong>Quote:</strong> ${quote_amount:.2f}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
+def notify_admin_bid_accepted(job_id, customer_name, hauler_name, quote_amount):
+    return notify_admin(
+        f"[JHE Haul] Bid Accepted on Job #{job_id}: ${quote_amount:.2f}",
+        f"""
+        <h2>Bid Accepted</h2>
+        <p><strong>Job #:</strong> {job_id}</p>
+        <p><strong>Customer:</strong> {customer_name}</p>
+        <p><strong>Hauler:</strong> {hauler_name}</p>
+        <p><strong>Accepted Quote:</strong> ${quote_amount:.2f}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
+def notify_admin_job_completed(job_id, customer_name, hauler_name, quote_amount):
+    return notify_admin(
+        f"[JHE Haul] Job Completed: #{job_id}",
+        f"""
+        <h2>Job Marked Complete</h2>
+        <p><strong>Job #:</strong> {job_id}</p>
+        <p><strong>Customer:</strong> {customer_name}</p>
+        <p><strong>Hauler:</strong> {hauler_name or 'N/A'}</p>
+        <p><strong>Quote:</strong> ${float(quote_amount):.2f if quote_amount else 0}</p>
+        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
+        """
+    )
+
+
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
     import urllib.parse
     full_address = f"{pickup_address}, {pickup_zip}"
