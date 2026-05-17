@@ -13,16 +13,16 @@
 {% block og_meta %}
 <meta property="og:title" content="{% if role == 'customer' %}Post a Junk Removal Job Near You - JHE Haul{% elif role == 'hauler' %}Become a Local Hauler &amp; Earn - JHE Haul{% else %}Join JHE Haul | Local Junk Removal Marketplace{% endif %}">
 <meta property="og:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast. Same-day pickup available.{% elif role == 'hauler' %}Browse hauling jobs in your area, submit bids, and start earning with JHE Haul. No subscription fees.{% else %}The easy way to post junk hauling jobs or find hauling work near you.{% endif %}">
-<meta property="og:image" content="https://jhehaul.com/static/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1080">
 <meta property="og:url" content="https://jhehaul.com{% if role %}/invite/{{ role }}{% else %}/invite{% endif %}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JHE Haul">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{% if role == 'customer' %}Post a Junk Removal Job - JHE Haul{% elif role == 'hauler' %}Become a Local Hauler - JHE Haul{% else %}Join JHE Haul{% endif %}">
 <meta name="twitter:description" content="{% if role == 'customer' %}Post photos of your junk, get bids from local haulers, and get it removed fast.{% elif role == 'hauler' %}Browse hauling jobs near you, submit bids, and start earning.{% else %}Post jobs or find hauling work near you.{% endif %}">
-<meta name="twitter:image" content="https://jhehaul.com/static/og-image.png">
+<meta name="twitter:image" content="https://jhehaul.com/static/jhehaul-share.png">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://jhehaul.com{% if role %}/invite/{{ role }}{% else %}/invite{% endif %}">
 {% endblock %}
