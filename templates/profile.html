@@ -85,20 +85,29 @@
 
 <!-- Invite Links -->
 <div class="card" style="max-width:600px;margin:18px auto 0;">
-    <h3 style="margin-bottom:8px;">Invite Others to JHE Haul</h3>
-    <p style="color:#718096;margin-bottom:16px;font-size:0.92rem;">Share invite links via text, email, or any app.</p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button onclick="shareInvite('customer')" class="btn btn-primary" style="flex:1;min-width:160px;">
-            👤 Invite a Customer
-        </button>
-        <button onclick="shareInvite('hauler')" class="btn btn-success" style="flex:1;min-width:160px;">
-            🚛 Invite a Hauler
-        </button>
+    <h3 style="margin-bottom:4px;">Invite Others to JHE Haul</h3>
+    <p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Share these links with friends, neighbors, or anyone looking for hauling help.</p>
+
+    <!-- Customer Invite -->
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+        <div style="font-weight:600;margin-bottom:6px;">👤 Customer Invite Link</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input id="link-customer" value="https://jhehaul.com/invite/customer" readonly
+                   style="flex:1;min-width:180px;background:#fff;border:1px solid #bee3f8;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
+            <button onclick="copyLink('link-customer', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
+            <button onclick="shareLink('customer')" class="btn btn-primary btn-sm" style="white-space:nowrap;">🔗 Share</button>
+        </div>
     </div>
-    <div style="margin-top:10px;">
-        <button onclick="shareInvite('general')" class="btn btn-secondary btn-block">
-            🔗 General Invite (they pick their role)
-        </button>
+
+    <!-- Hauler Invite -->
+    <div style="background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;padding:14px 16px;">
+        <div style="font-weight:600;margin-bottom:6px;">🚛 Hauler Invite Link</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input id="link-hauler" value="https://jhehaul.com/invite/hauler" readonly
+                   style="flex:1;min-width:180px;background:#fff;border:1px solid #9ae6b4;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
+            <button onclick="copyLink('link-hauler', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
+            <button onclick="shareLink('hauler')" class="btn btn-success btn-sm" style="white-space:nowrap;">🔗 Share</button>
+        </div>
     </div>
 </div>
 
@@ -122,18 +131,24 @@ function maskPhone(input) {
     else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
     else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
 }
-function shareInvite(type) {
-    var baseUrl = window.location.origin + '/';
+function copyLink(inputId, btn) {
+    var input = document.getElementById(inputId);
+    input.select(); input.setSelectionRange(0, 99999);
+    try { navigator.clipboard.writeText(input.value); } catch(e) { document.execCommand('copy'); }
+    var orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(function(){ btn.textContent = orig; }, 2000);
+}
+function shareLink(type) {
     var url, title, text;
     if (type === 'customer') {
-        url = baseUrl + 'invite/customer'; title = 'Join JHE Haul';
-        text = 'Sign up on JHE Haul to post junk hauling jobs and get bids from local haulers!';
-    } else if (type === 'hauler') {
-        url = baseUrl + 'invite/hauler'; title = 'Join JHE Haul';
-        text = 'Sign up on JHE Haul as a hauler to find junk hauling jobs in your area!';
+        url = 'https://jhehaul.com/invite/customer';
+        title = 'Post a Junk Removal Job - JHE Haul';
+        text = 'Post your junk hauling job on JHE Haul and get bids from local haulers!';
     } else {
-        url = baseUrl + 'invite'; title = 'Join JHE Haul';
-        text = 'Check out JHE Haul - the junk hauling marketplace!';
+        url = 'https://jhehaul.com/invite/hauler';
+        title = 'Become a Local Hauler - JHE Haul';
+        text = 'Find junk hauling jobs in your area, submit bids, and earn with JHE Haul!';
     }
     if (navigator.share) {
         navigator.share({ title: title, text: text, url: url });
