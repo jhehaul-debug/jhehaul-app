@@ -16,8 +16,30 @@ from email_service import (notify_customer_new_bid, notify_hauler_bid_accepted,
                            notify_hauler_deposit_paid, notify_hauler_new_job_nearby,
                            notify_admin_new_customer, notify_admin_new_hauler,
                            notify_admin_new_job, notify_admin_new_bid,
-                           notify_admin_bid_accepted, notify_admin_job_completed)
+                           notify_admin_bid_accepted, notify_admin_job_completed,
+                           notify_hauler_new_review)
 from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
+
+def get_badges(user, reviews=None, completed_count=0):
+    badges = []
+    if reviews is None:
+        reviews = []
+    if user.user_type == 'hauler':
+        if len(reviews) >= 5:
+            avg = sum(r.rating for r in reviews) / len(reviews)
+            if avg >= 4.5:
+                badges.append({'label': 'Top Hauler', 'icon': '⭐', 'color': '#f59e0b', 'desc': 'Avg rating 4.5+ with 5+ reviews'})
+        if completed_count >= 10:
+            badges.append({'label': 'Experienced', 'icon': '🏆', 'color': '#16a34a', 'desc': '10+ completed jobs'})
+        elif completed_count >= 5:
+            badges.append({'label': 'Reliable', 'icon': '✅', 'color': '#2563eb', 'desc': '5+ completed jobs'})
+    elif user.user_type == 'customer':
+        if completed_count >= 10:
+            badges.append({'label': 'Community Builder', 'icon': '🌟', 'color': '#7c3aed', 'desc': '10+ completed jobs'})
+        elif completed_count >= 3:
+            badges.append({'label': 'Trusted Customer', 'icon': '🤝', 'color': '#9c27b0', 'desc': '3+ completed jobs'})
+    return badges
+
 
 def strip_phone(phone_str):
     if not phone_str:
@@ -660,12 +682,42 @@ def hauler_dashboard():
         Job.accepted_hauler_id == current_user.id,
         Job.status.in_(['accepted', 'deposit_paid', 'completed'])
     ).order_by(Job.id.desc()).all()
-    return render_template('hauler_dashboard.html', jobs=jobs)
+    all_reviews = Review.query.filter_by(hauler_id=current_user.id).all()
+    hauler_review_count = len(all_reviews)
+    hauler_avg_rating = sum(r.rating for r in all_reviews) / hauler_review_count if hauler_review_count else 0.0
+    completed_count = sum(1 for j in jobs if j.status == 'completed')
+    hauler_badges = get_badges(current_user, all_reviews, completed_count)
+    return render_template('hauler_dashboard.html', jobs=jobs,
+                           hauler_avg_rating=hauler_avg_rating,
+                           hauler_review_count=hauler_review_count,
+                           hauler_badges=hauler_badges)
 
 @app.route("/profile")
 @require_login
 def profile():
-    return render_template('profile.html')
+    reviews = []
+    avg_rating = 0.0
+    review_count = 0
+    completed_count = 0
+    badges = []
+
+    if current_user.user_type == 'hauler':
+        all_reviews = Review.query.filter_by(hauler_id=current_user.id).order_by(Review.created_at.desc()).all()
+        review_count = len(all_reviews)
+        avg_rating = sum(r.rating for r in all_reviews) / review_count if review_count else 0.0
+        reviews = all_reviews[:5]
+        completed_count = Job.query.filter_by(accepted_hauler_id=current_user.id, status='completed').count()
+        badges = get_badges(current_user, all_reviews, completed_count)
+    elif current_user.user_type == 'customer':
+        completed_count = Job.query.filter_by(customer_id=current_user.id, status='completed').count()
+        badges = get_badges(current_user, [], completed_count)
+
+    return render_template('profile.html',
+                           reviews=reviews,
+                           avg_rating=avg_rating,
+                           review_count=review_count,
+                           completed_count=completed_count,
+                           badges=badges)
 
 @app.route("/profile/update", methods=["POST"])
 @require_login
@@ -810,6 +862,16 @@ def customer_review(job_id):
         )
         db.session.add(review)
         db.session.commit()
+
+        try:
+            hauler = User.query.get(job.accepted_hauler_id)
+            if hauler and hauler.email:
+                cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+                notify_hauler_new_review(hauler.email, job_id, cname, rating, comment)
+        except Exception as e:
+            app.logger.error("Review notification failed for job #%s: %s", job_id, e)
+
+        flash("Review submitted! Thank you for your feedback.", "success")
         return redirect(url_for('customer_job_detail', job_id=job_id))
     
     return render_template('customer_review.html', job=job)

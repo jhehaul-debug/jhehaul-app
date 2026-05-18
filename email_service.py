@@ -155,6 +155,22 @@ def notify_admin_job_completed(job_id, customer_name, hauler_name, quote_amount)
     )
 
 
+def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, comment):
+    stars = '★' * rating + '☆' * (5 - rating)
+    comment_html = f"<p style=\"font-style:italic;color:#4a5568;border-left:3px solid #e2e8f0;padding-left:12px;\">\"{comment}\"</p>" if comment else ""
+    subject = f"[JHE Haul] New Review: {stars} for Job #{job_id}"
+    html_content = f"""
+    <h2>You received a new review!</h2>
+    <p><strong>Job #:</strong> {job_id}</p>
+    <p><strong>From:</strong> {customer_name}</p>
+    <p><strong>Rating:</strong> <span style="color:#f6c90e;font-size:1.2em;">{stars}</span> ({rating}/5)</p>
+    {comment_html}
+    <p><a href="https://jhehaul.com/hauler/earnings" style="display:inline-block;background:#27ae60;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">View Your Reviews &amp; Earnings</a></p>
+    <p>Thank you for using JHE Haul!</p>
+    """
+    return send_email(hauler_email, subject, html_content)
+
+
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
     import urllib.parse
     full_address = f"{pickup_address}, {pickup_zip}"

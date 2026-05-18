@@ -83,6 +83,71 @@
     </form>
 </div>
 
+<!-- Ratings, Badges & Reviews -->
+{% if completed_count > 0 or badges or (current_user.user_type == 'hauler' and review_count > 0) %}
+<div class="card" style="max-width:600px;margin:18px auto 0;">
+
+    {% if badges %}
+    <h3 style="margin-bottom:10px;">Badges</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+        {% for b in badges %}
+        <div title="{{ b.desc }}" style="display:inline-flex;align-items:center;gap:6px;background:{{ b.color }}18;border:1.5px solid {{ b.color }};border-radius:20px;padding:5px 14px;font-size:0.88rem;font-weight:600;color:{{ b.color }};">
+            {{ b.icon }} {{ b.label }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if current_user.user_type == 'hauler' %}
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:{% if reviews %}18{% else %}0{% endif %}px;">
+        <div style="text-align:center;">
+            <div style="font-size:2rem;font-weight:800;color:#1a202c;line-height:1;">
+                {% if review_count > 0 %}{{ "%.1f"|format(avg_rating) }}{% else %}—{% endif %}
+            </div>
+            <div style="color:#f6c90e;font-size:1.3rem;letter-spacing:2px;">
+                {% if review_count > 0 %}
+                {% set full = avg_rating|int %}
+                {% for i in range(full) %}★{% endfor %}{% if avg_rating - full >= 0.5 %}★{% endif %}{% for i in range(5 - full - (1 if avg_rating - full >= 0.5 else 0)) %}☆{% endfor %}
+                {% else %}☆☆☆☆☆{% endif %}
+            </div>
+            <div style="font-size:0.82rem;color:#718096;">{{ review_count }} review{% if review_count != 1 %}s{% endif %}</div>
+        </div>
+        <div style="border-left:2px solid #e2e8f0;height:54px;"></div>
+        <div style="text-align:center;">
+            <div style="font-size:2rem;font-weight:800;color:#1a202c;line-height:1;">{{ completed_count }}</div>
+            <div style="font-size:0.82rem;color:#718096;">job{% if completed_count != 1 %}s{% endif %} completed</div>
+        </div>
+    </div>
+
+    {% if reviews %}
+    <hr style="margin:0 0 16px;">
+    <h4 style="margin-bottom:12px;">Recent Reviews</h4>
+    {% for r in reviews %}
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fafafa;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="color:#f6c90e;font-size:1.1rem;">
+                {% for i in range(r.rating) %}★{% endfor %}{% for i in range(5 - r.rating) %}☆{% endfor %}
+            </span>
+            <span style="font-size:0.78rem;color:#a0aec0;">{{ r.created_at.strftime('%b %d, %Y') if r.created_at else '' }}</span>
+        </div>
+        {% if r.comment %}
+        <p style="margin:0;color:#4a5568;font-size:0.9rem;font-style:italic;">"{{ r.comment }}"</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <a href="{{ url_for('hauler_earnings') }}" style="font-size:0.88rem;color:#2563eb;">View all reviews →</a>
+    {% endif %}
+
+    {% elif current_user.user_type == 'customer' %}
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.8rem;font-weight:800;color:#1a202c;">{{ completed_count }}</span>
+        <span style="color:#718096;font-size:0.92rem;">job{% if completed_count != 1 %}s{% endif %} completed</span>
+    </div>
+    {% endif %}
+
+</div>
+{% endif %}
+
 <!-- Invite Links -->
 <div class="card" style="max-width:600px;margin:18px auto 0;">
     <h3 style="margin-bottom:4px;">Invite Others to JHE Haul</h3>
