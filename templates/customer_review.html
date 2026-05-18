@@ -8,31 +8,60 @@
     <h2 style="margin-bottom:4px;">Leave a Review</h2>
     <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">Job #{{ job.id }} — {{ job.accepted_hauler }}</p>
     <hr>
-    <div style="display:flex;justify-content:space-between;margin-bottom:18px;font-size:0.92rem;color:#4a5568;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:0.92rem;color:#4a5568;">
         <span><strong>Hauler:</strong> {{ job.accepted_hauler }}</span>
         <span><strong>Quote:</strong> ${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
     </div>
 
     <form method="POST">
         <div class="form-group">
-            <label>Rating</label>
-            <select name="rating" required>
-                <option value="5">⭐⭐⭐⭐⭐ — 5 Stars (Excellent)</option>
-                <option value="4">⭐⭐⭐⭐ — 4 Stars (Very Good)</option>
-                <option value="3">⭐⭐⭐ — 3 Stars (Good)</option>
-                <option value="2">⭐⭐ — 2 Stars (Fair)</option>
-                <option value="1">⭐ — 1 Star (Poor)</option>
-            </select>
+            <label style="margin-bottom:10px;display:block;">Rating <span style="color:#a0aec0;font-weight:400;">(click a star)</span></label>
+            <div class="star-rating-wrap">
+                <div class="star-rating">
+                    <input type="radio" id="s5" name="rating" value="5" checked>
+                    <label for="s5" title="5 — Excellent">★</label>
+                    <input type="radio" id="s4" name="rating" value="4">
+                    <label for="s4" title="4 — Very Good">★</label>
+                    <input type="radio" id="s3" name="rating" value="3">
+                    <label for="s3" title="3 — Good">★</label>
+                    <input type="radio" id="s2" name="rating" value="2">
+                    <label for="s2" title="2 — Fair">★</label>
+                    <input type="radio" id="s1" name="rating" value="1">
+                    <label for="s1" title="1 — Poor">★</label>
+                </div>
+                <div id="star-label" style="font-size:0.88rem;color:#718096;margin-top:6px;">5 stars — Excellent</div>
+            </div>
         </div>
+
         <div class="form-group">
             <label>Comments <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
-            <textarea name="comment" placeholder="Share your experience with this hauler..."></textarea>
+            <textarea name="comment" rows="4" placeholder="Share your experience with this hauler — was pickup on time? Would you recommend them?"></textarea>
         </div>
+
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button type="submit" class="btn btn-success">Submit Review</button>
             <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
+
+<style>
+.star-rating { display:flex; flex-direction:row-reverse; gap:2px; }
+.star-rating input { display:none; }
+.star-rating label {
+    font-size:2.6rem; cursor:pointer; color:#d1d5db; transition:color 0.1s; line-height:1;
+}
+.star-rating input:checked ~ label { color:#f6c90e; }
+.star-rating label:hover,
+.star-rating label:hover ~ label { color:#f6c90e; }
+</style>
+<script>
+var labels = ['','Poor','Fair','Good','Very Good','Excellent'];
+document.querySelectorAll('.star-rating input').forEach(function(inp) {
+    inp.addEventListener('change', function() {
+        document.getElementById('star-label').textContent = inp.value + ' star' + (inp.value == 1 ? '' : 's') + ' — ' + labels[inp.value];
+    });
+});
+</script>
 
 {% endblock %}

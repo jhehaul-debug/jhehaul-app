@@ -7,6 +7,31 @@
     <a href="{{ url_for('hauler_earnings') }}" class="btn btn-outline btn-sm">💰 Earnings</a>
 </div>
 
+{% if hauler_avg_rating is defined and hauler_review_count > 0 %}
+<div class="card" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 20px;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.6rem;font-weight:800;color:#1a202c;">{{ "%.1f"|format(hauler_avg_rating) }}</span>
+        <div>
+            <div style="color:#f6c90e;font-size:1.1rem;line-height:1;">
+                {% set full = hauler_avg_rating|int %}
+                {% for i in range(full) %}★{% endfor %}{% if hauler_avg_rating - full >= 0.5 %}★{% endif %}{% for i in range(5 - full - (1 if hauler_avg_rating - full >= 0.5 else 0)) %}☆{% endfor %}
+            </div>
+            <div style="font-size:0.78rem;color:#718096;">{{ hauler_review_count }} review{% if hauler_review_count != 1 %}s{% endif %}</div>
+        </div>
+    </div>
+    {% if hauler_badges %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% for b in hauler_badges %}
+        <span title="{{ b.desc }}" style="display:inline-flex;align-items:center;gap:4px;background:{{ b.color }}18;border:1.5px solid {{ b.color }};border-radius:20px;padding:3px 12px;font-size:0.82rem;font-weight:600;color:{{ b.color }};">
+            {{ b.icon }} {{ b.label }}
+        </span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <a href="{{ url_for('hauler_earnings') }}" style="margin-left:auto;font-size:0.85rem;color:#2563eb;white-space:nowrap;">View all reviews →</a>
+</div>
+{% endif %}
+
 {% if not jobs %}
 <div class="card">
     <div class="empty-state">
