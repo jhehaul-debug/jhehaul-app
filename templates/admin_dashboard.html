@@ -157,10 +157,20 @@ function shareInvite(type) {
                 <label>Notification Type</label>
                 <select name="notification_type" required>
                     <option value="">-- Select --</option>
-                    <option value="new_bid">New Bid Notification</option>
-                    <option value="bid_accepted">Bid Accepted Notification</option>
-                    <option value="deposit_paid">Deposit Paid Notification</option>
-                    <option value="new_job_nearby">New Job Nearby Notification</option>
+                    <optgroup label="Admin Notifications (→ jhehaul@gmail.com)">
+                        <option value="admin_new_customer">Admin: New Customer Signup</option>
+                        <option value="admin_new_hauler">Admin: New Hauler Signup</option>
+                        <option value="admin_new_job">Admin: New Job Posted</option>
+                        <option value="admin_new_bid">Admin: New Bid Submitted</option>
+                        <option value="admin_bid_accepted">Admin: Bid Accepted</option>
+                        <option value="admin_job_completed">Admin: Job Completed</option>
+                    </optgroup>
+                    <optgroup label="User Notifications">
+                        <option value="new_bid">Customer: New Bid Received</option>
+                        <option value="bid_accepted">Hauler: Bid Accepted</option>
+                        <option value="deposit_paid">Hauler: Deposit Paid</option>
+                        <option value="new_job_nearby">Hauler: New Job Nearby</option>
+                    </optgroup>
                 </select>
             </div>
         </div>

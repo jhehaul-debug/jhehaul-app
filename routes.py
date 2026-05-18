@@ -123,10 +123,8 @@ def set_role():
         current_user.user_type = role
         db.session.commit()
         try:
-            notify_admin_new_customer(
-                current_user.display_name or current_user.email,
-                current_user.email
-            )
+            _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+            notify_admin_new_customer(_name, current_user.email)
         except Exception as e:
             app.logger.error("Admin notify failed (new customer): %s", e)
         return redirect(url_for('customer_jobs'))
@@ -420,12 +418,8 @@ def customer_accept_bid(bid_id):
         app.logger.error("Notification failed after accepting bid %s: %s", bid_id, e)
 
     try:
-        notify_admin_bid_accepted(
-            job.id,
-            current_user.display_name or current_user.email,
-            bid.hauler_name,
-            float(bid.quote_amount)
-        )
+        _cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+        notify_admin_bid_accepted(job.id, _cname, bid.hauler_name, float(bid.quote_amount))
     except Exception as e:
         app.logger.error("Admin notify failed (bid accepted job #%s): %s", job.id, e)
 
@@ -1049,11 +1043,23 @@ def admin_test_email():
         success = notify_hauler_deposit_paid(email, 999, "123 Test Street", "12345")
     elif notification_type == "new_job_nearby":
         success = notify_hauler_new_job_nearby(email, 999, "Test junk removal job", 5.0)
+    elif notification_type == "admin_new_customer":
+        success = notify_admin_new_customer("Test Customer", email)
+    elif notification_type == "admin_new_hauler":
+        success = notify_admin_new_hauler("Test Hauler", email, "55401", "Pickup Truck")
+    elif notification_type == "admin_new_job":
+        success = notify_admin_new_job(999, "Test Customer", "55401", "Old couch, mattress, and misc junk")
+    elif notification_type == "admin_new_bid":
+        success = notify_admin_new_bid(999, "Test Hauler", 175.00)
+    elif notification_type == "admin_bid_accepted":
+        success = notify_admin_bid_accepted(999, "Test Customer", "Test Hauler", 175.00)
+    elif notification_type == "admin_job_completed":
+        success = notify_admin_job_completed(999, "Test Customer", "Test Hauler", 175.00)
 
     if success:
         flash(f"Test email sent successfully to {email}!", "success")
     else:
-        flash(f"Failed to send test email to {email}.", "error")
+        flash(f"Failed to send test email to {email}. Check server logs for SENDGRID errors.", "error")
 
     return redirect(url_for('admin_dashboard'))
 

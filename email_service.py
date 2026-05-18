@@ -9,11 +9,11 @@ def send_email(to_email, subject, html_content):
     from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
 
     if not api_key:
-        logging.warning("SENDGRID_API_KEY not set, skipping email to %s", to_email)
+        logging.error("SENDGRID_API_KEY not set — cannot send email to %s (subject: %s)", to_email, subject)
         return False
 
     if not to_email:
-        logging.warning("No recipient email, skipping send")
+        logging.error("No recipient email provided, skipping send (subject: %s)", subject)
         return False
 
     message = Mail(
@@ -26,10 +26,10 @@ def send_email(to_email, subject, html_content):
     try:
         sg = SendGridAPIClient(api_key)
         response = sg.send(message)
-        logging.info("Email sent to %s, status: %s", to_email, response.status_code)
+        logging.info("Email sent to %s, status: %s, subject: %s", to_email, response.status_code, subject)
         return True
     except Exception as e:
-        logging.error("Failed to send email to %s: %s", to_email, e)
+        logging.error("SendGrid error sending to %s (subject: %s): %s", to_email, subject, e)
         return False
 
 
@@ -141,6 +141,7 @@ def notify_admin_bid_accepted(job_id, customer_name, hauler_name, quote_amount):
 
 
 def notify_admin_job_completed(job_id, customer_name, hauler_name, quote_amount):
+    quote_str = f"{float(quote_amount):.2f}" if quote_amount else "0.00"
     return notify_admin(
         f"[JHE Haul] Job Completed: #{job_id}",
         f"""
@@ -148,7 +149,7 @@ def notify_admin_job_completed(job_id, customer_name, hauler_name, quote_amount)
         <p><strong>Job #:</strong> {job_id}</p>
         <p><strong>Customer:</strong> {customer_name}</p>
         <p><strong>Hauler:</strong> {hauler_name or 'N/A'}</p>
-        <p><strong>Quote:</strong> ${float(quote_amount):.2f if quote_amount else 0}</p>
+        <p><strong>Quote:</strong> ${quote_str}</p>
         <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
         """
     )
