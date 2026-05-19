@@ -1102,7 +1102,11 @@ def admin_dashboard():
                        .limit(8)
                        .all())
 
+    import os as _os
+    spaces_configured = bool(_os.environ.get("SPACES_KEY"))
+
     return render_template('admin_dashboard.html',
+                           spaces_configured=spaces_configured,
                            total_users=total_users,
                            total_customers=total_customers,
                            total_haulers=total_haulers,

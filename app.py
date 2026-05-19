@@ -93,6 +93,18 @@ else:
 _admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
 logging.info("Admin notification email: %s", _admin_email)
 
+_spaces_key = os.environ.get("SPACES_KEY")
+if not _spaces_key:
+    logging.warning(
+        "⚠️  SPACES_KEY is NOT set — uploaded photos will be saved to the LOCAL filesystem only. "
+        "On DigitalOcean App Platform this storage is EPHEMERAL: photos will be lost on every deploy or restart. "
+        "Set SPACES_KEY, SPACES_SECRET, SPACES_BUCKET (and optionally SPACES_REGION, SPACES_CDN_URL) "
+        "in DigitalOcean App Platform → Settings → Environment Variables to enable persistent photo storage."
+    )
+else:
+    logging.info("DigitalOcean Spaces configured for photo storage (bucket: %s)",
+                 os.environ.get("SPACES_BUCKET", "unknown"))
+
 
 # ---- Initialize tables and load ZIP codes ----
 with app.app_context():
