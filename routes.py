@@ -3,7 +3,7 @@ import uuid
 import stripe
 from datetime import datetime
 from functools import wraps
-from flask import session, redirect, url_for, request, send_from_directory, render_template, flash, make_response
+from flask import session, redirect, url_for, request, send_from_directory, render_template, flash, make_response, g
 from werkzeug.utils import secure_filename
 from flask_login import current_user
 
@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView
 from email_service import (notify_customer_new_bid, notify_hauler_bid_accepted,
                            notify_hauler_deposit_paid, notify_hauler_new_job_nearby,
                            notify_admin_new_customer, notify_admin_new_hauler,
@@ -77,6 +77,63 @@ def require_admin(f):
 @app.before_request
 def make_session_permanent():
     session.permanent = True
+
+_SKIP_TRACKING = {'/health', '/robots.txt', '/sitemap.xml', '/favicon.ico'}
+
+@app.before_request
+def track_page_view():
+    if request.method == 'OPTIONS':
+        return
+    path = request.path
+    if path in _SKIP_TRACKING or path.startswith('/static/') or path.startswith('/uploads/'):
+        return
+
+    visitor_id = request.cookies.get('jhe_vid')
+    g.pv_new_visitor = False
+    if not visitor_id:
+        visitor_id = str(uuid.uuid4())[:20]
+        g.pv_new_visitor = True
+    g.pv_visitor_id = visitor_id
+
+    ua = (request.user_agent.string or '').lower()
+    device = 'mobile' if any(x in ua for x in ('mobile', 'android', 'iphone', 'ipad', 'tablet')) else 'desktop'
+
+    referrer = request.referrer or None
+    if referrer:
+        try:
+            from urllib.parse import urlparse
+            base_host = urlparse(os.environ.get('APP_BASE_URL', 'https://jhehaul.com')).netloc
+            if urlparse(referrer).netloc == base_host:
+                referrer = None
+        except Exception:
+            referrer = None
+
+    try:
+        uid = current_user.id if current_user.is_authenticated else None
+    except Exception:
+        uid = None
+
+    try:
+        pv = PageView(
+            visitor_id=visitor_id,
+            path=path[:200],
+            user_id=uid,
+            device_type=device,
+            referrer=referrer[:500] if referrer else None,
+        )
+        db.session.add(pv)
+        db.session.commit()
+    except Exception as _e:
+        db.session.rollback()
+        app.logger.debug("PageView record skipped: %s", _e)
+
+@app.after_request
+def set_visitor_cookie(response):
+    if getattr(g, 'pv_new_visitor', False):
+        vid = getattr(g, 'pv_visitor_id', None)
+        if vid:
+            response.set_cookie('jhe_vid', vid, max_age=365*24*3600, httponly=True, samesite='Lax')
+    return response
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
@@ -1157,6 +1214,248 @@ def admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
+
+
+@app.route("/admin/analytics")
+@require_admin
+def admin_analytics():
+    from datetime import timedelta
+    import json
+    now = datetime.now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = today - timedelta(days=7)
+    month_ago = today - timedelta(days=30)
+
+    # ── Visitor stats ──────────────────────────────────────────────────────────
+    total_views = PageView.query.count()
+    unique_visitors = db.session.execute(
+        db.text("SELECT COUNT(DISTINCT visitor_id) FROM page_views")
+    ).scalar() or 0
+    returning_visitors = db.session.execute(
+        db.text("SELECT COUNT(*) FROM (SELECT visitor_id FROM page_views GROUP BY visitor_id HAVING COUNT(*) > 3) x")
+    ).scalar() or 0
+    today_views = PageView.query.filter(PageView.created_at >= today).count()
+    week_views  = PageView.query.filter(PageView.created_at >= week_ago).count()
+    month_views = PageView.query.filter(PageView.created_at >= month_ago).count()
+
+    # Daily traffic last 30 days
+    _dt = db.session.execute(
+        db.text("SELECT DATE(created_at) AS d, COUNT(*) AS c FROM page_views WHERE created_at >= :s GROUP BY DATE(created_at) ORDER BY d"),
+        {"s": month_ago}
+    ).fetchall()
+    daily_traffic_labels = [str(r[0]) for r in _dt]
+    daily_traffic_values = [r[1] for r in _dt]
+
+    # Top pages
+    page_traffic = db.session.execute(
+        db.text("SELECT path, COUNT(*) AS c FROM page_views GROUP BY path ORDER BY c DESC LIMIT 15")
+    ).fetchall()
+
+    # Device split
+    _dev = db.session.execute(
+        db.text("SELECT COALESCE(device_type,'unknown'), COUNT(*) FROM page_views GROUP BY device_type")
+    ).fetchall()
+    device_labels = [r[0] for r in _dev]
+    device_values = [r[1] for r in _dev]
+
+    # Referrers
+    referrers = db.session.execute(
+        db.text("""SELECT referrer, COUNT(*) AS c FROM page_views
+                   WHERE referrer IS NOT NULL AND referrer <> ''
+                   GROUP BY referrer ORDER BY c DESC LIMIT 10""")
+    ).fetchall()
+
+    # ── User stats ─────────────────────────────────────────────────────────────
+    total_customers = User.query.filter_by(user_type='customer').count()
+    total_haulers   = User.query.filter_by(user_type='hauler').count()
+    new_today = User.query.filter(User.created_at >= today).count()
+    new_week  = User.query.filter(User.created_at >= week_ago).count()
+    active_users = db.session.execute(
+        db.text("SELECT COUNT(DISTINCT user_id) FROM page_views WHERE user_id IS NOT NULL AND created_at >= :s"),
+        {"s": week_ago}
+    ).scalar() or 0
+
+    _ds = db.session.execute(
+        db.text("SELECT DATE(created_at) AS d, COUNT(*) AS c FROM users WHERE created_at >= :s GROUP BY DATE(created_at) ORDER BY d"),
+        {"s": month_ago}
+    ).fetchall()
+    daily_signup_labels = [str(r[0]) for r in _ds]
+    daily_signup_values = [r[1] for r in _ds]
+
+    # ── Marketplace stats ──────────────────────────────────────────────────────
+    total_jobs     = Job.query.count()
+    open_jobs      = Job.query.filter_by(status='open').count()
+    active_jobs    = Job.query.filter(Job.status.in_(['accepted','deposit_paid'])).count()
+    completed_jobs = Job.query.filter_by(status='completed').count()
+    cancelled_jobs = Job.query.filter_by(status='cancelled').count()
+    total_bids     = Bid.query.count()
+    bids_accepted  = db.session.execute(
+        db.text("SELECT COUNT(*) FROM jobs WHERE status NOT IN ('open','cancelled') AND accepted_hauler_id IS NOT NULL")
+    ).scalar() or 0
+    total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0
+
+    # Job status chart
+    job_status_labels = ['Open','Active','Completed','Cancelled']
+    job_status_values = [open_jobs, active_jobs, completed_jobs, cancelled_jobs]
+
+    # Daily jobs last 30 days
+    _dj = db.session.execute(
+        db.text("SELECT DATE(created_at) AS d, COUNT(*) AS c FROM jobs WHERE created_at >= :s GROUP BY DATE(created_at) ORDER BY d"),
+        {"s": month_ago}
+    ).fetchall()
+    daily_job_labels  = [str(r[0]) for r in _dj]
+    daily_job_values  = [r[1] for r in _dj]
+
+    # Top haulers
+    top_haulers = db.session.execute(
+        db.text("""
+            SELECT u.first_name, u.last_name, u.email,
+                   COUNT(DISTINCT b.id)                                          AS bids,
+                   COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END) AS completed,
+                   ROUND(AVG(r.rating)::numeric, 1)                             AS avg_rating
+            FROM users u
+            LEFT JOIN bids   b ON b.hauler_id = u.id
+            LEFT JOIN jobs   j ON j.accepted_hauler_id = u.id
+            LEFT JOIN reviews r ON r.hauler_id = u.id
+            WHERE u.user_type = 'hauler'
+            GROUP BY u.id, u.first_name, u.last_name, u.email
+            ORDER BY completed DESC, bids DESC
+            LIMIT 10
+        """)
+    ).fetchall()
+
+    # Top areas
+    top_areas = db.session.execute(
+        db.text("""
+            SELECT j.pickup_zip, z.city, z.state, COUNT(*) AS cnt
+            FROM jobs j
+            LEFT JOIN zip_codes z ON z.zip = j.pickup_zip
+            WHERE j.pickup_zip IS NOT NULL
+            GROUP BY j.pickup_zip, z.city, z.state
+            ORDER BY cnt DESC LIMIT 10
+        """)
+    ).fetchall()
+
+    # Activity feed
+    recent_users = User.query.order_by(User.created_at.desc()).limit(8).all()
+    recent_jobs  = Job.query.order_by(Job.id.desc()).limit(8).all()
+    recent_bids  = Bid.query.order_by(Bid.id.desc()).limit(8).all()
+
+    return render_template('admin_analytics.html',
+        total_views=total_views, unique_visitors=unique_visitors,
+        returning_visitors=returning_visitors, today_views=today_views,
+        week_views=week_views, month_views=month_views,
+        daily_traffic_labels=json.dumps(daily_traffic_labels),
+        daily_traffic_values=json.dumps(daily_traffic_values),
+        page_traffic=page_traffic,
+        device_labels=json.dumps(device_labels),
+        device_values=json.dumps(device_values),
+        referrers=referrers,
+        total_customers=total_customers, total_haulers=total_haulers,
+        new_today=new_today, new_week=new_week, active_users=active_users,
+        daily_signup_labels=json.dumps(daily_signup_labels),
+        daily_signup_values=json.dumps(daily_signup_values),
+        total_jobs=total_jobs, open_jobs=open_jobs, active_jobs=active_jobs,
+        completed_jobs=completed_jobs, cancelled_jobs=cancelled_jobs,
+        total_bids=total_bids, bids_accepted=bids_accepted,
+        total_revenue=total_revenue,
+        job_status_labels=json.dumps(job_status_labels),
+        job_status_values=json.dumps(job_status_values),
+        daily_job_labels=json.dumps(daily_job_labels),
+        daily_job_values=json.dumps(daily_job_values),
+        top_haulers=top_haulers, top_areas=top_areas,
+        recent_users=recent_users, recent_jobs=recent_jobs, recent_bids=recent_bids,
+    )
+
+
+@app.route("/admin/analytics/export")
+@require_admin
+def admin_analytics_export():
+    import csv, io
+    from datetime import timedelta
+    now = datetime.now()
+    month_ago = (now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=30))
+
+    out = io.StringIO()
+    w = csv.writer(out)
+
+    w.writerow(['JHE HAUL ANALYTICS EXPORT'])
+    w.writerow([f'Generated: {now.strftime("%Y-%m-%d %H:%M")}'])
+    w.writerow([])
+
+    w.writerow(['VISITOR ANALYTICS'])
+    w.writerow(['Metric', 'Value'])
+    w.writerow(['Total Page Views', PageView.query.count()])
+    w.writerow(['Unique Visitors', db.session.execute(db.text("SELECT COUNT(DISTINCT visitor_id) FROM page_views")).scalar() or 0])
+    w.writerow(['Views Today', PageView.query.filter(PageView.created_at >= now.replace(hour=0,minute=0,second=0,microsecond=0)).count()])
+    w.writerow(['Views This Week', PageView.query.filter(PageView.created_at >= now.replace(hour=0,minute=0,second=0,microsecond=0) - timedelta(days=7)).count()])
+    w.writerow([])
+
+    w.writerow(['DAILY TRAFFIC (Last 30 Days)', ''])
+    w.writerow(['Date', 'Page Views'])
+    for r in db.session.execute(db.text("SELECT DATE(created_at), COUNT(*) FROM page_views WHERE created_at >= :s GROUP BY DATE(created_at) ORDER BY 1"), {"s": month_ago}).fetchall():
+        w.writerow([r[0], r[1]])
+    w.writerow([])
+
+    w.writerow(['TOP PAGES', ''])
+    w.writerow(['Path', 'Views'])
+    for r in db.session.execute(db.text("SELECT path, COUNT(*) AS c FROM page_views GROUP BY path ORDER BY c DESC LIMIT 20")).fetchall():
+        w.writerow([r[0], r[1]])
+    w.writerow([])
+
+    w.writerow(['DEVICE SPLIT', ''])
+    w.writerow(['Device', 'Views'])
+    for r in db.session.execute(db.text("SELECT COALESCE(device_type,'unknown'), COUNT(*) FROM page_views GROUP BY device_type")).fetchall():
+        w.writerow([r[0], r[1]])
+    w.writerow([])
+
+    w.writerow(['USER ANALYTICS', ''])
+    w.writerow(['Metric', 'Value'])
+    w.writerow(['Total Customers', User.query.filter_by(user_type='customer').count()])
+    w.writerow(['Total Haulers', User.query.filter_by(user_type='hauler').count()])
+    w.writerow(['New Today', User.query.filter(User.created_at >= now.replace(hour=0,minute=0,second=0,microsecond=0)).count()])
+    w.writerow([])
+
+    w.writerow(['MARKETPLACE ANALYTICS', ''])
+    w.writerow(['Metric', 'Value'])
+    w.writerow(['Total Jobs', Job.query.count()])
+    w.writerow(['Total Bids', Bid.query.count()])
+    w.writerow(['Completed Jobs', Job.query.filter_by(status='completed').count()])
+    w.writerow(['Total Revenue', f"${db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0:.2f}"])
+    w.writerow([])
+
+    w.writerow(['TOP HAULERS', ''])
+    w.writerow(['Name', 'Email', 'Bids', 'Completed', 'Avg Rating'])
+    for r in db.session.execute(db.text("""
+        SELECT u.first_name||' '||COALESCE(u.last_name,''), u.email,
+               COUNT(DISTINCT b.id), COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END),
+               ROUND(AVG(r.rating)::numeric,1)
+        FROM users u
+        LEFT JOIN bids b ON b.hauler_id=u.id
+        LEFT JOIN jobs j ON j.accepted_hauler_id=u.id
+        LEFT JOIN reviews r ON r.hauler_id=u.id
+        WHERE u.user_type='hauler'
+        GROUP BY u.id, u.first_name, u.last_name, u.email
+        ORDER BY 4 DESC LIMIT 20
+    """)).fetchall():
+        w.writerow([r[0], r[1], r[2], r[3], r[4] or 'N/A'])
+    w.writerow([])
+
+    w.writerow(['TOP AREAS', ''])
+    w.writerow(['ZIP', 'City', 'State', 'Jobs'])
+    for r in db.session.execute(db.text("""
+        SELECT j.pickup_zip, z.city, z.state, COUNT(*) AS cnt
+        FROM jobs j LEFT JOIN zip_codes z ON z.zip=j.pickup_zip
+        WHERE j.pickup_zip IS NOT NULL
+        GROUP BY j.pickup_zip,z.city,z.state ORDER BY cnt DESC LIMIT 20
+    """)).fetchall():
+        w.writerow([r[0], r[1] or '', r[2] or '', r[3]])
+
+    out.seek(0)
+    resp = make_response(out.getvalue())
+    resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    resp.headers['Content-Disposition'] = f'attachment; filename=jhehaul_analytics_{now.strftime("%Y%m%d")}.csv'
+    return resp
 
 
 @app.route("/health")
