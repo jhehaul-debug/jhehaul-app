@@ -41,8 +41,9 @@
     <div class="photo-grid" style="margin-bottom:10px;">
         {% for photo in job.photos %}
         <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}"
-             alt="Job photo"
-             onerror="this.style.display='none'">
+             alt="Job photo {{ loop.index }}"
+             onclick="window.open(this.src,'_blank')"
+             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo unavailable</div></div>'">
         {% endfor %}
     </div>
     {% endif %}

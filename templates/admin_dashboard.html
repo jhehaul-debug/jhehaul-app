@@ -8,20 +8,26 @@
 </div>
 
 {% if not spaces_configured %}
-<div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;">
-    <span style="font-size:1.4rem;flex-shrink:0;">🗂️</span>
-    <div>
-        <div style="font-weight:700;color:#c2410c;margin-bottom:4px;">Photo storage is LOCAL only — photos will be lost on every DigitalOcean deploy or restart</div>
-        <div style="font-size:0.85rem;color:#78350f;line-height:1.5;">
-            Set <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">SPACES_KEY</code>,
-            <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">SPACES_SECRET</code>, and
-            <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">SPACES_BUCKET</code>
-            in <strong>DigitalOcean → App Platform → Settings → Environment Variables</strong>
-            to enable persistent photo storage via DigitalOcean Spaces.
-            Optionally add <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">SPACES_REGION</code> (default: nyc3) and
-            <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">SPACES_CDN_URL</code>.
+<div id="storage-warning" style="background:#fff7ed;border:2px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
+    <span style="font-size:1.2rem;flex-shrink:0;">🗂️</span>
+    <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;color:#c2410c;margin-bottom:2px;font-size:0.9rem;">
+            Photos use local storage — they reset on each deploy.
+            <a href="#" onclick="document.getElementById('storage-warning-detail').style.display=document.getElementById('storage-warning-detail').style.display==='none'?'block':'none';return false;"
+               style="font-size:0.8rem;font-weight:400;color:#c2410c;text-decoration:underline;margin-left:6px;">Why?</a>
+        </div>
+        <div id="storage-warning-detail" style="display:none;font-size:0.82rem;color:#78350f;line-height:1.5;margin-top:6px;">
+            Photos are saved to the container filesystem, which is wiped on every DigitalOcean redeploy.
+            Photos uploaded <em>within the current running session</em> will display correctly.
+            To make photos permanent, set <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_KEY</code>,
+            <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_SECRET</code>, and
+            <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_BUCKET</code>
+            in DigitalOcean → App Platform → Settings → Environment Variables.
         </div>
     </div>
+    <button onclick="document.getElementById('storage-warning').style.display='none'"
+            style="background:none;border:none;cursor:pointer;color:#c2410c;font-size:1.1rem;flex-shrink:0;padding:0;line-height:1;"
+            title="Dismiss">✕</button>
 </div>
 {% endif %}
 
