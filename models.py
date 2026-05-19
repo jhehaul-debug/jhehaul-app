@@ -141,3 +141,14 @@ class OAuth(db.Model):
     provider = db.Column(db.String, nullable=False)
     token = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class NotificationLog(db.Model):
+    __tablename__ = 'notification_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    event_type = db.Column(db.String(100), nullable=False)
+    recipient = db.Column(db.String(200), nullable=True)
+    subject = db.Column(db.String(500), nullable=True)
+    status = db.Column(db.String(20), nullable=False)
+    error_msg = db.Column(db.Text, nullable=True)

@@ -3,186 +3,464 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+_ADMIN_EMAIL = None
+_APP_URL = "https://jhehaul.com"
 
-def send_email(to_email, subject, html_content):
+_EMAIL_STYLE = """
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background:#f7f8fa; margin:0; padding:0; }
+  .wrap { max-width:580px; margin:32px auto; background:#fff;
+          border-radius:12px; overflow:hidden;
+          box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+  .header { background:#1a202c; padding:24px 32px; }
+  .header h1 { color:#fff; margin:0; font-size:1.3rem; font-weight:700; }
+  .header p  { color:#a0aec0; margin:4px 0 0; font-size:0.88rem; }
+  .body { padding:28px 32px; color:#2d3748; }
+  .body h2 { margin:0 0 14px; font-size:1.1rem; color:#1a202c; }
+  .body p  { margin:0 0 10px; line-height:1.6; font-size:0.94rem; color:#4a5568; }
+  .tag { display:inline-block; background:#ebf8ff; color:#2b6cb0;
+         font-size:0.78rem; font-weight:700; padding:3px 10px;
+         border-radius:20px; margin-bottom:16px; }
+  .pill { display:inline-block; padding:4px 12px; border-radius:20px;
+          font-weight:700; font-size:0.84rem; }
+  .pill-green  { background:#dcfce7; color:#15803d; }
+  .pill-orange { background:#fff7ed; color:#ea580c; }
+  .pill-blue   { background:#dbeafe; color:#1d4ed8; }
+  .pill-red    { background:#fee2e2; color:#b91c1c; }
+  .info-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+              padding:14px 18px; margin:16px 0; }
+  .info-box p { margin:4px 0; color:#4a5568; }
+  .info-box strong { color:#1a202c; }
+  .btn { display:inline-block; background:#1a202c; color:#fff !important;
+         text-decoration:none; padding:12px 24px; border-radius:8px;
+         font-weight:700; font-size:0.9rem; margin-top:14px; }
+  .footer { background:#f8fafc; padding:16px 32px; border-top:1px solid #e2e8f0;
+            font-size:0.78rem; color:#a0aec0; text-align:center; }
+</style>
+"""
+
+def _html(header_title, header_sub, tag, body_html):
+    return f"""<!DOCTYPE html><html><head>{_EMAIL_STYLE}</head><body>
+<div class="wrap">
+  <div class="header">
+    <h1>JHE Haul</h1>
+    <p>Junk Hauling Marketplace</p>
+  </div>
+  <div class="body">
+    <div class="tag">{tag}</div>
+    <h2>{header_title}</h2>
+    <p style="font-size:0.88rem;color:#718096;margin-bottom:18px;">{header_sub}</p>
+    {body_html}
+  </div>
+  <div class="footer">
+    JHE Haul · Minneapolis, MN · <a href="{_APP_URL}" style="color:#3498db;">jhehaul.com</a><br>
+    You received this because you have an account with JHE Haul.
+  </div>
+</div></body></html>"""
+
+
+def _log_notification(event_type, recipient, subject, status, error_msg=None):
+    """Write a row to notification_logs. Never raises — email delivery is unaffected."""
+    try:
+        from flask import current_app
+        from models import db, NotificationLog
+        with current_app.app_context():
+            log = NotificationLog(
+                event_type=event_type,
+                recipient=recipient or '',
+                subject=subject or '',
+                status=status,
+                error_msg=str(error_msg)[:500] if error_msg else None,
+            )
+            db.session.add(log)
+            db.session.commit()
+    except Exception as e:
+        logging.warning("Notification log write failed: %s", e)
+
+
+def send_email(to_email, subject, html_content, event_type='email'):
     api_key = os.environ.get("SENDGRID_API_KEY")
     from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
 
     if not api_key:
-        logging.error("SENDGRID_API_KEY not set — cannot send email to %s (subject: %s)", to_email, subject)
+        logging.error(
+            "SENDGRID_API_KEY not set — email NOT sent to %s | subject: %s",
+            to_email, subject
+        )
+        _log_notification(event_type, to_email, subject, 'failed',
+                          'SENDGRID_API_KEY environment variable is not set')
         return False
 
     if not to_email:
-        logging.error("No recipient email provided, skipping send (subject: %s)", subject)
+        logging.error("send_email called with no recipient (subject: %s)", subject)
         return False
 
     message = Mail(
         from_email=from_email,
         to_emails=to_email,
         subject=subject,
-        html_content=html_content
+        html_content=html_content,
     )
-
     try:
         sg = SendGridAPIClient(api_key)
         response = sg.send(message)
-        logging.info("Email sent to %s, status: %s, subject: %s", to_email, response.status_code, subject)
+        logging.info("Email SENT → %s | status %s | %s", to_email, response.status_code, subject)
+        _log_notification(event_type, to_email, subject, 'sent')
         return True
     except Exception as e:
-        logging.error("SendGrid error sending to %s (subject: %s): %s", to_email, subject, e)
+        logging.error("SendGrid ERROR → %s | %s | %s", to_email, subject, e)
+        _log_notification(event_type, to_email, subject, 'failed', str(e))
         return False
 
 
-def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
-    subject = f"New Bid on Your Hauling Job #{job_id}"
-    html_content = f"""
-    <h2>You have a new bid!</h2>
-    <p><strong>{hauler_name}</strong> has submitted a bid of <strong>${quote_amount:.2f}</strong> for your hauling job #{job_id}.</p>
-    <p>Log in to JHE Haul to review and accept bids.</p>
-    <p>Thank you for using JHE Haul!</p>
-    """
-    return send_email(customer_email, subject, html_content)
-
-
-def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
-    subject = f"Your Bid Was Accepted - Job #{job_id}"
-    html_content = f"""
-    <h2>Congratulations! Your bid was accepted!</h2>
-    <p>The customer has accepted your bid of <strong>${quote_amount:.2f}</strong> for Job #{job_id}.</p>
-    <p>The customer will now pay the booking deposit. Once payment is confirmed, you'll receive the full pickup address and directions.</p>
-    <p>Log in to JHE Haul to view your accepted jobs.</p>
-    <p>Thank you for using JHE Haul!</p>
-    """
-    return send_email(hauler_email, subject, html_content)
-
-
-def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance_miles):
-    subject = f"New Hauling Job #{job_id} Near You!"
-    html_content = f"""
-    <h2>A new job was just posted in your area!</h2>
-    <p>A customer posted a hauling job about <strong>{distance_miles:.0f} miles</strong> from your location.</p>
-    <p><strong>Job Description:</strong><br>{job_description[:200]}{'...' if len(job_description) > 200 else ''}</p>
-    <p>Log in to JHE Haul to view details and submit your bid!</p>
-    <p>Thank you for using JHE Haul!</p>
-    """
-    return send_email(hauler_email, subject, html_content)
-
-
-def notify_admin(subject, html_content):
+def notify_admin(subject, html_content, event_type='admin'):
     admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
-    return send_email(admin_email, subject, html_content)
+    return send_email(admin_email, subject, html_content, event_type)
 
+
+# ── ADMIN NOTIFICATIONS ────────────────────────────────────────────────────────
 
 def notify_admin_new_customer(user_name, user_email):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Name:</strong> {user_name}</p>
+      <p><strong>Email:</strong> {user_email}</p>
+    </div>
+    <a href="{_APP_URL}/admin/customers" class="btn">View Customers →</a>"""
     return notify_admin(
-        f"[JHE Haul] New Customer Signed Up: {user_name}",
-        f"""
-        <h2>New Customer Account</h2>
-        <p><strong>Name:</strong> {user_name}</p>
-        <p><strong>Email:</strong> {user_email}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] New Customer: {user_name}",
+        _html("New Customer Signed Up", "A new customer just created an account.",
+              "👤 New Customer", body),
+        'admin_new_customer'
     )
 
 
 def notify_admin_new_hauler(user_name, user_email, home_zip, truck_type):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Name:</strong> {user_name}</p>
+      <p><strong>Email:</strong> {user_email}</p>
+      <p><strong>Home ZIP:</strong> {home_zip or '—'}</p>
+      <p><strong>Truck Type:</strong> {truck_type or 'Not specified'}</p>
+    </div>
+    <a href="{_APP_URL}/admin/haulers" class="btn">View Haulers →</a>"""
     return notify_admin(
-        f"[JHE Haul] New Hauler Signed Up: {user_name}",
-        f"""
-        <h2>New Hauler Account</h2>
-        <p><strong>Name:</strong> {user_name}</p>
-        <p><strong>Email:</strong> {user_email}</p>
-        <p><strong>Home ZIP:</strong> {home_zip}</p>
-        <p><strong>Truck Type:</strong> {truck_type or 'Not specified'}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] New Hauler: {user_name}",
+        _html("New Hauler Signed Up", "A new hauler just created an account.",
+              "🚛 New Hauler", body),
+        'admin_new_hauler'
     )
 
 
 def notify_admin_new_job(job_id, customer_name, pickup_zip, description):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Pickup ZIP:</strong> {pickup_zip}</p>
+      <p><strong>Description:</strong><br>{description[:300]}{'…' if len(description) > 300 else ''}</p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">View Admin Dashboard →</a>"""
     return notify_admin(
-        f"[JHE Haul] New Job Posted: #{job_id}",
-        f"""
-        <h2>New Job Posted</h2>
-        <p><strong>Job #:</strong> {job_id}</p>
-        <p><strong>Customer:</strong> {customer_name}</p>
-        <p><strong>Pickup ZIP:</strong> {pickup_zip}</p>
-        <p><strong>Description:</strong><br>{description[:300]}{'...' if len(description) > 300 else ''}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] New Job #{job_id} Posted",
+        _html("New Job Posted", f"Job #{job_id} is ready for hauler bids.",
+              "📦 New Job", body),
+        'admin_new_job'
     )
 
 
 def notify_admin_new_bid(job_id, hauler_name, quote_amount):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Hauler:</strong> {hauler_name}</p>
+      <p><strong>Quote:</strong> <span class="pill pill-blue">${quote_amount:.2f}</span></p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
     return notify_admin(
-        f"[JHE Haul] New Bid on Job #{job_id}: ${quote_amount:.2f}",
-        f"""
-        <h2>New Bid Submitted</h2>
-        <p><strong>Job #:</strong> {job_id}</p>
-        <p><strong>Hauler:</strong> {hauler_name}</p>
-        <p><strong>Quote:</strong> ${quote_amount:.2f}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] New Bid on Job #{job_id} — ${quote_amount:.2f}",
+        _html("New Bid Submitted", f"{hauler_name} submitted a bid on Job #{job_id}.",
+              "🏷 New Bid", body),
+        'admin_new_bid'
     )
 
 
 def notify_admin_bid_accepted(job_id, customer_name, hauler_name, quote_amount):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Hauler:</strong> {hauler_name}</p>
+      <p><strong>Accepted Quote:</strong> <span class="pill pill-orange">${quote_amount:.2f}</span></p>
+    </div>
+    <p>Deposit payment from customer is next. You'll receive another alert once paid.</p>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
     return notify_admin(
-        f"[JHE Haul] Bid Accepted on Job #{job_id}: ${quote_amount:.2f}",
-        f"""
-        <h2>Bid Accepted</h2>
-        <p><strong>Job #:</strong> {job_id}</p>
-        <p><strong>Customer:</strong> {customer_name}</p>
-        <p><strong>Hauler:</strong> {hauler_name}</p>
-        <p><strong>Accepted Quote:</strong> ${quote_amount:.2f}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] Bid Accepted — Job #{job_id} — ${quote_amount:.2f}",
+        _html("Bid Accepted!", f"Customer accepted a bid on Job #{job_id}.",
+              "🤝 Bid Accepted", body),
+        'admin_bid_accepted'
+    )
+
+
+def notify_admin_deposit_paid(job_id, customer_name, hauler_name, quote_amount):
+    try:
+        q = float(quote_amount or 0)
+    except Exception:
+        q = 0
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Hauler:</strong> {hauler_name or '—'}</p>
+      <p><strong>Quote:</strong> <span class="pill pill-green">${q:.2f}</span></p>
+    </div>
+    <p>The deposit has been collected. The hauler now has access to the pickup address.</p>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
+    return notify_admin(
+        f"[JHE Haul] 💳 Deposit Paid — Job #{job_id}",
+        _html("Deposit Paid!", f"Customer paid the deposit for Job #{job_id}.",
+              "💳 Deposit Paid", body),
+        'admin_deposit_paid'
     )
 
 
 def notify_admin_job_completed(job_id, customer_name, hauler_name, quote_amount):
-    quote_str = f"{float(quote_amount):.2f}" if quote_amount else "0.00"
+    try:
+        q = float(quote_amount or 0)
+    except Exception:
+        q = 0
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Hauler:</strong> {hauler_name or '—'}</p>
+      <p><strong>Quote:</strong> <span class="pill pill-green">${q:.2f}</span></p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
     return notify_admin(
-        f"[JHE Haul] Job Completed: #{job_id}",
-        f"""
-        <h2>Job Marked Complete</h2>
-        <p><strong>Job #:</strong> {job_id}</p>
-        <p><strong>Customer:</strong> {customer_name}</p>
-        <p><strong>Hauler:</strong> {hauler_name or 'N/A'}</p>
-        <p><strong>Quote:</strong> ${quote_str}</p>
-        <p><a href="https://jhehaul.com/admin">View Admin Dashboard</a></p>
-        """
+        f"[JHE Haul] ✅ Job #{job_id} Completed",
+        _html("Job Completed!", f"Job #{job_id} has been marked as complete.",
+              "✅ Completed", body),
+        'admin_job_completed'
     )
 
 
-def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, comment):
-    stars = '★' * rating + '☆' * (5 - rating)
-    comment_html = f"<p style=\"font-style:italic;color:#4a5568;border-left:3px solid #e2e8f0;padding-left:12px;\">\"{comment}\"</p>" if comment else ""
-    subject = f"[JHE Haul] New Review: {stars} for Job #{job_id}"
-    html_content = f"""
-    <h2>You received a new review!</h2>
-    <p><strong>Job #:</strong> {job_id}</p>
-    <p><strong>From:</strong> {customer_name}</p>
-    <p><strong>Rating:</strong> <span style="color:#f6c90e;font-size:1.2em;">{stars}</span> ({rating}/5)</p>
-    {comment_html}
-    <p><a href="https://jhehaul.com/hauler/earnings" style="display:inline-block;background:#27ae60;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">View Your Reviews &amp; Earnings</a></p>
-    <p>Thank you for using JHE Haul!</p>
-    """
-    return send_email(hauler_email, subject, html_content)
+def notify_admin_job_cancelled(job_id, customer_name):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Cancelled</span></p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
+    return notify_admin(
+        f"[JHE Haul] ❌ Job #{job_id} Cancelled",
+        _html("Job Cancelled", f"Job #{job_id} was cancelled by the customer.",
+              "❌ Cancelled", body),
+        'admin_job_cancelled'
+    )
+
+
+def notify_admin_user_deleted(user_name, user_email, user_type):
+    body = f"""
+    <div class="info-box">
+      <p><strong>Name:</strong> {user_name}</p>
+      <p><strong>Email:</strong> {user_email}</p>
+      <p><strong>Role:</strong> {user_type or 'Unknown'}</p>
+    </div>
+    <p>Their account and all associated data has been removed from the database.</p>
+    <a href="{_APP_URL}/admin" class="btn">View Admin →</a>"""
+    return notify_admin(
+        f"[JHE Haul] Account Deleted: {user_name} ({user_type})",
+        _html("User Account Deleted", f"{user_name} deleted their account.",
+              "🗑 Account Deleted", body),
+        'admin_user_deleted'
+    )
+
+
+# ── CUSTOMER NOTIFICATIONS ─────────────────────────────────────────────────────
+
+def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
+    body = f"""
+    <p><strong>{hauler_name}</strong> submitted a bid of
+       <span class="pill pill-blue">${quote_amount:.2f}</span>
+       on your hauling job.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Hauler:</strong> {hauler_name}</p>
+      <p><strong>Quote:</strong> ${quote_amount:.2f}</p>
+    </div>
+    <p>Log in to review all bids and accept the best one!</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Bids →</a>"""
+    return send_email(
+        customer_email,
+        f"New Bid on Your Job #{job_id} — ${quote_amount:.2f}",
+        _html("You Have a New Bid!", "A hauler has submitted a quote on your job.",
+              "🏷 New Bid", body),
+        'customer_new_bid'
+    )
+
+
+def notify_customer_bid_accepted_confirm(customer_email, job_id, hauler_name, quote_amount):
+    body = f"""
+    <p>You accepted the bid from <strong>{hauler_name}</strong> for
+       <span class="pill pill-orange">${quote_amount:.2f}</span>.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Hauler:</strong> {hauler_name}</p>
+      <p><strong>Accepted Quote:</strong> ${quote_amount:.2f}</p>
+    </div>
+    <p><strong>Next step:</strong> Pay the booking deposit to confirm your job and
+       release the pickup address to your hauler.</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Pay Deposit Now →</a>"""
+    return send_email(
+        customer_email,
+        f"Bid Accepted — Now Pay Your Deposit (Job #{job_id})",
+        _html("Bid Accepted!", "You've chosen your hauler — pay the deposit to confirm.",
+              "🤝 Bid Accepted", body),
+        'customer_bid_accepted_confirm'
+    )
+
+
+def notify_customer_job_completed(customer_email, job_id):
+    body = f"""
+    <p>Your hauling job has been marked as <strong>complete</strong>. Great work getting it done!</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Status:</strong> <span class="pill pill-green">Completed</span></p>
+    </div>
+    <p>Please take a moment to leave a review for your hauler — it helps them get more work!</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Leave a Review →</a>"""
+    return send_email(
+        customer_email,
+        f"Job #{job_id} Complete — Please Leave a Review!",
+        _html("Job Complete! 🎉", "Your hauling job has been completed successfully.",
+              "✅ Completed", body),
+        'customer_job_completed'
+    )
+
+
+# ── HAULER NOTIFICATIONS ───────────────────────────────────────────────────────
+
+def notify_hauler_new_job_nearby(hauler_email, job_id, job_description, distance_miles):
+    body = f"""
+    <p>A customer just posted a hauling job <strong>{distance_miles:.0f} miles</strong> from you.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Distance:</strong> ~{distance_miles:.0f} miles away</p>
+      <p><strong>Description:</strong><br>{job_description[:200]}{'…' if len(job_description) > 200 else ''}</p>
+    </div>
+    <p>Log in quickly — first haulers to bid often win the job!</p>
+    <a href="{_APP_URL}/hauler/jobs" class="btn">View &amp; Bid on This Job →</a>"""
+    return send_email(
+        hauler_email,
+        f"New Job #{job_id} Near You — {distance_miles:.0f} miles away",
+        _html("New Job In Your Area!", "A hauling job was just posted near you.",
+              "📍 Job Nearby", body),
+        'hauler_new_job_nearby'
+    )
+
+
+def notify_hauler_bid_accepted(hauler_email, job_id, quote_amount):
+    body = f"""
+    <p>The customer accepted your bid of
+       <span class="pill pill-green">${quote_amount:.2f}</span>
+       on Job #{job_id}!</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Your Quote:</strong> ${quote_amount:.2f}</p>
+      <p><strong>Status:</strong> Waiting for customer deposit</p>
+    </div>
+    <p>The customer needs to pay a booking deposit. Once they do, you'll automatically receive the full pickup address and directions.</p>
+    <a href="{_APP_URL}/hauler/jobs" class="btn">View Your Jobs →</a>"""
+    return send_email(
+        hauler_email,
+        f"🎉 Your Bid Was Accepted — Job #{job_id}",
+        _html("Your Bid Was Accepted!", "Congratulations — the customer chose you!",
+              "🤝 Bid Accepted", body),
+        'hauler_bid_accepted'
+    )
+
+
+def notify_hauler_bid_rejected(hauler_email, job_id):
+    body = f"""
+    <p>The customer on Job #{job_id} chose a different hauler.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Not Selected</span></p>
+    </div>
+    <p>Don't worry — new jobs are posted regularly. Keep bidding!</p>
+    <a href="{_APP_URL}/hauler/jobs" class="btn">Browse Open Jobs →</a>"""
+    return send_email(
+        hauler_email,
+        f"Job #{job_id} — Another Hauler Was Selected",
+        _html("Another Hauler Was Chosen", "Your bid on this job wasn't selected this time.",
+              "📋 Not Selected", body),
+        'hauler_bid_rejected'
+    )
 
 
 def notify_hauler_deposit_paid(hauler_email, job_id, pickup_address, pickup_zip):
     import urllib.parse
     full_address = f"{pickup_address}, {pickup_zip}"
     maps_url = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(full_address)}"
+    body = f"""
+    <p>The customer paid their deposit for Job #{job_id}. You now have access to the full pickup address.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Pickup Address:</strong><br><strong>{full_address}</strong></p>
+    </div>
+    <a href="{maps_url}" class="btn" style="background:#27ae60;">Get Directions →</a>
+    <a href="{_APP_URL}/hauler/jobs" class="btn" style="margin-left:10px;">View Job Details →</a>"""
+    return send_email(
+        hauler_email,
+        f"💳 Deposit Paid — Job #{job_id} Ready to Go!",
+        _html("Deposit Received — You're On!", "The pickup address is now unlocked for you.",
+              "💳 Deposit Paid", body),
+        'hauler_deposit_paid'
+    )
 
-    subject = f"Deposit Paid - Job #{job_id} Ready to Go!"
-    html_content = f"""
-    <h2>Great news! The deposit has been paid!</h2>
-    <p>The customer has paid the deposit for Job #{job_id}. You can now view the pickup address and complete the job.</p>
-    <p><strong>Pickup Address:</strong><br>{full_address}</p>
-    <p><a href="{maps_url}" style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Get Directions</a></p>
-    <p>Log in to JHE Haul to view full job details.</p>
-    <p>Thank you for using JHE Haul!</p>
-    """
-    return send_email(hauler_email, subject, html_content)
+
+def notify_hauler_job_cancelled(hauler_email, job_id, customer_name):
+    body = f"""
+    <p>Unfortunately, Job #{job_id} has been cancelled by the customer.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Cancelled</span></p>
+    </div>
+    <p>Plenty of new jobs are posted daily. Check the board for other opportunities!</p>
+    <a href="{_APP_URL}/hauler/jobs" class="btn">Browse Open Jobs →</a>"""
+    return send_email(
+        hauler_email,
+        f"Job #{job_id} Has Been Cancelled",
+        _html("Job Cancelled", f"A job you bid on has been cancelled.",
+              "❌ Job Cancelled", body),
+        'hauler_job_cancelled'
+    )
+
+
+def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, comment):
+    stars = '★' * rating + '☆' * (5 - rating)
+    comment_html = (
+        f'<p style="font-style:italic;color:#4a5568;border-left:3px solid #e2e8f0;'
+        f'padding-left:12px;margin:10px 0;">"{comment}"</p>'
+        if comment else ""
+    )
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Rating:</strong> <span style="color:#f6c90e;font-size:1.2em;">{stars}</span> ({rating}/5)</p>
+    </div>
+    {comment_html}
+    <a href="{_APP_URL}/hauler/earnings" class="btn">View Your Reviews →</a>"""
+    return send_email(
+        hauler_email,
+        f"New Review: {stars} for Job #{job_id}",
+        _html("You Got a New Review!", f"{customer_name} left you a {rating}-star review.",
+              "⭐ New Review", body),
+        'hauler_new_review'
+    )

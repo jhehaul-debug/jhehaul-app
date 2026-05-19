@@ -80,6 +80,20 @@ def _to_central(dt, fmt='%b %d, %Y'):
 app.jinja_env.filters['ct'] = _to_central
 
 
+# ---- Startup checks ----
+_sendgrid_key = os.environ.get("SENDGRID_API_KEY")
+if not _sendgrid_key:
+    logging.warning(
+        "⚠️  SENDGRID_API_KEY is NOT set — email notifications will not be delivered. "
+        "Set this environment variable in DigitalOcean App Platform → Settings → Environment Variables."
+    )
+else:
+    logging.info("SendGrid configured (key length: %d)", len(_sendgrid_key))
+
+_admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
+logging.info("Admin notification email: %s", _admin_email)
+
+
 # ---- Initialize tables and load ZIP codes ----
 with app.app_context():
     import models as _models  # noqa: F401
