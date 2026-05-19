@@ -1020,12 +1020,22 @@ def admin_dashboard():
     completed_jobs = Job.query.filter_by(status='completed').count()
     cancelled_jobs = Job.query.filter_by(status='cancelled').count()
     total_bids = Bid.query.count()
+    accepted_bids = Bid.query.filter_by(status='accepted').count()
+    pending_bids = (Bid.query
+                    .join(Job, Bid.job_id == Job.id)
+                    .filter(Job.status.in_(['open', 'bidding']))
+                    .count())
     total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status == 'completed').scalar() or 0
 
     pending_users = User.query.filter(
         User.user_type == None, User.is_admin == False
     ).order_by(User.created_at.desc()).all()
     jobs = Job.query.order_by(Job.id.desc()).all()
+    recent_accepted = (Job.query
+                       .filter(Job.accepted_hauler_id != None)
+                       .order_by(Job.id.desc())
+                       .limit(8)
+                       .all())
 
     return render_template('admin_dashboard.html',
                            total_users=total_users,
@@ -1037,8 +1047,11 @@ def admin_dashboard():
                            completed_jobs=completed_jobs,
                            cancelled_jobs=cancelled_jobs,
                            total_bids=total_bids,
+                           accepted_bids=accepted_bids,
+                           pending_bids=pending_bids,
                            total_revenue=total_revenue,
                            jobs=jobs,
+                           recent_accepted=recent_accepted,
                            pending_users=pending_users)
 
 @app.route("/admin/customers")
