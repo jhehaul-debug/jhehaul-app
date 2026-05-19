@@ -1234,25 +1234,38 @@ def admin_delete_job(job_id):
 def admin_delete_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.is_admin:
-        return "Cannot delete admin", 400
-    user_jobs = Job.query.filter_by(customer_id=user_id).all()
-    for job in user_jobs:
+        flash("Admin accounts cannot be deleted.", "error")
+        return redirect(url_for('admin_dashboard'))
+    from models import OAuth, JobPhoto, CompletionPhoto
+    user_name = (((user.first_name or '') + ' ' + (user.last_name or '')).strip()
+                 or user.email or 'User')
+    user_type = user.user_type or 'customer'
+    # Clean up customer jobs and their photos
+    customer_jobs = Job.query.filter_by(customer_id=user_id).all()
+    for job in customer_jobs:
+        JobPhoto.query.filter_by(job_id=job.id).delete()
+        CompletionPhoto.query.filter_by(job_id=job.id).delete()
+        Bid.query.filter_by(job_id=job.id).delete()
+        Review.query.filter_by(job_id=job.id).delete()
         db.session.delete(job)
+    # Detach hauler from any jobs they were assigned to
     hauler_jobs = Job.query.filter_by(accepted_hauler_id=user_id).all()
     for job in hauler_jobs:
         job.accepted_hauler_id = None
-        job.accepted_hauler = None
         job.accepted_quote = None
         job.status = 'open'
         job.deposit_paid = False
+    # Clean up hauler-specific records
     Bid.query.filter_by(hauler_id=user_id).delete()
     Review.query.filter_by(hauler_id=user_id).delete()
     Review.query.filter_by(customer_id=user_id).delete()
-    from models import OAuth
     OAuth.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
-    return redirect(url_for('admin_dashboard'))
+    flash(f"{user_name}'s account has been deleted.", "success")
+    if user_type == 'hauler':
+        return redirect(url_for('admin_haulers'))
+    return redirect(url_for('admin_customers'))
 
 
 @app.route("/admin/analytics")
