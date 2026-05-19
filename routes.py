@@ -143,7 +143,15 @@ def set_visitor_cookie(response):
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    import os as _os
+    file_path = _os.path.join(UPLOAD_FOLDER, filename)
+    if not _os.path.isfile(file_path):
+        app.logger.warning("uploaded_file: file not found on disk: %s", filename)
+        return "", 404
+    response = send_from_directory(UPLOAD_FOLDER, filename)
+    # No-store so browsers don't cache 404s across deploys
+    response.headers["Cache-Control"] = "no-cache, max-age=0"
+    return response
 
 @app.route("/")
 def home():
