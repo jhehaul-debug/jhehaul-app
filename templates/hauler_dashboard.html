@@ -83,7 +83,7 @@
     <div class="banner banner-complete">
         <strong>✅ Job Completed!</strong><br>
         <span style="font-size:0.88rem;">{{ job.customer_name }} · {{ job.pickup_address }}, {{ job.pickup_zip }}</span>
-        {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at.strftime('%B %d, %Y') }}</span>{% endif %}
+        {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at | ct('%B %d, %Y') }}</span>{% endif %}
     </div>
 
     {% elif job.status == 'accepted' %}

@@ -128,7 +128,7 @@
             <span style="color:#f6c90e;font-size:1.1rem;">
                 {% for i in range(r.rating) %}★{% endfor %}{% for i in range(5 - r.rating) %}☆{% endfor %}
             </span>
-            <span style="font-size:0.78rem;color:#a0aec0;">{{ r.created_at.strftime('%b %d, %Y') if r.created_at else '' }}</span>
+            <span style="font-size:0.78rem;color:#a0aec0;">{{ r.created_at | ct }}</span>
         </div>
         {% if r.comment %}
         <p style="margin:0;color:#4a5568;font-size:0.9rem;font-style:italic;">"{{ r.comment }}"</p>

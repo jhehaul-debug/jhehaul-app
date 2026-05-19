@@ -63,6 +63,23 @@ def choose_pay_link(accepted_quote):
     return link
 
 
+# ---- Timezone filter: UTC naive → America/Chicago ----
+def _to_central(dt, fmt='%b %d, %Y'):
+    if dt is None:
+        return ''
+    try:
+        from zoneinfo import ZoneInfo
+        from datetime import timezone
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        ct = dt.astimezone(ZoneInfo('America/Chicago'))
+        return ct.strftime(fmt)
+    except Exception:
+        return dt.strftime(fmt)
+
+app.jinja_env.filters['ct'] = _to_central
+
+
 # ---- Initialize tables and load ZIP codes ----
 with app.app_context():
     import models as _models  # noqa: F401

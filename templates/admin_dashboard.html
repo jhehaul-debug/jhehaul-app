@@ -278,7 +278,7 @@ function shareInvite(type) {
         {% endif %}
     </div>
     {% endif %}
-    <p style="font-size:0.82rem;color:#a0aec0;margin-top:4px;">Posted: {{ job.created_at.strftime('%b %d, %Y %I:%M %p') if job.created_at else 'N/A' }}</p>
+    <p style="font-size:0.82rem;color:#a0aec0;margin-top:4px;">Posted: {{ job.created_at | ct('%b %d, %Y %I:%M %p CT') or 'N/A' }}</p>
     {% if job.bids %}
     <hr>
     <p style="font-weight:600;margin-bottom:6px;">Bids ({{ job.bids|length }})</p>
@@ -361,7 +361,7 @@ function shareInvite(type) {
             <div class="user-name" style="font-size:0.9rem;">{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</div>
             <div class="user-email" style="font-size:0.82rem;">{{ user.email or 'No email' }}</div>
             <div class="user-detail" style="font-size:0.78rem;">
-                Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+                Joined {{ user.created_at | ct or 'N/A' }}
             </div>
         </div>
         <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"

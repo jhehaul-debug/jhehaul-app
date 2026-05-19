@@ -78,7 +78,7 @@
                 {% if r %}<span style="color:#f6c90e;">★</span> <strong>{{ r }}</strong>{% else %}<span style="color:#cbd5e0;">—</span>{% endif %}
             </td>
             <td style="padding:11px 14px;white-space:nowrap;color:#718096;font-size:0.82rem;">
-                {{ u.created_at.strftime('%b %d, %Y') if u.created_at else '—' }}
+                {{ u.created_at | ct or '—' }}
             </td>
             <td style="padding:11px 14px;text-align:center;">
                 {% if u.home_zip and u.max_travel_miles %}
