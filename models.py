@@ -72,6 +72,8 @@ class JobPhoto(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
     filename = db.Column(db.String, nullable=False)
     storage_url = db.Column(db.String, nullable=True)
+    data = db.Column(db.LargeBinary, nullable=True)
+    content_type = db.Column(db.String(80), nullable=True)
 
 class Bid(db.Model):
     __tablename__ = 'bids'
@@ -100,6 +102,8 @@ class CompletionPhoto(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
     filename = db.Column(db.String, nullable=False)
     storage_url = db.Column(db.String, nullable=True)
+    data = db.Column(db.LargeBinary, nullable=True)
+    content_type = db.Column(db.String(80), nullable=True)
     photo_type = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 

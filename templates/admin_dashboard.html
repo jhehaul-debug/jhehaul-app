@@ -8,25 +8,25 @@
 </div>
 
 {% if not spaces_configured %}
-<div id="storage-warning" style="background:#fff7ed;border:2px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
-    <span style="font-size:1.2rem;flex-shrink:0;">🗂️</span>
+<div id="storage-warning" style="background:#f0fff4;border:2px solid #9ae6b4;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
+    <span style="font-size:1.2rem;flex-shrink:0;">🗄️</span>
     <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;color:#c2410c;margin-bottom:2px;font-size:0.9rem;">
-            Photos use local storage — they reset on each deploy.
+        <div style="font-weight:700;color:#276749;margin-bottom:2px;font-size:0.9rem;">
+            Photos stored in database — they survive deploys and restarts.
             <a href="#" onclick="document.getElementById('storage-warning-detail').style.display=document.getElementById('storage-warning-detail').style.display==='none'?'block':'none';return false;"
-               style="font-size:0.8rem;font-weight:400;color:#c2410c;text-decoration:underline;margin-left:6px;">Why?</a>
+               style="font-size:0.8rem;font-weight:400;color:#276749;text-decoration:underline;margin-left:6px;">Details</a>
         </div>
-        <div id="storage-warning-detail" style="display:none;font-size:0.82rem;color:#78350f;line-height:1.5;margin-top:6px;">
-            Photos are saved to the container filesystem, which is wiped on every DigitalOcean redeploy.
-            Photos uploaded <em>within the current running session</em> will display correctly.
-            To make photos permanent, set <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_KEY</code>,
-            <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_SECRET</code>, and
-            <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">SPACES_BUCKET</code>
-            in DigitalOcean → App Platform → Settings → Environment Variables.
+        <div id="storage-warning-detail" style="display:none;font-size:0.82rem;color:#22543d;line-height:1.5;margin-top:6px;">
+            New photos are saved directly to PostgreSQL — they persist forever regardless of container restarts or DigitalOcean deploys.
+            Photos uploaded before this fix (if any) may show "unavailable" — those would need to be re-uploaded.
+            For unlimited photo scale, set <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_KEY</code>,
+            <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_SECRET</code>, and
+            <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_BUCKET</code>
+            in DigitalOcean → App Platform → Settings → Environment Variables to switch to DigitalOcean Spaces.
         </div>
     </div>
     <button onclick="document.getElementById('storage-warning').style.display='none'"
-            style="background:none;border:none;cursor:pointer;color:#c2410c;font-size:1.1rem;flex-shrink:0;padding:0;line-height:1;"
+            style="background:none;border:none;cursor:pointer;color:#276749;font-size:1.1rem;flex-shrink:0;padding:0;line-height:1;"
             title="Dismiss">✕</button>
 </div>
 {% endif %}
@@ -297,16 +297,17 @@ function shareInvite(type) {
     {% if job.photos %}
     <div style="margin:8px 0 4px;">
         <span style="font-size:0.82rem;font-weight:700;color:#4a5568;">📷 Customer Photos ({{ job.photos|length }})</span>
-        {% if not spaces_configured %}
-        <span style="font-size:0.75rem;color:#c2410c;margin-left:8px;">⚠️ local storage — may not display if server restarted</span>
+        {% set db_photos = job.photos | selectattr('data') | list %}
+        {% if db_photos | length < job.photos | length %}
+        <span style="font-size:0.75rem;color:#c2410c;margin-left:8px;">⚠️ {{ job.photos|length - db_photos|length }} photo(s) pre-date DB storage — may not display</span>
         {% endif %}
     </div>
     <div class="photo-grid" style="margin:6px 0 12px;">
         {% for photo in job.photos %}
-        <img src="{{ photo.storage_url or url_for('uploaded_file', filename=photo.filename) }}"
+        <img src="{{ photo.storage_url or (url_for('uploaded_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
              alt="Job photo {{ loop.index }}"
              onclick="window.open(this.src,'_blank')"
-             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo uploaded<br>but file not<br>available</div></div>'">
+             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo unavailable</div></div>'">
         {% endfor %}
     </div>
     {% endif %}
