@@ -122,6 +122,17 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
+class PageView(db.Model):
+    __tablename__ = 'page_views'
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_id = db.Column(db.String(64), nullable=True)
+    path = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.String, nullable=True)
+    device_type = db.Column(db.String(20), nullable=True)
+    referrer = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
 class OAuth(db.Model):
     __tablename__ = 'oauth'
     id = db.Column(db.Integer, primary_key=True)
