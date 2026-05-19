@@ -1022,8 +1022,10 @@ def admin_dashboard():
     total_bids = Bid.query.count()
     total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status == 'completed').scalar() or 0
 
+    pending_users = User.query.filter(
+        User.user_type == None, User.is_admin == False
+    ).order_by(User.created_at.desc()).all()
     jobs = Job.query.order_by(Job.id.desc()).all()
-    users = User.query.order_by(User.created_at.desc()).all()
 
     return render_template('admin_dashboard.html',
                            total_users=total_users,
@@ -1037,7 +1039,44 @@ def admin_dashboard():
                            total_bids=total_bids,
                            total_revenue=total_revenue,
                            jobs=jobs,
-                           users=users)
+                           pending_users=pending_users)
+
+@app.route("/admin/customers")
+@require_admin
+def admin_customers():
+    customers = User.query.filter_by(user_type='customer').order_by(User.created_at.desc()).all()
+    total = len(customers)
+    jobs_map = {}
+    for c in customers:
+        jobs_map[c.id] = Job.query.filter_by(customer_id=c.id).count()
+    return render_template('admin_customers.html',
+                           customers=customers,
+                           total=total,
+                           jobs_map=jobs_map)
+
+
+@app.route("/admin/haulers")
+@require_admin
+def admin_haulers():
+    haulers = User.query.filter_by(user_type='hauler').order_by(User.created_at.desc()).all()
+    total = len(haulers)
+    setup_count = sum(1 for h in haulers if h.home_zip and h.max_travel_miles)
+    completed_map = {}
+    bid_map = {}
+    rating_map = {}
+    for h in haulers:
+        completed_map[h.id] = Job.query.filter_by(accepted_hauler_id=h.id, status='completed').count()
+        bid_map[h.id] = Bid.query.filter_by(hauler_id=h.id).count()
+        revs = Review.query.filter_by(hauler_id=h.id).all()
+        rating_map[h.id] = round(sum(r.rating for r in revs) / len(revs), 1) if revs else None
+    return render_template('admin_haulers.html',
+                           haulers=haulers,
+                           total=total,
+                           setup_count=setup_count,
+                           completed_map=completed_map,
+                           bid_map=bid_map,
+                           rating_map=rating_map)
+
 
 @app.route("/admin/test-job", methods=["POST"])
 @require_admin
