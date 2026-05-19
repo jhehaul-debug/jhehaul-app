@@ -146,6 +146,18 @@ with app.app_context():
         logging.info("Column migration (storage_url) skipped: %s", _e)
 
     try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE job_photos ADD COLUMN IF NOT EXISTS data BYTEA"))
+        db.session.execute(_text("ALTER TABLE job_photos ADD COLUMN IF NOT EXISTS content_type VARCHAR(80)"))
+        db.session.execute(_text("ALTER TABLE completion_photos ADD COLUMN IF NOT EXISTS data BYTEA"))
+        db.session.execute(_text("ALTER TABLE completion_photos ADD COLUMN IF NOT EXISTS content_type VARCHAR(80)"))
+        db.session.commit()
+        logging.info("Column migration: photo data/content_type columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (photo data) skipped: %s", _e)
+
+    try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()

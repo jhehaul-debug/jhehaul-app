@@ -141,15 +141,56 @@ def set_visitor_cookie(response):
             response.set_cookie('jhe_vid', vid, max_age=365*24*3600, httponly=True, samesite='Lax')
     return response
 
+_PHOTO_CONTENT_TYPES = {
+    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+    'gif': 'image/gif', 'webp': 'image/webp', 'heic': 'image/heic',
+    'heif': 'image/heif', 'bmp': 'image/bmp', 'tiff': 'image/tiff',
+}
+
+def _read_photo_bytes(file_obj, ext):
+    """Read photo bytes from an uploaded file; rewind stream for subsequent save."""
+    ct = _PHOTO_CONTENT_TYPES.get(ext.lstrip('.').lower(), 'image/jpeg')
+    file_obj.stream.seek(0)
+    data = file_obj.stream.read()
+    file_obj.stream.seek(0)
+    return data, ct
+
+
+@app.route("/uploads/db/<int:photo_id>")
+def uploaded_file_db(photo_id):
+    """Serve a job photo stored as binary in the database."""
+    from models import JobPhoto
+    photo = JobPhoto.query.get(photo_id)
+    if not photo or not photo.data:
+        return "", 404
+    from flask import Response
+    r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
+    r.headers["Cache-Control"] = "no-cache, max-age=0"
+    return r
+
+
+@app.route("/uploads/completion/db/<int:photo_id>")
+def uploaded_completion_file_db(photo_id):
+    """Serve a completion photo stored as binary in the database."""
+    from models import CompletionPhoto
+    photo = CompletionPhoto.query.get(photo_id)
+    if not photo or not photo.data:
+        return "", 404
+    from flask import Response
+    r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
+    r.headers["Cache-Control"] = "no-cache, max-age=0"
+    return r
+
+
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
+    """Serve a photo from the local filesystem (fallback for old records without DB data)."""
     import os as _os
     file_path = _os.path.join(UPLOAD_FOLDER, filename)
     if not _os.path.isfile(file_path):
         app.logger.warning("uploaded_file: file not found on disk: %s", filename)
         return "", 404
     response = send_from_directory(UPLOAD_FOLDER, filename)
-    # No-store so browsers don't cache 404s across deploys
     response.headers["Cache-Control"] = "no-cache, max-age=0"
     return response
 
@@ -371,8 +412,12 @@ def customer_create():
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
+            photo_data, photo_ct = _read_photo_bytes(photo, ext)
             filename, storage_url = _upload_file(photo, ext)
-            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
+            photo_record = JobPhoto(
+                job_id=job.id, filename=filename, storage_url=storage_url,
+                data=photo_data if not storage_url else None, content_type=photo_ct,
+            )
             db.session.add(photo_record)
     db.session.commit()
 
@@ -462,8 +507,12 @@ def customer_upload_photos(job_id):
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
+            photo_data, photo_ct = _read_photo_bytes(photo, ext)
             filename, storage_url = _upload_file(photo, ext)
-            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
+            photo_record = JobPhoto(
+                job_id=job.id, filename=filename, storage_url=storage_url,
+                data=photo_data if not storage_url else None, content_type=photo_ct,
+            )
             db.session.add(photo_record)
 
     db.session.commit()
@@ -1045,15 +1094,25 @@ def hauler_upload_photos(job_id):
         for photo in before_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
+                photo_data, photo_ct = _read_photo_bytes(photo, ext)
                 filename, storage_url = _upload_file(photo, ext)
-                photo_record = CompletionPhoto(job_id=job.id, filename=filename, storage_url=storage_url, photo_type='before')
+                photo_record = CompletionPhoto(
+                    job_id=job.id, filename=filename, storage_url=storage_url,
+                    data=photo_data if not storage_url else None, content_type=photo_ct,
+                    photo_type='before'
+                )
                 db.session.add(photo_record)
 
         for photo in after_photos:
             if photo and photo.filename:
                 ext = os.path.splitext(photo.filename)[1]
+                photo_data, photo_ct = _read_photo_bytes(photo, ext)
                 filename, storage_url = _upload_file(photo, ext)
-                photo_record = CompletionPhoto(job_id=job.id, filename=filename, storage_url=storage_url, photo_type='after')
+                photo_record = CompletionPhoto(
+                    job_id=job.id, filename=filename, storage_url=storage_url,
+                    data=photo_data if not storage_url else None, content_type=photo_ct,
+                    photo_type='after'
+                )
                 db.session.add(photo_record)
                 saved_after += 1
 
@@ -1200,8 +1259,12 @@ def admin_test_job():
     for photo in photos:
         if photo and photo.filename:
             ext = os.path.splitext(photo.filename)[1]
+            photo_data, photo_ct = _read_photo_bytes(photo, ext)
             filename, storage_url = _upload_file(photo, ext)
-            photo_record = JobPhoto(job_id=job.id, filename=filename, storage_url=storage_url)
+            photo_record = JobPhoto(
+                job_id=job.id, filename=filename, storage_url=storage_url,
+                data=photo_data if not storage_url else None, content_type=photo_ct,
+            )
             db.session.add(photo_record)
     db.session.commit()
 
