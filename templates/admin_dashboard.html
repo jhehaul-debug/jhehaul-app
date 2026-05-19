@@ -154,7 +154,10 @@ function shareInvite(type) {
 
 <!-- Send Test Notification -->
 <div class="card" id="send-notification">
-    <h3 style="margin-bottom:16px;">📧 Send Test Notification</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <h3 style="margin:0;">📧 Send Test Notification</h3>
+        <a href="{{ url_for('admin_notifications') }}" class="btn btn-outline btn-sm">📬 Notification Log →</a>
+    </div>
     <form method="POST" action="{{ url_for('admin_test_email') }}">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div class="form-group">
@@ -165,24 +168,36 @@ function shareInvite(type) {
                 <label>Notification Type</label>
                 <select name="notification_type" required>
                     <option value="">-- Select --</option>
-                    <optgroup label="Admin Notifications (→ jhehaul@gmail.com)">
+                    <optgroup label="Admin Alerts (→ jhehaul@gmail.com)">
                         <option value="admin_new_customer">Admin: New Customer Signup</option>
                         <option value="admin_new_hauler">Admin: New Hauler Signup</option>
                         <option value="admin_new_job">Admin: New Job Posted</option>
                         <option value="admin_new_bid">Admin: New Bid Submitted</option>
                         <option value="admin_bid_accepted">Admin: Bid Accepted</option>
+                        <option value="admin_deposit_paid">Admin: Deposit Paid</option>
                         <option value="admin_job_completed">Admin: Job Completed</option>
+                        <option value="admin_job_cancelled">Admin: Job Cancelled</option>
+                        <option value="admin_user_deleted">Admin: User Deleted Account</option>
                     </optgroup>
-                    <optgroup label="User Notifications">
+                    <optgroup label="Customer Notifications">
                         <option value="new_bid">Customer: New Bid Received</option>
+                        <option value="bid_accepted_confirm">Customer: Bid Accepted Confirmation</option>
+                        <option value="customer_job_completed">Customer: Job Completed</option>
+                    </optgroup>
+                    <optgroup label="Hauler Notifications">
                         <option value="bid_accepted">Hauler: Bid Accepted</option>
-                        <option value="deposit_paid">Hauler: Deposit Paid</option>
+                        <option value="bid_rejected">Hauler: Bid Not Selected</option>
+                        <option value="deposit_paid">Hauler: Deposit Paid (Address Unlocked)</option>
+                        <option value="hauler_job_cancelled">Hauler: Job Cancelled</option>
                         <option value="new_job_nearby">Hauler: New Job Nearby</option>
                     </optgroup>
                 </select>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Send Test Email</button>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary">Send Test Email</button>
+            <a href="{{ url_for('admin_notifications') }}" style="font-size:0.85rem;color:#3498db;">View delivery log →</a>
+        </div>
     </form>
 </div>
 

@@ -12,12 +12,18 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
 from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView
-from email_service import (notify_customer_new_bid, notify_hauler_bid_accepted,
-                           notify_hauler_deposit_paid, notify_hauler_new_job_nearby,
-                           notify_admin_new_customer, notify_admin_new_hauler,
-                           notify_admin_new_job, notify_admin_new_bid,
-                           notify_admin_bid_accepted, notify_admin_job_completed,
-                           notify_hauler_new_review)
+from email_service import (
+    notify_customer_new_bid, notify_customer_bid_accepted_confirm,
+    notify_customer_job_completed,
+    notify_hauler_bid_accepted, notify_hauler_bid_rejected,
+    notify_hauler_deposit_paid, notify_hauler_new_job_nearby,
+    notify_hauler_job_cancelled, notify_hauler_new_review,
+    notify_admin_new_customer, notify_admin_new_hauler,
+    notify_admin_new_job, notify_admin_new_bid,
+    notify_admin_bid_accepted, notify_admin_deposit_paid,
+    notify_admin_job_completed, notify_admin_job_cancelled,
+    notify_admin_user_deleted,
+)
 from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
 
 def get_badges(user, reviews=None, completed_count=0):
@@ -497,6 +503,27 @@ def customer_accept_bid(bid_id):
         app.logger.error("Notification failed after accepting bid %s: %s", bid_id, e)
 
     try:
+        # Confirm acceptance back to customer
+        if current_user.email:
+            notify_customer_bid_accepted_confirm(
+                current_user.email, job.id, bid.hauler_name, float(bid.quote_amount)
+            )
+    except Exception as e:
+        app.logger.error("Customer bid-accepted confirm failed (job #%s): %s", job.id, e)
+
+    try:
+        # Notify other haulers their bids were not chosen
+        rejected_bids = Bid.query.filter(
+            Bid.job_id == job.id, Bid.id != bid_id, Bid.status == 'rejected'
+        ).all()
+        for rb in rejected_bids:
+            rb_hauler = User.query.get(rb.hauler_id) if rb.hauler_id else None
+            if rb_hauler and rb_hauler.email:
+                notify_hauler_bid_rejected(rb_hauler.email, job.id)
+    except Exception as e:
+        app.logger.error("Rejected-bid notifications failed (job #%s): %s", job.id, e)
+
+    try:
         _cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
         notify_admin_bid_accepted(job.id, _cname, bid.hauler_name, float(bid.quote_amount))
     except Exception as e:
@@ -520,7 +547,12 @@ def customer_mark_paid(job_id):
             notify_hauler_deposit_paid(hauler.email, job.id, job.pickup_address, job.pickup_zip)
             if hauler.notify_sms and hauler.phone:
                 notify_hauler_deposit_paid_sms(hauler.phone, job.id)
-    
+    try:
+        _cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+        notify_admin_deposit_paid(job.id, _cname, job.accepted_hauler, job.accepted_quote)
+    except Exception as e:
+        app.logger.error("Admin notify failed (deposit paid job #%s): %s", job.id, e)
+
     return redirect(url_for('customer_job_detail', job_id=job_id))
 
 @app.route("/payment_success/<int:job_id>")
@@ -611,6 +643,11 @@ def checkout_over500_success():
                     notify_hauler_deposit_paid(hauler.email, job.id, job.pickup_address, job.pickup_zip)
                     if hauler.notify_sms and hauler.phone:
                         notify_hauler_deposit_paid_sms(hauler.phone, job.id)
+            try:
+                _cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+                notify_admin_deposit_paid(job.id, _cname, job.accepted_hauler, job.accepted_quote)
+            except Exception as e:
+                app.logger.error("Admin notify failed (over500 deposit paid job #%s): %s", job.id, e)
 
             return redirect(url_for('customer_job_detail', job_id=job.id))
         else:
@@ -845,10 +882,19 @@ def delete_account():
         Review.query.filter_by(hauler_id=user_id).delete()
         CompletionPhoto.query.filter_by(hauler_id=user_id).delete()
     
+    _del_name = (((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip()
+                 or current_user.email or 'Unknown')
+    _del_email = current_user.email or ''
+    _del_type = user_type or ''
     OAuth.query.filter_by(user_id=user_id).delete()
     db.session.delete(current_user)
     db.session.commit()
-    
+
+    try:
+        notify_admin_user_deleted(_del_name, _del_email, _del_type)
+    except Exception as e:
+        app.logger.error("Admin notify failed (user deleted %s): %s", _del_email, e)
+
     return redirect(url_for('home'))
 
 @app.route("/customer/complete/<int:job_id>", methods=["POST"])
@@ -866,13 +912,16 @@ def customer_complete_job(job_id):
 
     try:
         notify_admin_job_completed(
-            job.id,
-            job.customer_name,
-            job.accepted_hauler,
-            job.accepted_quote
+            job.id, job.customer_name, job.accepted_hauler, job.accepted_quote
         )
     except Exception as e:
         app.logger.error("Admin notify failed (job #%s completed by customer): %s", job.id, e)
+
+    try:
+        if current_user.email:
+            notify_customer_job_completed(current_user.email, job.id)
+    except Exception as e:
+        app.logger.error("Customer job-completed notify failed (job #%s): %s", job.id, e)
 
     return redirect(url_for('customer_job_detail', job_id=job_id))
 
@@ -888,6 +937,22 @@ def customer_cancel_job(job_id):
     job.status = 'cancelled'
     job.cancelled_at = datetime.now()
     db.session.commit()
+
+    try:
+        notify_admin_job_cancelled(job.id, job.customer_name)
+    except Exception as e:
+        app.logger.error("Admin notify failed (job #%s cancelled): %s", job.id, e)
+
+    try:
+        # Notify all haulers who bid on this job
+        active_bids = Bid.query.filter_by(job_id=job.id).all()
+        for b in active_bids:
+            bh = User.query.get(b.hauler_id) if b.hauler_id else None
+            if bh and bh.email:
+                notify_hauler_job_cancelled(bh.email, job.id, job.customer_name)
+    except Exception as e:
+        app.logger.error("Hauler cancel notify failed (job #%s): %s", job.id, e)
+
     return redirect(url_for('customer_jobs'))
 
 @app.route("/customer/review/<int:job_id>", methods=["GET", "POST"])
@@ -1208,12 +1273,20 @@ def admin_test_email():
     success = False
     if notification_type == "new_bid":
         success = notify_customer_new_bid(email, 999, "Test Hauler", 150.00)
+    elif notification_type == "bid_accepted_confirm":
+        success = notify_customer_bid_accepted_confirm(email, 999, "Test Hauler", 150.00)
+    elif notification_type == "customer_job_completed":
+        success = notify_customer_job_completed(email, 999)
     elif notification_type == "bid_accepted":
         success = notify_hauler_bid_accepted(email, 999, 150.00)
+    elif notification_type == "bid_rejected":
+        success = notify_hauler_bid_rejected(email, 999)
     elif notification_type == "deposit_paid":
-        success = notify_hauler_deposit_paid(email, 999, "123 Test Street", "12345")
+        success = notify_hauler_deposit_paid(email, 999, "123 Test Street, Minneapolis", "55401")
+    elif notification_type == "hauler_job_cancelled":
+        success = notify_hauler_job_cancelled(email, 999, "Test Customer")
     elif notification_type == "new_job_nearby":
-        success = notify_hauler_new_job_nearby(email, 999, "Test junk removal job", 5.0)
+        success = notify_hauler_new_job_nearby(email, 999, "Old couch, dresser, and misc junk removal", 5.0)
     elif notification_type == "admin_new_customer":
         success = notify_admin_new_customer("Test Customer", email)
     elif notification_type == "admin_new_hauler":
@@ -1224,15 +1297,35 @@ def admin_test_email():
         success = notify_admin_new_bid(999, "Test Hauler", 175.00)
     elif notification_type == "admin_bid_accepted":
         success = notify_admin_bid_accepted(999, "Test Customer", "Test Hauler", 175.00)
+    elif notification_type == "admin_deposit_paid":
+        success = notify_admin_deposit_paid(999, "Test Customer", "Test Hauler", 175.00)
     elif notification_type == "admin_job_completed":
         success = notify_admin_job_completed(999, "Test Customer", "Test Hauler", 175.00)
+    elif notification_type == "admin_job_cancelled":
+        success = notify_admin_job_cancelled(999, "Test Customer")
+    elif notification_type == "admin_user_deleted":
+        success = notify_admin_user_deleted("Test User", email, "customer")
 
     if success:
-        flash(f"Test email sent successfully to {email}!", "success")
+        flash(f"Test email sent to {email}! Check the Notification Log to confirm delivery.", "success")
     else:
-        flash(f"Failed to send test email to {email}. Check server logs for SENDGRID errors.", "error")
+        flash(f"Failed to send to {email}. SENDGRID_API_KEY may not be set — check Notification Log for details.", "error")
 
     return redirect(url_for('admin_dashboard'))
+
+@app.route("/admin/notifications")
+@require_admin
+def admin_notifications():
+    from models import NotificationLog
+    logs = NotificationLog.query.order_by(NotificationLog.created_at.desc()).limit(500).all()
+    sent = sum(1 for l in logs if l.status == 'sent')
+    failed = sum(1 for l in logs if l.status == 'failed')
+    import os
+    sendgrid_configured = bool(os.environ.get("SENDGRID_API_KEY"))
+    return render_template('admin_notifications.html',
+                           logs=logs, sent=sent, failed=failed,
+                           sendgrid_configured=sendgrid_configured)
+
 
 @app.route("/admin/delete-job/<int:job_id>", methods=["POST"])
 @require_admin
