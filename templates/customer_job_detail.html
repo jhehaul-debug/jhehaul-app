@@ -85,7 +85,7 @@
 {% if job.status == 'completed' %}
 <div class="card" style="border:2px solid #4caf50;background:#e8f5e9;">
     <h3 style="margin-bottom:8px;">🎉 Job Completed!</h3>
-    <p style="color:#1b5e20;margin-bottom:12px;">Completed on {{ job.completed_at.strftime('%B %d, %Y') if job.completed_at else 'N/A' }}</p>
+    <p style="color:#1b5e20;margin-bottom:12px;">Completed on {{ job.completed_at | ct('%B %d, %Y') or 'N/A' }}</p>
     {% set review = job.reviews|first if job.reviews else None %}
     {% if review %}
     <div style="margin-top:4px;">
@@ -136,7 +136,7 @@
                 <span class="status status-deposit_paid" style="margin-top:4px;display:inline-block;">✓ Accepted</span>
                 {% endif %}
                 {% if bid.created_at %}
-                <div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Submitted {{ bid.created_at.strftime('%b %d, %Y') }}</div>
+                <div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Submitted {{ bid.created_at | ct }}</div>
                 {% endif %}
             </div>
             <div style="text-align:right;flex-shrink:0;">

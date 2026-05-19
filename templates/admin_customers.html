@@ -53,7 +53,7 @@
                 {% endif %}
             </td>
             <td style="padding:11px 16px;white-space:nowrap;color:#718096;font-size:0.82rem;">
-                {{ u.created_at.strftime('%b %d, %Y') if u.created_at else '—' }}
+                {{ u.created_at | ct or '—' }}
             </td>
             <td style="padding:11px 16px;text-align:center;">
                 <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Active</span>

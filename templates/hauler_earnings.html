@@ -40,7 +40,7 @@
     <div class="card-header">
         <div>
             <h4 style="margin-bottom:2px;">Job #{{ job.id }}</h4>
-            <p style="color:#718096;font-size:0.87rem;margin:0;">{{ job.completed_at.strftime('%B %d, %Y') if job.completed_at else 'N/A' }}</p>
+            <p style="color:#718096;font-size:0.87rem;margin:0;">{{ job.completed_at | ct('%B %d, %Y') or 'N/A' }}</p>
         </div>
         <span style="font-size:1.3rem;font-weight:800;color:#27ae60;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
     </div>
