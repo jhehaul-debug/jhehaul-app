@@ -61,7 +61,8 @@
             <td style="padding:11px 16px;text-align:right;">
                 {% if not u.is_admin %}
                 <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}"
-                      onsubmit="return confirm('Permanently delete {{ (((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email)|replace(\"'\",\"\\'\")|replace('\"','') }} and all their data?');">
+                      onsubmit="return confirmDelete(this);"
+                      data-name="{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }}">
                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                 </form>
                 {% else %}
@@ -76,6 +77,10 @@
 {% endif %}
 
 <script>
+function confirmDelete(form) {
+    var name = form.getAttribute('data-name') || 'this user';
+    return confirm('Permanently delete ' + name + ' and all their data?');
+}
 function shareInvite(type) {
     var url = window.location.origin + '/invite/' + type;
     if (navigator.share) {
