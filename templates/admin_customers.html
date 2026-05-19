@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Customers — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+        <h2 class="page-title" style="margin:0;">👤 Customers</h2>
+    </div>
+    <span style="background:#dbeafe;color:#1d4ed8;font-size:0.88rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ total }} total</span>
+</div>
+
+{% if total == 0 %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <p>No customers yet. Share an invite link to get started.</p>
+        <button onclick="shareInvite('customer')" class="btn btn-primary">Invite a Customer</button>
+    </div>
+</div>
+{% else %}
+
+<div class="card" style="overflow-x:auto;padding:0;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.88rem;min-width:620px;">
+        <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Name</th>
+                <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;">Email</th>
+                <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Phone</th>
+                <th style="text-align:center;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Jobs</th>
+                <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Joined</th>
+                <th style="text-align:center;padding:12px 16px;color:#64748b;font-weight:600;">Status</th>
+                <th style="padding:12px 16px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for u in customers %}
+        <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+            <td style="padding:11px 16px;font-weight:600;white-space:nowrap;">
+                {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
+                {% if u.is_admin %}<span style="color:#e74c3c;font-size:0.72rem;"> (Admin)</span>{% endif %}
+            </td>
+            <td style="padding:11px 16px;color:#4a5568;word-break:break-all;">{{ u.email or '—' }}</td>
+            <td style="padding:11px 16px;white-space:nowrap;color:#4a5568;">
+                {{ u.phone_formatted if u.phone else '<span style="color:#cbd5e0;">—</span>'|safe }}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+                {% set jcount = jobs_map.get(u.id, 0) %}
+                {% if jcount > 0 %}
+                <span style="background:#dbeafe;color:#1d4ed8;font-weight:700;padding:2px 10px;border-radius:12px;">{{ jcount }}</span>
+                {% else %}
+                <span style="color:#cbd5e0;">0</span>
+                {% endif %}
+            </td>
+            <td style="padding:11px 16px;white-space:nowrap;color:#718096;font-size:0.82rem;">
+                {{ u.created_at.strftime('%b %d, %Y') if u.created_at else '—' }}
+            </td>
+            <td style="padding:11px 16px;text-align:center;">
+                <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Active</span>
+            </td>
+            <td style="padding:11px 16px;text-align:right;">
+                {% if not u.is_admin %}
+                <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}"
+                      onsubmit="return confirm('Permanently delete {{ (((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email)|replace(\"'\",\"\\'\")|replace('\"','') }} and all their data?');">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+                {% else %}
+                <span style="color:#cbd5e0;font-size:0.8rem;">Protected</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<script>
+function shareInvite(type) {
+    var url = window.location.origin + '/invite/' + type;
+    if (navigator.share) {
+        navigator.share({ title: 'Join JHE Haul', url: url });
+    } else {
+        navigator.clipboard.writeText(url).then(function() { alert('Invite link copied!'); });
+    }
+}
+</script>
+{% endblock %}

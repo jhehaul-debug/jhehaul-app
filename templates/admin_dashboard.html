@@ -274,90 +274,40 @@ function shareInvite(type) {
 </div>
 {% endif %}
 
-<!-- All Users -->
-<div class="section-header" id="users" style="margin-top:32px;">
-    <span class="section-title">All Users ({{ users|length }})</span>
-</div>
-
-<!-- Haulers -->
-<h4 style="color:#27ae60;margin:16px 0 10px;font-size:1rem;">
-    🚛 Haulers ({{ users|selectattr('user_type', 'equalto', 'hauler')|list|length }})
-</h4>
-{% for user in users if user.user_type == 'hauler' %}
-<div class="card" style="padding:16px 20px;">
-    <div class="user-row">
-        <div class="user-meta">
-            <div class="user-name">
-                {{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}
-                {% if user.is_admin %}<span style="color:#e74c3c;font-size:0.78rem;font-weight:600;"> (Admin)</span>{% endif %}
-                <span class="status badge-hauler" style="margin-left:6px;">Hauler</span>
-                {% if not user.home_zip %}<span class="status badge-setup" style="margin-left:4px;">Setup Incomplete</span>{% endif %}
-            </div>
-            <div class="user-email">{{ user.email or 'No email' }}</div>
-            <div class="user-detail">
-                {% if user.phone %}📞 {{ user.phone_formatted }} &nbsp;{% endif %}
-                {% if user.home_zip %}📍 ZIP {{ user.home_zip }} · {{ user.max_travel_miles or '?' }} mi range{% endif %}
-                &nbsp;· Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
-            </div>
+<!-- User Management Cards -->
+<div style="margin-top:32px;margin-bottom:8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">User Management</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px;">
+    <a href="{{ url_for('admin_customers') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(52,152,219,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2.4rem;line-height:1;">👤</div>
+        <div>
+            <div style="font-size:1.8rem;font-weight:800;color:#3498db;line-height:1;">{{ total_customers }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Customers</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all customer accounts →</div>
         </div>
-        {% if not user.is_admin %}
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
-              onsubmit="return confirm('Delete {{ user.first_name or user.email }} and all their data?');">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
-        {% endif %}
-    </div>
-</div>
-{% else %}
-<div class="card"><p style="color:#a0aec0;">No haulers yet.</p></div>
-{% endfor %}
-
-<!-- Customers -->
-<h4 style="color:#3498db;margin:20px 0 10px;font-size:1rem;">
-    👤 Customers ({{ users|selectattr('user_type', 'equalto', 'customer')|list|length }})
-</h4>
-{% for user in users if user.user_type == 'customer' %}
-<div class="card" style="padding:16px 20px;">
-    <div class="user-row">
-        <div class="user-meta">
-            <div class="user-name">
-                {{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}
-                {% if user.is_admin %}<span style="color:#e74c3c;font-size:0.78rem;font-weight:600;"> (Admin)</span>{% endif %}
-                <span class="status badge-customer" style="margin-left:6px;">Customer</span>
-            </div>
-            <div class="user-email">{{ user.email or 'No email' }}</div>
-            <div class="user-detail">
-                {% if user.phone %}📞 {{ user.phone_formatted }} &nbsp;{% endif %}
-                Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
-            </div>
+    </a>
+    <a href="{{ url_for('admin_haulers') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(39,174,96,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2.4rem;line-height:1;">🚛</div>
+        <div>
+            <div style="font-size:1.8rem;font-weight:800;color:#27ae60;line-height:1;">{{ total_haulers }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Haulers</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all hauler accounts →</div>
         </div>
-        {% if not user.is_admin %}
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
-              onsubmit="return confirm('Delete {{ user.first_name or user.email }} and all their data?');">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
-        {% endif %}
-    </div>
+    </a>
 </div>
-{% else %}
-<div class="card"><p style="color:#a0aec0;">No customers yet.</p></div>
-{% endfor %}
 
 <!-- Pending / No Role -->
-{% set no_role_users = users|rejectattr('user_type')|list %}
-{% if no_role_users %}
-<h4 style="color:#a0aec0;margin:20px 0 10px;font-size:1rem;">
-    ⏳ Pending — No Role Selected ({{ no_role_users|length }})
-</h4>
-{% for user in no_role_users %}
-<div class="card" style="padding:16px 20px;">
-    <div class="user-row">
+{% if pending_users %}
+<div class="card" style="border-left:4px solid #e2e8f0;padding:14px 20px;margin-top:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-weight:700;color:#718096;font-size:0.9rem;">⏳ Pending — No Role Selected ({{ pending_users|length }})</span>
+    </div>
+    {% for user in pending_users %}
+    <div class="user-row" style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
         <div class="user-meta">
-            <div class="user-name">{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</div>
-            <div class="user-email">{{ user.email or 'No email' }}</div>
-            <div class="user-detail">
-                <span class="status badge-pending">No role selected</span>
-                &nbsp;· Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
+            <div class="user-name" style="font-size:0.9rem;">{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</div>
+            <div class="user-email" style="font-size:0.82rem;">{{ user.email or 'No email' }}</div>
+            <div class="user-detail" style="font-size:0.78rem;">
+                Joined {{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}
             </div>
         </div>
         <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
@@ -365,8 +315,8 @@ function shareInvite(type) {
             <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
 {% endif %}
 
 {% endblock %}
