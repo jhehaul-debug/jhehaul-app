@@ -1605,6 +1605,15 @@ def admin_test_email():
         success = notify_admin_job_cancelled(999, "Test Customer")
     elif notification_type == "admin_user_deleted":
         success = notify_admin_user_deleted("Test User", email, "customer")
+    elif notification_type == "admin_job_expired":
+        from email_service import notify_admin_job_expired
+        success = notify_admin_job_expired(999, "Test Customer", 3)
+    elif notification_type == "customer_bid_reminder_24h":
+        from email_service import notify_customer_pending_bids_reminder
+        success = notify_customer_pending_bids_reminder(email, 999, 2)
+    elif notification_type == "customer_bid_reminder_48h":
+        from email_service import notify_customer_job_expiring_soon
+        success = notify_customer_job_expiring_soon(email, 999)
 
     if success:
         flash(f"Test email sent to {email}! Check the Notification Log to confirm delivery.", "success")
