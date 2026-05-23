@@ -26,6 +26,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
+    profile_photo_data = db.Column(db.LargeBinary, nullable=True)
+    profile_photo_content_type = db.Column(db.String(80), nullable=True)
+
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
 

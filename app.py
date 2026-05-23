@@ -175,6 +175,16 @@ with app.app_context():
         logging.info("Table migration (hauler_service_zips) skipped: %s", _e)
 
     try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_data BYTEA"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_content_type VARCHAR(80)"))
+        db.session.commit()
+        logging.info("Column migration: profile photo columns ensured on users table")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (profile photo) skipped: %s", _e)
+
+    try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()

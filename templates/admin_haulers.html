@@ -44,8 +44,19 @@
         {% for u in haulers %}
         <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
             <td style="padding:11px 16px;font-weight:600;white-space:nowrap;">
-                {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
-                {% if u.is_admin %}<span style="color:#e74c3c;font-size:0.72rem;"> (Admin)</span>{% endif %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    {% if u.profile_image_url %}
+                    <img src="{{ u.profile_image_url }}" alt="{{ u.first_name or 'User' }}"
+                         style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0;flex-shrink:0;"
+                         onerror="this.style.display='none';">
+                    {% else %}
+                    <div style="width:30px;height:30px;border-radius:50%;background:#27ae60;color:#fff;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        {{ ((u.first_name or u.email or '?')[0])|upper }}
+                    </div>
+                    {% endif %}
+                    <span>{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
+                    {% if u.is_admin %}<span style="color:#e74c3c;font-size:0.72rem;"> (Admin)</span>{% endif %}</span>
+                </div>
             </td>
             <td style="padding:11px 16px;color:#4a5568;word-break:break-all;font-size:0.84rem;">{{ u.email or '—' }}</td>
             <td style="padding:11px 16px;white-space:nowrap;color:#4a5568;">

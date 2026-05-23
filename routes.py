@@ -182,6 +182,59 @@ def uploaded_completion_file_db(photo_id):
     return r
 
 
+@app.route("/uploads/profile/<user_id>")
+def serve_profile_photo(user_id):
+    """Serve a user's profile photo stored as binary in the database."""
+    user = User.query.get(user_id)
+    if not user or not user.profile_photo_data:
+        return "", 404
+    from flask import Response
+    r = Response(user.profile_photo_data, mimetype=user.profile_photo_content_type or 'image/jpeg')
+    r.headers["Cache-Control"] = "public, max-age=3600"
+    return r
+
+
+@app.route("/profile/photo/upload", methods=["POST"])
+@require_login
+def profile_photo_upload():
+    photo = request.files.get("profile_photo")
+    if not photo or not photo.filename:
+        flash("No file selected.", "error")
+        return redirect(url_for('profile'))
+    ext = os.path.splitext(photo.filename)[1].lower()
+    if ext not in {'.jpg', '.jpeg', '.png', '.gif', '.webp'}:
+        flash("Please upload a JPG, PNG, GIF, or WebP image.", "error")
+        return redirect(url_for('profile'))
+    photo_data, photo_ct = _read_photo_bytes(photo, ext)
+    if len(photo_data) > 5 * 1024 * 1024:
+        flash("Profile photo must be under 5 MB.", "error")
+        return redirect(url_for('profile'))
+    from storage import upload_file as _upload_file
+    _filename, storage_url = _upload_file(photo, ext)
+    if storage_url:
+        current_user.profile_image_url = storage_url
+        current_user.profile_photo_data = None
+        current_user.profile_photo_content_type = None
+    else:
+        current_user.profile_photo_data = photo_data
+        current_user.profile_photo_content_type = photo_ct
+        current_user.profile_image_url = url_for('serve_profile_photo', user_id=current_user.id)
+    db.session.commit()
+    flash("Profile picture updated!", "success")
+    return redirect(url_for('profile'))
+
+
+@app.route("/profile/photo/remove", methods=["POST"])
+@require_login
+def profile_photo_remove():
+    current_user.profile_image_url = None
+    current_user.profile_photo_data = None
+    current_user.profile_photo_content_type = None
+    db.session.commit()
+    flash("Profile picture removed.", "success")
+    return redirect(url_for('profile'))
+
+
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     """Serve a photo from the local filesystem (fallback for old records without DB data)."""
@@ -538,8 +591,15 @@ def customer_job_detail(job_id):
                     job_id, quote
                 )
 
+    hauler_map = {}
+    for bid in bids:
+        if bid.hauler_id and bid.hauler_id not in hauler_map:
+            h = User.query.get(bid.hauler_id)
+            if h:
+                hauler_map[bid.hauler_id] = h
     return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link,
-                           checkout_over500_url=checkout_over500_url, pay_link_missing=pay_link_missing)
+                           checkout_over500_url=checkout_over500_url, pay_link_missing=pay_link_missing,
+                           hauler_map=hauler_map)
 
 @app.route("/customer/upload_photos/<int:job_id>", methods=["POST"])
 @require_role('customer')

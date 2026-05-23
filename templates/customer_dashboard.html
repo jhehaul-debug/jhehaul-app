@@ -3,7 +3,18 @@
 {% block content %}
 
 <div class="page-header">
-    <h2 class="page-title">Customer Dashboard</h2>
+    <div style="display:flex;align-items:center;gap:12px;">
+        {% if current_user.profile_image_url %}
+        <img src="{{ current_user.profile_image_url }}" alt="{{ current_user.first_name or 'User' }}"
+             style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;"
+             onerror="this.style.display='none';">
+        {% else %}
+        <div style="width:44px;height:44px;border-radius:50%;background:#2563eb;color:#fff;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+        </div>
+        {% endif %}
+        <h2 class="page-title" style="margin:0;">Customer Dashboard</h2>
+    </div>
     <a href="{{ url_for('customer_new') }}" class="btn btn-primary">+ Post a Job</a>
 </div>
 
