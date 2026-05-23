@@ -895,8 +895,16 @@ def hauler_jobs():
         len(explicit_zips), len(filtered_jobs), len(all_jobs)
     )
 
+    customer_map = {}
+    for job in filtered_jobs:
+        if job.customer_id and job.customer_id not in customer_map:
+            c = User.query.get(job.customer_id)
+            if c:
+                customer_map[job.customer_id] = c
+
     return render_template('hauler_jobs.html', jobs=filtered_jobs,
-                           job_distances=job_distances)
+                           job_distances=job_distances,
+                           customer_map=customer_map)
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET"])
 @require_role('hauler')
@@ -969,10 +977,18 @@ def hauler_dashboard():
     hauler_avg_rating = sum(r.rating for r in all_reviews) / hauler_review_count if hauler_review_count else 0.0
     completed_count = sum(1 for j in jobs if j.status == 'completed')
     hauler_badges = get_badges(current_user, all_reviews, completed_count)
+    customer_map = {}
+    for job in jobs:
+        if job.customer_id and job.customer_id not in customer_map:
+            c = User.query.get(job.customer_id)
+            if c:
+                customer_map[job.customer_id] = c
+
     return render_template('hauler_dashboard.html', jobs=jobs,
                            hauler_avg_rating=hauler_avg_rating,
                            hauler_review_count=hauler_review_count,
-                           hauler_badges=hauler_badges)
+                           hauler_badges=hauler_badges,
+                           customer_map=customer_map)
 
 @app.route("/profile")
 @require_login
