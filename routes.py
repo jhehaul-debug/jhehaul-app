@@ -1574,6 +1574,133 @@ def admin_analytics():
     recent_jobs  = Job.query.order_by(Job.id.desc()).limit(8).all()
     recent_bids  = Bid.query.order_by(Bid.id.desc()).limit(8).all()
 
+    # ── Service Area Analytics ──────────────────────────────────────────────────
+    sa_days = request.args.get('days', '30')
+    try:
+        sa_days_int = int(sa_days)
+    except (ValueError, TypeError):
+        sa_days_int = 30
+        sa_days = '30'
+    sa_since = (today - timedelta(days=sa_days_int)) if sa_days_int > 0 else None
+
+    # ZIP-level area stats: jobs, bids, accepted, completed, avg quote
+    area_zip_stats = db.session.execute(db.text("""
+        SELECT
+            j.pickup_zip,
+            COALESCE(z.city, 'Unknown')  AS city,
+            COALESCE(z.state, '')        AS state,
+            COUNT(DISTINCT j.id)         AS total_jobs,
+            COUNT(DISTINCT b.id)         AS total_bids,
+            COUNT(DISTINCT CASE WHEN j.status NOT IN ('open','bidding','cancelled')
+                                 AND j.accepted_hauler_id IS NOT NULL
+                            THEN j.id END)                                           AS accepted_jobs,
+            COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END)            AS completed_jobs,
+            ROUND(AVG(CASE WHEN j.status='completed' AND j.accepted_quote IS NOT NULL
+                           THEN j.accepted_quote END)::numeric, 0)                  AS avg_quote
+        FROM jobs j
+        LEFT JOIN zip_codes z ON z.zip = j.pickup_zip
+        LEFT JOIN bids b      ON b.job_id = j.id
+        WHERE j.pickup_zip IS NOT NULL
+          AND (:since IS NULL OR j.created_at >= :since)
+        GROUP BY j.pickup_zip, z.city, z.state
+        ORDER BY total_jobs DESC
+        LIMIT 50
+    """), {"since": sa_since}).fetchall()
+
+    # City-level stats
+    area_city_stats = db.session.execute(db.text("""
+        SELECT
+            COALESCE(z.city, 'Unknown')  AS city,
+            COALESCE(z.state, '')        AS state,
+            COUNT(DISTINCT j.id)         AS total_jobs,
+            COUNT(DISTINCT b.id)         AS total_bids,
+            COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END) AS completed,
+            ROUND(AVG(CASE WHEN j.status='completed' AND j.accepted_quote IS NOT NULL
+                           THEN j.accepted_quote END)::numeric, 0) AS avg_quote
+        FROM jobs j
+        LEFT JOIN zip_codes z ON z.zip = j.pickup_zip
+        LEFT JOIN bids b      ON b.job_id = j.id
+        WHERE j.pickup_zip IS NOT NULL
+          AND (:since IS NULL OR j.created_at >= :since)
+        GROUP BY z.city, z.state
+        ORDER BY total_jobs DESC
+        LIMIT 20
+    """), {"since": sa_since}).fetchall()
+
+    # Underserved areas: jobs with fewer than 2 bids
+    underserved_areas = db.session.execute(db.text("""
+        SELECT
+            j.pickup_zip,
+            COALESCE(z.city, 'Unknown')  AS city,
+            COALESCE(z.state, '')        AS state,
+            COUNT(DISTINCT j.id)         AS total_jobs,
+            COUNT(DISTINCT b.id)         AS total_bids
+        FROM jobs j
+        LEFT JOIN zip_codes z ON z.zip = j.pickup_zip
+        LEFT JOIN bids b      ON b.job_id = j.id
+        WHERE j.pickup_zip IS NOT NULL AND j.status != 'cancelled'
+          AND (:since IS NULL OR j.created_at >= :since)
+        GROUP BY j.pickup_zip, z.city, z.state
+        HAVING COUNT(DISTINCT b.id) < 2
+        ORDER BY total_jobs DESC, total_bids ASC
+        LIMIT 25
+    """), {"since": sa_since}).fetchall()
+
+    # Hauler coverage: where each hauler is based and their radius (all-time)
+    hauler_coverage = db.session.execute(db.text("""
+        SELECT
+            TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS name,
+            u.email,
+            COALESCE(u.home_zip, '—')            AS home_zip,
+            COALESCE(z.city, '—')                AS home_city,
+            COALESCE(u.max_travel_miles, 0)      AS miles,
+            COUNT(DISTINCT b.id)                 AS total_bids,
+            COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END) AS completed
+        FROM users u
+        LEFT JOIN zip_codes z ON z.zip = u.home_zip
+        LEFT JOIN bids b      ON b.hauler_id = u.id
+        LEFT JOIN jobs j      ON j.accepted_hauler_id = u.id
+        WHERE u.user_type = 'hauler'
+        GROUP BY u.id, u.first_name, u.last_name, u.email,
+                 u.home_zip, z.city, u.max_travel_miles
+        ORDER BY total_bids DESC, miles DESC
+    """)).fetchall()
+
+    # Where haulers are concentrated (ZIP clusters)
+    hauler_zip_dist = db.session.execute(db.text("""
+        SELECT
+            u.home_zip,
+            COALESCE(z.city, 'Unknown')                                    AS city,
+            COUNT(*)                                                        AS hauler_count,
+            ROUND(AVG(COALESCE(u.max_travel_miles, 0))::numeric, 0)       AS avg_miles
+        FROM users u
+        LEFT JOIN zip_codes z ON z.zip = u.home_zip
+        WHERE u.user_type = 'hauler' AND u.home_zip IS NOT NULL
+        GROUP BY u.home_zip, z.city
+        ORDER BY hauler_count DESC
+        LIMIT 15
+    """)).fetchall()
+
+    # Summary metrics for stat cards
+    active_zip_count   = len(area_zip_stats)
+    active_city_count  = len([r for r in area_city_stats if r[0] and r[0] != 'Unknown'])
+    underserved_count  = len(underserved_areas)
+    haulers_no_zone    = sum(1 for r in hauler_coverage if r[2] == '—' or r[4] == 0)
+    covered_zip_count  = len(set(r[2] for r in hauler_coverage if r[2] and r[2] != '—'))
+
+    # Chart data: top 10 ZIPs
+    top_zip_chart  = area_zip_stats[:10]
+    sa_zip_labels  = json.dumps([r[0] for r in top_zip_chart])
+    sa_zip_jobs    = json.dumps([r[3] for r in top_zip_chart])
+    sa_zip_bids    = json.dumps([r[4] for r in top_zip_chart])
+    sa_zip_done    = json.dumps([r[6] for r in top_zip_chart])
+
+    # Chart data: top 8 cities
+    top_city_chart = area_city_stats[:8]
+    sa_city_labels = json.dumps([r[0] for r in top_city_chart])
+    sa_city_jobs   = json.dumps([r[2] for r in top_city_chart])
+    sa_city_done   = json.dumps([r[4] for r in top_city_chart])
+
     return render_template('admin_analytics.html',
         total_views=total_views, unique_visitors=unique_visitors,
         returning_visitors=returning_visitors, today_views=today_views,
@@ -1598,6 +1725,21 @@ def admin_analytics():
         daily_job_values=json.dumps(daily_job_values),
         top_haulers=top_haulers, top_areas=top_areas,
         recent_users=recent_users, recent_jobs=recent_jobs, recent_bids=recent_bids,
+        sa_days=sa_days, sa_days_int=sa_days_int,
+        area_zip_stats=area_zip_stats,
+        area_city_stats=area_city_stats,
+        hauler_coverage=hauler_coverage,
+        hauler_zip_dist=hauler_zip_dist,
+        underserved_areas=underserved_areas,
+        active_zip_count=active_zip_count,
+        active_city_count=active_city_count,
+        underserved_count=underserved_count,
+        haulers_no_zone=haulers_no_zone,
+        covered_zip_count=covered_zip_count,
+        sa_zip_labels=sa_zip_labels, sa_zip_jobs=sa_zip_jobs,
+        sa_zip_bids=sa_zip_bids, sa_zip_done=sa_zip_done,
+        sa_city_labels=sa_city_labels, sa_city_jobs=sa_city_jobs,
+        sa_city_done=sa_city_done,
     )
 
 
