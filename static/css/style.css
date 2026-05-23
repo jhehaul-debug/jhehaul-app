@@ -344,6 +344,7 @@ header {
 .status-deposit_paid { background: #e8f5e9; color: #2e7d32; }
 .status-completed    { background: #c8e6c9; color: #1b5e20; }
 .status-cancelled    { background: #fce4ec; color: #b71c1c; }
+.status-expired      { background: #f3f4f6; color: #6b7280; }
 
 .badge-hauler   { background: #e8f5e9; color: #2e7d32; }
 .badge-customer { background: #e3f2fd; color: #1565c0; }

@@ -32,6 +32,24 @@
     {% endif %}
 </div>
 
+<!-- ── Expired Banner ──────────────────────────────────────────────────── -->
+{% if job.status == 'expired' %}
+<div class="card" style="border:2px solid #fecaca;background:#fef2f2;">
+    <h3 style="margin-bottom:8px;color:#b91c1c;">⏰ This Job Has Expired</h3>
+    <p style="color:#7f1d1d;margin-bottom:14px;">
+        No bid was accepted within 72 hours of the last bid being received, so this job was automatically closed.
+        {% if bids %}
+        There {% if bids|length == 1 %}was <strong>1 bid</strong>{% else %}were <strong>{{ bids|length }} bids</strong>{% endif %} submitted.
+        {% endif %}
+        You can reactivate the job to open it back up for haulers.
+    </p>
+    <form method="POST" action="{{ url_for('customer_reactivate_job', job_id=job.id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-primary">♻ Reactivate This Job</button>
+    </form>
+    <a href="{{ url_for('customer_jobs') }}" class="btn btn-outline" style="margin-left:10px;">Back to My Jobs</a>
+</div>
+{% endif %}
+
 <!-- ── Prompt banner when bids are waiting ────────────────────────────── -->
 {% if job.status == 'bidding' and bids %}
 <div class="banner banner-info" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:18px 20px;">
