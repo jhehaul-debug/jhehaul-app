@@ -202,8 +202,8 @@ def profile_photo_upload():
         flash("No file selected.", "error")
         return redirect(url_for('profile'))
     ext = os.path.splitext(photo.filename)[1].lower()
-    if ext not in {'.jpg', '.jpeg', '.png', '.gif', '.webp'}:
-        flash("Please upload a JPG, PNG, GIF, or WebP image.", "error")
+    if ext not in {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}:
+        flash("Please upload a valid image file (JPG, PNG, WebP, or GIF).", "error")
         return redirect(url_for('profile'))
     photo_data, photo_ct = _read_photo_bytes(photo, ext)
     if len(photo_data) > 5 * 1024 * 1024:
