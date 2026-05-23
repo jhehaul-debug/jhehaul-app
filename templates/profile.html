@@ -83,6 +83,48 @@
     </form>
 </div>
 
+<!-- Service ZIP Management (haulers only) -->
+{% if current_user.user_type == 'hauler' %}
+<div class="card" style="max-width:600px;margin:18px auto 0;">
+    <h3 style="margin-bottom:4px;">📍 Additional Service ZIPs</h3>
+    <p style="color:#718096;margin-bottom:6px;font-size:0.88rem;">
+        Your radius filter already covers jobs near your home ZIP. Use this list to add
+        <strong>specific ZIP codes</strong> outside your radius that you're willing to service —
+        you'll see those jobs and receive alerts for them too.
+    </p>
+
+    {% if service_zips %}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;margin-top:10px;">
+        {% for sz in service_zips %}
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#ebf8ff;border:1px solid #90cdf4;border-radius:20px;padding:4px 10px 4px 12px;font-size:0.85rem;font-weight:600;color:#2b6cb0;">
+            {{ sz.zip }}{% if sz.city %} <span style="font-weight:400;color:#4a90d9;">{{ sz.city }}</span>{% endif %}
+            <form method="POST" action="{{ url_for('hauler_service_zip_remove') }}" style="display:inline;margin:0;">
+                <input type="hidden" name="zip_code" value="{{ sz.zip }}">
+                <button type="submit" title="Remove {{ sz.zip }}"
+                        style="background:none;border:none;cursor:pointer;color:#c53030;font-size:1rem;line-height:1;padding:0 0 0 2px;"
+                        onclick="return confirm('Remove {{ sz.zip }} from your service area?');">×</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#a0aec0;font-size:0.86rem;margin:10px 0 14px;font-style:italic;">No specific ZIPs added yet. Your radius from home ZIP {{ current_user.home_zip or '—' }} still applies.</p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('hauler_service_zip_add') }}"
+          style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="margin:0;flex:1;min-width:120px;">
+            <label style="font-size:0.85rem;margin-bottom:4px;display:block;">Add a ZIP code</label>
+            <input name="zip_code" placeholder="55401" maxlength="5" inputmode="numeric"
+                   pattern="\d{5}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)"
+                   style="margin:0;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:1px;">+ Add ZIP</button>
+    </form>
+    <p style="color:#a0aec0;font-size:0.78rem;margin-top:6px;">Up to 25 specific ZIPs · Minnesota &amp; Wisconsin only</p>
+</div>
+{% endif %}
+
 <!-- Ratings, Badges & Reviews -->
 {% if completed_count > 0 or badges or (current_user.user_type == 'hauler' and review_count > 0) %}
 <div class="card" style="max-width:600px;margin:18px auto 0;">
