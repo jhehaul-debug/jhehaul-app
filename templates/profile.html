@@ -4,41 +4,98 @@
 
 <!-- Profile Picture -->
 <div class="card" style="max-width:600px;margin:0 auto 18px;">
-    <h3 style="margin-bottom:14px;">Profile Picture</h3>
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-        <div style="flex-shrink:0;">
+    <h3 style="margin-bottom:16px;">Profile Picture</h3>
+
+    <!-- Current / preview avatar -->
+    <div style="display:flex;justify-content:center;margin-bottom:18px;">
+        <div style="position:relative;display:inline-block;">
             {% if current_user.profile_image_url %}
-            <img src="{{ current_user.profile_image_url }}" alt="Profile picture"
-                 id="avatar-img"
-                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0;"
-                 onerror="this.style.display='none';document.getElementById('avatar-init').style.display='flex';">
-            <div id="avatar-init" style="display:none;width:80px;height:80px;border-radius:50%;background:#2563eb;color:#fff;font-size:2rem;font-weight:700;align-items:center;justify-content:center;">
+            <img src="{{ current_user.profile_image_url }}" alt="Profile picture" id="pp-current"
+                 style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0;"
+                 onerror="this.style.display='none';document.getElementById('pp-init').style.display='flex';">
+            <div id="pp-init" style="display:none;width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;align-items:center;justify-content:center;">
                 {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
             </div>
             {% else %}
-            <div style="width:80px;height:80px;border-radius:50%;background:#e2e8f0;color:#718096;font-size:2rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
+            <div id="pp-init" style="width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
                 {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
             </div>
             {% endif %}
-        </div>
-        <div style="flex:1;min-width:180px;">
-            <form method="POST" action="{{ url_for('profile_photo_upload') }}" enctype="multipart/form-data">
-                <label style="display:inline-block;cursor:pointer;background:#2563eb;color:#fff;padding:7px 14px;border-radius:6px;font-size:0.85rem;font-weight:600;">
-                    📷 {{ 'Change Photo' if current_user.profile_image_url else 'Upload Photo' }}
-                    <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp"
-                           style="display:none;" onchange="this.form.submit()">
-                </label>
-            </form>
-            {% if current_user.profile_image_url %}
-            <form method="POST" action="{{ url_for('profile_photo_remove') }}" style="display:inline;margin-left:8px;">
-                <button type="submit" class="btn btn-danger btn-sm"
-                        onclick="return confirm('Remove your profile picture?');" style="vertical-align:middle;">Remove</button>
-            </form>
-            {% endif %}
-            <p style="color:#a0aec0;font-size:0.78rem;margin-top:8px;margin-bottom:0;">JPG, PNG, GIF, or WebP · Max 5 MB</p>
+            <!-- Live preview replaces avatar after file is picked -->
+            <img id="pp-preview" src="" alt="Preview"
+                 style="display:none;width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #2563eb;position:absolute;top:0;left:0;">
         </div>
     </div>
+
+    <!-- Upload form -->
+    <form id="pp-form" method="POST" action="{{ url_for('profile_photo_upload') }}" enctype="multipart/form-data">
+        <!-- Hidden file input — triggered by the button below -->
+        <input type="file" id="pp-input" name="profile_photo"
+               accept="image/*"
+               style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px;"
+               onchange="ppFileChosen(this)">
+
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;">
+            <!-- Trigger button — calls click() on the hidden input -->
+            <button type="button" id="pp-choose-btn"
+                    onclick="document.getElementById('pp-input').click()"
+                    class="btn btn-primary">
+                📷 {{ 'Change Photo' if current_user.profile_image_url else 'Upload Photo' }}
+            </button>
+            <!-- Save button — only shown after a file is chosen -->
+            <button type="submit" id="pp-save-btn"
+                    class="btn btn-success"
+                    style="display:none;">
+                ✓ Save Photo
+            </button>
+        </div>
+        <p id="pp-chosen-name" style="text-align:center;color:#4a5568;font-size:0.85rem;margin-bottom:6px;display:none;"></p>
+    </form>
+
+    <!-- Remove button -->
+    {% if current_user.profile_image_url %}
+    <div style="text-align:center;margin-top:4px;">
+        <form method="POST" action="{{ url_for('profile_photo_remove') }}"
+              onsubmit="return confirm('Remove your profile picture?');">
+            <button type="submit" class="btn btn-danger btn-sm">Remove Photo</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <p style="text-align:center;color:#a0aec0;font-size:0.78rem;margin-top:10px;margin-bottom:0;">
+        JPG, PNG, GIF, WebP · Max 5 MB · Works on iPhone &amp; Android
+    </p>
 </div>
+
+<script>
+function ppFileChosen(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('That image is over 5 MB. Please choose a smaller photo.');
+        input.value = '';
+        return;
+    }
+
+    document.getElementById('pp-chosen-name').textContent = file.name;
+    document.getElementById('pp-chosen-name').style.display = 'block';
+    document.getElementById('pp-save-btn').style.display = 'inline-block';
+    document.getElementById('pp-choose-btn').textContent = '📷 Change Selection';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var preview = document.getElementById('pp-preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        var init = document.getElementById('pp-init');
+        var curr = document.getElementById('pp-current');
+        if (init) init.style.display = 'none';
+        if (curr) curr.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+</script>
 
 <div class="card" style="max-width:600px;margin:0 auto;">
     <h2 style="margin-bottom:4px;">My Profile</h2>
