@@ -2,6 +2,44 @@
 {% block title %}My Profile - JHE Haul{% endblock %}
 {% block content %}
 
+<!-- Profile Picture -->
+<div class="card" style="max-width:600px;margin:0 auto 18px;">
+    <h3 style="margin-bottom:14px;">Profile Picture</h3>
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="flex-shrink:0;">
+            {% if current_user.profile_image_url %}
+            <img src="{{ current_user.profile_image_url }}" alt="Profile picture"
+                 id="avatar-img"
+                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0;"
+                 onerror="this.style.display='none';document.getElementById('avatar-init').style.display='flex';">
+            <div id="avatar-init" style="display:none;width:80px;height:80px;border-radius:50%;background:#2563eb;color:#fff;font-size:2rem;font-weight:700;align-items:center;justify-content:center;">
+                {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+            </div>
+            {% else %}
+            <div style="width:80px;height:80px;border-radius:50%;background:#e2e8f0;color:#718096;font-size:2rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
+                {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+            </div>
+            {% endif %}
+        </div>
+        <div style="flex:1;min-width:180px;">
+            <form method="POST" action="{{ url_for('profile_photo_upload') }}" enctype="multipart/form-data">
+                <label style="display:inline-block;cursor:pointer;background:#2563eb;color:#fff;padding:7px 14px;border-radius:6px;font-size:0.85rem;font-weight:600;">
+                    📷 {{ 'Change Photo' if current_user.profile_image_url else 'Upload Photo' }}
+                    <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp"
+                           style="display:none;" onchange="this.form.submit()">
+                </label>
+            </form>
+            {% if current_user.profile_image_url %}
+            <form method="POST" action="{{ url_for('profile_photo_remove') }}" style="display:inline;margin-left:8px;">
+                <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Remove your profile picture?');" style="vertical-align:middle;">Remove</button>
+            </form>
+            {% endif %}
+            <p style="color:#a0aec0;font-size:0.78rem;margin-top:8px;margin-bottom:0;">JPG, PNG, GIF, or WebP · Max 5 MB</p>
+        </div>
+    </div>
+</div>
+
 <div class="card" style="max-width:600px;margin:0 auto;">
     <h2 style="margin-bottom:4px;">My Profile</h2>
     <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">
