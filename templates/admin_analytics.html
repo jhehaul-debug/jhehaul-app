@@ -382,4 +382,375 @@ new Chart(document.getElementById('jobsChart'), {
 }
 </style>
 
+<!-- ═══════════════════════ SERVICE AREA ANALYTICS ════════════════════════ -->
+<div style="margin:32px 0 0;border-top:3px solid #e2e8f0;padding-top:24px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
+    <div>
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Service Area Analytics</div>
+        <h2 style="margin:4px 0 0;font-size:1.25rem;color:#1a202c;">📍 Where is activity happening?</h2>
+    </div>
+    <!-- Timeframe filter -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:0.8rem;color:#718096;font-weight:600;">Show:</span>
+        {% for label, val in [('7 Days','7'),('30 Days','30'),('90 Days','90'),('All Time','0')] %}
+        <a href="{{ url_for('admin_analytics', days=val) }}"
+           style="padding:5px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;text-decoration:none;
+                  {% if sa_days == val %}background:#1a365d;color:#fff;{% else %}background:#edf2f7;color:#4a5568;{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<p style="color:#718096;font-size:0.85rem;margin:0 0 16px;">
+    Showing data for
+    {% if sa_days_int == 0 %}all time{% else %}the last <strong>{{ sa_days_int }} days</strong>{% endif %}.
+    Use the filter above to change the window.
+</p>
+
+<!-- Summary stat cards -->
+<div class="stat-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon">📮</div>
+        <div class="stat-value" style="color:#3498db;">{{ active_zip_count }}</div>
+        <div class="stat-label">Active ZIP Codes</div>
+        <div class="stat-sub">ZIPs with job activity</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">🏙</div>
+        <div class="stat-value" style="color:#27ae60;">{{ active_city_count }}</div>
+        <div class="stat-label">Active Cities</div>
+        <div class="stat-sub">cities with demand</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-value" style="color:#e67e22;">{{ underserved_count }}</div>
+        <div class="stat-label">Underserved Areas</div>
+        <div class="stat-sub">ZIPs with &lt;2 bids per job</div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon">🚛</div>
+        <div class="stat-value" style="color:#9b59b6;">{{ covered_zip_count }}</div>
+        <div class="stat-label">Hauler Base ZIPs</div>
+        <div class="stat-sub">{{ haulers_no_zone }} haulers missing zone setup</div>
+    </div>
+</div>
+
+<!-- Charts: Top ZIPs + Top Cities -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+    <div class="card" style="padding:18px;">
+        <h3 style="margin:0 0 14px;font-size:1rem;">🏆 Top ZIPs by Jobs Posted</h3>
+        <canvas id="saZipChart" height="220"></canvas>
+    </div>
+    <div class="card" style="padding:18px;">
+        <h3 style="margin:0 0 14px;font-size:1rem;">🏙 Top Cities by Jobs Posted</h3>
+        <canvas id="saCityChart" height="220"></canvas>
+    </div>
+</div>
+
+<script>
+(function(){
+    var zipLabels = {{ sa_zip_labels|safe }};
+    var zipJobs   = {{ sa_zip_jobs|safe }};
+    var zipBids   = {{ sa_zip_bids|safe }};
+    var zipDone   = {{ sa_zip_done|safe }};
+
+    if (zipLabels.length) {
+        new Chart(document.getElementById('saZipChart'), {
+            type: 'bar',
+            data: {
+                labels: zipLabels,
+                datasets: [
+                    { label: 'Jobs',      data: zipJobs, backgroundColor: 'rgba(52,152,219,0.8)',  borderRadius: 3 },
+                    { label: 'Bids',      data: zipBids, backgroundColor: 'rgba(39,174,96,0.7)',   borderRadius: 3 },
+                    { label: 'Completed', data: zipDone, backgroundColor: 'rgba(155,89,182,0.7)',  borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                }
+            }
+        });
+    } else {
+        document.getElementById('saZipChart').parentElement.innerHTML +=
+            '<p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:20px 0;">No job data yet for this period.</p>';
+    }
+
+    var cityLabels = {{ sa_city_labels|safe }};
+    var cityJobs   = {{ sa_city_jobs|safe }};
+    var cityDone   = {{ sa_city_done|safe }};
+
+    if (cityLabels.length) {
+        new Chart(document.getElementById('saCityChart'), {
+            type: 'bar',
+            data: {
+                labels: cityLabels,
+                datasets: [
+                    { label: 'Jobs',      data: cityJobs, backgroundColor: 'rgba(230,126,34,0.8)', borderRadius: 3 },
+                    { label: 'Completed', data: cityDone, backgroundColor: 'rgba(39,174,96,0.7)',  borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+                }
+            }
+        });
+    } else {
+        document.getElementById('saCityChart').parentElement.innerHTML +=
+            '<p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:20px 0;">No city data yet for this period.</p>';
+    }
+})();
+</script>
+
+<!-- ────────────── ZIP Breakdown Table (searchable) ─────────────────────── -->
+<div class="card" style="padding:18px;margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <h3 style="margin:0;font-size:1rem;">📊 ZIP Code Breakdown</h3>
+        <input id="zipSearch" type="text" placeholder="Search ZIP or city…"
+               oninput="saFilter('zipTbody', this.value)"
+               style="padding:6px 12px;border:1px solid #e2e8f0;border-radius:20px;font-size:0.84rem;width:200px;">
+    </div>
+    {% if area_zip_stats %}
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+        <thead><tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc;">
+            <th style="text-align:left;padding:8px;color:#718096;font-weight:700;">ZIP</th>
+            <th style="text-align:left;padding:8px;color:#718096;font-weight:700;">City</th>
+            <th style="text-align:right;padding:8px;color:#718096;font-weight:700;">Jobs</th>
+            <th style="text-align:right;padding:8px;color:#718096;font-weight:700;">Bids</th>
+            <th style="text-align:right;padding:8px;color:#718096;font-weight:700;">Accepted</th>
+            <th style="text-align:right;padding:8px;color:#718096;font-weight:700;">Completed</th>
+            <th style="text-align:right;padding:8px;color:#718096;font-weight:700;">Avg Quote</th>
+            <th style="text-align:center;padding:8px;color:#718096;font-weight:700;">Demand</th>
+        </tr></thead>
+        <tbody id="zipTbody">
+        {% for r in area_zip_stats %}
+        {% set bid_ratio = (r[4] / r[3]) if r[3] > 0 else 0 %}
+        <tr style="border-bottom:1px solid #f1f5f9;" data-search="{{ r[0] }} {{ r[1] }} {{ r[2] }}">
+            <td style="padding:7px 8px;font-family:monospace;font-weight:700;color:#2d3748;">{{ r[0] }}</td>
+            <td style="padding:7px 8px;">{{ r[1] }}{% if r[2] %}, {{ r[2] }}{% endif %}</td>
+            <td style="padding:7px 8px;text-align:right;font-weight:700;color:#3498db;">{{ r[3] }}</td>
+            <td style="padding:7px 8px;text-align:right;color:#27ae60;">{{ r[4] }}</td>
+            <td style="padding:7px 8px;text-align:right;color:#e67e22;">{{ r[5] }}</td>
+            <td style="padding:7px 8px;text-align:right;font-weight:700;color:#9b59b6;">{{ r[6] }}</td>
+            <td style="padding:7px 8px;text-align:right;">{{ ('$' ~ r[7]|int) if r[7] else '—' }}</td>
+            <td style="padding:7px 8px;text-align:center;">
+                {% if bid_ratio == 0 and r[3] > 0 %}
+                <span style="background:#fee2e2;color:#b91c1c;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">No bids</span>
+                {% elif bid_ratio < 1 %}
+                <span style="background:#fef9c3;color:#92400e;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">Low</span>
+                {% else %}
+                <span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">Good</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p style="color:#a0aec0;text-align:center;padding:24px 0;font-size:0.9rem;">No jobs posted yet. ZIP data will appear here once customers start posting.</p>
+    {% endif %}
+</div>
+
+<!-- ────────────── City Table + Underserved Side by Side ─────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+
+    <!-- City Breakdown -->
+    <div class="card" style="padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:1rem;">🏙 City Breakdown</h3>
+            <input id="citySearch" type="text" placeholder="Search city…"
+                   oninput="saFilter('cityTbody', this.value)"
+                   style="padding:5px 10px;border:1px solid #e2e8f0;border-radius:20px;font-size:0.82rem;width:140px;">
+        </div>
+        {% if area_city_stats %}
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+            <thead><tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc;">
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:700;">City</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Jobs</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Bids</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Done</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Avg $</th>
+            </tr></thead>
+            <tbody id="cityTbody">
+            {% for r in area_city_stats %}
+            <tr style="border-bottom:1px solid #f1f5f9;" data-search="{{ r[0] }} {{ r[1] }}">
+                <td style="padding:6px 8px;font-weight:600;">{{ r[0] }}{% if r[1] %}<span style="color:#a0aec0;font-weight:400;">, {{ r[1] }}</span>{% endif %}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#3498db;">{{ r[2] }}</td>
+                <td style="padding:6px 8px;text-align:right;color:#27ae60;">{{ r[3] }}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#9b59b6;">{{ r[4] }}</td>
+                <td style="padding:6px 8px;text-align:right;">{{ ('$' ~ r[5]|int) if r[5] else '—' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:16px 0;">No city data yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Underserved Areas -->
+    <div class="card" style="padding:18px;">
+        <h3 style="margin:0 0 6px;font-size:1rem;">⚠️ Underserved Areas</h3>
+        <p style="color:#718096;font-size:0.8rem;margin:0 0 12px;">ZIPs with customer demand but fewer than 2 bids per job — target these for hauler recruitment.</p>
+        {% if underserved_areas %}
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+            <thead><tr style="border-bottom:2px solid #e2e8f0;background:#fff7ed;">
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:700;">ZIP</th>
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:700;">City</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Jobs</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:700;">Bids</th>
+                <th style="text-align:center;padding:6px 8px;color:#718096;font-weight:700;">Status</th>
+            </tr></thead>
+            <tbody>
+            {% for r in underserved_areas %}
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:6px 8px;font-family:monospace;font-weight:700;color:#c2410c;">{{ r[0] }}</td>
+                <td style="padding:6px 8px;font-size:0.8rem;">{{ r[1] }}{% if r[2] %}, {{ r[2] }}{% endif %}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;">{{ r[3] }}</td>
+                <td style="padding:6px 8px;text-align:right;">{{ r[4] }}</td>
+                <td style="padding:6px 8px;text-align:center;">
+                    {% if r[4] == 0 %}
+                    <span style="background:#fee2e2;color:#b91c1c;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">No haulers</span>
+                    {% else %}
+                    <span style="background:#fef9c3;color:#92400e;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">Low coverage</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:20px 0;color:#27ae60;">
+            <div style="font-size:2rem;margin-bottom:6px;">✅</div>
+            <p style="font-size:0.88rem;color:#22543d;font-weight:600;">All areas have good coverage!</p>
+            <p style="font-size:0.82rem;color:#718096;">Every ZIP with jobs has at least 2 bids.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ═══════════════════════ HAULER COVERAGE ═══════════════════════════════ -->
+<div style="margin-top:28px;">
+<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;margin-bottom:4px;">Hauler Coverage</div>
+<h2 style="margin:0 0 16px;font-size:1.15rem;color:#1a202c;">🚛 Who's covering what territory?</h2>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+
+    <!-- Full hauler roster -->
+    <div class="card" style="padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:1rem;">All Haulers & Coverage Zones</h3>
+            <input id="haulerSearch" type="text" placeholder="Search name or ZIP…"
+                   oninput="saFilter('haulerTbody', this.value)"
+                   style="padding:5px 10px;border:1px solid #e2e8f0;border-radius:20px;font-size:0.82rem;width:160px;">
+        </div>
+        {% if hauler_coverage %}
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+            <thead><tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc;">
+                <th style="text-align:left;padding:7px 8px;color:#718096;font-weight:700;">Hauler</th>
+                <th style="text-align:left;padding:7px 8px;color:#718096;font-weight:700;">Home ZIP</th>
+                <th style="text-align:left;padding:7px 8px;color:#718096;font-weight:700;">City</th>
+                <th style="text-align:right;padding:7px 8px;color:#718096;font-weight:700;">Radius</th>
+                <th style="text-align:right;padding:7px 8px;color:#718096;font-weight:700;">Bids</th>
+                <th style="text-align:right;padding:7px 8px;color:#718096;font-weight:700;">Done</th>
+                <th style="text-align:center;padding:7px 8px;color:#718096;font-weight:700;">Zone</th>
+            </tr></thead>
+            <tbody id="haulerTbody">
+            {% for h in hauler_coverage %}
+            <tr style="border-bottom:1px solid #f1f5f9;" data-search="{{ h[0] }} {{ h[1] }} {{ h[2] }} {{ h[3] }}">
+                <td style="padding:7px 8px;font-weight:600;">{{ h[0] or h[1] }}</td>
+                <td style="padding:7px 8px;font-family:monospace;font-size:0.82rem;">
+                    {% if h[2] != '—' %}{{ h[2] }}{% else %}<span style="color:#e67e22;">Not set</span>{% endif %}
+                </td>
+                <td style="padding:7px 8px;font-size:0.8rem;color:#4a5568;">{{ h[3] }}</td>
+                <td style="padding:7px 8px;text-align:right;">
+                    {% if h[4] > 0 %}<span style="font-weight:700;color:#3498db;">{{ h[4] }} mi</span>{% else %}<span style="color:#e67e22;">Not set</span>{% endif %}
+                </td>
+                <td style="padding:7px 8px;text-align:right;font-weight:600;">{{ h[5] }}</td>
+                <td style="padding:7px 8px;text-align:right;font-weight:700;color:#27ae60;">{{ h[6] }}</td>
+                <td style="padding:7px 8px;text-align:center;">
+                    {% if h[2] != '—' and h[4] > 0 %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">Active</span>
+                    {% else %}
+                    <span style="background:#fee2e2;color:#b91c1c;font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:10px;">Incomplete</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:16px 0;">No haulers signed up yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Hauler ZIP concentration -->
+    <div class="card" style="padding:18px;">
+        <h3 style="margin:0 0 12px;font-size:1rem;">📍 Hauler Concentration by ZIP</h3>
+        <p style="font-size:0.78rem;color:#718096;margin:0 0 12px;">Where your haulers are based</p>
+        {% if hauler_zip_dist %}
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+            <thead><tr style="border-bottom:2px solid #e2e8f0;">
+                <th style="text-align:left;padding:5px 6px;color:#718096;font-weight:700;">ZIP</th>
+                <th style="text-align:left;padding:5px 6px;color:#718096;font-weight:700;">City</th>
+                <th style="text-align:right;padding:5px 6px;color:#718096;font-weight:700;">Haulers</th>
+                <th style="text-align:right;padding:5px 6px;color:#718096;font-weight:700;">Avg mi</th>
+            </tr></thead>
+            <tbody>
+            {% for r in hauler_zip_dist %}
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:5px 6px;font-family:monospace;font-weight:600;">{{ r[0] }}</td>
+                <td style="padding:5px 6px;font-size:0.78rem;color:#4a5568;">{{ r[1] }}</td>
+                <td style="padding:5px 6px;text-align:right;font-weight:700;color:#9b59b6;">{{ r[2] }}</td>
+                <td style="padding:5px 6px;text-align:right;color:#3498db;">
+                    {% if r[3] %}{{ r[3]|int }} mi{% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:16px 0;">No haulers with home ZIP set yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+</div><!-- /hauler coverage -->
+
+</div><!-- /service area analytics outer div -->
+
+<!-- client-side table filter used by all searchable tables -->
+<script>
+function saFilter(tbodyId, q) {
+    q = q.trim().toLowerCase();
+    var rows = document.getElementById(tbodyId).querySelectorAll('tr');
+    rows.forEach(function(row) {
+        var text = (row.getAttribute('data-search') || row.textContent).toLowerCase();
+        row.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
+    });
+}
+</script>
+
+<style>
+@media (max-width: 768px) {
+    [style*="grid-template-columns:2fr 1fr"] { grid-template-columns:1fr !important; }
+}
+</style>
+
 {% endblock %}
