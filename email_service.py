@@ -442,6 +442,65 @@ def notify_hauler_job_cancelled(hauler_email, job_id, customer_name):
     )
 
 
+def notify_customer_pending_bids_reminder(customer_email, job_id, bid_count):
+    """24-hour inactivity reminder — bids waiting for review."""
+    body = f"""
+    <p>You have <strong>{bid_count} bid{'s' if bid_count != 1 else ''}</strong> waiting on your hauling job that haven't been reviewed yet.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Bids Received:</strong> {bid_count}</p>
+      <p><strong>Action needed:</strong> Review and accept a bid to move forward.</p>
+    </div>
+    <p style="color:#b45309;font-weight:600;">⚠️ If no action is taken, your job will be removed from active bidding in 48 hours.</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Bids Now →</a>"""
+    return send_email(
+        customer_email,
+        f"⏰ Reminder: {bid_count} bid{'s' if bid_count != 1 else ''} waiting on Job #{job_id}",
+        _html("You Have Pending Bids!", "Haulers are waiting — review your bids now.",
+              "⏰ Action Needed", body),
+        'customer_bid_reminder_24h'
+    )
+
+
+def notify_customer_job_expiring_soon(customer_email, job_id):
+    """48-hour inactivity reminder — job expiring in 24 hours."""
+    body = f"""
+    <p>Your hauling job is about to expire because no bid has been accepted yet.</p>
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Expiring Soon</span></p>
+    </div>
+    <p style="color:#b91c1c;font-weight:600;">🚨 This job will be automatically closed in approximately 24 hours if no bid is accepted.</p>
+    <p>Accept a bid now to lock in your hauler and keep your job active. You can always reactivate an expired job, but acting now is faster.</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn" style="background:#dc2626;">Accept a Bid Now →</a>"""
+    return send_email(
+        customer_email,
+        f"🚨 Job #{job_id} Will Expire Soon — Action Required",
+        _html("Your Job Is About to Expire!", "Accept a bid now to keep your job active.",
+              "🚨 Expiring Soon", body),
+        'customer_bid_reminder_48h'
+    )
+
+
+def notify_admin_job_expired(job_id, customer_name, bid_count):
+    """Admin notification when a job is auto-expired."""
+    body = f"""
+    <div class="info-box">
+      <p><strong>Job #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Bids that were waiting:</strong> {bid_count}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Expired</span></p>
+    </div>
+    <p>This job was automatically expired after 72 hours of inactivity (no bid accepted). The customer can reactivate the job from their dashboard.</p>
+    <a href="{_APP_URL}/admin" class="btn">View in Admin →</a>"""
+    return notify_admin(
+        f"[JHE Haul] Job #{job_id} Auto-Expired ({bid_count} bids)",
+        _html("Job Auto-Expired", f"Job #{job_id} expired after 72 hours of bid inactivity.",
+              "⏰ Job Expired", body),
+        'admin_job_expired'
+    )
+
+
 def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, comment):
     stars = '★' * rating + '☆' * (5 - rating)
     comment_html = (

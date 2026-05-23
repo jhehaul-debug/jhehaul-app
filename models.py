@@ -63,6 +63,9 @@ class Job(db.Model):
     preferred_time = db.Column(db.String, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
+    expired_at = db.Column(db.DateTime, nullable=True)
+    reminder_24h_sent = db.Column(db.Boolean, default=False)
+    reminder_48h_sent = db.Column(db.Boolean, default=False)
 
     photos = db.relationship('JobPhoto', backref='job', lazy=True, cascade='all, delete-orphan')
     bids = db.relationship('Bid', backref='job', lazy=True, cascade='all, delete-orphan')

@@ -1218,6 +1218,23 @@ def customer_cancel_job(job_id):
 
     return redirect(url_for('customer_jobs'))
 
+@app.route("/customer/job/<int:job_id>/reactivate", methods=["POST"])
+@require_role('customer')
+def customer_reactivate_job(job_id):
+    from models import Bid as _Bid
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'expired':
+        return "Job is not expired", 400
+    bid_count = _Bid.query.filter_by(job_id=job.id).count()
+    job.status = 'bidding' if bid_count > 0 else 'open'
+    job.expired_at = None
+    job.reminder_24h_sent = False
+    job.reminder_48h_sent = False
+    db.session.commit()
+    return redirect(url_for('customer_job_detail', job_id=job_id))
+
 @app.route("/customer/review/<int:job_id>", methods=["GET", "POST"])
 @require_role('customer')
 def customer_review(job_id):
@@ -1357,6 +1374,7 @@ def admin_dashboard():
     active_jobs = Job.query.filter(Job.status.in_(['accepted', 'deposit_paid'])).count()
     completed_jobs = Job.query.filter_by(status='completed').count()
     cancelled_jobs = Job.query.filter_by(status='cancelled').count()
+    expired_jobs = Job.query.filter_by(status='expired').count()
     total_bids = Bid.query.count()
     accepted_bids = Bid.query.filter_by(status='accepted').count()
     pending_bids = (Bid.query
@@ -1388,6 +1406,7 @@ def admin_dashboard():
                            active_jobs=active_jobs,
                            completed_jobs=completed_jobs,
                            cancelled_jobs=cancelled_jobs,
+                           expired_jobs=expired_jobs,
                            total_bids=total_bids,
                            accepted_bids=accepted_bids,
                            pending_bids=pending_bids,
@@ -1616,6 +1635,18 @@ def admin_delete_job(job_id):
     db.session.commit()
     return redirect(url_for('admin_dashboard'))
 
+@app.route("/admin/job/<int:job_id>/reactivate", methods=["POST"])
+@require_admin
+def admin_reactivate_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    bid_count = Bid.query.filter_by(job_id=job.id).count()
+    job.status = 'bidding' if bid_count > 0 else 'open'
+    job.expired_at = None
+    job.reminder_24h_sent = False
+    job.reminder_48h_sent = False
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
+
 @app.route("/admin/delete-user/<string:user_id>", methods=["POST"])
 @require_admin
 def admin_delete_user(user_id):
@@ -1727,6 +1758,7 @@ def admin_analytics():
     active_jobs    = Job.query.filter(Job.status.in_(['accepted','deposit_paid'])).count()
     completed_jobs = Job.query.filter_by(status='completed').count()
     cancelled_jobs = Job.query.filter_by(status='cancelled').count()
+    expired_jobs   = Job.query.filter_by(status='expired').count()
     total_bids     = Bid.query.count()
     bids_accepted  = db.session.execute(
         db.text("SELECT COUNT(*) FROM jobs WHERE status NOT IN ('open','cancelled') AND accepted_hauler_id IS NOT NULL")
@@ -1734,8 +1766,8 @@ def admin_analytics():
     total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0
 
     # Job status chart
-    job_status_labels = ['Open','Active','Completed','Cancelled']
-    job_status_values = [open_jobs, active_jobs, completed_jobs, cancelled_jobs]
+    job_status_labels = ['Open','Active','Completed','Cancelled','Expired']
+    job_status_values = [open_jobs, active_jobs, completed_jobs, cancelled_jobs, expired_jobs]
 
     # Daily jobs last 30 days
     _dj = db.session.execute(
@@ -1949,7 +1981,7 @@ def admin_analytics():
         daily_signup_labels=json.dumps(daily_signup_labels),
         daily_signup_values=json.dumps(daily_signup_values),
         total_jobs=total_jobs, open_jobs=open_jobs, active_jobs=active_jobs,
-        completed_jobs=completed_jobs, cancelled_jobs=cancelled_jobs,
+        completed_jobs=completed_jobs, cancelled_jobs=cancelled_jobs, expired_jobs=expired_jobs,
         total_bids=total_bids, bids_accepted=bids_accepted,
         total_revenue=total_revenue,
         job_status_labels=json.dumps(job_status_labels),
