@@ -54,6 +54,7 @@
 {% else %}
 <p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Jobs where your bid was accepted:</p>
 {% for job in jobs %}
+{% set cust = customer_map.get(job.customer_id) if customer_map is defined else None %}
 <div class="card">
     <div class="card-header">
         <div>
@@ -77,10 +78,21 @@
 
     {% if job.status == 'deposit_paid' %}
     <div class="banner banner-success">
-        <div style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            {% if cust and cust.profile_image_url %}
+            <img src="{{ cust.profile_image_url }}" alt="{{ job.customer_name }}"
+                 style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.6);flex-shrink:0;"
+                 onerror="this.style.display='none';">
+            {% elif cust %}
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.4);color:#1b5e20;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                {{ (job.customer_name or '?')[0]|upper }}
+            </div>
+            {% endif %}
+            <div>
             <strong>Customer:</strong> {{ job.customer_name }}<br>
             {% if job.customer_phone %}<strong>Phone:</strong> {{ job.customer_phone }}<br>{% endif %}
             <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}
+            </div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}"
@@ -92,9 +104,22 @@
 
     {% elif job.status == 'completed' %}
     <div class="banner banner-complete">
-        <strong>✅ Job Completed!</strong><br>
-        <span style="font-size:0.88rem;">{{ job.customer_name }} · {{ job.pickup_address }}, {{ job.pickup_zip }}</span>
-        {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at | ct('%B %d, %Y') }}</span>{% endif %}
+        <div style="display:flex;align-items:center;gap:10px;">
+            {% if cust and cust.profile_image_url %}
+            <img src="{{ cust.profile_image_url }}" alt="{{ job.customer_name }}"
+                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);flex-shrink:0;"
+                 onerror="this.style.display='none';">
+            {% elif cust %}
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.35);color:#1b5e20;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                {{ (job.customer_name or '?')[0]|upper }}
+            </div>
+            {% endif %}
+            <div>
+                <strong>✅ Job Completed!</strong><br>
+                <span style="font-size:0.88rem;">{{ job.customer_name }} · {{ job.pickup_address }}, {{ job.pickup_zip }}</span>
+                {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at | ct('%B %d, %Y') }}</span>{% endif %}
+            </div>
+        </div>
     </div>
 
     {% elif job.status == 'accepted' %}

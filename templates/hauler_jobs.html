@@ -17,9 +17,21 @@
 </div>
 {% else %}
 {% for job in jobs %}
+{% set cust = customer_map.get(job.customer_id) if customer_map is defined else None %}
 <div class="card">
     <div class="card-header">
-        <h3 style="margin-bottom:0;">Job #{{ job.id }}</h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+            {% if cust and cust.profile_image_url %}
+            <img src="{{ cust.profile_image_url }}" alt="Customer"
+                 style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;"
+                 onerror="this.style.display='none';">
+            {% else %}
+            <div style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;color:#718096;font-size:0.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                {{ (cust.first_name if cust and cust.first_name else '?')[0]|upper }}
+            </div>
+            {% endif %}
+            <h3 style="margin-bottom:0;">Job #{{ job.id }}</h3>
+        </div>
         {% if job.id in job_distances %}
         <span class="distance-badge">📍 Approx. {{ job_distances[job.id] }} miles away</span>
         {% endif %}
