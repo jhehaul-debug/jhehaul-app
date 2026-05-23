@@ -158,6 +158,23 @@ with app.app_context():
         logging.info("Column migration (photo data) skipped: %s", _e)
 
     try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS hauler_service_zips (
+                id SERIAL PRIMARY KEY,
+                hauler_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                zip_code VARCHAR(5) NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(hauler_id, zip_code)
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: hauler_service_zips ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (hauler_service_zips) skipped: %s", _e)
+
+    try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()

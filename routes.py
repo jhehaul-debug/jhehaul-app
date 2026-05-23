@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -426,7 +426,8 @@ def customer_create():
         from distance import haversine_miles
         job_zip_loc = ZipCode.query.get(pickup_zip)
         if job_zip_loc:
-            haulers = User.query.filter(
+            # All haulers who have radius configured
+            radius_haulers = User.query.filter(
                 User.user_type == 'hauler',
                 User.home_zip.isnot(None),
                 User.max_travel_miles.isnot(None),
@@ -434,16 +435,63 @@ def customer_create():
                 User.notify_new_jobs == True
             ).all()
 
-            for hauler in haulers:
+            # Hauler IDs who explicitly service this ZIP
+            explicit_ids = set(
+                sz.hauler_id for sz in
+                HaulerServiceZip.query.filter_by(zip_code=pickup_zip).all()
+            )
+
+            # Build (hauler, distance_miles) pairs for all qualifying haulers
+            to_notify = []   # list of (hauler, distance_miles)
+            notified_ids = set()
+
+            for hauler in radius_haulers:
                 try:
                     hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
-                    if hauler_zip_loc:
-                        distance_miles = haversine_miles(hauler_zip_loc.lat, hauler_zip_loc.lon, job_zip_loc.lat, job_zip_loc.lon)
-                        if distance_miles <= hauler.max_travel_miles:
-                            notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
-                            if hauler.notify_sms and hauler.phone:
-                                notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
-                except:
+                    if not hauler_zip_loc:
+                        continue
+                    dist = haversine_miles(
+                        hauler_zip_loc.lat, hauler_zip_loc.lon,
+                        job_zip_loc.lat,   job_zip_loc.lon
+                    )
+                    in_radius   = dist <= hauler.max_travel_miles
+                    in_explicit = hauler.id in explicit_ids
+                    if in_radius or in_explicit:
+                        to_notify.append((hauler, dist))
+                        notified_ids.add(hauler.id)
+                except Exception:
+                    pass
+
+            # Also pick up haulers who only have explicit ZIPs but no radius set
+            extra_haulers = User.query.filter(
+                User.id.in_(explicit_ids - notified_ids),
+                User.email.isnot(None),
+                User.notify_new_jobs == True
+            ).all()
+            for hauler in extra_haulers:
+                try:
+                    dist = 0.0
+                    if hauler.home_zip:
+                        hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
+                        if hauler_zip_loc:
+                            dist = haversine_miles(
+                                hauler_zip_loc.lat, hauler_zip_loc.lon,
+                                job_zip_loc.lat,   job_zip_loc.lon
+                            )
+                    to_notify.append((hauler, dist))
+                    notified_ids.add(hauler.id)
+                except Exception:
+                    pass
+
+            # Sort closest-first so nearby haulers are contacted first
+            to_notify.sort(key=lambda x: x[1])
+
+            for hauler, distance_miles in to_notify:
+                try:
+                    notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
+                    if hauler.notify_sms and hauler.phone:
+                        notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
+                except Exception:
                     pass
 
     return redirect(url_for("customer_jobs"))
@@ -726,10 +774,22 @@ def hauler_jobs():
 
     job_distances = {}
     filtered_jobs = []
+    seen_ids = set()
     max_miles = current_user.max_travel_miles or 0
     hauler_zip_rec = ZipCode.query.get(current_user.home_zip) if current_user.home_zip else None
 
+    # Explicit service ZIPs this hauler has added
+    explicit_zips = set(
+        sz.zip_code for sz in
+        HaulerServiceZip.query.filter_by(hauler_id=current_user.id).all()
+    )
+
     for job in all_jobs:
+        if job.id in seen_ids:
+            continue
+
+        in_explicit = job.pickup_zip and job.pickup_zip in explicit_zips
+
         if hauler_zip_rec and job.pickup_zip:
             job_zip_rec = ZipCode.query.get(job.pickup_zip)
             if job_zip_rec:
@@ -737,31 +797,42 @@ def hauler_jobs():
                     hauler_zip_rec.lat, hauler_zip_rec.lon,
                     job_zip_rec.lat, job_zip_rec.lon
                 ), 1)
-                included = miles <= max_miles
+                in_radius = miles <= max_miles
+                included  = in_radius or in_explicit
                 app.logger.info(
-                    "Radius filter — Job #%s: hauler_zip=%s job_zip=%s distance=%.1f mi max=%s mi → %s",
-                    job.id, current_user.home_zip, job.pickup_zip, miles, max_miles,
+                    "Job filter — #%s: zip=%s dist=%.1f mi max=%s explicit=%s → %s",
+                    job.id, job.pickup_zip, miles, max_miles, in_explicit,
                     "INCLUDED" if included else "FILTERED OUT"
                 )
                 if included:
                     job_distances[job.id] = miles
                     filtered_jobs.append(job)
+                    seen_ids.add(job.id)
             else:
+                # ZIP not in table — include if explicit, else include as fallback
                 app.logger.info(
-                    "Radius filter — Job #%s: pickup_zip=%s not in ZIP table → INCLUDED (no coords)",
-                    job.id, job.pickup_zip
+                    "Job filter — #%s: pickup_zip=%s not in ZIP table explicit=%s → INCLUDED",
+                    job.id, job.pickup_zip, in_explicit
                 )
                 filtered_jobs.append(job)
-        else:
+                seen_ids.add(job.id)
+        elif in_explicit:
+            # Hauler has no home ZIP but explicitly services this ZIP
+            filtered_jobs.append(job)
+            seen_ids.add(job.id)
+        elif not hauler_zip_rec and not job.pickup_zip:
+            # No coords on either side — include as fallback
             app.logger.info(
-                "Radius filter — Job #%s: missing hauler_zip or job pickup_zip → INCLUDED (no coords)",
+                "Job filter — #%s: missing hauler_zip or job pickup_zip → INCLUDED (no coords)",
                 job.id
             )
             filtered_jobs.append(job)
+            seen_ids.add(job.id)
 
     app.logger.info(
-        "hauler_jobs result: user=%s home_zip=%s max=%s mi — showing %d of %d open jobs",
-        current_user.id, current_user.home_zip, max_miles, len(filtered_jobs), len(all_jobs)
+        "hauler_jobs result: user=%s home_zip=%s max=%s mi explicit_zips=%d — showing %d of %d open jobs",
+        current_user.id, current_user.home_zip, max_miles,
+        len(explicit_zips), len(filtered_jobs), len(all_jobs)
     )
 
     return render_template('hauler_jobs.html', jobs=filtered_jobs,
@@ -863,12 +934,71 @@ def profile():
         completed_count = Job.query.filter_by(customer_id=current_user.id, status='completed').count()
         badges = get_badges(current_user, [], completed_count)
 
+    service_zips = []
+    if current_user.user_type == 'hauler':
+        from models import ZipCode as _ZC
+        raw = HaulerServiceZip.query.filter_by(hauler_id=current_user.id).order_by(HaulerServiceZip.zip_code).all()
+        service_zips = []
+        for sz in raw:
+            zc = _ZC.query.get(sz.zip_code)
+            service_zips.append({
+                'zip': sz.zip_code,
+                'city': zc.city if zc else '',
+                'state': zc.state if zc else '',
+            })
+
     return render_template('profile.html',
                            reviews=reviews,
                            avg_rating=avg_rating,
                            review_count=review_count,
                            completed_count=completed_count,
-                           badges=badges)
+                           badges=badges,
+                           service_zips=service_zips)
+
+@app.route("/hauler/service-zips/add", methods=["POST"])
+@require_role('hauler')
+def hauler_service_zip_add():
+    import re
+    from models import ZipCode as _ZC
+    zip_code = request.form.get("zip_code", "").strip()
+    if not re.match(r'^\d{5}$', zip_code):
+        flash("Please enter a valid 5-digit ZIP code.", "error")
+        return redirect(url_for('profile'))
+    if not _ZC.query.get(zip_code):
+        flash("That ZIP code isn't in our database yet. We currently cover Minnesota and Wisconsin.", "error")
+        return redirect(url_for('profile'))
+    existing = HaulerServiceZip.query.filter_by(
+        hauler_id=current_user.id, zip_code=zip_code
+    ).first()
+    if existing:
+        flash(f"ZIP {zip_code} is already in your service list.", "info")
+        return redirect(url_for('profile'))
+    count = HaulerServiceZip.query.filter_by(hauler_id=current_user.id).count()
+    if count >= 25:
+        flash("You can add up to 25 specific ZIP codes. Remove some to add more.", "error")
+        return redirect(url_for('profile'))
+    sz = HaulerServiceZip(hauler_id=current_user.id, zip_code=zip_code)
+    db.session.add(sz)
+    db.session.commit()
+    zc = _ZC.query.get(zip_code)
+    city_str = f" ({zc.city})" if zc and zc.city else ""
+    flash(f"Added {zip_code}{city_str} to your service area.", "success")
+    return redirect(url_for('profile'))
+
+
+@app.route("/hauler/service-zips/remove", methods=["POST"])
+@require_role('hauler')
+def hauler_service_zip_remove():
+    zip_code = request.form.get("zip_code", "").strip()
+    sz = HaulerServiceZip.query.filter_by(
+        hauler_id=current_user.id, zip_code=zip_code
+    ).first()
+    if sz:
+        db.session.delete(sz)
+        db.session.commit()
+        flash(f"Removed {zip_code} from your service area.", "success")
+    return redirect(url_for('profile'))
+
 
 @app.route("/profile/update", methods=["POST"])
 @require_login
@@ -1701,6 +1831,33 @@ def admin_analytics():
     sa_city_jobs   = json.dumps([r[2] for r in top_city_chart])
     sa_city_done   = json.dumps([r[4] for r in top_city_chart])
 
+    # ── Explicit ZIP coverage (hauler_service_zips table) ───────────────────────
+    explicit_zip_coverage = db.session.execute(db.text("""
+        SELECT
+            hsz.zip_code,
+            COALESCE(z.city, 'Unknown')                                       AS city,
+            COALESCE(z.state, '')                                             AS state,
+            COUNT(DISTINCT hsz.hauler_id)                                     AS hauler_count,
+            COUNT(DISTINCT j.id)                                              AS job_count,
+            COUNT(DISTINCT b.id)                                              AS bid_count,
+            COUNT(DISTINCT CASE WHEN j.status='completed' THEN j.id END)     AS completed
+        FROM hauler_service_zips hsz
+        LEFT JOIN zip_codes z ON z.zip = hsz.zip_code
+        LEFT JOIN jobs j      ON j.pickup_zip = hsz.zip_code
+        LEFT JOIN bids b      ON b.job_id = j.id
+        GROUP BY hsz.zip_code, z.city, z.state
+        ORDER BY hauler_count DESC, job_count DESC
+        LIMIT 30
+    """)).fetchall()
+
+    # Supply surplus: ZIPs haulers explicitly cover but with low/no customer demand
+    supply_surplus = [r for r in explicit_zip_coverage if r[3] >= 1 and r[4] < 2]
+
+    # Total unique ZIPs in the explicit list
+    total_explicit_zips = db.session.execute(
+        db.text("SELECT COUNT(DISTINCT zip_code) FROM hauler_service_zips")
+    ).scalar() or 0
+
     return render_template('admin_analytics.html',
         total_views=total_views, unique_visitors=unique_visitors,
         returning_visitors=returning_visitors, today_views=today_views,
@@ -1740,6 +1897,9 @@ def admin_analytics():
         sa_zip_bids=sa_zip_bids, sa_zip_done=sa_zip_done,
         sa_city_labels=sa_city_labels, sa_city_jobs=sa_city_jobs,
         sa_city_done=sa_city_done,
+        explicit_zip_coverage=explicit_zip_coverage,
+        supply_surplus=supply_surplus,
+        total_explicit_zips=total_explicit_zips,
     )
 
 

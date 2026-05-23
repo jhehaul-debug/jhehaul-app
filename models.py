@@ -156,3 +156,17 @@ class NotificationLog(db.Model):
     subject = db.Column(db.String(500), nullable=True)
     status = db.Column(db.String(20), nullable=False)
     error_msg = db.Column(db.Text, nullable=True)
+
+
+class HaulerServiceZip(db.Model):
+    """Explicit ZIP codes a hauler has opted in to service.
+
+    Works alongside radius matching — a job is visible to a hauler if
+    its pickup ZIP is within their radius OR is in this list.
+    """
+    __tablename__ = 'hauler_service_zips'
+    id = db.Column(db.Integer, primary_key=True)
+    hauler_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    zip_code = db.Column(db.String(5), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    __table_args__ = (UniqueConstraint('hauler_id', 'zip_code'),)
