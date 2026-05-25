@@ -137,7 +137,7 @@
             <input type="checkbox" name="ev_admin_alert" value="1"
                    {% if settings.ev_admin_alert %}checked{% endif %}>
             <span><strong>Admin Alerts via SMS</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
-                <small style="color:#718096;">Requires <code>ADMIN_PHONE</code> env var to be set</small></span>
+                <small style="color:#718096;">Sends to <code>ADMIN_PHONE</code> for: new customer signup, new hauler signup, new job posted, new bid submitted, bid accepted.</small></span>
         </label>
 
     </div>

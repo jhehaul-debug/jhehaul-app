@@ -283,3 +283,39 @@ def notify_admin_sms(message):
         logging.debug("ADMIN_PHONE not set — admin SMS skipped")
         return False
     return send_sms(admin_phone, f"[JHE Admin] {message}", 'admin_alert')
+
+
+# ── Admin event-specific SMS helpers ──────────────────────────────────────────
+
+def notify_admin_new_customer_sms(name, email):
+    """Admin SMS when a new customer registers. Controlled by ev_admin_alert toggle."""
+    return notify_admin_sms(f"New customer: {name} ({email})")
+
+
+def notify_admin_new_hauler_sms(name, email, home_zip, truck_type):
+    """Admin SMS when a new hauler completes setup. Controlled by ev_admin_alert toggle."""
+    return notify_admin_sms(
+        f"New hauler: {name} ({email}) | {truck_type or 'N/A'} | ZIP {home_zip}"
+    )
+
+
+def notify_admin_new_job_sms(job_id, customer_name, pickup_zip, description):
+    """Admin SMS when a new job is posted. Controlled by ev_admin_alert toggle."""
+    short = (description or '')[:60]
+    return notify_admin_sms(
+        f"Job #{job_id} posted | {customer_name} | ZIP {pickup_zip} | {short}"
+    )
+
+
+def notify_admin_bid_accepted_sms(job_id, customer_name, hauler_name, quote):
+    """Admin SMS when a bid is accepted. Controlled by ev_admin_alert toggle."""
+    return notify_admin_sms(
+        f"Bid accepted: Job #{job_id} | ${float(quote):.0f} | {customer_name} → {hauler_name}"
+    )
+
+
+def notify_admin_new_bid_sms(job_id, hauler_name, quote):
+    """Admin SMS when a new bid is submitted. Controlled by ev_admin_alert toggle."""
+    return notify_admin_sms(
+        f"New bid: Job #{job_id} | {hauler_name} | ${float(quote):.0f}"
+    )
