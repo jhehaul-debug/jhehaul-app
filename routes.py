@@ -1358,7 +1358,14 @@ def hauler_upload_photos(job_id):
         except Exception as e:
             app.logger.error("Admin notify failed (job #%s completed by hauler): %s", job.id, e)
 
-        flash("Completion proof submitted. Customer has been notified and payment can now be released.", "success")
+        try:
+            customer = User.query.get(job.customer_id)
+            if customer and customer.email:
+                notify_customer_job_completed(customer.email, job.id)
+        except Exception as e:
+            app.logger.error("Customer job-completed notify failed (hauler upload, job #%s): %s", job.id, e)
+
+        flash("Completion proof submitted! The customer has been notified and can now release payment.", "success")
         return redirect(url_for('hauler_dashboard'))
 
     return render_template('hauler_upload_photos.html', job=job)
@@ -1632,10 +1639,40 @@ def admin_notifications():
     import os
     sendgrid_configured = bool(os.environ.get("SENDGRID_API_KEY"))
     from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
+    type_labels = {
+        # Admin notifications
+        'admin_new_customer':    'Admin — New Customer Signup',
+        'admin_new_hauler':      'Admin — New Hauler Signup',
+        'admin_new_job':         'Admin — New Job Posted',
+        'admin_new_bid':         'Admin — New Bid Submitted',
+        'admin_bid_accepted':    'Admin — Bid Accepted',
+        'admin_deposit_paid':    'Admin — Deposit Paid',
+        'admin_job_completed':   'Admin — Job Completed',
+        'admin_job_cancelled':   'Admin — Job Cancelled',
+        'admin_job_expired':     'Admin — Job Auto-Expired',
+        'admin_user_deleted':    'Admin — Account Deleted',
+        # Customer notifications
+        'customer_new_bid':              'Customer — New Bid Received',
+        'customer_bid_accepted_confirm': 'Customer — Bid Accepted (Pay Deposit)',
+        'customer_job_completed':        'Customer — Job Complete (Review Request)',
+        'customer_bid_reminder_24h':     'Customer — Reminder: Bids Waiting (24h)',
+        'customer_bid_reminder_48h':     'Customer — Job Expiring Soon (48h)',
+        # Hauler notifications
+        'hauler_new_job_nearby':  'Hauler — New Job Nearby',
+        'hauler_bid_accepted':    'Hauler — Bid Accepted',
+        'hauler_bid_rejected':    'Hauler — Bid Not Selected',
+        'hauler_deposit_paid':    'Hauler — Deposit Paid (Address Unlocked)',
+        'hauler_job_cancelled':   'Hauler — Job Cancelled by Customer',
+        'hauler_new_review':      'Hauler — New Review Received',
+        # Legacy / test
+        'email':                  'General Email',
+        'admin':                  'Admin (general)',
+    }
     return render_template('admin_notifications.html',
                            logs=logs, sent=sent, failed=failed,
                            sendgrid_configured=sendgrid_configured,
-                           from_email=from_email)
+                           from_email=from_email,
+                           type_labels=type_labels)
 
 
 @app.route("/admin/suppression-check")
