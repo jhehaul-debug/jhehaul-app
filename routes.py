@@ -30,6 +30,8 @@ from sms_service import (
     notify_hauler_job_cancelled_sms,
     notify_customer_new_bid_sms, notify_customer_job_completed_sms,
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
+    notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
+    notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
 )
 
 def get_badges(user, reviews=None, completed_count=0):
@@ -318,6 +320,7 @@ def set_role():
         try:
             _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
             notify_admin_new_customer(_name, current_user.email)
+            notify_admin_new_customer_sms(_name, current_user.email)
         except Exception as e:
             app.logger.error("Admin notify failed (new customer): %s", e)
         return redirect(url_for('customer_jobs'))
@@ -381,12 +384,9 @@ def hauler_setup_save():
     db.session.commit()
 
     try:
-        notify_admin_new_hauler(
-            f"{current_user.first_name} {current_user.last_name}".strip() or current_user.email,
-            current_user.email,
-            home_zip,
-            truck_type
-        )
+        _hauler_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.email
+        notify_admin_new_hauler(_hauler_name, current_user.email, home_zip, truck_type)
+        notify_admin_new_hauler_sms(_hauler_name, current_user.email, home_zip, truck_type)
     except Exception as e:
         app.logger.error("Admin notify failed (new hauler): %s", e)
 
@@ -463,6 +463,7 @@ def customer_create():
 
     try:
         notify_admin_new_job(job.id, customer_name, pickup_zip, job_description)
+        notify_admin_new_job_sms(job.id, customer_name, pickup_zip, job_description)
     except Exception as e:
         app.logger.error("Admin notify failed (new job #%s): %s", job.id, e)
 
@@ -699,6 +700,7 @@ def customer_accept_bid(bid_id):
     try:
         _cname = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
         notify_admin_bid_accepted(job.id, _cname, bid.hauler_name, float(bid.quote_amount))
+        notify_admin_bid_accepted_sms(job.id, _cname, bid.hauler_name, float(bid.quote_amount))
     except Exception as e:
         app.logger.error("Admin notify failed (bid accepted job #%s): %s", job.id, e)
 
@@ -968,6 +970,7 @@ def hauler_bid_submit(job_id):
 
     try:
         notify_admin_new_bid(job_id, hauler_name, quote_amount)
+        notify_admin_new_bid_sms(job_id, hauler_name, quote_amount)
     except Exception as e:
         app.logger.error("Admin notify failed (new bid on job #%s): %s", job_id, e)
 
@@ -2387,6 +2390,15 @@ def admin_sms_logs():
         'admin_test':             'Admin Test',
         'phone_verification':     'Phone Verification',
         'sms':                    'General SMS',
+        'admin_new_customer':     'Admin — New Customer',
+        'admin_new_hauler':       'Admin — New Hauler',
+        'admin_new_job':          'Admin — New Job',
+        'admin_bid_accepted':     'Admin — Bid Accepted',
+        'admin_new_bid':          'Admin — New Bid',
+        'fallback_hauler_new_job_nearby':  'Fallback — Hauler New Job',
+        'fallback_customer_new_bid':       'Fallback — Customer Bid',
+        'fallback_hauler_bid_accepted':    'Fallback — Hauler Bid Accepted',
+        'fallback_hauler_deposit_paid':    'Fallback — Hauler Deposit Paid',
     }
     return render_template('admin_sms_logs.html',
                            logs=logs, sent=sent, failed=failed, skipped=skipped,
