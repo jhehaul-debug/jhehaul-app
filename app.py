@@ -206,5 +206,15 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (job expiry) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE notification_logs ADD COLUMN IF NOT EXISTS sg_status_code INTEGER"))
+        db.session.execute(_text("ALTER TABLE notification_logs ADD COLUMN IF NOT EXISTS sg_message_id VARCHAR(200)"))
+        db.session.commit()
+        logging.info("Column migration: notification_logs SendGrid detail columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (notification_logs sg columns) skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
