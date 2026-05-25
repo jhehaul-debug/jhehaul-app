@@ -60,7 +60,8 @@ def _html(header_title, header_sub, tag, body_html):
 </div></body></html>"""
 
 
-def _log_notification(event_type, recipient, subject, status, error_msg=None):
+def _log_notification(event_type, recipient, subject, status,
+                       error_msg=None, sg_status_code=None, sg_message_id=None):
     """Write a row to notification_logs. Never raises — email delivery is unaffected."""
     try:
         from flask import current_app
@@ -71,7 +72,9 @@ def _log_notification(event_type, recipient, subject, status, error_msg=None):
                 recipient=recipient or '',
                 subject=subject or '',
                 status=status,
-                error_msg=str(error_msg)[:500] if error_msg else None,
+                sg_status_code=sg_status_code,
+                sg_message_id=sg_message_id,
+                error_msg=str(error_msg)[:1000] if error_msg else None,
             )
             db.session.add(log)
             db.session.commit()
@@ -105,12 +108,34 @@ def send_email(to_email, subject, html_content, event_type='email'):
     try:
         sg = SendGridAPIClient(api_key)
         response = sg.send(message)
-        logging.info("Email SENT → %s | status %s | %s", to_email, response.status_code, subject)
-        _log_notification(event_type, to_email, subject, 'sent')
+        status_code = response.status_code
+        # X-Message-Id is the SendGrid tracking ID for this specific send
+        msg_id = response.headers.get('X-Message-Id', '') if response.headers else ''
+        logging.info(
+            "SendGrid ACCEPTED → %s | HTTP %s | msg_id=%s | %s",
+            to_email, status_code, msg_id, subject
+        )
+        # 202 = SendGrid accepted for delivery (does NOT guarantee inbox arrival)
+        _log_notification(event_type, to_email, subject, 'sent',
+                          sg_status_code=status_code, sg_message_id=msg_id)
         return True
     except Exception as e:
-        logging.error("SendGrid ERROR → %s | %s | %s", to_email, subject, e)
-        _log_notification(event_type, to_email, subject, 'failed', str(e))
+        # Parse HTTP status code out of exception if available
+        err_str = str(e)
+        sg_code = None
+        try:
+            if hasattr(e, 'status_code'):
+                sg_code = e.status_code
+            elif hasattr(e, 'body'):
+                pass  # body already in str(e)
+        except Exception:
+            pass
+        logging.error(
+            "SendGrid ERROR → %s | HTTP %s | %s | %s",
+            to_email, sg_code or '???', subject, err_str
+        )
+        _log_notification(event_type, to_email, subject, 'failed',
+                          error_msg=err_str, sg_status_code=sg_code)
         return False
 
 

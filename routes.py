@@ -1631,9 +1631,76 @@ def admin_notifications():
     failed = sum(1 for l in logs if l.status == 'failed')
     import os
     sendgrid_configured = bool(os.environ.get("SENDGRID_API_KEY"))
+    from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
     return render_template('admin_notifications.html',
                            logs=logs, sent=sent, failed=failed,
-                           sendgrid_configured=sendgrid_configured)
+                           sendgrid_configured=sendgrid_configured,
+                           from_email=from_email)
+
+
+@app.route("/admin/suppression-check")
+@require_admin
+def admin_suppression_check():
+    """Query SendGrid suppression lists for a specific email address."""
+    import urllib.request, urllib.parse, urllib.error, json as _json
+    email = request.args.get("email", "").strip()
+    if not email:
+        return jsonify({"error": "No email provided"}), 400
+
+    api_key = os.environ.get("SENDGRID_API_KEY")
+    if not api_key:
+        return jsonify({"error": "SENDGRID_API_KEY is not configured"}), 500
+
+    encoded = urllib.parse.quote(email, safe='')
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    checks = {
+        "bounces":       f"https://api.sendgrid.com/v3/suppression/bounces/{encoded}",
+        "blocks":        f"https://api.sendgrid.com/v3/suppression/blocks/{encoded}",
+        "spam_reports":  f"https://api.sendgrid.com/v3/suppression/spam_reports/{encoded}",
+        "invalid_emails":f"https://api.sendgrid.com/v3/suppression/invalid_emails/{encoded}",
+        "unsubscribes":  f"https://api.sendgrid.com/v3/asm/suppressions/global/{encoded}",
+    }
+
+    results = {}
+    suppressed_in = []
+
+    for name, url in checks.items():
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = _json.loads(r.read())
+                # bounces/blocks/spam/invalid return a list; unsubscribes returns {"recipient_unsubscribes":[...]}
+                if isinstance(data, list):
+                    results[name] = data
+                    if data:
+                        suppressed_in.append(name)
+                elif isinstance(data, dict):
+                    inner = data.get("recipient_unsubscribes") or data.get("suppressions") or []
+                    results[name] = inner
+                    if inner:
+                        suppressed_in.append(name)
+                else:
+                    results[name] = data
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                results[name] = []   # 404 = not on this list
+            else:
+                body = ""
+                try:
+                    body = e.read().decode()[:300]
+                except Exception:
+                    pass
+                results[name] = {"error": f"HTTP {e.code}", "detail": body}
+        except Exception as ex:
+            results[name] = {"error": str(ex)}
+
+    return jsonify({
+        "email": email,
+        "is_suppressed": len(suppressed_in) > 0,
+        "suppressed_in": suppressed_in,
+        "details": results,
+    })
 
 
 @app.route("/admin/delete-job/<int:job_id>", methods=["POST"])

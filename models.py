@@ -161,6 +161,8 @@ class NotificationLog(db.Model):
     recipient = db.Column(db.String(200), nullable=True)
     subject = db.Column(db.String(500), nullable=True)
     status = db.Column(db.String(20), nullable=False)
+    sg_status_code = db.Column(db.Integer, nullable=True)
+    sg_message_id = db.Column(db.String(200), nullable=True)
     error_msg = db.Column(db.Text, nullable=True)
 
 
