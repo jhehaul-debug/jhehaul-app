@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}SMS Settings — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+        <h2 class="page-title" style="margin:0;">📱 SMS Settings</h2>
+    </div>
+    <a href="{{ url_for('admin_sms_logs') }}" class="btn btn-outline btn-sm">📋 SMS Logs →</a>
+</div>
+
+<!-- ── Twilio config status ────────────────────────────────────────────────── -->
+{% if not twilio_configured %}
+<div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;">
+    <span style="font-size:1.5rem;flex-shrink:0;">⚠️</span>
+    <div>
+        <div style="font-weight:700;color:#ea580c;margin-bottom:6px;">Twilio is not configured — SMS will not be delivered</div>
+        <div style="font-size:0.88rem;color:#78350f;line-height:1.7;">
+            Add these 3 environment variables in DigitalOcean → App Platform → Settings → Environment Variables:<br>
+            <code style="background:#fef3c7;padding:1px 6px;border-radius:4px;">TWILIO_ACCOUNT_SID</code>
+            <code style="background:#fef3c7;padding:1px 6px;border-radius:4px;margin-left:6px;">TWILIO_AUTH_TOKEN</code>
+            <code style="background:#fef3c7;padding:1px 6px;border-radius:4px;margin-left:6px;">TWILIO_PHONE_NUMBER</code><br>
+            Get these from <strong>console.twilio.com → Account Info</strong> (Account SID + Auth Token) and
+            <strong>Phone Numbers → Manage → Active Numbers</strong> (your SMS-capable Twilio number).
+        </div>
+    </div>
+</div>
+{% else %}
+<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+    <div style="display:flex;gap:10px;align-items:center;">
+        <span style="color:#15803d;font-size:1.1rem;">✓</span>
+        <span style="color:#166534;font-weight:600;font-size:0.9rem;">
+            Twilio configured — sending from <strong>{{ from_number_masked }}</strong>
+        </span>
+    </div>
+    <span style="font-size:0.82rem;color:#15803d;">SMS is ready to send.</span>
+</div>
+{% endif %}
+
+<!-- ── Stats row ───────────────────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#15803d;">{{ sms_sent }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Sent</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#b91c1c;">{{ sms_failed }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Failed</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#1d4ed8;">{{ sms_total }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Total</div>
+    </div>
+    {% if sms_total > 0 %}
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.1rem;font-weight:800;color:#4a5568;">{{ (sms_sent / sms_total * 100)|round|int }}%</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Delivery Rate</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Global + per-type settings ─────────────────────────────────────────── -->
+<form method="POST" action="{{ url_for('admin_sms_settings_update') }}">
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-bottom:16px;">Global SMS Control</h3>
+    <label class="check-label" style="font-size:1rem;font-weight:700;color:#1a202c;">
+        <input type="checkbox" name="sms_globally_enabled" value="1"
+               {% if settings.sms_globally_enabled %}checked{% endif %}
+               onchange="document.getElementById('event-toggles').style.opacity=this.checked?'1':'0.4'">
+        <span>SMS notifications globally enabled</span>
+    </label>
+    <p style="color:#718096;font-size:0.85rem;margin:6px 0 0 28px;">
+        Turning this off stops ALL SMS immediately — individual user opt-ins are preserved.
+    </p>
+</div>
+
+<div class="card" style="margin-bottom:16px;" id="event-toggles"
+     style="opacity:{{ '1' if settings.sms_globally_enabled else '0.4' }};">
+    <h3 style="margin-bottom:4px;">Per-Event SMS Toggles</h3>
+    <p style="color:#718096;font-size:0.87rem;margin-bottom:18px;">
+        Individual events can be turned off without disabling SMS globally.
+        Users also control their own opt-in preference in their profile.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_new_bid" value="1"
+                   {% if settings.ev_new_bid %}checked{% endif %}>
+            <span><strong>Customer: New Bid Received</strong><br>
+                <small style="color:#718096;">Customer gets SMS when a hauler bids on their job</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_bid_accepted" value="1"
+                   {% if settings.ev_bid_accepted %}checked{% endif %}>
+            <span><strong>Hauler: Bid Accepted</strong><br>
+                <small style="color:#718096;">Hauler gets SMS when their bid is accepted</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_deposit_paid" value="1"
+                   {% if settings.ev_deposit_paid %}checked{% endif %}>
+            <span><strong>Hauler: Deposit Paid</strong><br>
+                <small style="color:#718096;">Hauler gets address unlock SMS when deposit is confirmed</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_job_nearby" value="1"
+                   {% if settings.ev_job_nearby %}checked{% endif %}>
+            <span><strong>Hauler: New Job Nearby</strong><br>
+                <small style="color:#718096;">Haulers get SMS when new jobs post in their area</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_job_completed" value="1"
+                   {% if settings.ev_job_completed %}checked{% endif %}>
+            <span><strong>Customer: Job Completed</strong><br>
+                <small style="color:#718096;">Customer gets SMS when their job is marked complete</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_job_cancelled" value="1"
+                   {% if settings.ev_job_cancelled %}checked{% endif %}>
+            <span><strong>Hauler: Job Cancelled</strong><br>
+                <small style="color:#718096;">Haulers get SMS when a job they bid on is cancelled</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_bid_rejected" value="1"
+                   {% if settings.ev_bid_rejected %}checked{% endif %}>
+            <span><strong>Hauler: Bid Not Selected</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
+                <small style="color:#718096;">Non-selected haulers get SMS when another bid is accepted</small></span>
+        </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_admin_alert" value="1"
+                   {% if settings.ev_admin_alert %}checked{% endif %}>
+            <span><strong>Admin Alerts via SMS</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
+                <small style="color:#718096;">Requires <code>ADMIN_PHONE</code> env var to be set</small></span>
+        </label>
+
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-bottom:4px;">Email Fallback</h3>
+    <p style="color:#718096;font-size:0.87rem;margin-bottom:14px;">
+        If an email notification fails to send AND the user has SMS enabled,
+        automatically fall back to SMS for that notification.
+    </p>
+    <label class="check-label">
+        <input type="checkbox" name="email_fallback_to_sms" value="1"
+               {% if settings.email_fallback_to_sms %}checked{% endif %}>
+        <span><strong>Enable email → SMS fallback</strong><br>
+            <small style="color:#718096;">Only fires when email returns an error AND user has phone + SMS enabled</small></span>
+    </label>
+</div>
+
+<button type="submit" class="btn btn-success">Save SMS Settings</button>
+</form>
+
+<!-- ── Test SMS ────────────────────────────────────────────────────────────── -->
+<div class="card" style="margin-top:20px;">
+    <h3 style="margin-bottom:4px;">Send Test SMS</h3>
+    <p style="color:#718096;font-size:0.87rem;margin-bottom:16px;">
+        Send a test message to any phone number to verify Twilio is working.
+        This bypasses user opt-in settings so you can test anytime.
+    </p>
+    <form method="POST" action="{{ url_for('admin_sms_test') }}">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+                <label>Phone Number</label>
+                <input type="tel" name="phone" placeholder="(612) 555-1234" maxlength="14"
+                       oninput="maskPhone(this)" style="margin:0;">
+            </div>
+            <button type="submit" class="btn btn-primary" {% if not twilio_configured %}disabled title="Twilio not configured"{% endif %}>
+                📱 Send Test SMS
+            </button>
+            <a href="{{ url_for('admin_sms_logs') }}" class="btn btn-outline">View Logs →</a>
+        </div>
+    </form>
+</div>
+
+<!-- ── Setup instructions ─────────────────────────────────────────────────── -->
+<div class="card" style="margin-top:20px;">
+    <details>
+        <summary style="cursor:pointer;font-weight:700;color:#4a5568;font-size:0.95rem;">
+            📋 Twilio Setup Instructions
+        </summary>
+        <div style="margin-top:14px;font-size:0.87rem;color:#4a5568;line-height:1.8;">
+            <p><strong>Step 1: Create a Twilio account</strong><br>
+               Go to <a href="https://www.twilio.com" target="_blank" style="color:#2563eb;">twilio.com</a> → sign up (free trial includes test credits).</p>
+            <p><strong>Step 2: Get your credentials</strong><br>
+               From the Twilio Console dashboard, copy your <strong>Account SID</strong> and <strong>Auth Token</strong>.</p>
+            <p><strong>Step 3: Get a phone number</strong><br>
+               Console → Phone Numbers → Manage → Buy a number → choose an SMS-capable US number (~$1/month).</p>
+            <p><strong>Step 4: Add environment variables</strong><br>
+               In DigitalOcean → App Platform → your app → Settings → Environment Variables, add:<br>
+               <code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">TWILIO_ACCOUNT_SID</code> = your Account SID<br>
+               <code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">TWILIO_AUTH_TOKEN</code> = your Auth Token<br>
+               <code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">TWILIO_PHONE_NUMBER</code> = your Twilio number (e.g. +16125551234)<br>
+               Optional: <code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">ADMIN_PHONE</code> = your cell phone for admin SMS alerts</p>
+            <p><strong>Step 5: Test</strong><br>
+               Use the "Send Test SMS" form above. Check SMS Logs to confirm delivery (look for a Twilio SID).</p>
+            <p><strong>Trial account limits:</strong> Twilio trial accounts can only send to <em>verified</em> phone numbers.
+               Upgrade to a paid account ($15–20/mo typical) to send to any US number.</p>
+        </div>
+    </details>
+</div>
+
+<script>
+function maskPhone(input) {
+    var x = input.value.replace(/\D/g,'').slice(0,10);
+    if (!x) { input.value=''; return; }
+    if (x.length<=3) input.value='('+x;
+    else if (x.length<=6) input.value='('+x.slice(0,3)+') '+x.slice(3);
+    else input.value='('+x.slice(0,3)+') '+x.slice(3,6)+'-'+x.slice(6);
+}
+</script>
+
+{% endblock %}

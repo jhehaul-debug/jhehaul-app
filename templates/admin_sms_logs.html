@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}SMS Logs — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_sms_settings') }}" style="color:#718096;font-size:0.9rem;">← SMS Settings</a>
+        <h2 class="page-title" style="margin:0;">📋 SMS Logs</h2>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span style="background:#dcfce7;color:#15803d;font-size:0.85rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ sent }} sent</span>
+        {% if failed > 0 %}
+        <span style="background:#fee2e2;color:#b91c1c;font-size:0.85rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ failed }} failed</span>
+        {% endif %}
+        {% if skipped > 0 %}
+        <span style="background:#f1f5f9;color:#64748b;font-size:0.85rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ skipped }} no-twilio</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#15803d;">{{ sent }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Sent</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#b91c1c;">{{ failed }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Failed</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#94a3b8;">{{ skipped }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">No Twilio</div>
+    </div>
+    <div class="card" style="padding:16px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#1d4ed8;">{{ logs|length }}</div>
+        <div style="font-size:0.82rem;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Total (last 500)</div>
+    </div>
+</div>
+
+{% if logs %}
+<div class="card" style="padding:0;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.83rem;min-width:860px;">
+        <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                <th style="text-align:left;padding:10px 14px;color:#64748b;font-weight:600;white-space:nowrap;">When (CT)</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:600;">Event</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:600;white-space:nowrap;">Phone</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:600;">Message</th>
+                <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:600;white-space:nowrap;">Status</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:600;white-space:nowrap;">Twilio SID</th>
+                <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:600;white-space:nowrap;">Retries</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:600;">Error / Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+        <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+            <td style="padding:8px 14px;white-space:nowrap;color:#718096;font-size:0.79rem;">
+                {{ log.created_at | ct('%b %d %I:%M %p') }}
+            </td>
+            <td style="padding:8px 12px;white-space:nowrap;max-width:220px;">
+                {% set label = type_labels.get(log.event_type, log.event_type) %}
+                {% if log.event_type.startswith('admin') %}
+                  {% set chip_bg = '#eff6ff' %}{% set chip_color = '#1e40af' %}
+                {% elif log.event_type.startswith('customer') or log.event_type == 'fallback_customer' %}
+                  {% set chip_bg = '#f0fdf4' %}{% set chip_color = '#15803d' %}
+                {% elif log.event_type.startswith('hauler') or log.event_type == 'fallback_hauler' %}
+                  {% set chip_bg = '#fff7ed' %}{% set chip_color = '#c2410c' %}
+                {% elif log.event_type == 'phone_verification' %}
+                  {% set chip_bg = '#fdf4ff' %}{% set chip_color = '#7e22ce' %}
+                {% else %}
+                  {% set chip_bg = '#f8fafc' %}{% set chip_color = '#374151' %}
+                {% endif %}
+                <span style="font-size:0.74rem;font-family:sans-serif;background:{{ chip_bg }};color:{{ chip_color }};font-weight:600;padding:2px 7px;border-radius:5px;">
+                    {{ label }}
+                </span>
+            </td>
+            <td style="padding:8px 12px;font-family:monospace;font-size:0.81rem;color:#4a5568;white-space:nowrap;">
+                {{ log.recipient_phone or '—' }}
+            </td>
+            <td style="padding:8px 12px;color:#4a5568;font-size:0.81rem;max-width:240px;">
+                <span title="{{ log.message_body or '' }}"
+                      style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;"
+                      onclick="this.style.whiteSpace=this.style.whiteSpace=='normal'?'nowrap':'normal';">
+                    {{ log.message_body or '—' }}
+                </span>
+            </td>
+            <td style="padding:8px 12px;text-align:center;white-space:nowrap;">
+                {% if log.status == 'sent' %}
+                <span style="background:#dcfce7;color:#15803d;font-size:0.74rem;font-weight:700;padding:2px 9px;border-radius:12px;">✓ sent</span>
+                {% elif log.status == 'failed' %}
+                <span style="background:#fee2e2;color:#b91c1c;font-size:0.74rem;font-weight:700;padding:2px 9px;border-radius:12px;">✗ failed</span>
+                {% elif log.status == 'no_twilio' %}
+                <span style="background:#f1f5f9;color:#64748b;font-size:0.74rem;font-weight:700;padding:2px 9px;border-radius:12px;">⚠ no twilio</span>
+                {% else %}
+                <span style="background:#fef9c3;color:#92400e;font-size:0.74rem;font-weight:700;padding:2px 9px;border-radius:12px;">{{ log.status }}</span>
+                {% endif %}
+            </td>
+            <td style="padding:8px 12px;font-family:monospace;font-size:0.74rem;color:#6b7280;max-width:140px;">
+                {% if log.twilio_sid %}
+                <span title="{{ log.twilio_sid }}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    {{ log.twilio_sid }}
+                </span>
+                {% else %}
+                <span style="color:#d1d5db;">—</span>
+                {% endif %}
+            </td>
+            <td style="padding:8px 12px;text-align:center;color:#6b7280;font-size:0.82rem;">
+                {{ log.retry_count or 0 }}
+            </td>
+            <td style="padding:8px 12px;font-size:0.78rem;max-width:200px;">
+                {% if log.status in ('failed', 'no_twilio') %}
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    {% if log.error_msg %}
+                    <span style="color:#b91c1c;cursor:pointer;"
+                          title="{{ log.error_msg }}"
+                          onclick="this.style.whiteSpace=this.style.whiteSpace=='normal'?'nowrap':'normal';this.style.maxWidth=this.style.maxWidth=='none'?'200px':'none';">
+                        {{ log.error_msg[:60] }}{% if log.error_msg|length > 60 %}…{% endif %}
+                    </span>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin_sms_resend', log_id=log.id) }}" style="margin:0;">
+                        <button type="submit" class="btn btn-outline btn-sm"
+                                style="font-size:0.72rem;padding:2px 8px;color:#1d4ed8;border-color:#93c5fd;"
+                                onclick="return confirm('Resend this SMS to {{ log.recipient_phone }}?');">
+                            ↩ Resend
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <span style="color:#d1d5db;">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">📱</div>
+        <p>No SMS have been logged yet. Use the test SMS button in SMS Settings to verify your setup.</p>
+        <a href="{{ url_for('admin_sms_settings') }}" class="btn btn-primary">Go to SMS Settings</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

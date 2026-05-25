@@ -131,13 +131,30 @@ function ppFileChosen(input) {
 
         {% if current_user.user_type == 'customer' %}
         <hr>
-        <h3 style="margin-bottom:14px;">Notification Preferences</h3>
+        <h3 style="margin-bottom:14px;">SMS Notifications</h3>
         <div class="form-group">
             <label class="check-label">
-                <input type="checkbox" name="notify_sms" value="1"
-                       {% if current_user.notify_sms %}checked{% endif %}>
-                <span>Send me text message notifications (requires phone number)</span>
+                <input type="checkbox" name="notify_sms" value="1" id="notify_sms_chk"
+                       {% if current_user.notify_sms %}checked{% endif %}
+                       onchange="toggleSmsConsent(this.checked)">
+                <span>Enable SMS text notifications</span>
             </label>
+            <small style="color:#718096;">Requires a phone number above and verification below.</small>
+        </div>
+        <div id="sms-consent-row" style="display:{% if current_user.notify_sms %}block{% else %}none{% endif %};">
+            <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;">
+                <label class="check-label" style="align-items:flex-start;">
+                    <input type="checkbox" name="sms_consent" value="1"
+                           {% if current_user.sms_consent %}checked{% endif %}>
+                    <span style="font-size:0.87rem;color:#2d3748;line-height:1.5;">
+                        I agree to receive SMS notifications related to JHE Haul activity.
+                        Message and data rates may apply. Uncheck to opt out at any time.
+                        {% if current_user.sms_consent_at %}
+                        <br><small style="color:#a0aec0;">Consented {{ current_user.sms_consent_at | ct }}</small>
+                        {% endif %}
+                    </span>
+                </label>
+            </div>
         </div>
         {% endif %}
 
@@ -167,16 +184,82 @@ function ppFileChosen(input) {
         </div>
         <div class="form-group">
             <label class="check-label">
-                <input type="checkbox" name="notify_sms" value="1"
-                       {% if current_user.notify_sms %}checked{% endif %}>
-                <span>Also send me text message notifications (requires phone number)</span>
+                <input type="checkbox" name="notify_sms" value="1" id="notify_sms_chk"
+                       {% if current_user.notify_sms %}checked{% endif %}
+                       onchange="toggleSmsConsent(this.checked)">
+                <span>Also send me SMS notifications</span>
             </label>
+        </div>
+        <div id="sms-consent-row" style="display:{% if current_user.notify_sms %}block{% else %}none{% endif %};">
+            <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;margin-top:2px;">
+                <label class="check-label" style="align-items:flex-start;">
+                    <input type="checkbox" name="sms_consent" value="1"
+                           {% if current_user.sms_consent %}checked{% endif %}>
+                    <span style="font-size:0.87rem;color:#2d3748;line-height:1.5;">
+                        I agree to receive SMS notifications related to JHE Haul activity.
+                        Message and data rates may apply. Uncheck to opt out at any time.
+                        {% if current_user.sms_consent_at %}
+                        <br><small style="color:#a0aec0;">Consented {{ current_user.sms_consent_at | ct }}</small>
+                        {% endif %}
+                    </span>
+                </label>
+            </div>
         </div>
         {% endif %}
 
         <button type="submit" class="btn btn-success">Save Changes</button>
     </form>
 </div>
+
+<!-- Phone Verification -->
+{% if current_user.phone %}
+<div class="card" style="max-width:600px;margin:18px auto 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div>
+            <h3 style="margin:0 0 3px;">Phone Verification</h3>
+            <p style="color:#718096;margin:0;font-size:0.87rem;">Verify your number to activate SMS notifications.</p>
+        </div>
+        {% if current_user.phone_verified %}
+        <span style="background:#dcfce7;color:#15803d;font-weight:700;font-size:0.85rem;padding:5px 14px;border-radius:20px;flex-shrink:0;">✓ Verified</span>
+        {% else %}
+        <span style="background:#fef9c3;color:#92400e;font-weight:700;font-size:0.85rem;padding:5px 14px;border-radius:20px;flex-shrink:0;">Not Verified</span>
+        {% endif %}
+    </div>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-weight:600;font-size:0.9rem;color:#1a202c;">{{ current_user.phone_formatted }}</div>
+        {% if current_user.phone_verified %}
+        <div style="font-size:0.83rem;color:#15803d;margin-top:4px;">Verified — SMS notifications are active.</div>
+        {% else %}
+        <div style="font-size:0.83rem;color:#718096;margin-top:4px;">Verify this number to receive SMS notifications.</div>
+        {% endif %}
+    </div>
+
+    {% if not current_user.phone_verified %}
+    <form method="POST" action="{{ url_for('send_phone_verify') }}" style="margin-bottom:{% if current_user.phone_verify_code %}12px{% else %}0{% endif %};">
+        <button type="submit" class="btn btn-outline btn-sm">📱 Send Verification Code</button>
+    </form>
+    {% if current_user.phone_verify_code %}
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-top:10px;">
+        <p style="font-size:0.88rem;color:#92400e;margin:0 0 12px;font-weight:600;">
+            Code sent! Enter the 6-digit code from your text message:
+        </p>
+        <form method="POST" action="{{ url_for('verify_phone') }}"
+              style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input name="verify_code" type="text" inputmode="numeric"
+                   maxlength="6" pattern="\d{6}" placeholder="000000"
+                   autocomplete="one-time-code"
+                   style="width:140px;font-size:1.2rem;letter-spacing:6px;text-align:center;font-weight:700;margin:0;">
+            <button type="submit" class="btn btn-success btn-sm">✓ Verify</button>
+        </form>
+        <p style="font-size:0.77rem;color:#a0aec0;margin:8px 0 0;">
+            Expires in 10 minutes. Didn't get it? Click "Send Verification Code" again to resend.
+        </p>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endif %}
 
 <!-- Service ZIP Management (haulers only) -->
 {% if current_user.user_type == 'hauler' %}
@@ -326,6 +409,10 @@ function ppFileChosen(input) {
 </div>
 
 <script>
+function toggleSmsConsent(checked) {
+    var row = document.getElementById('sms-consent-row');
+    if (row) row.style.display = checked ? 'block' : 'none';
+}
 function maskPhone(input) {
     var x = input.value.replace(/\D/g, '').slice(0, 10);
     if (x.length === 0) { input.value = ''; return; }

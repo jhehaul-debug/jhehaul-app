@@ -24,7 +24,13 @@ from email_service import (
     notify_admin_job_completed, notify_admin_job_cancelled,
     notify_admin_user_deleted,
 )
-from sms_service import notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms, notify_hauler_deposit_paid_sms, notify_customer_new_bid_sms
+from sms_service import (
+    notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms,
+    notify_hauler_deposit_paid_sms, notify_hauler_bid_rejected_sms,
+    notify_hauler_job_cancelled_sms,
+    notify_customer_new_bid_sms, notify_customer_job_completed_sms,
+    notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
+)
 
 def get_badges(user, reviews=None, completed_count=0):
     badges = []
@@ -685,6 +691,8 @@ def customer_accept_bid(bid_id):
             rb_hauler = User.query.get(rb.hauler_id) if rb.hauler_id else None
             if rb_hauler and rb_hauler.email:
                 notify_hauler_bid_rejected(rb_hauler.email, job.id)
+            if rb_hauler and rb_hauler.notify_sms and rb_hauler.phone:
+                notify_hauler_bid_rejected_sms(rb_hauler.phone, job.id)
     except Exception as e:
         app.logger.error("Rejected-bid notifications failed (job #%s): %s", job.id, e)
 
@@ -1111,7 +1119,21 @@ def profile_update():
         current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
         current_user.notify_new_jobs = notify_new_jobs
         current_user.notify_sms = notify_sms
-    
+
+    # SMS consent handling (both user types)
+    from datetime import datetime as _dt
+    sms_consent_form = request.form.get("sms_consent") == "1"
+    if sms_consent_form and not current_user.sms_consent:
+        current_user.sms_consent = True
+        current_user.sms_consent_at = _dt.now()
+    elif not sms_consent_form:
+        current_user.sms_consent = False
+
+    # If phone was cleared, reset verification
+    if not phone:
+        current_user.phone_verified = False
+        current_user.phone_verify_code = None
+
     db.session.commit()
     flash("Profile updated successfully!", "success")
     return redirect(url_for('profile'))
@@ -1183,6 +1205,8 @@ def customer_complete_job(job_id):
     try:
         if current_user.email:
             notify_customer_job_completed(current_user.email, job.id)
+        if current_user.notify_sms and current_user.phone:
+            notify_customer_job_completed_sms(current_user.phone, job.id)
     except Exception as e:
         app.logger.error("Customer job-completed notify failed (job #%s): %s", job.id, e)
 
@@ -1213,6 +1237,8 @@ def customer_cancel_job(job_id):
             bh = User.query.get(b.hauler_id) if b.hauler_id else None
             if bh and bh.email:
                 notify_hauler_job_cancelled(bh.email, job.id, job.customer_name)
+            if bh and bh.notify_sms and bh.phone:
+                notify_hauler_job_cancelled_sms(bh.phone, job.id)
     except Exception as e:
         app.logger.error("Hauler cancel notify failed (job #%s): %s", job.id, e)
 
@@ -1362,6 +1388,8 @@ def hauler_upload_photos(job_id):
             customer = User.query.get(job.customer_id)
             if customer and customer.email:
                 notify_customer_job_completed(customer.email, job.id)
+            if customer and customer.notify_sms and customer.phone:
+                notify_customer_job_completed_sms(customer.phone, job.id)
         except Exception as e:
             app.logger.error("Customer job-completed notify failed (hauler upload, job #%s): %s", job.id, e)
 
@@ -1403,8 +1431,16 @@ def admin_dashboard():
     import os as _os
     spaces_configured = bool(_os.environ.get("SPACES_KEY"))
 
+    from models import SmsLog as _SmsLog
+    sms_sent_total = _SmsLog.query.filter_by(status='sent').count()
+    sms_failed_total = _SmsLog.query.filter_by(status='failed').count()
+    twilio_configured = bool(_os.environ.get("TWILIO_ACCOUNT_SID"))
+
     return render_template('admin_dashboard.html',
                            spaces_configured=spaces_configured,
+                           sms_sent_total=sms_sent_total,
+                           sms_failed_total=sms_failed_total,
+                           twilio_configured=twilio_configured,
                            total_users=total_users,
                            total_customers=total_customers,
                            total_haulers=total_haulers,
@@ -2212,6 +2248,166 @@ def admin_analytics_export():
     resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
     resp.headers['Content-Disposition'] = f'attachment; filename=jhehaul_analytics_{now.strftime("%Y%m%d")}.csv'
     return resp
+
+
+# ── Phone verification ────────────────────────────────────────────────────────
+
+@app.route("/profile/send-phone-verify", methods=["POST"])
+@require_login
+def send_phone_verify():
+    from datetime import datetime as _dt
+    phone = current_user.phone
+    if not phone:
+        flash("Save your phone number first, then request a verification code.", "error")
+        return redirect(url_for('profile'))
+    code = send_verification_sms(phone)
+    if code:
+        current_user.phone_verify_code = code
+        current_user.phone_verify_sent_at = _dt.now()
+        db.session.commit()
+        flash("Verification code sent! Enter the 6-digit code below.", "success")
+    else:
+        flash("Could not send the verification SMS. Check that Twilio is configured or try again.", "error")
+    return redirect(url_for('profile'))
+
+
+@app.route("/profile/verify-phone", methods=["POST"])
+@require_login
+def verify_phone():
+    from datetime import datetime as _dt, timedelta
+    code = request.form.get("verify_code", "").strip()
+    if not current_user.phone_verify_code:
+        flash("No verification code is pending. Please request one first.", "error")
+        return redirect(url_for('profile'))
+    if current_user.phone_verify_sent_at:
+        expires = current_user.phone_verify_sent_at + timedelta(minutes=10)
+        if _dt.now() > expires:
+            current_user.phone_verify_code = None
+            current_user.phone_verify_sent_at = None
+            db.session.commit()
+            flash("That code has expired. Please request a new verification code.", "error")
+            return redirect(url_for('profile'))
+    if code == current_user.phone_verify_code:
+        current_user.phone_verified = True
+        current_user.phone_verify_code = None
+        current_user.phone_verify_sent_at = None
+        db.session.commit()
+        flash("Phone number verified! SMS notifications are now active.", "success")
+    else:
+        flash("Incorrect code — please try again.", "error")
+    return redirect(url_for('profile'))
+
+
+# ── Admin SMS settings ────────────────────────────────────────────────────────
+
+@app.route("/admin/sms-settings")
+@require_admin
+def admin_sms_settings():
+    from models import SmsSettings, SmsLog
+    settings = SmsSettings.query.first()
+    if not settings:
+        settings = SmsSettings()
+        db.session.add(settings)
+        db.session.commit()
+    sms_sent = SmsLog.query.filter_by(status='sent').count()
+    sms_failed = SmsLog.query.filter_by(status='failed').count()
+    sms_total = SmsLog.query.count()
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    twilio_tok = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_num = os.environ.get("TWILIO_PHONE_NUMBER") or os.environ.get("TWILIO_FROM_NUMBER") or ""
+    twilio_configured = bool(twilio_sid and twilio_tok and from_num)
+    masked = ('*' * max(0, len(from_num) - 4) + from_num[-4:]) if from_num else ""
+    return render_template('admin_sms_settings.html',
+                           settings=settings,
+                           twilio_configured=twilio_configured,
+                           from_number_masked=masked,
+                           sms_sent=sms_sent,
+                           sms_failed=sms_failed,
+                           sms_total=sms_total)
+
+
+@app.route("/admin/sms-settings/update", methods=["POST"])
+@require_admin
+def admin_sms_settings_update():
+    from models import SmsSettings
+    settings = SmsSettings.query.first()
+    if not settings:
+        settings = SmsSettings()
+        db.session.add(settings)
+    settings.sms_globally_enabled = request.form.get("sms_globally_enabled") == "1"
+    settings.ev_new_bid          = request.form.get("ev_new_bid") == "1"
+    settings.ev_bid_accepted     = request.form.get("ev_bid_accepted") == "1"
+    settings.ev_deposit_paid     = request.form.get("ev_deposit_paid") == "1"
+    settings.ev_job_nearby       = request.form.get("ev_job_nearby") == "1"
+    settings.ev_job_completed    = request.form.get("ev_job_completed") == "1"
+    settings.ev_job_cancelled    = request.form.get("ev_job_cancelled") == "1"
+    settings.ev_bid_rejected     = request.form.get("ev_bid_rejected") == "1"
+    settings.ev_admin_alert      = request.form.get("ev_admin_alert") == "1"
+    settings.email_fallback_to_sms = request.form.get("email_fallback_to_sms") == "1"
+    db.session.commit()
+    flash("SMS settings saved.", "success")
+    return redirect(url_for('admin_sms_settings'))
+
+
+@app.route("/admin/sms-settings/test", methods=["POST"])
+@require_admin
+def admin_sms_test():
+    phone = strip_phone(request.form.get("phone", ""))
+    if not phone:
+        flash("Enter a phone number to send the test to.", "error")
+        return redirect(url_for('admin_sms_settings'))
+    ok = send_sms(phone,
+                  "JHE Haul: This is a test SMS from the admin dashboard. "
+                  "If you received this, SMS is working correctly!",
+                  'admin_test')
+    if ok:
+        flash(f"Test SMS sent to ({phone[:3]}) {phone[3:6]}-{phone[6:]}! Check the SMS Logs for delivery details.", "success")
+    else:
+        flash("Test SMS failed. Check Twilio credentials and the SMS Logs for the error.", "error")
+    return redirect(url_for('admin_sms_settings'))
+
+
+@app.route("/admin/sms-logs")
+@require_admin
+def admin_sms_logs():
+    from models import SmsLog
+    logs = SmsLog.query.order_by(SmsLog.created_at.desc()).limit(500).all()
+    sent    = sum(1 for l in logs if l.status == 'sent')
+    failed  = sum(1 for l in logs if l.status == 'failed')
+    skipped = sum(1 for l in logs if l.status in ('no_twilio', 'skipped'))
+    type_labels = {
+        'hauler_new_job_nearby':  'Hauler — New Job Nearby',
+        'customer_new_bid':       'Customer — New Bid',
+        'hauler_bid_accepted':    'Hauler — Bid Accepted',
+        'hauler_bid_rejected':    'Hauler — Bid Not Selected',
+        'hauler_deposit_paid':    'Hauler — Deposit Paid',
+        'customer_job_completed': 'Customer — Job Complete',
+        'hauler_job_cancelled':   'Hauler — Job Cancelled',
+        'admin_alert':            'Admin Alert',
+        'admin_test':             'Admin Test',
+        'phone_verification':     'Phone Verification',
+        'sms':                    'General SMS',
+    }
+    return render_template('admin_sms_logs.html',
+                           logs=logs, sent=sent, failed=failed, skipped=skipped,
+                           type_labels=type_labels)
+
+
+@app.route("/admin/sms/resend/<int:log_id>", methods=["POST"])
+@require_admin
+def admin_sms_resend(log_id):
+    from models import SmsLog
+    log = SmsLog.query.get_or_404(log_id)
+    if log.status not in ('failed', 'no_twilio'):
+        flash("Only failed SMS messages can be resent.", "error")
+        return redirect(url_for('admin_sms_logs'))
+    ok = send_sms(log.recipient_phone, log.message_body, log.event_type)
+    if ok:
+        phone_fmt = log.recipient_phone or '?'
+        flash(f"SMS resent to {phone_fmt}.", "success")
+    else:
+        flash("Resend failed. Check Twilio configuration and SMS logs for the error.", "error")
+    return redirect(url_for('admin_sms_logs'))
 
 
 @app.route("/health")

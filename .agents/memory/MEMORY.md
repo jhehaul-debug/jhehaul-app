@@ -1,0 +1,1 @@
+- [SMS system architecture](sms-system.md) — Twilio SMS alongside SendGrid; migration ordering critical in app.py
