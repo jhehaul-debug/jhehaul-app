@@ -117,9 +117,19 @@
             <td style="padding:8px 14px;white-space:nowrap;color:#718096;font-size:0.79rem;">
                 {{ log.created_at | ct('%b %d %I:%M %p') }}
             </td>
-            <td style="padding:8px 12px;white-space:nowrap;">
-                <span style="font-size:0.76rem;font-family:monospace;background:#f1f5f9;color:#374151;padding:2px 7px;border-radius:5px;">
-                    {{ log.event_type }}
+            <td style="padding:8px 12px;white-space:nowrap;max-width:240px;">
+                {% set label = type_labels.get(log.event_type, log.event_type) %}
+                {% if log.event_type.startswith('admin_') %}
+                  {% set chip_bg = '#eff6ff' %}{% set chip_color = '#1e40af' %}
+                {% elif log.event_type.startswith('customer_') %}
+                  {% set chip_bg = '#f0fdf4' %}{% set chip_color = '#15803d' %}
+                {% elif log.event_type.startswith('hauler_') %}
+                  {% set chip_bg = '#fff7ed' %}{% set chip_color = '#c2410c' %}
+                {% else %}
+                  {% set chip_bg = '#f8fafc' %}{% set chip_color = '#374151' %}
+                {% endif %}
+                <span style="font-size:0.75rem;font-family:sans-serif;background:{{ chip_bg }};color:{{ chip_color }};font-weight:600;padding:2px 8px;border-radius:5px;white-space:nowrap;">
+                    {{ label }}
                 </span>
             </td>
             <td style="padding:8px 12px;color:#4a5568;word-break:break-all;font-size:0.81rem;max-width:180px;">
