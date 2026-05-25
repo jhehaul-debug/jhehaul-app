@@ -132,19 +132,49 @@ def _log_sms(event_type, phone, message, status,
 
 # ── Core send ──────────────────────────────────────────────────────────────────
 
+def _friendly_twilio_error(err_str):
+    """
+    Convert raw Twilio exception strings into short, human-readable messages.
+    Twilio embeds the HTTP status + error code in the string, e.g.:
+      HTTP 400 error: Unable to create record: ... code 21608
+    """
+    s = str(err_str)
+    if '21608' in s:
+        return ('Trial account restriction: the destination number is not a verified '
+                'Twilio number. Upgrade your Twilio account or add the number at '
+                'console.twilio.com → Phone Numbers → Verified Caller IDs.')
+    if '21211' in s:
+        return 'Invalid "To" phone number — check the number is a valid US number in E.164 format.'
+    if '21214' in s:
+        return '"To" number is not a mobile number capable of receiving SMS.'
+    if '20003' in s or 'authenticate' in s.lower():
+        return 'Twilio authentication failed — check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.'
+    if '21606' in s:
+        return 'The "From" number is not SMS-capable. Check TWILIO_PHONE_NUMBER.'
+    if 'connect' in s.lower() or 'timeout' in s.lower():
+        return f'Network error connecting to Twilio: {s[:120]}'
+    # Default: trim to 300 chars so the log column doesn't overflow
+    return s[:300]
+
+
 def send_sms(to_phone, message, event_type='sms'):
     """
     Send an SMS via Twilio.
-    - Logs every attempt to sms_logs table (status, SID, error)
+    - Always logs the E.164-formatted phone number (never raw digits)
+    - Logs every attempt to sms_logs table (SID, status, friendly error)
     - Retries once automatically on transient failure (2-second delay)
     - Returns True on success, False on failure
     - Does NOT enforce per-user opt-in (callers handle that)
-    - Does NOT check per-event settings (call is_sms_enabled() upstream if needed)
+    - Does NOT check per-event settings (call is_sms_enabled() upstream)
     """
+    # Format to E.164 first so every log entry shows the canonical number
+    formatted = _format_phone(to_phone) if to_phone else None
+    log_phone = formatted or to_phone or ''   # fall back to raw if unparseable
+
     client, from_phone = _twilio_client()
     if not client:
         logging.warning("Twilio not configured — SMS skipped (event=%s)", event_type)
-        _log_sms(event_type, to_phone, message, 'no_twilio',
+        _log_sms(event_type, log_phone, message, 'no_twilio',
                  error_msg='TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER not set')
         return False
 
@@ -152,11 +182,10 @@ def send_sms(to_phone, message, event_type='sms'):
         logging.warning("send_sms: no recipient phone (event=%s)", event_type)
         return False
 
-    formatted = _format_phone(to_phone)
     if not formatted:
         logging.warning("send_sms: cannot format phone %r (event=%s)", to_phone, event_type)
-        _log_sms(event_type, to_phone, message, 'failed',
-                 error_msg=f'Cannot parse phone number: {to_phone!r}')
+        _log_sms(event_type, log_phone, message, 'failed',
+                 error_msg=f'Cannot parse phone number into E.164: {to_phone!r}')
         return False
 
     for attempt in range(2):
@@ -164,20 +193,21 @@ def send_sms(to_phone, message, event_type='sms'):
             msg = client.messages.create(body=message, from_=from_phone, to=formatted)
             logging.info("SMS sent → %s | SID=%s | event=%s | attempt=%d",
                          formatted, msg.sid, event_type, attempt + 1)
-            _log_sms(event_type, to_phone, message, 'sent',
+            # Log E.164 number and Twilio SID + status
+            _log_sms(event_type, formatted, message, 'sent',
                      twilio_sid=msg.sid, retry_count=attempt)
             return True
         except Exception as e:
-            err = str(e)
+            friendly = _friendly_twilio_error(e)
             if attempt == 0:
                 logging.warning("SMS attempt 1 failed — retrying in 2s (event=%s): %s",
-                                event_type, err)
+                                event_type, friendly)
                 time.sleep(2)
             else:
                 logging.error("SMS failed after retry (event=%s → %s): %s",
-                              event_type, formatted, err)
-                _log_sms(event_type, to_phone, message, 'failed',
-                         error_msg=err, retry_count=attempt)
+                              event_type, formatted, friendly)
+                _log_sms(event_type, formatted, message, 'failed',
+                         error_msg=friendly, retry_count=attempt)
                 return False
     return False
 
