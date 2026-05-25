@@ -71,6 +71,24 @@
     </div>
 </div>
 
+<!-- SMS Stat Card -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
+    <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);border-left:4px solid #a855f7;">
+        <div class="stat-icon">📱</div>
+        <div class="stat-value" style="color:#7e22ce;">{{ sms_sent_total }}</div>
+        <div class="stat-label">SMS Sent</div>
+        <div class="stat-sub">
+            {% if not twilio_configured %}
+            <span style="color:#dc2626;">⚠ Twilio not configured</span>
+            {% elif sms_failed_total > 0 %}
+            {{ sms_failed_total }} failed · <a href="{{ url_for('admin_sms_logs') }}" style="color:#7e22ce;">logs →</a>
+            {% else %}
+            All delivered
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <!-- Quick Actions -->
 <div class="card">
     <h3 style="margin-bottom:14px;">⚡ Quick Actions</h3>
@@ -81,6 +99,7 @@
         <button onclick="shareInvite('hauler')" class="btn btn-success">🚛 Invite Hauler</button>
         <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;"
            class="btn btn-secondary">📧 Send Notification</a>
+        <a href="{{ url_for('admin_sms_settings') }}" class="btn btn-secondary">📱 SMS Settings</a>
         <button onclick="shareInvite('general')" class="btn btn-secondary">🔗 General Invite</button>
     </div>
 </div>

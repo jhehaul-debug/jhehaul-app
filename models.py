@@ -18,6 +18,11 @@ class User(UserMixin, db.Model):
     max_travel_miles = db.Column(db.Integer, nullable=True)
     notify_new_jobs = db.Column(db.Boolean, default=True)
     notify_sms = db.Column(db.Boolean, default=False)
+    sms_consent = db.Column(db.Boolean, default=False)
+    sms_consent_at = db.Column(db.DateTime, nullable=True)
+    phone_verified = db.Column(db.Boolean, default=False)
+    phone_verify_code = db.Column(db.String(6), nullable=True)
+    phone_verify_sent_at = db.Column(db.DateTime, nullable=True)
     truck_type = db.Column(db.String, nullable=True)
     trailer_type = db.Column(db.String, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
@@ -178,3 +183,34 @@ class HaulerServiceZip(db.Model):
     zip_code = db.Column(db.String(5), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     __table_args__ = (UniqueConstraint('hauler_id', 'zip_code'),)
+
+
+class SmsLog(db.Model):
+    """One row per SMS send attempt."""
+    __tablename__ = 'sms_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    event_type = db.Column(db.String(100), nullable=False)
+    recipient_phone = db.Column(db.String(20), nullable=True)
+    message_body = db.Column(db.Text, nullable=True)
+    twilio_sid = db.Column(db.String(50), nullable=True)
+    status = db.Column(db.String(20), nullable=False)  # sent | failed | no_twilio | skipped
+    error_msg = db.Column(db.Text, nullable=True)
+    retry_count = db.Column(db.Integer, default=0)
+
+
+class SmsSettings(db.Model):
+    """Single-row admin settings for SMS (get-or-create pattern)."""
+    __tablename__ = 'sms_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    sms_globally_enabled = db.Column(db.Boolean, default=True)
+    ev_new_bid = db.Column(db.Boolean, default=True)
+    ev_bid_accepted = db.Column(db.Boolean, default=True)
+    ev_deposit_paid = db.Column(db.Boolean, default=True)
+    ev_job_nearby = db.Column(db.Boolean, default=True)
+    ev_job_completed = db.Column(db.Boolean, default=True)
+    ev_job_cancelled = db.Column(db.Boolean, default=True)
+    ev_bid_rejected = db.Column(db.Boolean, default=False)
+    ev_admin_alert = db.Column(db.Boolean, default=False)
+    email_fallback_to_sms = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)

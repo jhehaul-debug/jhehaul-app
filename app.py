@@ -185,6 +185,19 @@ with app.app_context():
         logging.info("Column migration (profile photo) skipped: %s", _e)
 
     try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verify_code VARCHAR(6)"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verify_sent_at TIMESTAMP"))
+        db.session.commit()
+        logging.info("Column migration: users SMS consent + phone verification columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users SMS) skipped: %s", _e)
+
+    try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
         admin = User.query.filter_by(email=admin_email).first()
