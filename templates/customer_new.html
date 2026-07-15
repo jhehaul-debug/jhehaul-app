@@ -73,7 +73,7 @@
             </label>
         </div>
 
-        <button type="submit" class="btn btn-success btn-lg btn-block">Submit Job</button>
+        <button type="submit" class="btn btn-success btn-lg btn-block">Submit Request</button>
     </form>
 </div>
 
@@ -88,7 +88,7 @@ function maskPhone(input) {
 function validateCustomerForm(form) {
     var checkbox = form.querySelector('input[name="agree_terms"]');
     if (!checkbox.checked) {
-        alert('You must certify that you own or have legal authority over the property before posting a job.');
+        alert('You must certify that you own or have legal authority over the property before submitting.');
         return false;
     }
     var zip = form.querySelector('input[name="pickup_zip"]').value;
