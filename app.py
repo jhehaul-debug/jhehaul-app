@@ -278,5 +278,16 @@ with app.app_context():
         db.session.rollback()
         logging.info("Table migration (messages) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text(
+            "ALTER TABLE sms_settings ADD COLUMN IF NOT EXISTS ev_quote_received BOOLEAN DEFAULT TRUE"
+        ))
+        db.session.commit()
+        logging.info("Column migration: sms_settings.ev_quote_received ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (sms_settings.ev_quote_received) skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
