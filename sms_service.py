@@ -304,6 +304,13 @@ def notify_customer_quote_received_sms(phone, job_id, service_type, price):
     return send_sms(phone, msg, 'customer_quote_received')
 
 
+def notify_customer_deposit_confirmed_sms(phone, job_id, service_type):
+    service_label = service_type or 'your service request'
+    msg = (f"JHE Haul: Deposit received for {service_label} #{job_id}. "
+           f"We'll be in touch to confirm your appointment! {_APP_URL}/customer/request/{job_id}")
+    return send_sms(phone, msg, 'customer_deposit_confirmed')
+
+
 def notify_customer_job_completed_sms(phone, job_id):
     if not is_sms_enabled('customer_job_completed'):
         return False
