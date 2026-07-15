@@ -46,36 +46,56 @@
 
 {% if jobs %}
 
-{# --- Build stat counts --- #}
-{% set action_count = namespace(n=0) %}
-{% set scheduled_count = namespace(n=0) %}
-{% set completed_count = namespace(n=0) %}
-{% set total_unread = namespace(n=0) %}
+{# --- Per-status counts --- #}
+{% set cnt = namespace(reviewing=0, quoted=0, awaiting=0, scheduled=0, in_progress=0, completed=0, unread=0) %}
 {% for job in jobs %}
-    {% if job.status in ('quoted', 'waiting_for_payment', 'accepted') %}{% set action_count.n = action_count.n + 1 %}{% endif %}
-    {% if job.status in ('scheduled', 'deposit_paid', 'in_progress') %}{% set scheduled_count.n = scheduled_count.n + 1 %}{% endif %}
-    {% if job.status == 'completed' %}{% set completed_count.n = completed_count.n + 1 %}{% endif %}
-    {% set total_unread.n = total_unread.n + unread_counts.get(job.id, 0) %}
+    {% if job.status in ('reviewing', 'open', 'bidding') %}{% set cnt.reviewing = cnt.reviewing + 1 %}{% endif %}
+    {% if job.status == 'quoted' %}{% set cnt.quoted = cnt.quoted + 1 %}{% endif %}
+    {% if job.status in ('waiting_for_payment', 'accepted') %}{% set cnt.awaiting = cnt.awaiting + 1 %}{% endif %}
+    {% if job.status in ('scheduled', 'deposit_paid') %}{% set cnt.scheduled = cnt.scheduled + 1 %}{% endif %}
+    {% if job.status == 'in_progress' %}{% set cnt.in_progress = cnt.in_progress + 1 %}{% endif %}
+    {% if job.status == 'completed' %}{% set cnt.completed = cnt.completed + 1 %}{% endif %}
+    {% set cnt.unread = cnt.unread + unread_counts.get(job.id, 0) %}
 {% endfor %}
 
 <div class="stats-row">
-    {% if action_count.n > 0 %}
+    {% if cnt.reviewing > 0 %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#c05621;">{{ action_count.n }}</div>
-        <div class="stat-lbl">Action Needed</div>
+        <div class="stat-num" style="color:#1d4ed8;">{{ cnt.reviewing }}</div>
+        <div class="stat-lbl">Under Review</div>
+    </div>
+    {% endif %}
+    {% if cnt.quoted > 0 %}
+    <div class="stat-card">
+        <div class="stat-num" style="color:#c05621;">{{ cnt.quoted }}</div>
+        <div class="stat-lbl">Quote Ready</div>
+    </div>
+    {% endif %}
+    {% if cnt.awaiting > 0 %}
+    <div class="stat-card">
+        <div class="stat-num" style="color:#c05621;">{{ cnt.awaiting }}</div>
+        <div class="stat-lbl">Awaiting Payment</div>
+    </div>
+    {% endif %}
+    {% if cnt.scheduled > 0 %}
+    <div class="stat-card">
+        <div class="stat-num" style="color:#15803d;">{{ cnt.scheduled }}</div>
+        <div class="stat-lbl">Scheduled</div>
+    </div>
+    {% endif %}
+    {% if cnt.in_progress > 0 %}
+    <div class="stat-card">
+        <div class="stat-num" style="color:#1d4ed8;">{{ cnt.in_progress }}</div>
+        <div class="stat-lbl">In Progress</div>
     </div>
     {% endif %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#15803d;">{{ scheduled_count.n }}</div>
-        <div class="stat-lbl">Scheduled</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-num" style="color:#718096;">{{ completed_count.n }}</div>
+        <div class="stat-num" style="color:#718096;">{{ cnt.completed }}</div>
         <div class="stat-lbl">Completed</div>
     </div>
-    {% if total_unread.n > 0 %}
+    {% if cnt.unread > 0 %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#e53e3e;">{{ total_unread.n }}</div>
+        <div class="stat-num" style="color:#e53e3e;">{{ cnt.unread }}</div>
         <div class="stat-lbl">New Messages</div>
     </div>
     {% endif %}
