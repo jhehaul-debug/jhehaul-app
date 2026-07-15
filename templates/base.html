@@ -40,7 +40,11 @@
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
                     </div>
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin</a>
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Dashboard</a>
+                        <a href="{{ url_for('admin_requests') }}" class="nav-admin">Requests</a>
+                        <a href="{{ url_for('admin_messages') }}" class="nav-admin" style="position:relative;">
+                            Messages{% if admin_unread_count > 0 %}<span style="position:absolute;top:-5px;right:-10px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;line-height:1.4;">{{ admin_unread_count }}</span>{% endif %}
+                        </a>
                     {% elif current_user.user_type == 'customer' %}
                         <a href="{{ url_for('home') }}">Home</a>
                         <a href="{{ url_for('customer_request') }}">Request Service</a>
@@ -73,6 +77,8 @@
             </div>
             {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
+                <a href="{{ url_for('admin_requests') }}">📋 Requests</a>
+                <a href="{{ url_for('admin_messages') }}">💬 Messages{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ admin_unread_count }}</span>{% endif %}</a>
             {% elif current_user.user_type == 'customer' %}
                 <a href="{{ url_for('home') }}">🏠 Home</a>
                 <a href="{{ url_for('customer_request') }}">📋 Request Service</a>
