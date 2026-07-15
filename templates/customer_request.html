@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Request Service - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="card" style="max-width:660px;margin:0 auto;">
+    <h2 style="margin-bottom:4px;">Request Service</h2>
+    <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">Tell us what you need and we'll send you a quote — usually within 24 hours.</p>
+    <hr>
+
+    <form method="POST" action="{{ url_for('customer_create') }}" enctype="multipart/form-data"
+          onsubmit="return validateRequestForm(this);">
+
+        <div class="form-group">
+            <label>Service Type <span style="color:#e53e3e;">*</span></label>
+            <select name="service_type" required>
+                <option value="">— Select a service —</option>
+                <option value="Junk Removal">Junk Removal</option>
+                <option value="Furniture Removal">Furniture Removal</option>
+                <option value="Appliance Removal">Appliance Removal</option>
+                <option value="Yard Waste">Yard Waste</option>
+                <option value="Construction Debris">Construction Debris</option>
+                <option value="Clean Outs">Clean Outs</option>
+                <option value="Garage Clean Out">Garage Clean Out</option>
+                <option value="Property Clean Up">Property Clean Up</option>
+                <option value="Moving Labor">Moving Labor</option>
+                <option value="Furniture Delivery">Furniture Delivery</option>
+                <option value="Special Request">Special Request</option>
+            </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Your Name <span style="color:#e53e3e;">*</span></label>
+                <input name="customer_name" required
+                       value="{{ current_user.first_name or '' }} {{ current_user.last_name or '' }}"
+                       placeholder="Full name">
+            </div>
+            <div class="form-group">
+                <label>Your Phone <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+                <input name="customer_phone" type="tel" placeholder="(555) 555-5555"
+                       maxlength="14" oninput="maskPhone(this)">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Service Address <span style="color:#e53e3e;">*</span></label>
+            <input name="pickup_address" required placeholder="Street Address, City, State">
+        </div>
+
+        <div class="form-group" style="max-width:200px;">
+            <label>ZIP Code <span style="color:#e53e3e;">*</span></label>
+            <input name="pickup_zip" required placeholder="55401" maxlength="5"
+                   pattern="\d{5}" inputmode="numeric"
+                   oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="form-group">
+                <label>Preferred Date <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+                <input type="date" name="preferred_date">
+            </div>
+            <div class="form-group">
+                <label>Preferred Time <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+                <select name="preferred_time">
+                    <option value="">Any time</option>
+                    <option value="Morning">Morning (8am – 12pm)</option>
+                    <option value="Afternoon">Afternoon (12pm – 5pm)</option>
+                    <option value="Evening">Evening (5pm – 8pm)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description <span style="color:#e53e3e;">*</span></label>
+            <textarea name="job_description" required rows="4"
+                      placeholder="Describe what needs to be done — items, quantity, size, location, access, any special considerations..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Photos <span style="font-weight:400;color:#a0aec0;">(optional but helpful)</span></label>
+            <input type="file" name="photos" multiple accept="image/*"
+                   style="background:white;padding:8px;">
+            <div style="font-size:0.82rem;color:#718096;margin-top:4px;">Photos help us give you the most accurate quote.</div>
+        </div>
+
+        <div class="terms-box">
+            <label class="check-label">
+                <input type="checkbox" name="agree_terms" value="1" required id="requestTermsCheckbox">
+                <span>I certify I own or have legal authority over the property and authorize removal/work on all items described. I understand this forms a legally binding agreement.
+                <a href="{{ url_for('customer_terms') }}" target="_blank" style="color:#3498db;">Read Full Terms</a></span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg btn-block">Submit Request</button>
+    </form>
+</div>
+
+<script>
+function maskPhone(input) {
+    var x = input.value.replace(/\D/g, '').slice(0, 10);
+    if (x.length === 0) { input.value = ''; return; }
+    if (x.length <= 3) { input.value = '(' + x; }
+    else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
+    else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
+}
+function validateRequestForm(form) {
+    var checkbox = form.querySelector('input[name="agree_terms"]');
+    if (!checkbox.checked) {
+        alert('You must certify that you own or have legal authority over the property before submitting.');
+        return false;
+    }
+    var zip = form.querySelector('input[name="pickup_zip"]').value;
+    if (!/^\d{5}$/.test(zip)) {
+        alert('Please enter a valid 5-digit ZIP code.');
+        return false;
+    }
+    return true;
+}
+</script>
+{% endblock %}
