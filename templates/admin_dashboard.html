@@ -37,7 +37,7 @@
         <div class="stat-icon">👥</div>
         <div class="stat-value" style="color:#3498db;">{{ total_users }}</div>
         <div class="stat-label">Total Users</div>
-        <div class="stat-sub">{{ total_customers }} customers · {{ total_haulers }} haulers</div>
+        <div class="stat-sub">{{ total_customers }} customers</div>
     </div>
     <div class="stat-card green">
         <div class="stat-icon">📦</div>
@@ -96,7 +96,6 @@
         <a href="#post-test-job" onclick="document.getElementById('post-test-job').scrollIntoView({behavior:'smooth'});return false;"
            class="btn btn-primary">📋 Post Test Job</a>
         <button onclick="shareInvite('customer')" class="btn btn-outline">👤 Invite Customer</button>
-        <button onclick="shareInvite('hauler')" class="btn btn-success">🚛 Invite Hauler</button>
         <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;"
            class="btn btn-secondary">📧 Send Notification</a>
         <a href="{{ url_for('admin_sms_settings') }}" class="btn btn-secondary">📱 SMS Settings</a>
@@ -112,9 +111,6 @@
         <button onclick="shareInvite('customer')" class="btn btn-primary" style="flex:1;min-width:180px;">
             👤 Invite a Customer
         </button>
-        <button onclick="shareInvite('hauler')" class="btn btn-success" style="flex:1;min-width:180px;">
-            🚛 Invite a Hauler
-        </button>
     </div>
     <div style="margin-top:10px;">
         <button onclick="shareInvite('general')" class="btn btn-secondary btn-block">
@@ -128,16 +124,12 @@ function shareInvite(type) {
     var url, title, text;
     if (type === 'customer') {
         url = baseUrl + 'invite/customer';
-        title = 'Join JHE Haul';
-        text = 'Sign up on JHE Haul to post junk hauling jobs and get bids from local haulers!';
-    } else if (type === 'hauler') {
-        url = baseUrl + 'invite/hauler';
-        title = 'Join JHE Haul';
-        text = 'Sign up on JHE Haul as a hauler to find junk hauling jobs in your area!';
+        title = 'JHE Haul — Junk Removal';
+        text = 'Book junk removal and hauling services online at JHE Haul!';
     } else {
         url = baseUrl + 'invite';
-        title = 'Join JHE Haul';
-        text = 'Check out JHE Haul - the junk hauling marketplace!';
+        title = 'JHE Haul — Junk Removal';
+        text = 'Check out JHE Haul — fast, affordable junk removal and hauling services!';
     }
     if (navigator.share) {
         navigator.share({ title: title, text: text, url: url });
