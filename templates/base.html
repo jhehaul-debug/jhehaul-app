@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}JHE Haul | Junk Removal & Hauling Marketplace{% endblock %}</title>
-    {% block meta_description %}<meta name="description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">{% endblock %}
+    <title>{% block title %}JHE Haul | Professional Junk Removal & Hauling{% endblock %}</title>
+    {% block meta_description %}<meta name="description" content="JHE Haul — Professional junk removal, furniture pickup, cleanouts, and hauling services. Fast, reliable, and affordable.">{% endblock %}
     {% block og_meta %}
-    <meta property="og:title" content="JHE Haul | Junk Removal & Hauling Marketplace">
-    <meta property="og:description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">
+    <meta property="og:title" content="JHE Haul | Professional Junk Removal & Hauling">
+    <meta property="og:description" content="JHE Haul — Professional junk removal, furniture pickup, cleanouts, and hauling services. Fast, reliable, and affordable.">
     <meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
     <meta property="og:image:width" content="1080">
     <meta property="og:image:height" content="1080">
@@ -15,8 +15,8 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="JHE Haul">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="JHE Haul | Junk Removal & Hauling Marketplace">
-    <meta name="twitter:description" content="Find local haulers for junk removal, furniture pickup, cleanouts, debris hauling, and moving help with JHE Haul.">
+    <meta name="twitter:title" content="JHE Haul | Professional Junk Removal & Hauling">
+    <meta name="twitter:description" content="JHE Haul — Professional junk removal, furniture pickup, cleanouts, and hauling services. Fast, reliable, and affordable.">
     <meta name="twitter:image" content="https://jhehaul.com/static/jhehaul-share.png">
     {% endblock %}
     <link rel="icon" type="image/png" href="/static/og-image.png">
@@ -40,20 +40,15 @@
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
                     </div>
                     {% if current_user.is_admin %}
-                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin Dashboard</a>
-                        <a href="{{ url_for('admin_dashboard') }}#users" class="nav-admin">User Management</a>
-                        <a href="{{ url_for('admin_dashboard') }}#jobs" class="nav-admin">Job Monitoring</a>
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin</a>
                     {% elif current_user.user_type == 'customer' %}
-                        <a href="{{ url_for('customer_new') }}">Post Job</a>
-                        <a href="{{ url_for('customer_jobs') }}">My Jobs</a>
-                    {% elif current_user.user_type == 'hauler' %}
-                        <a href="{{ url_for('hauler_jobs') }}">Available Jobs</a>
-                        <a href="{{ url_for('hauler_dashboard') }}">My Dashboard</a>
-                        <a href="{{ url_for('hauler_earnings') }}">Earnings</a>
+                        <a href="{{ url_for('customer_new') }}">Request Service</a>
+                        <a href="{{ url_for('customer_jobs') }}">My Requests</a>
                     {% endif %}
                     <a href="{{ url_for('profile') }}">Profile</a>
                     <a href="{{ url_for('auth.logout') }}" class="nav-signout">Sign Out</a>
                 {% else %}
+                    <a href="/services">Services</a>
                     <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
                 {% endif %}
             </nav>
@@ -72,26 +67,21 @@
         {% if current_user.is_authenticated %}
             <div class="nav-mobile-user">
                 {{ current_user.first_name or current_user.email or 'User' }}
-                {% if current_user.is_admin %} · Admin{% elif current_user.user_type %} · {{ current_user.user_type.title() }}{% endif %}
+                {% if current_user.is_admin %} · Admin{% endif %}
             </div>
             {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
-                <a href="{{ url_for('admin_dashboard') }}#users">👥 User Management</a>
-                <a href="{{ url_for('admin_dashboard') }}#jobs">📦 Job Monitoring</a>
             {% elif current_user.user_type == 'customer' %}
-                <a href="{{ url_for('customer_new') }}">📋 Post Job</a>
-                <a href="{{ url_for('customer_jobs') }}">📦 My Jobs</a>
-            {% elif current_user.user_type == 'hauler' %}
-                <a href="{{ url_for('hauler_jobs') }}">🔍 Available Jobs</a>
-                <a href="{{ url_for('hauler_dashboard') }}">🏠 My Dashboard</a>
-                <a href="{{ url_for('hauler_earnings') }}">💰 Earnings</a>
+                <a href="{{ url_for('customer_new') }}">📋 Request Service</a>
+                <a href="{{ url_for('customer_jobs') }}">📦 My Requests</a>
             {% endif %}
             <a href="{{ url_for('profile') }}">👤 Profile</a>
-            <a href="{{ url_for('about') }}">ℹ About Us</a>
+            <a href="{{ url_for('about') }}">ℹ About</a>
             <a href="{{ url_for('auth.logout') }}" class="nav-signout">⬅ Sign Out</a>
         {% else %}
+            <a href="/services">🚛 Services</a>
             <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
-            <a href="{{ url_for('about') }}">ℹ About Us</a>
+            <a href="{{ url_for('about') }}">ℹ About</a>
         {% endif %}
     </nav>
 </header>
@@ -115,23 +105,23 @@
         <div class="footer-inner">
             <div>
                 <span class="footer-brand">🚛 JHE Haul</span>
-                <p class="footer-desc">The local junk hauling marketplace. Post jobs, get bids, and get your junk removed fast.</p>
+                <p class="footer-desc">Professional Junk Removal &amp; Hauling<br><small>Fast • Reliable • Affordable</small></p>
+                <p class="footer-desc" style="font-size:0.8rem;color:#a0aec0;margin-top:6px;">Serving Minnesota &amp; Wisconsin</p>
             </div>
             <div class="footer-col">
-                <h4>Get Started</h4>
-                <a href="{{ url_for('invite', role='customer') }}">Post a Job</a>
-                <a href="{{ url_for('invite', role='hauler') }}">Become a Hauler</a>
-                <a href="{{ url_for('invite') }}">Join JHE Haul</a>
+                <h4>Services</h4>
+                <a href="/services">All Services</a>
+                <a href="{{ url_for('customer_new') }}">Request Service</a>
+                <a href="{{ url_for('auth.login') }}">My Account</a>
             </div>
             <div class="footer-col">
                 <h4>Company</h4>
                 <a href="{{ url_for('about') }}">About Us</a>
-                <a href="{{ url_for('customer_terms') }}">Customer Terms</a>
-                <a href="{{ url_for('hauler_agreement') }}">Hauler Agreement</a>
+                <a href="{{ url_for('customer_terms') }}">Terms of Service</a>
             </div>
             <div class="footer-col">
-                <h4>Support</h4>
-                <a href="mailto:jhehaul@gmail.com">Contact Support</a>
+                <h4>Contact</h4>
+                <a href="mailto:jhehaul@gmail.com">jhehaul@gmail.com</a>
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('profile') }}">My Profile</a>
                 {% else %}
