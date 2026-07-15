@@ -819,6 +819,29 @@ def customer_send_message(job_id):
     msg = Message(job_id=job_id, sender_id=current_user.id, body=body)
     db.session.add(msg)
     db.session.commit()
+    try:
+        from email_service import send_email, _html
+        admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
+        app_url = os.environ.get("APP_BASE_URL", "https://jhehaul.com")
+        subject = f"[JHE Haul] Customer message on Request #{job_id} — {current_user.first_name or 'Customer'}"
+        body_html = f"""
+        <p><strong>{current_user.first_name or current_user.email or 'Customer'}</strong> sent a message about Request #{job_id}.</p>
+        <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin:14px 0;">
+          <p style="margin:0;color:#1a202c;white-space:pre-wrap;">{body}</p>
+        </div>
+        <a href="{app_url}/admin/request/{job_id}" class="btn">Reply in Admin →</a>"""
+        send_email(admin_email, subject,
+                   _html("Customer Message", f"Re: Request #{job_id}",
+                         "💬 New Customer Message", body_html),
+                   'admin_customer_message')
+    except Exception as e:
+        app.logger.error("Admin message notify failed (job #%s): %s", job_id, e)
+    try:
+        notify_admin_sms(
+            f"Customer msg on Request #{job_id}: {body[:80]}{'…' if len(body) > 80 else ''}"
+        )
+    except Exception as e:
+        app.logger.error("Admin message SMS failed (job #%s): %s", job_id, e)
     return redirect(url_for('customer_job_detail', job_id=job_id) + '#messages')
 
 
@@ -944,15 +967,17 @@ def admin_send_quote(job_id):
         flash("Invalid price values.", "error")
         return redirect(url_for('admin_job_detail', job_id=job_id) if 'admin_job_detail' in app.view_functions else url_for('home'))
     admin_notes = request.form.get("admin_notes", "").strip() or None
+    customer_notes = request.form.get("customer_notes", "").strip() or None
     estimated_completion = request.form.get("estimated_completion", "").strip() or None
     if price <= 0 or deposit <= 0:
         flash("Price and deposit must be greater than zero.", "error")
-        return redirect(url_for('home'))
+        return redirect(url_for('admin_request_detail', job_id=job_id))
     quote = Quote(
         job_id=job.id,
         price=price,
         deposit_amount=deposit,
         admin_notes=admin_notes,
+        customer_notes=customer_notes,
         estimated_completion=estimated_completion,
         status='pending',
     )
@@ -965,7 +990,7 @@ def admin_send_quote(job_id):
             if customer.email:
                 notify_customer_quote_received(
                     customer.email, job.id, job.service_type or 'Service Request',
-                    price, deposit, admin_notes, estimated_completion
+                    price, deposit, customer_notes, estimated_completion
                 )
         except Exception as e:
             app.logger.error("notify_customer_quote_received failed (job #%s): %s", job.id, e)
@@ -1046,6 +1071,17 @@ def admin_request_detail(job_id):
                            portal_statuses=_PORTAL_STATUSES)
 
 
+_VALID_TRANSITIONS = {
+    'reviewing':          {'quoted', 'cancelled'},
+    'quoted':             {'reviewing', 'scheduled', 'cancelled'},
+    'waiting_for_payment':{'quoted', 'scheduled', 'cancelled'},
+    'scheduled':          {'in_progress', 'reviewing', 'cancelled'},
+    'in_progress':        {'completed', 'scheduled', 'cancelled'},
+    'completed':          {'in_progress'},
+    'cancelled':          {'reviewing'},
+}
+
+
 @app.route("/admin/request/<int:job_id>/status", methods=["POST"])
 @require_admin
 def admin_request_status(job_id):
@@ -1055,6 +1091,19 @@ def admin_request_status(job_id):
         flash("Invalid status.", "error")
         return redirect(url_for('admin_request_detail', job_id=job_id))
     old_status = job.status
+    allowed = _VALID_TRANSITIONS.get(old_status, set())
+    if new_status not in allowed:
+        if new_status == old_status:
+            flash("Status is already set to that value.", "error")
+        else:
+            flash(f"Cannot move from '{old_status.replace('_',' ')}' to '{new_status.replace('_',' ')}'. "
+                  f"Allowed next steps: {', '.join(s.replace('_',' ') for s in sorted(allowed)) or 'none'}.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    if new_status == 'scheduled':
+        accepted_quote = Quote.query.filter_by(job_id=job_id, status='accepted').first()
+        if not accepted_quote or not job.deposit_paid:
+            flash("Cannot schedule: customer must accept the quote and pay the deposit first.", "error")
+            return redirect(url_for('admin_request_detail', job_id=job_id))
     job.status = new_status
     if new_status == 'completed' and not job.completed_at:
         job.completed_at = datetime.now()
@@ -1162,24 +1211,24 @@ def admin_message_reply(job_id):
 @app.route("/admin/messages")
 @require_admin
 def admin_messages():
-    threads = (db.session.query(Job, Message, User)
-               .join(Message, Message.job_id == Job.id)
-               .join(User, Message.sender_id == User.id)
-               .filter(User.is_admin == False)
-               .order_by(Message.created_at.desc())
-               .all())
+    unread_msgs = (db.session.query(Message, Job, User)
+                   .join(Job, Message.job_id == Job.id)
+                   .join(User, Message.sender_id == User.id)
+                   .filter(Message.read_at == None, User.is_admin == False)
+                   .order_by(Message.created_at.desc())
+                   .all())
     seen_jobs = set()
     job_threads = []
-    for job, msg, sender in threads:
+    for msg, job, sender in unread_msgs:
         if job.id not in seen_jobs:
             seen_jobs.add(job.id)
-            unread = (Message.query
-                      .join(User, Message.sender_id == User.id)
-                      .filter(Message.job_id == job.id,
-                              Message.read_at == None,
-                              User.is_admin == False)
-                      .count())
-            job_threads.append({'job': job, 'last_msg': msg, 'sender': sender, 'unread': unread})
+            unread_count = (Message.query
+                            .join(User, Message.sender_id == User.id)
+                            .filter(Message.job_id == job.id,
+                                    Message.read_at == None,
+                                    User.is_admin == False)
+                            .count())
+            job_threads.append({'job': job, 'last_msg': msg, 'sender': sender, 'unread': unread_count})
     return render_template('admin_messages.html', job_threads=job_threads)
 
 
