@@ -93,17 +93,26 @@ def require_admin(f):
     return decorated_function
 
 @app.context_processor
-def inject_admin_unread():
-    if current_user.is_authenticated and current_user.is_admin:
+def inject_globals():
+    result = {'admin_unread_count': 0, 'customer_unread_count': 0,
+              'admin_phone': os.environ.get('ADMIN_PHONE', '')}
+    if current_user.is_authenticated:
         try:
-            count = (Message.query
-                     .join(User, Message.sender_id == User.id)
-                     .filter(Message.read_at == None, User.is_admin == False)
-                     .count())
+            if current_user.is_admin:
+                result['admin_unread_count'] = (Message.query
+                    .join(User, Message.sender_id == User.id)
+                    .filter(Message.read_at == None, User.is_admin == False)
+                    .count())
+            elif current_user.user_type == 'customer':
+                result['customer_unread_count'] = (Message.query
+                    .join(Job, Message.job_id == Job.id)
+                    .filter(Job.customer_id == current_user.id,
+                            Message.sender_id != current_user.id,
+                            Message.read_at == None)
+                    .count())
         except Exception:
-            count = 0
-        return {'admin_unread_count': count}
-    return {'admin_unread_count': 0}
+            pass
+    return result
 
 
 @app.before_request
