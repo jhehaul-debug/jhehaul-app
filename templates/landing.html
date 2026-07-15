@@ -336,11 +336,7 @@
 <div class="lp-cta" style="margin-bottom:20px;">
     <h2>Ready to get started?</h2>
     <p>Submit a request in minutes. We'll review it, send you a quote, and schedule pickup at your convenience.</p>
-    {% if current_user.is_authenticated and current_user.user_type == 'customer' %}
     <a href="{{ url_for('customer_request') }}" class="btn-hero-primary" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:#38a169;color:#fff;font-weight:700;text-decoration:none;border:2px solid #38a169;">Request a Quote</a>
-    {% else %}
-    <a href="{{ url_for('auth.login') }}" class="btn-hero-primary" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:#38a169;color:#fff;font-weight:700;text-decoration:none;border:2px solid #38a169;">Request a Quote</a>
-    {% endif %}
     <p style="margin-top:16px;font-size:0.85rem;color:#718096;">No hidden fees. No commitment until you accept the quote.</p>
 </div>
 
@@ -351,6 +347,25 @@
         <p>Have a question before requesting? Reach out — we're happy to help.</p>
     </div>
     <div class="lp-contact-grid">
+        {% if admin_phone %}
+        <div class="lp-contact-item">
+            <div class="lp-contact-icon">📞</div>
+            <div>
+                <h4>Phone / Text</h4>
+                <p><a href="tel:{{ admin_phone }}" style="color:#1a202c;text-decoration:none;">{{ admin_phone }}</a></p>
+                <small>Call or text anytime</small>
+            </div>
+        </div>
+        {% else %}
+        <div class="lp-contact-item">
+            <div class="lp-contact-icon">📞</div>
+            <div>
+                <h4>Phone / Text</h4>
+                <p style="color:#a0aec0;">Coming soon</p>
+                <small>Email us in the meantime</small>
+            </div>
+        </div>
+        {% endif %}
         <div class="lp-contact-item">
             <div class="lp-contact-icon">📧</div>
             <div>
