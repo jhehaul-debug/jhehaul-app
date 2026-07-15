@@ -1,226 +1,333 @@
 {% extends "base.html" %}
-{% block title %}Job #{{ job.id }} - JHE Haul{% endblock %}
+{% block title %}Request #{{ job.id }} - JHE Haul{% endblock %}
 {% block content %}
 
-<a href="{{ url_for('customer_jobs') }}" class="back-link">← Back to My Jobs</a>
+<style>
+/* ── Status badge helpers ── */
+.badge { display:inline-block; padding:5px 13px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+.badge-blue   { background:#dbeafe; color:#1d4ed8; }
+.badge-orange { background:#fff7ed; color:#c05621; }
+.badge-green  { background:#dcfce7; color:#15803d; }
+.badge-gray   { background:#f1f5f9; color:#64748b; }
+.badge-red    { background:#fee2e2; color:#b91c1c; }
 
-<!-- ── Job Summary Card ────────────────────────────────────────────────── -->
-<div class="card">
-    <div class="card-header">
-        <h2 style="margin-bottom:0;">Job #{{ job.id }}</h2>
-        <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
-    </div>
-    <hr>
-    <p style="color:#4a5568;line-height:1.6;margin-bottom:14px;"><strong>Description:</strong><br>{{ job.job_description }}</p>
+/* ── Status timeline ── */
+.tl { display:flex; align-items:center; margin-bottom:30px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; }
+.tl-step { display:flex; flex-direction:column; align-items:center; min-width:72px; }
+.tl-dot { width:32px; height:32px; border-radius:50%; border:2px solid #cbd5e0; background:#f8fafc;
+          color:#a0aec0; font-size:0.78rem; font-weight:800; display:flex; align-items:center;
+          justify-content:center; margin-bottom:5px; transition:all .2s; }
+.tl-dot.done { background:#1a202c; border-color:#1a202c; color:#fff; }
+.tl-dot.current { background:#2b6cb0; border-color:#2b6cb0; color:#fff; box-shadow:0 0 0 3px #bee3f8; }
+.tl-lbl { font-size:0.72rem; color:#718096; font-weight:600; text-align:center; white-space:nowrap; }
+.tl-lbl.done, .tl-lbl.current { color:#1a202c; }
+.tl-line { flex:1; height:2px; background:#e2e8f0; min-width:20px; margin-top:-20px; }
+.tl-line.done { background:#1a202c; }
 
-    {% if not job.deposit_paid %}
-    <div class="banner banner-warning" style="margin-top:0;">
-        🔒 Your pickup address is hidden until you pay the deposit
-    </div>
-    {% endif %}
+/* ── Two-col layout ── */
+.detail-wrap { display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start; }
+@media(max-width:840px) { .detail-wrap { grid-template-columns:1fr; } }
 
-    {% if job.photos %}
-    <h4 style="margin-top:16px;margin-bottom:8px;">📷 Photos ({{ job.photos|length }})</h4>
-    <div class="photo-grid">
-        {% for photo in job.photos %}
-        <img src="{{ photo.storage_url or (url_for('uploaded_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
-             alt="Job photo {{ loop.index }}"
-             onclick="window.open(this.src,'_blank')"
-             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo unavailable</div></div>'">
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
+/* ── Cards ── */
+.dcard { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; margin-bottom:16px; }
+.dcard h3 { margin:0 0 14px; font-size:0.95rem; color:#718096; text-transform:uppercase; letter-spacing:.06em; }
+.info-row { display:flex; gap:6px; margin-bottom:8px; font-size:0.9rem; }
+.info-row strong { color:#2d3748; min-width:130px; flex-shrink:0; }
+.info-row span { color:#4a5568; }
 
-<!-- ── Expired Banner ──────────────────────────────────────────────────── -->
-{% if job.status == 'expired' %}
-<div class="card" style="border:2px solid #fecaca;background:#fef2f2;">
-    <h3 style="margin-bottom:8px;color:#b91c1c;">⏰ This Job Has Expired</h3>
-    <p style="color:#7f1d1d;margin-bottom:14px;">
-        No bid was accepted within 72 hours of the last bid being received, so this job was automatically closed.
-        {% if bids %}
-        There {% if bids|length == 1 %}was <strong>1 bid</strong>{% else %}were <strong>{{ bids|length }} bids</strong>{% endif %} submitted.
-        {% endif %}
-        You can reactivate the job to open it back up for haulers.
-    </p>
-    <form method="POST" action="{{ url_for('customer_reactivate_job', job_id=job.id) }}" style="display:inline;">
-        <button type="submit" class="btn btn-primary">♻ Reactivate This Job</button>
-    </form>
-    <a href="{{ url_for('customer_jobs') }}" class="btn btn-outline" style="margin-left:10px;">Back to My Jobs</a>
-</div>
-{% endif %}
+/* ── Quote card ── */
+.quote-card { background:#fff; border:2px solid #bee3f8; border-radius:12px; padding:22px; margin-bottom:16px; }
+.quote-card h3 { margin:0 0 16px; color:#1d4ed8; }
+.quote-price { font-size:1.7rem; font-weight:800; color:#1a202c; margin:6px 0; }
+.quote-deposit { font-size:0.9rem; color:#718096; margin-bottom:14px; }
+.quote-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 
-<!-- ── Prompt banner when bids are waiting ────────────────────────────── -->
-{% if job.status == 'bidding' and bids %}
-<div class="banner banner-info" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:18px 20px;">
+/* ── Messages ── */
+.msg-thread { background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
+.msg-thread-header { padding:14px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:700; font-size:0.92rem; }
+.msg-list { padding:16px 18px; max-height:480px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; min-height:80px; }
+.msg-item { max-width:85%; }
+.msg-item.mine { align-self:flex-end; }
+.msg-item.theirs { align-self:flex-start; }
+.msg-bubble { padding:10px 14px; border-radius:12px; font-size:0.88rem; line-height:1.5; }
+.msg-item.mine .msg-bubble { background:#1a202c; color:#fff; border-bottom-right-radius:3px; }
+.msg-item.theirs .msg-bubble { background:#f1f5f9; color:#2d3748; border-bottom-left-radius:3px; }
+.msg-meta { font-size:0.72rem; color:#a0aec0; margin-top:3px; text-align:right; }
+.msg-item.theirs .msg-meta { text-align:left; }
+.msg-empty { color:#a0aec0; font-size:0.88rem; text-align:center; padding:20px 0; }
+.msg-form { padding:14px 18px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+.msg-form textarea { width:100%; resize:vertical; min-height:60px; font-size:0.9rem; border-radius:8px; box-sizing:border-box; }
+.msg-form button { margin-top:8px; width:100%; }
+
+/* ── Photos ── */
+.photo-grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.photo-grid img { width:90px; height:90px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; cursor:pointer; }
+
+/* ── Alert boxes ── */
+.alert-box { border-radius:10px; padding:14px 18px; margin-bottom:14px; font-size:0.9rem; }
+.alert-info  { background:#dbeafe; border:1px solid #93c5fd; color:#1e40af; }
+.alert-warn  { background:#fff7ed; border:1px solid #fed7aa; color:#92400e; }
+.alert-success { background:#dcfce7; border:1px solid #86efac; color:#15803d; }
+</style>
+
+<a href="{{ url_for('customer_jobs') }}" class="back-link">← My Requests</a>
+
+{# ── Page header ── #}
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:14px 0 20px;flex-wrap:wrap;gap:12px;">
     <div>
-        <strong style="font-size:1.05rem;">💬 {{ bids|length }} bid{% if bids|length != 1 %}s{% endif %} received!</strong>
-        <div style="margin-top:3px;font-size:0.9rem;">Review the quotes below and click <strong>Accept This Bid</strong> on the one you want.</div>
+        <h2 style="margin:0 0 4px;">{{ job.service_type or 'Service Request' }} <span style="color:#a0aec0;font-weight:400;">#{{ job.id }}</span></h2>
+        <div style="color:#718096;font-size:0.85rem;">
+            Submitted {% if job.created_at %}{{ job.created_at.strftime('%B %d, %Y') }}{% else %}recently{% endif %}
+            &middot; ZIP {{ job.pickup_zip }}
+        </div>
     </div>
-    <a href="#bids-section" class="btn btn-success btn-sm" style="white-space:nowrap;">See Bids ↓</a>
+    {# Status badge #}
+    {% if job.status in ('reviewing', 'open', 'bidding') %}
+        <span class="badge badge-blue">Under Review</span>
+    {% elif job.status == 'quoted' %}
+        <span class="badge badge-orange">&#9733; Quote Ready</span>
+    {% elif job.status in ('waiting_for_payment', 'accepted') %}
+        <span class="badge badge-orange">Awaiting Payment</span>
+    {% elif job.status in ('scheduled', 'deposit_paid') %}
+        <span class="badge badge-green">&#10003; Scheduled</span>
+    {% elif job.status == 'in_progress' %}
+        <span class="badge badge-blue">In Progress</span>
+    {% elif job.status == 'completed' %}
+        <span class="badge badge-gray">&#10003; Completed</span>
+    {% elif job.status == 'cancelled' %}
+        <span class="badge badge-red">Cancelled</span>
+    {% elif job.status == 'expired' %}
+        <span class="badge badge-gray">Expired</span>
+    {% endif %}
+</div>
+
+{# ── Status timeline ── #}
+{% set ns = namespace(step=1) %}
+{% if job.status in ('reviewing', 'open', 'bidding') %}{% set ns.step = 2 %}{% endif %}
+{% if job.status in ('quoted', 'waiting_for_payment', 'accepted') %}{% set ns.step = 3 %}{% endif %}
+{% if job.status in ('scheduled', 'deposit_paid', 'in_progress') %}{% set ns.step = 4 %}{% endif %}
+{% if job.status == 'completed' %}{% set ns.step = 5 %}{% endif %}
+
+{% set tl_labels = ['Submitted', 'Reviewing', 'Quoted', 'Scheduled', 'Completed'] %}
+<div class="tl">
+{% for label in tl_labels %}
+    {% set i = loop.index %}
+    <div class="tl-step">
+        <div class="tl-dot {% if i < ns.step %}done{% elif i == ns.step %}current{% endif %}">
+            {% if i < ns.step %}✓{% else %}{{ i }}{% endif %}
+        </div>
+        <div class="tl-lbl {% if i <= ns.step %}{% if i < ns.step %}done{% else %}current{% endif %}{% endif %}">{{ label }}</div>
+    </div>
+    {% if not loop.last %}
+    <div class="tl-line {% if i < ns.step %}done{% endif %}"></div>
+    {% endif %}
+{% endfor %}
+</div>
+
+{# ── Status context messages ── #}
+{% if job.status in ('reviewing', 'open', 'bidding') %}
+<div class="alert-box alert-info" style="margin-bottom:20px;">
+    &#128269; <strong>Under Review</strong> — We're reviewing your request and will send you a quote shortly (usually within 24 hours). Feel free to message us below with any questions.
+</div>
+{% elif job.status == 'quoted' %}
+<div class="alert-box alert-warn" style="margin-bottom:20px;">
+    &#9733; <strong>Your quote is ready!</strong> Review the details below and accept or decline. Have questions? Message us in the thread below.
+</div>
+{% elif job.status in ('waiting_for_payment', 'accepted') %}
+<div class="alert-box alert-warn" style="margin-bottom:20px;">
+    &#128179; <strong>Deposit required</strong> — You've accepted the quote. Pay the deposit below to confirm your booking and we'll get to work scheduling your pickup.
+</div>
+{% elif job.status in ('scheduled', 'deposit_paid') %}
+<div class="alert-box alert-success" style="margin-bottom:20px;">
+    &#10003; <strong>You're all set!</strong> Your service is scheduled. We'll reach out to coordinate the exact time. Message us below with any questions.
+</div>
+{% elif job.status == 'in_progress' %}
+<div class="alert-box alert-info" style="margin-bottom:20px;">
+    &#9889; <strong>In progress</strong> — Your service is currently being worked on.
+</div>
+{% elif job.status == 'completed' %}
+<div class="alert-box alert-success" style="margin-bottom:20px;">
+    &#127881; <strong>All done!</strong> Your service has been completed. Thank you for choosing JHE Haul!
 </div>
 {% endif %}
 
-<!-- ── Payment Required (bid accepted, deposit not paid) ──────────────── -->
-{% if job.status == 'accepted' and not job.deposit_paid %}
-<div class="card" style="border:2px solid #ffc107;background:#fffde7;">
-    <h3 style="margin-bottom:8px;">💳 Payment Required</h3>
-    <p style="color:#5d4037;margin-bottom:16px;">
-        You accepted <strong>{{ job.accepted_hauler }}'s</strong> bid of
-        <strong>${{ "%.2f"|format(job.accepted_quote or 0) }}</strong>.
-        Pay the deposit to confirm the booking and release your address to the hauler.
-    </p>
-    {% if checkout_over500_url %}
-    <a href="{{ checkout_over500_url }}" class="btn btn-success btn-lg">Pay Deposit via Stripe →</a>
-    {% elif pay_link %}
-    <a href="{{ pay_link }}" target="_blank" class="btn btn-success btn-lg">Pay Deposit via Stripe →</a>
-    {% elif pay_link_missing %}
-    <div class="banner banner-warning" style="margin-bottom:0;">
-        ⚠️ Payment link not configured for this quote amount. Please contact support or set the <strong>PAY_LINK_*</strong> environment variables.
-    </div>
-    {% endif %}
-</div>
-{% endif %}
+{# ── Main 2-column layout ── #}
+<div class="detail-wrap">
 
-<!-- ── Deposit Paid / In-Progress ─────────────────────────────────────── -->
-{% if job.status == 'deposit_paid' %}
-<div class="card" style="border:2px solid #4caf50;background:#e8f5e9;">
-    <h3 style="margin-bottom:8px;">✅ Deposit Paid</h3>
-    <p style="color:#1b5e20;margin-bottom:12px;">The hauler can now see your address and will contact you soon.</p>
-    {% set accepted_bid = bids|selectattr('status', 'equalto', 'accepted')|first %}
-    {% if accepted_bid %}
-    <p><strong>Hauler:</strong> {{ accepted_bid.hauler_name }}</p>
-    {% if accepted_bid.hauler_phone %}
-    <p style="margin-bottom:14px;"><strong>Phone:</strong> {{ accepted_bid.hauler_phone_formatted }}</p>
-    {% endif %}
-    {% endif %}
-    <form method="POST" action="{{ url_for('customer_complete_job', job_id=job.id) }}">
-        <button type="submit" class="btn btn-success">Mark Job as Complete</button>
-    </form>
-</div>
-{% endif %}
+    {# ── Left column: Request info + quote card ── #}
+    <div>
 
-<!-- ── Completed ───────────────────────────────────────────────────────── -->
-{% if job.status == 'completed' %}
-<div class="card" style="border:2px solid #4caf50;background:#e8f5e9;">
-    <h3 style="margin-bottom:8px;">🎉 Job Completed!</h3>
-    <p style="color:#1b5e20;margin-bottom:12px;">Completed on {{ job.completed_at | ct('%B %d, %Y') or 'N/A' }}</p>
-    {% set review = job.reviews|first if job.reviews else None %}
-    {% if review %}
-    <div style="margin-top:4px;">
-        <strong>Your Review:</strong>
-        <span style="color:#f6c90e;font-size:1.2rem;vertical-align:middle;">
-            {% for i in range(review.rating) %}★{% endfor %}{% for i in range(5 - review.rating) %}☆{% endfor %}
-        </span>
-        <span style="color:#718096;font-size:0.88rem;">({{ review.rating }}/5)</span>
-    </div>
-    {% if review.comment %}
-    <p style="color:#4a5568;font-style:italic;border-left:3px solid #e2e8f0;padding-left:10px;margin-top:8px;">"{{ review.comment }}"</p>
-    {% endif %}
-    {% else %}
-    <a href="{{ url_for('customer_review', job_id=job.id) }}" class="btn btn-primary" style="margin-top:8px;">⭐ Leave a Review</a>
-    {% endif %}
-</div>
-{% endif %}
+        {# Quote card — shown when there's an active quote #}
+        {% if active_quote %}
+        <div class="quote-card">
+            <h3>&#128230; Your Quote</h3>
+            <div class="quote-price">${{ "%.2f"|format(active_quote.price) }}</div>
+            <div class="quote-deposit">Deposit due now: <strong>${{ "%.2f"|format(active_quote.deposit_amount) }}</strong></div>
 
-<!-- ── Bids Section ────────────────────────────────────────────────────── -->
-<div class="card" id="bids-section">
-    <div class="card-header" style="margin-bottom:14px;">
-        <h3 style="margin-bottom:0;">
-            Bids
-            <span style="background:#e3f2fd;color:#1565c0;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;">{{ bids|length }}</span>
-        </h3>
-        {% if job.status in ['open', 'bidding'] and bids %}
-        <span style="font-size:0.88rem;color:#1565c0;font-weight:600;">Click "Accept" to choose a hauler</span>
-        {% endif %}
-    </div>
-    <p style="font-size:0.8rem;color:#a0aec0;margin:-8px 0 12px;">Bids found: {{ bids|length }}</p>
-    <hr>
-
-    {% if not bids %}
-    <div class="empty-state" style="padding:24px;">
-        <div class="empty-icon">🔍</div>
-        <p style="color:#a0aec0;">No bids yet. Haulers in your area will see this job and submit quotes soon.</p>
-    </div>
-    {% else %}
-    {% for bid in bids %}
-    {% set hauler_user = hauler_map.get(bid.hauler_id) if hauler_map is defined else None %}
-    <div class="bid-row {% if bid.status == 'accepted' %}accepted{% endif %}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;" class="bid-header">
-            <div style="display:flex;align-items:flex-start;gap:10px;">
-                {% if hauler_user and hauler_user.profile_image_url %}
-                <img src="{{ hauler_user.profile_image_url }}" alt="{{ bid.hauler_name }}"
-                     style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;margin-top:2px;"
-                     onerror="this.style.display='none';">
-                {% else %}
-                <div style="width:40px;height:40px;border-radius:50%;background:#4caf50;color:#fff;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-                    {{ (bid.hauler_name or '?')[0]|upper }}
-                </div>
-                {% endif %}
-                <div>
-                <div style="font-weight:700;font-size:1.05rem;margin-bottom:4px;">{{ bid.hauler_name }}</div>
-                {% if job.deposit_paid and bid.status == 'accepted' and bid.hauler_phone %}
-                <div style="font-size:0.86rem;color:#27ae60;margin-bottom:2px;">📞 {{ bid.hauler_phone_formatted }}</div>
-                {% endif %}
-                {% if bid.status == 'accepted' %}
-                <span class="status status-deposit_paid" style="margin-top:4px;display:inline-block;">✓ Accepted</span>
-                {% endif %}
-                {% if bid.created_at %}
-                <div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Submitted {{ bid.created_at | ct }}</div>
-                {% endif %}
-                </div>
+            {% if active_quote.estimated_completion %}
+            <div class="info-row"><strong>Estimated Completion:</strong> <span>{{ active_quote.estimated_completion }}</span></div>
+            {% endif %}
+            {% if active_quote.admin_notes %}
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:0.88rem;color:#4a5568;">
+                <strong>Note from JHE Haul:</strong><br>{{ active_quote.admin_notes }}
             </div>
-            <div style="text-align:right;flex-shrink:0;">
-                <div class="bid-amount">${{ "%.2f"|format(bid.quote_amount) }}</div>
-                <div style="font-size:0.78rem;color:#718096;margin-top:2px;">quoted</div>
+            {% endif %}
+
+            {# Accept/decline buttons — only when job is quoted and quote is pending #}
+            {% if job.status == 'quoted' and active_quote.status == 'pending' %}
+            <div class="quote-actions">
+                <form method="POST" action="{{ url_for('customer_accept_quote', quote_id=active_quote.id) }}"
+                      onsubmit="return confirm('Accept this quote for ${{ '%.2f'|format(active_quote.price) }}? You will be directed to pay the deposit.');">
+                    <button type="submit" class="btn btn-success">Accept Quote</button>
+                </form>
+                <button type="button" class="btn" style="background:#f1f5f9;color:#4a5568;"
+                        onclick="document.getElementById('declineModal').style.display='flex'">
+                    Decline
+                </button>
             </div>
+            {% endif %}
+
+            {# Pay deposit button — when waiting for payment #}
+            {% if job.status in ('waiting_for_payment', 'accepted') and portal_checkout_url and not job.deposit_paid %}
+            <div style="margin-top:16px;">
+                <a href="{{ portal_checkout_url }}" class="btn btn-success btn-lg"
+                   style="display:inline-block;text-decoration:none;">
+                    &#128179; Pay Deposit — ${{ "%.2f"|format(active_quote.deposit_amount) }}
+                </a>
+                <div style="font-size:0.8rem;color:#718096;margin-top:6px;">Secure payment via Stripe</div>
+            </div>
+            {% endif %}
         </div>
 
-        {% if bid.message %}
-        <p style="margin-top:10px;color:#4a5568;font-size:0.92rem;border-top:1px solid #f0f0f0;padding-top:10px;">
-            {{ bid.message }}
-        </p>
+        {# Decline modal #}
+        <div id="declineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:12px;padding:28px;max-width:420px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <h3 style="margin-bottom:8px;">Decline This Quote?</h3>
+                <p style="color:#718096;font-size:0.9rem;margin-bottom:16px;">Optionally, let us know why you're declining so we can improve our quote.</p>
+                <form method="POST" action="{{ url_for('customer_decline_quote', quote_id=active_quote.id) }}">
+                    <textarea name="decline_note" placeholder="Reason for declining (optional)" rows="3"
+                              style="width:100%;box-sizing:border-box;resize:vertical;margin-bottom:14px;"></textarea>
+                    <div style="display:flex;gap:10px;">
+                        <button type="submit" class="btn" style="background:#e53e3e;color:#fff;flex:1;">Decline Quote</button>
+                        <button type="button" class="btn" style="background:#f1f5f9;color:#4a5568;flex:1;"
+                                onclick="document.getElementById('declineModal').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         {% endif %}
 
-        {% if job.status in ['open', 'bidding'] %}
-        <div style="margin-top:14px;border-top:1px solid #f0f0f0;padding-top:14px;">
-            <form method="POST" action="{{ url_for('customer_accept_bid', bid_id=bid.id) }}">
-                <button type="submit" class="btn btn-success"
-                        onclick="return confirm('Accept this bid and proceed to deposit payment?');"
-                        style="width:100%;">
-                    ✓ Accept This Bid — ${{ "%.2f"|format(bid.quote_amount) }}
-                </button>
+        {# Request details card #}
+        <div class="dcard">
+            <h3>Request Details</h3>
+            <div class="info-row"><strong>Service:</strong> <span>{{ job.service_type or '—' }}</span></div>
+            <div class="info-row"><strong>Description:</strong></div>
+            <p style="color:#4a5568;font-size:0.9rem;margin:4px 0 12px;white-space:pre-line;">{{ job.job_description or '—' }}</p>
+            <div class="info-row"><strong>Service Address:</strong> <span>{{ job.pickup_address }}, {{ job.pickup_zip }}</span></div>
+            {% if job.preferred_date %}
+            <div class="info-row"><strong>Preferred Date:</strong> <span>{{ job.preferred_date }}{% if job.preferred_time %} — {{ job.preferred_time }}{% endif %}</span></div>
+            {% endif %}
+        </div>
+
+        {# Photos card #}
+        {% if job.photos %}
+        <div class="dcard">
+            <h3>Photos</h3>
+            <div class="photo-grid">
+                {% for photo in job.photos %}
+                {% if photo.storage_url %}
+                <a href="{{ photo.storage_url }}" target="_blank">
+                    <img src="{{ photo.storage_url }}" alt="Photo" loading="lazy">
+                </a>
+                {% else %}
+                <a href="{{ url_for('uploaded_file_db', photo_id=photo.id) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file_db', photo_id=photo.id) }}" alt="Photo" loading="lazy">
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Add more photos (only for active jobs) #}
+        {% if job.status not in ('completed', 'cancelled', 'expired') %}
+        <div class="dcard">
+            <h3>Add Photos</h3>
+            <form method="POST" action="{{ url_for('customer_upload_photos', job_id=job.id) }}" enctype="multipart/form-data">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="file" name="photos" multiple accept="image/*"
+                           style="flex:1;background:white;padding:7px;border-radius:6px;border:1px solid #e2e8f0;">
+                    <button type="submit" class="btn btn-sm">Upload</button>
+                </div>
             </form>
         </div>
         {% endif %}
-    </div>
-    {% endfor %}
-    {% endif %}
-</div>
 
-<!-- ── Add More Photos ─────────────────────────────────────────────────── -->
-{% if job.status in ['open', 'bidding', 'accepted', 'deposit_paid'] %}
-<div class="card">
-    <h4 style="margin-bottom:12px;">Add More Photos</h4>
-    <form method="POST" action="{{ url_for('customer_upload_photos', job_id=job.id) }}" enctype="multipart/form-data">
-        <div class="form-group" style="margin-bottom:12px;">
-            <input type="file" name="photos" multiple accept="image/*">
+        {# Action buttons: cancel / mark complete #}
+        {% if job.status in ('reviewing', 'open', 'bidding', 'quoted', 'waiting_for_payment') %}
+        <div class="dcard">
+            <h3>Actions</h3>
+            <form method="POST" action="{{ url_for('customer_cancel_job', job_id=job.id) }}"
+                  onsubmit="return confirm('Cancel this request? This cannot be undone.');">
+                <button type="submit" class="btn" style="background:#fff;border:1px solid #e53e3e;color:#e53e3e;">
+                    Cancel This Request
+                </button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">Upload Photos</button>
-    </form>
-</div>
-{% endif %}
+        {% elif job.status in ('scheduled', 'deposit_paid', 'in_progress') %}
+        <div class="dcard">
+            <h3>Actions</h3>
+            <p style="color:#718096;font-size:0.87rem;margin-bottom:12px;">Once the service is complete, mark it as done to close out this request.</p>
+            <form method="POST" action="{{ url_for('customer_complete_job', job_id=job.id) }}"
+                  onsubmit="return confirm('Mark this service as complete?');">
+                <button type="submit" class="btn btn-success">Mark as Completed</button>
+            </form>
+        </div>
+        {% endif %}
 
-<!-- ── Cancel Job ──────────────────────────────────────────────────────── -->
-{% if job.status in ['open', 'bidding'] %}
-<div class="card" style="border:1px solid #fce4ec;">
-    <h4 style="margin-bottom:12px;color:#c62828;">Cancel Job</h4>
-    <p style="color:#718096;margin-bottom:14px;font-size:0.9rem;">This will remove the job and notify any haulers who have bid. This cannot be undone.</p>
-    <form method="POST" action="{{ url_for('customer_cancel_job', job_id=job.id) }}"
-          onsubmit="return confirm('Are you sure you want to cancel this job?');">
-        <button type="submit" class="btn btn-danger btn-sm">Cancel This Job</button>
-    </form>
-</div>
-{% endif %}
+    </div>{# end left column #}
 
+    {# ── Right column: Messages ── #}
+    <div id="messages">
+        <div class="msg-thread">
+            <div class="msg-thread-header">
+                &#128172; Messages
+                {% set total_msgs = messages | length %}
+                {% if total_msgs > 0 %}
+                <span style="font-weight:400;color:#718096;font-size:0.82rem;">&nbsp;({{ total_msgs }})</span>
+                {% endif %}
+            </div>
+
+            <div class="msg-list" id="msgList">
+                {% if not messages %}
+                <div class="msg-empty">No messages yet. Send us a message below!</div>
+                {% endif %}
+                {% for msg in messages %}
+                <div class="msg-item {% if msg.sender_id == current_user.id %}mine{% else %}theirs{% endif %}">
+                    <div class="msg-bubble">{{ msg.body }}</div>
+                    <div class="msg-meta">
+                        {% if msg.sender_id == current_user.id %}You{% else %}JHE Haul{% endif %}
+                        &middot; {{ msg.created_at.strftime('%b %d, %I:%M %p') if msg.created_at else '' }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if job.status not in ('completed', 'cancelled', 'expired') %}
+            <div class="msg-form">
+                <form method="POST" action="{{ url_for('customer_send_message', job_id=job.id) }}">
+                    <textarea name="body" placeholder="Ask a question or add more details…" required></textarea>
+                    <button type="submit" class="btn btn-success" style="font-size:0.88rem;">Send Message</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>{# end detail-wrap #}
+
+<script>
+var msgList = document.getElementById('msgList');
+if (msgList) { msgList.scrollTop = msgList.scrollHeight; }
+</script>
 {% endblock %}
