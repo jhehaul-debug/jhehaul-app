@@ -59,7 +59,11 @@ class Job(db.Model):
     pickup_address = db.Column(db.String, nullable=False)
     pickup_zip = db.Column(db.String, nullable=True)
     job_description = db.Column(db.Text, nullable=False)
+    service_type = db.Column(db.String, nullable=True)
     status = db.Column(db.String, default='open')
+    # Status values:
+    #   Legacy: open, bidding, accepted, deposit_paid, completed, cancelled, expired
+    #   Portal:  reviewing, quoted, waiting_for_payment, scheduled, in_progress
     accepted_hauler = db.Column(db.String, nullable=True)
     accepted_hauler_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=True)
     accepted_quote = db.Column(db.Float, nullable=True)
@@ -214,3 +218,34 @@ class SmsSettings(db.Model):
     ev_admin_alert = db.Column(db.Boolean, default=False)
     email_fallback_to_sms = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class Quote(db.Model):
+    """Admin-created quote for a service request."""
+    __tablename__ = 'quotes'
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    deposit_amount = db.Column(db.Float, nullable=False)
+    admin_notes = db.Column(db.Text, nullable=True)
+    customer_notes = db.Column(db.Text, nullable=True)
+    estimated_completion = db.Column(db.String, nullable=True)
+    status = db.Column(db.String, default='pending')  # pending / accepted / declined
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    job = db.relationship('Job', backref=db.backref('quotes', lazy=True, cascade='all, delete-orphan'))
+
+
+class Message(db.Model):
+    """Customer ↔ admin message thread per job."""
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
+    sender_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    job = db.relationship('Job', backref=db.backref('messages', lazy=True, cascade='all, delete-orphan'))
+    sender = db.relationship('User', foreign_keys=[sender_id])

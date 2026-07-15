@@ -265,21 +265,19 @@ def home():
         if current_user.user_type == 'customer':
             return redirect(url_for('customer_jobs'))
         else:
-            return redirect(url_for('hauler_jobs'))
+            return redirect(url_for('choose_role'))
     return render_template('landing.html')
 
 @app.route("/invite")
 @app.route("/invite/<role>")
 def invite(role=None):
-    if role in ['customer', 'hauler']:
+    if role == 'customer':
         session['invited_role'] = role
     if current_user.is_authenticated:
         if current_user.is_admin:
             return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-        if current_user.user_type == 'hauler':
-            return redirect(url_for('hauler_jobs'))
         return redirect(url_for('customer_jobs'))
     return render_template('invite_landing.html', role=role)
 
@@ -289,9 +287,6 @@ def choose_role():
     if current_user.is_admin:
         session.pop("invited_role", None)
         return redirect(url_for("admin_dashboard"))
-    if current_user.user_type == "hauler":
-        session.pop("invited_role", None)
-        return redirect(url_for("hauler_jobs"))
     if current_user.user_type == "customer":
         session.pop("invited_role", None)
         return redirect(url_for("customer_jobs"))
@@ -303,95 +298,23 @@ def choose_role():
 def set_role():
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
-    role = request.form.get("role")
-    if role == 'hauler':
-        agree_terms = request.form.get("agree_terms")
-        if not agree_terms:
-            flash("You must read and agree to the JHE HAUL Hauler Agreement before creating a hauler account.", "error")
-            return redirect(url_for('choose_role'))
-        current_user.user_type = role
-        current_user.agreed_to_hauler_terms = True
-        current_user.agreed_to_hauler_terms_at = datetime.now()
-        db.session.commit()
-        return redirect(url_for('hauler_setup'))
-    elif role == 'customer':
-        current_user.user_type = role
-        db.session.commit()
-        try:
-            _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
-            notify_admin_new_customer(_name, current_user.email)
-            notify_admin_new_customer_sms(_name, current_user.email)
-        except Exception as e:
-            app.logger.error("Admin notify failed (new customer): %s", e)
-        return redirect(url_for('customer_jobs'))
-    return redirect(url_for('choose_role'))
+    current_user.user_type = 'customer'
+    db.session.commit()
+    try:
+        _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+        notify_admin_new_customer(_name, current_user.email)
+        notify_admin_new_customer_sms(_name, current_user.email)
+    except Exception as e:
+        app.logger.error("Admin notify failed (new customer): %s", e)
+    return redirect(url_for('customer_jobs'))
 
 @app.route("/hauler/setup")
-@require_role('hauler')
-def hauler_setup():
-    if current_user.home_zip and current_user.max_travel_miles and current_user.truck_type:
-        return redirect(url_for('hauler_jobs'))
-    return render_template('hauler_setup.html')
-
 @app.route("/hauler/setup", methods=["POST"])
-@require_role('hauler')
+def hauler_setup():
+    return redirect(url_for('landing'))
+
 def hauler_setup_save():
-    import re
-    first_name = request.form.get("first_name", "").strip()
-    last_name = request.form.get("last_name", "").strip()
-    phone = strip_phone(request.form.get("phone", ""))
-    home_zip = request.form.get("home_zip", "").strip()
-    max_travel_miles = request.form.get("max_travel_miles", "").strip()
-    notify_new_jobs = request.form.get("notify_new_jobs") == "1"
-    notify_sms = request.form.get("notify_sms") == "1"
-    truck_type = request.form.get("truck_type", "").strip()
-    trailer_type = request.form.get("trailer_type", "").strip()
-
-    if not first_name or not last_name:
-        flash("Please enter your first and last name.", "error")
-        return redirect(url_for('hauler_setup'))
-
-    if not home_zip or not re.match(r'^\d{5}$', home_zip):
-        flash("Please enter a valid 5-digit ZIP code.", "error")
-        return redirect(url_for('hauler_setup'))
-
-    from models import ZipCode
-    if not ZipCode.query.get(home_zip):
-        flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
-        return redirect(url_for('hauler_setup'))
-
-    from launch_zone import in_launch_zone
-    allowed, _ = in_launch_zone(home_zip)
-    if not allowed:
-        app.logger.warning("launch_zone: hauler setup rejected ZIP %s for user %s", home_zip, current_user.id)
-        flash("JHE Haul is currently launching in select Minnesota areas. "
-              "We're not in your area just yet — check back soon as we expand!", "error")
-        return redirect(url_for('hauler_setup'))
-
-    if not max_travel_miles:
-        flash("Please enter how far you're willing to drive.", "error")
-        return redirect(url_for('hauler_setup'))
-
-    current_user.first_name = first_name
-    current_user.last_name = last_name
-    current_user.phone = phone if phone else None
-    current_user.home_zip = home_zip
-    current_user.max_travel_miles = int(max_travel_miles)
-    current_user.notify_new_jobs = notify_new_jobs
-    current_user.notify_sms = notify_sms
-    current_user.truck_type = truck_type if truck_type else None
-    current_user.trailer_type = trailer_type if trailer_type else None
-    db.session.commit()
-
-    try:
-        _hauler_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.email
-        notify_admin_new_hauler(_hauler_name, current_user.email, home_zip, truck_type)
-        notify_admin_new_hauler_sms(_hauler_name, current_user.email, home_zip, truck_type)
-    except Exception as e:
-        app.logger.error("Admin notify failed (new hauler): %s", e)
-
-    flash("You're all set! Browse open jobs below.", "success")
-    return redirect(url_for('hauler_jobs'))
+    return redirect(url_for('landing'))
 
 @app.route("/about")
 def about():
@@ -399,7 +322,7 @@ def about():
 
 @app.route("/hauler-agreement")
 def hauler_agreement():
-    return render_template('hauler_agreement.html')
+    return redirect(url_for('landing'))
 
 @app.route("/customer-terms")
 def customer_terms():
@@ -835,171 +758,19 @@ def checkout_over500_success():
         return redirect(url_for('customer_job_detail', job_id=job.id))
 
 @app.route("/hauler/jobs")
-@require_role('hauler')
 def hauler_jobs():
-    from models import ZipCode
-    from distance import haversine_miles
+    return redirect(url_for('landing'))
 
-    all_jobs = Job.query.filter(Job.status.in_(['open', 'bidding'])).order_by(Job.id.desc()).all()
-
-    job_distances = {}
-    filtered_jobs = []
-    seen_ids = set()
-    max_miles = current_user.max_travel_miles or 0
-    hauler_zip_rec = ZipCode.query.get(current_user.home_zip) if current_user.home_zip else None
-
-    # Explicit service ZIPs this hauler has added
-    explicit_zips = set(
-        sz.zip_code for sz in
-        HaulerServiceZip.query.filter_by(hauler_id=current_user.id).all()
-    )
-
-    for job in all_jobs:
-        if job.id in seen_ids:
-            continue
-
-        in_explicit = job.pickup_zip and job.pickup_zip in explicit_zips
-
-        if hauler_zip_rec and job.pickup_zip:
-            job_zip_rec = ZipCode.query.get(job.pickup_zip)
-            if job_zip_rec:
-                miles = round(haversine_miles(
-                    hauler_zip_rec.lat, hauler_zip_rec.lon,
-                    job_zip_rec.lat, job_zip_rec.lon
-                ), 1)
-                in_radius = miles <= max_miles
-                included  = in_radius or in_explicit
-                app.logger.info(
-                    "Job filter — #%s: zip=%s dist=%.1f mi max=%s explicit=%s → %s",
-                    job.id, job.pickup_zip, miles, max_miles, in_explicit,
-                    "INCLUDED" if included else "FILTERED OUT"
-                )
-                if included:
-                    job_distances[job.id] = miles
-                    filtered_jobs.append(job)
-                    seen_ids.add(job.id)
-            else:
-                # ZIP not in table — include if explicit, else include as fallback
-                app.logger.info(
-                    "Job filter — #%s: pickup_zip=%s not in ZIP table explicit=%s → INCLUDED",
-                    job.id, job.pickup_zip, in_explicit
-                )
-                filtered_jobs.append(job)
-                seen_ids.add(job.id)
-        elif in_explicit:
-            # Hauler has no home ZIP but explicitly services this ZIP
-            filtered_jobs.append(job)
-            seen_ids.add(job.id)
-        elif not hauler_zip_rec and not job.pickup_zip:
-            # No coords on either side — include as fallback
-            app.logger.info(
-                "Job filter — #%s: missing hauler_zip or job pickup_zip → INCLUDED (no coords)",
-                job.id
-            )
-            filtered_jobs.append(job)
-            seen_ids.add(job.id)
-
-    app.logger.info(
-        "hauler_jobs result: user=%s home_zip=%s max=%s mi explicit_zips=%d — showing %d of %d open jobs",
-        current_user.id, current_user.home_zip, max_miles,
-        len(explicit_zips), len(filtered_jobs), len(all_jobs)
-    )
-
-    customer_map = {}
-    for job in filtered_jobs:
-        if job.customer_id and job.customer_id not in customer_map:
-            c = User.query.get(job.customer_id)
-            if c:
-                customer_map[job.customer_id] = c
-
-    return render_template('hauler_jobs.html', jobs=filtered_jobs,
-                           job_distances=job_distances,
-                           customer_map=customer_map)
-
-@app.route("/hauler/bid/<int:job_id>", methods=["GET"])
-@require_role('hauler')
+@app.route("/hauler/bid/<int:job_id>", methods=["GET", "POST"])
 def hauler_bid_form(job_id):
-    from models import ZipCode
-    from distance import haversine_miles
-    job = Job.query.get_or_404(job_id)
-    approx_miles = None
-    if current_user.home_zip and job.pickup_zip:
-        hauler_zip = ZipCode.query.get(current_user.home_zip)
-        job_zip = ZipCode.query.get(job.pickup_zip)
-        if hauler_zip and job_zip:
-            approx_miles = round(haversine_miles(hauler_zip.lat, hauler_zip.lon, job_zip.lat, job_zip.lon), 1)
-    return render_template('hauler_bid.html', job=job, approx_miles=approx_miles)
+    return redirect(url_for('landing'))
 
-@app.route("/hauler/bid/<int:job_id>", methods=["POST"])
-@require_role('hauler')
 def hauler_bid_submit(job_id):
-    hauler_name = request.form.get("hauler_name", "").strip()
-    hauler_phone = strip_phone(request.form.get("hauler_phone", ""))
-    quote_amount = request.form.get("quote_amount", "").strip()
-    message = request.form.get("message", "").strip()
-
-    if not hauler_name or not quote_amount:
-        return "Missing required fields", 400
-
-    try:
-        quote_amount = float(quote_amount)
-    except ValueError:
-        return "Invalid quote amount", 400
-
-    job = Job.query.get_or_404(job_id)
-    if job.status == 'open':
-        job.status = 'bidding'
-
-    bid = Bid(
-        job_id=job_id,
-        hauler_id=current_user.id,
-        hauler_name=hauler_name,
-        hauler_phone=hauler_phone,
-        quote_amount=quote_amount,
-        message=message,
-        status='active'
-    )
-    db.session.add(bid)
-    db.session.commit()
-
-    customer = User.query.get(job.customer_id)
-    if customer and customer.email:
-        notify_customer_new_bid(customer.email, job_id, hauler_name, quote_amount)
-    if customer and customer.notify_sms and customer.phone:
-        notify_customer_new_bid_sms(customer.phone, job_id, hauler_name, quote_amount)
-
-    try:
-        notify_admin_new_bid(job_id, hauler_name, quote_amount)
-        notify_admin_new_bid_sms(job_id, hauler_name, quote_amount)
-    except Exception as e:
-        app.logger.error("Admin notify failed (new bid on job #%s): %s", job_id, e)
-
-    return render_template('bid_success.html')
+    return redirect(url_for('landing'))
 
 @app.route("/hauler/dashboard")
-@require_role('hauler')
 def hauler_dashboard():
-    jobs = Job.query.filter(
-        Job.accepted_hauler_id == current_user.id,
-        Job.status.in_(['accepted', 'deposit_paid', 'completed'])
-    ).order_by(Job.id.desc()).all()
-    all_reviews = Review.query.filter_by(hauler_id=current_user.id).all()
-    hauler_review_count = len(all_reviews)
-    hauler_avg_rating = sum(r.rating for r in all_reviews) / hauler_review_count if hauler_review_count else 0.0
-    completed_count = sum(1 for j in jobs if j.status == 'completed')
-    hauler_badges = get_badges(current_user, all_reviews, completed_count)
-    customer_map = {}
-    for job in jobs:
-        if job.customer_id and job.customer_id not in customer_map:
-            c = User.query.get(job.customer_id)
-            if c:
-                customer_map[job.customer_id] = c
-
-    return render_template('hauler_dashboard.html', jobs=jobs,
-                           hauler_avg_rating=hauler_avg_rating,
-                           hauler_review_count=hauler_review_count,
-                           hauler_badges=hauler_badges,
-                           customer_map=customer_map)
+    return redirect(url_for('landing'))
 
 @app.route("/profile")
 @require_login
@@ -1043,48 +814,13 @@ def profile():
                            service_zips=service_zips)
 
 @app.route("/hauler/service-zips/add", methods=["POST"])
-@require_role('hauler')
 def hauler_service_zip_add():
-    import re
-    from models import ZipCode as _ZC
-    zip_code = request.form.get("zip_code", "").strip()
-    if not re.match(r'^\d{5}$', zip_code):
-        flash("Please enter a valid 5-digit ZIP code.", "error")
-        return redirect(url_for('profile'))
-    if not _ZC.query.get(zip_code):
-        flash("That ZIP code isn't in our database yet. We currently cover Minnesota and Wisconsin.", "error")
-        return redirect(url_for('profile'))
-    existing = HaulerServiceZip.query.filter_by(
-        hauler_id=current_user.id, zip_code=zip_code
-    ).first()
-    if existing:
-        flash(f"ZIP {zip_code} is already in your service list.", "info")
-        return redirect(url_for('profile'))
-    count = HaulerServiceZip.query.filter_by(hauler_id=current_user.id).count()
-    if count >= 25:
-        flash("You can add up to 25 specific ZIP codes. Remove some to add more.", "error")
-        return redirect(url_for('profile'))
-    sz = HaulerServiceZip(hauler_id=current_user.id, zip_code=zip_code)
-    db.session.add(sz)
-    db.session.commit()
-    zc = _ZC.query.get(zip_code)
-    city_str = f" ({zc.city})" if zc and zc.city else ""
-    flash(f"Added {zip_code}{city_str} to your service area.", "success")
-    return redirect(url_for('profile'))
+    return redirect(url_for('landing'))
 
 
 @app.route("/hauler/service-zips/remove", methods=["POST"])
-@require_role('hauler')
 def hauler_service_zip_remove():
-    zip_code = request.form.get("zip_code", "").strip()
-    sz = HaulerServiceZip.query.filter_by(
-        hauler_id=current_user.id, zip_code=zip_code
-    ).first()
-    if sz:
-        db.session.delete(sz)
-        db.session.commit()
-        flash(f"Removed {zip_code} from your service area.", "success")
-    return redirect(url_for('profile'))
+    return redirect(url_for('landing'))
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -1308,98 +1044,20 @@ def customer_review(job_id):
     return render_template('customer_review.html', job=job)
 
 @app.route("/hauler/earnings")
-@require_role('hauler')
 def hauler_earnings():
-    completed_jobs = Job.query.filter(
-        Job.accepted_hauler_id == current_user.id,
-        Job.status == 'completed'
-    ).order_by(Job.completed_at.desc()).all()
-    
-    total_earnings = sum(job.accepted_quote or 0 for job in completed_jobs)
-    job_count = len(completed_jobs)
-    
-    reviews = Review.query.filter_by(hauler_id=current_user.id).all()
-    avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
-    
-    return render_template('hauler_earnings.html', 
-                           jobs=completed_jobs, 
-                           total_earnings=total_earnings,
-                           job_count=job_count,
-                           avg_rating=avg_rating,
-                           review_count=len(reviews))
+    return redirect(url_for('landing'))
 
 @app.route("/hauler/upload_photos/<int:job_id>", methods=["GET", "POST"])
-@require_role('hauler')
 def hauler_upload_photos(job_id):
-    job = Job.query.get_or_404(job_id)
-    if job.accepted_hauler_id != current_user.id:
-        return "Access denied", 403
-    if job.status not in ['deposit_paid', 'completed']:
-        return "Cannot upload photos at this stage", 400
+    return redirect(url_for('landing'))
 
-    if request.method == "POST":
-        before_photos = request.files.getlist("before_photos")
-        after_photos = request.files.getlist("after_photos")
 
-        from storage import upload_file as _upload_file
-        saved_after = 0
-        for photo in before_photos:
-            if photo and photo.filename:
-                ext = os.path.splitext(photo.filename)[1]
-                photo_data, photo_ct = _read_photo_bytes(photo, ext)
-                filename, storage_url = _upload_file(photo, ext)
-                photo_record = CompletionPhoto(
-                    job_id=job.id, filename=filename, storage_url=storage_url,
-                    data=photo_data if not storage_url else None, content_type=photo_ct,
-                    photo_type='before'
-                )
-                db.session.add(photo_record)
-
-        for photo in after_photos:
-            if photo and photo.filename:
-                ext = os.path.splitext(photo.filename)[1]
-                photo_data, photo_ct = _read_photo_bytes(photo, ext)
-                filename, storage_url = _upload_file(photo, ext)
-                photo_record = CompletionPhoto(
-                    job_id=job.id, filename=filename, storage_url=storage_url,
-                    data=photo_data if not storage_url else None, content_type=photo_ct,
-                    photo_type='after'
-                )
-                db.session.add(photo_record)
-                saved_after += 1
-
-        if saved_after == 0:
-            db.session.rollback()
-            flash("You must upload at least one AFTER photo to submit completion proof.", "error")
-            return render_template('hauler_upload_photos.html', job=job)
-
-        job.status = 'completed'
-        job.completed_at = datetime.now()
-        db.session.commit()
-
-        try:
-            notify_admin_job_completed(
-                job.id,
-                job.customer_name,
-                job.accepted_hauler,
-                job.accepted_quote
-            )
-        except Exception as e:
-            app.logger.error("Admin notify failed (job #%s completed by hauler): %s", job.id, e)
-
-        try:
-            customer = User.query.get(job.customer_id)
-            if customer and customer.email:
-                notify_customer_job_completed(customer.email, job.id)
-            if customer and customer.notify_sms and customer.phone:
-                notify_customer_job_completed_sms(customer.phone, job.id)
-        except Exception as e:
-            app.logger.error("Customer job-completed notify failed (hauler upload, job #%s): %s", job.id, e)
-
-        flash("Completion proof submitted! The customer has been notified and can now release payment.", "success")
-        return redirect(url_for('hauler_dashboard'))
-
-    return render_template('hauler_upload_photos.html', job=job)
+@app.route("/customer/dashboard")
+@require_login
+def customer_dashboard():
+    if current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('customer_jobs'))
 
 @app.route("/admin")
 @require_admin

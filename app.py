@@ -229,5 +229,54 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (notification_logs sg columns) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS service_type VARCHAR"))
+        db.session.commit()
+        logging.info("Column migration: jobs.service_type ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (jobs.service_type) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS quotes (
+                id SERIAL PRIMARY KEY,
+                job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                price FLOAT NOT NULL,
+                deposit_amount FLOAT NOT NULL,
+                admin_notes TEXT,
+                customer_notes TEXT,
+                estimated_completion VARCHAR,
+                status VARCHAR DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: quotes ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (quotes) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                sender_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                body TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                read_at TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: messages ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (messages) skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
