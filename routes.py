@@ -1008,6 +1008,8 @@ def admin_send_quote(job_id):
 # ── ADMIN PORTAL ROUTES ────────────────────────────────────────────────────────
 
 _PORTAL_STATUSES = ['reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress', 'completed', 'cancelled']
+_LEGACY_STATUSES = ['open', 'bidding', 'accepted', 'deposit_paid', 'expired']
+_ALL_STATUSES_ORDERED = _PORTAL_STATUSES + _LEGACY_STATUSES
 _STATUS_LABELS = {
     'reviewing': ('🔍 Reviewing', '#3b82f6'),
     'quoted': ('💬 Quoted', '#8b5cf6'),
@@ -1016,6 +1018,11 @@ _STATUS_LABELS = {
     'in_progress': ('🚛 In Progress', '#f97316'),
     'completed': ('✅ Completed', '#16a34a'),
     'cancelled': ('❌ Cancelled', '#ef4444'),
+    'open': ('📂 Open (Legacy)', '#64748b'),
+    'bidding': ('🏷 Bidding (Legacy)', '#64748b'),
+    'accepted': ('🤝 Accepted (Legacy)', '#64748b'),
+    'deposit_paid': ('💰 Deposit Paid (Legacy)', '#64748b'),
+    'expired': ('⏰ Expired (Legacy)', '#64748b'),
 }
 
 
@@ -1024,10 +1031,12 @@ _STATUS_LABELS = {
 def admin_requests():
     jobs = Job.query.order_by(Job.id.desc()).all()
     grouped = {}
-    for s in _PORTAL_STATUSES:
-        grouped[s] = []
     for job in jobs:
         grouped.setdefault(job.status, []).append(job)
+    present_statuses = [s for s in _ALL_STATUSES_ORDERED if grouped.get(s)]
+    for s in grouped:
+        if s not in present_statuses:
+            present_statuses.append(s)
     unread_by_job = {}
     msgs = (Message.query
             .join(User, Message.sender_id == User.id)
@@ -1037,6 +1046,7 @@ def admin_requests():
         unread_by_job[m.job_id] = unread_by_job.get(m.job_id, 0) + 1
     return render_template('admin_requests.html',
                            grouped=grouped,
+                           all_statuses=present_statuses,
                            status_labels=_STATUS_LABELS,
                            unread_by_job=unread_by_job)
 
@@ -1080,6 +1090,11 @@ _VALID_TRANSITIONS = {
     'in_progress':         {'completed', 'cancelled'},
     'completed':           {'cancelled'},
     'cancelled':           {'reviewing'},
+    'open':                {'reviewing', 'cancelled'},
+    'bidding':             {'reviewing', 'cancelled'},
+    'accepted':            {'reviewing', 'scheduled', 'cancelled'},
+    'deposit_paid':        {'reviewing', 'scheduled', 'cancelled'},
+    'expired':             {'reviewing', 'cancelled'},
 }
 
 
@@ -1213,25 +1228,14 @@ def admin_message_reply(job_id):
 @app.route("/admin/messages")
 @require_admin
 def admin_messages():
-    unread_msgs = (db.session.query(Message, Job, User)
-                   .join(Job, Message.job_id == Job.id)
-                   .join(User, Message.sender_id == User.id)
-                   .filter(Message.read_at == None, User.is_admin == False)
-                   .order_by(Message.created_at.desc())
-                   .all())
-    seen_jobs = set()
-    job_threads = []
-    for msg, job, sender in unread_msgs:
-        if job.id not in seen_jobs:
-            seen_jobs.add(job.id)
-            unread_count = (Message.query
-                            .join(User, Message.sender_id == User.id)
-                            .filter(Message.job_id == job.id,
-                                    Message.read_at == None,
-                                    User.is_admin == False)
-                            .count())
-            job_threads.append({'job': job, 'last_msg': msg, 'sender': sender, 'unread': unread_count})
-    return render_template('admin_messages.html', job_threads=job_threads)
+    unread_items = (db.session.query(Message, Job, User)
+                    .join(Job, Message.job_id == Job.id)
+                    .join(User, Message.sender_id == User.id)
+                    .filter(Message.read_at == None, User.is_admin == False)
+                    .order_by(Message.created_at.desc())
+                    .all())
+    messages = [{'msg': msg, 'job': job, 'sender': sender} for msg, job, sender in unread_items]
+    return render_template('admin_messages.html', messages=messages)
 
 
 # ── END ADMIN PORTAL ROUTES ────────────────────────────────────────────────────

@@ -14,10 +14,10 @@
     </div>
 </div>
 
-{% for status in ['reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress', 'completed', 'cancelled'] %}
+{% for status in all_statuses %}
 {% set jobs = grouped.get(status, []) %}
 {% if jobs %}
-{% set label_pair = status_labels.get(status, (status, '#718096')) %}
+{% set label_pair = status_labels.get(status, (status.replace('_',' ').title(), '#718096')) %}
 <div style="margin-bottom:6px;margin-top:20px;display:flex;align-items:center;gap:10px;">
     <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">
         {{ label_pair[0] }}
@@ -35,7 +35,11 @@
         {% elif status == 'scheduled' %}📅
         {% elif status == 'in_progress' %}🚛
         {% elif status == 'completed' %}✅
-        {% else %}❌{% endif %}
+        {% elif status == 'cancelled' %}❌
+        {% elif status == 'open' or status == 'bidding' %}📂
+        {% elif status == 'accepted' or status == 'deposit_paid' %}🤝
+        {% elif status == 'expired' %}⏰
+        {% else %}📋{% endif %}
     </div>
     <div style="flex:1;min-width:160px;">
         <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">
