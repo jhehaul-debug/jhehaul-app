@@ -291,7 +291,7 @@ def notify_customer_new_bid_sms(phone, job_id, hauler_name, quote_amount):
     if not is_sms_enabled('customer_new_bid'):
         return False
     msg = (f"JHE Haul: {hauler_name} bid ${quote_amount:.2f} on your job #{job_id}. "
-           f"Log in to review bids: {_APP_URL}/customer/job/{job_id}")
+           f"Log in to review bids: {_APP_URL}/customer/request/{job_id}")
     return send_sms(phone, msg, 'customer_new_bid')
 
 
@@ -300,7 +300,7 @@ def notify_customer_quote_received_sms(phone, job_id, service_type, price):
         return False
     service_label = service_type or 'your service'
     msg = (f"JHE Haul: Your quote for {service_label} is ready — ${price:.2f}. "
-           f"Log in to review and confirm: {_APP_URL}/customer/job/{job_id}")
+           f"Log in to review and confirm: {_APP_URL}/customer/request/{job_id}")
     return send_sms(phone, msg, 'customer_quote_received')
 
 
@@ -308,7 +308,7 @@ def notify_customer_job_completed_sms(phone, job_id):
     if not is_sms_enabled('customer_job_completed'):
         return False
     msg = (f"JHE Haul: Job #{job_id} is complete! "
-           f"Please log in to leave a review for your hauler: {_APP_URL}/customer/job/{job_id}")
+           f"Please log in to leave a review for your hauler: {_APP_URL}/customer/request/{job_id}")
     return send_sms(phone, msg, 'customer_job_completed')
 
 
