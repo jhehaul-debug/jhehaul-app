@@ -165,7 +165,7 @@
     <div class="lp-hero-btns">
         {% if current_user.is_authenticated and current_user.user_type == 'customer' %}
             <a href="{{ url_for('customer_request') }}" class="btn-hero-primary">Request Service</a>
-            <a href="{{ url_for('customer_jobs') }}" class="btn-hero-secondary">My Requests</a>
+            <a href="/services" class="btn-hero-secondary">View Services</a>
         {% else %}
             <a href="{{ url_for('auth.login') }}" class="btn-hero-primary">Request Service</a>
             <a href="/services" class="btn-hero-secondary">View Services</a>
