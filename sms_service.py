@@ -366,3 +366,10 @@ def notify_admin_new_bid_sms(job_id, hauler_name, quote):
     return notify_admin_sms(
         f"New bid: Job #{job_id} | {hauler_name} | ${float(quote):.0f}"
     )
+
+
+def notify_admin_new_request_sms(job_id, customer_name, service_type, pickup_zip):
+    """Admin SMS when a new service request is submitted. Controlled by ev_admin_alert toggle."""
+    return notify_admin_sms(
+        f"New request #{job_id} | {customer_name} | {service_type or 'General'} | ZIP {pickup_zip or '—'}"
+    )
