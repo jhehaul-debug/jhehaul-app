@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Messages — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+        <h2 class="page-title" style="margin:0;">💬 Customer Messages</h2>
+    </div>
+    {% if admin_unread_count > 0 %}
+    <span style="background:#ef4444;color:#fff;font-size:0.88rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ admin_unread_count }} unread</span>
+    {% else %}
+    <span style="background:#dcfce7;color:#15803d;font-size:0.88rem;font-weight:700;padding:4px 14px;border-radius:20px;">All read</span>
+    {% endif %}
+</div>
+
+{% if job_threads %}
+<div class="card" style="padding:0;overflow:hidden;">
+{% for thread in job_threads %}
+<a href="{{ url_for('admin_request_detail', job_id=thread.job.id) }}"
+   style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};text-decoration:none;color:inherit;transition:background 0.12s;"
+   onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+    <div style="flex-shrink:0;width:42px;height:42px;border-radius:50%;background:{% if thread.unread > 0 %}#dbeafe{% else %}#f1f5f9{% endif %};border:2px solid {% if thread.unread > 0 %}#93c5fd{% else %}#e2e8f0{% endif %};display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+        💬
+    </div>
+    <div style="flex:1;min-width:0;">
+        <div style="font-weight:{% if thread.unread > 0 %}700{% else %}600{% endif %};font-size:0.92rem;color:#1a202c;display:flex;align-items:center;gap:8px;">
+            {{ thread.job.customer_name }}
+            <span style="font-weight:400;color:#718096;font-size:0.82rem;">— Request #{{ thread.job.id }}</span>
+            {% if thread.unread > 0 %}
+            <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ thread.unread }} new</span>
+            {% endif %}
+        </div>
+        <div style="font-size:0.85rem;color:#4a5568;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px;">
+            {{ thread.last_msg.body[:120] }}{% if thread.last_msg.body|length > 120 %}…{% endif %}
+        </div>
+        <div style="font-size:0.78rem;color:#a0aec0;margin-top:2px;">
+            {{ thread.last_msg.created_at | ct('%b %d, %Y %I:%M %p CT') or '' }}
+            {% if thread.job.service_type %}
+            · <span style="background:#ede9fe;color:#6d28d9;font-size:0.73rem;font-weight:600;padding:1px 6px;border-radius:8px;">{{ thread.job.service_type }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div style="flex-shrink:0;color:#3b82f6;font-size:0.88rem;font-weight:600;">View →</div>
+</a>
+{% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>No customer messages yet.</p>
+        <a href="{{ url_for('admin_requests') }}" class="btn btn-primary">View All Requests</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
