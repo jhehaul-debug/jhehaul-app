@@ -42,7 +42,7 @@
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin</a>
                     {% elif current_user.user_type == 'customer' %}
-                        <a href="{{ url_for('customer_new') }}">Request Service</a>
+                        <a href="{{ url_for('customer_request') }}">Request Service</a>
                         <a href="{{ url_for('customer_jobs') }}">My Requests</a>
                     {% endif %}
                     <a href="{{ url_for('profile') }}">Profile</a>
@@ -72,7 +72,7 @@
             {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
             {% elif current_user.user_type == 'customer' %}
-                <a href="{{ url_for('customer_new') }}">📋 Request Service</a>
+                <a href="{{ url_for('customer_request') }}">📋 Request Service</a>
                 <a href="{{ url_for('customer_jobs') }}">📦 My Requests</a>
             {% endif %}
             <a href="{{ url_for('profile') }}">👤 Profile</a>
@@ -111,7 +111,7 @@
             <div class="footer-col">
                 <h4>Services</h4>
                 <a href="/services">All Services</a>
-                <a href="{{ url_for('customer_new') }}">Request Service</a>
+                <a href="{{ url_for('customer_request') }}">Request Service</a>
                 <a href="{{ url_for('auth.login') }}">My Account</a>
             </div>
             <div class="footer-col">

@@ -548,3 +548,56 @@ def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, commen
               "⭐ New Review", body),
         'hauler_new_review'
     )
+
+
+# ── PORTAL NOTIFICATIONS ───────────────────────────────────────────────────────
+
+def notify_customer_quote_received(customer_email, job_id, service_type, price, deposit_amount,
+                                    admin_notes=None, estimated_completion=None):
+    service_label = service_type or 'Service'
+    notes_html = (f'<p><strong>Note from JHE Haul:</strong><br><em>{admin_notes}</em></p>'
+                  if admin_notes else '')
+    est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'
+                if estimated_completion else '')
+    body = f"""
+    <p>Great news — we've reviewed your request and have a quote ready for you.</p>
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Service:</strong> {service_label}</p>
+      <p><strong>Total Price:</strong> <span class="pill pill-blue">${price:.2f}</span></p>
+      <p><strong>Deposit Due Now:</strong> <span class="pill pill-orange">${deposit_amount:.2f}</span></p>
+      {est_html}
+    </div>
+    {notes_html}
+    <p>Log in to review the full quote, ask any questions, and confirm your booking.</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Your Quote →</a>"""
+    return send_email(
+        customer_email,
+        f"Your Quote Is Ready — {service_label} (Request #{job_id})",
+        _html("Your Quote Is Ready!", "Log in to review your quote and confirm your booking.",
+              "🏷 Quote Ready", body),
+        'customer_quote_received'
+    )
+
+
+def notify_customer_deposit_confirmed(customer_email, job_id, service_type, estimated_completion=None):
+    service_label = service_type or 'Service'
+    est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'
+                if estimated_completion else '')
+    body = f"""
+    <p>Your deposit has been received and your service is now confirmed and scheduled.</p>
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Service:</strong> {service_label}</p>
+      <p><strong>Status:</strong> <span class="pill pill-green">Scheduled</span></p>
+      {est_html}
+    </div>
+    <p>We'll be in touch to coordinate the exact timing. You can message us anytime through your request page.</p>
+    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">View Your Request →</a>"""
+    return send_email(
+        customer_email,
+        f"Booking Confirmed — {service_label} (Request #{job_id})",
+        _html("You're All Set! 🎉", "Your service is scheduled. We'll be in touch soon.",
+              "✅ Confirmed", body),
+        'customer_deposit_confirmed'
+    )

@@ -216,6 +216,7 @@ class SmsSettings(db.Model):
     ev_job_cancelled = db.Column(db.Boolean, default=True)
     ev_bid_rejected = db.Column(db.Boolean, default=False)
     ev_admin_alert = db.Column(db.Boolean, default=False)
+    ev_quote_received = db.Column(db.Boolean, default=True)
     email_fallback_to_sms = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

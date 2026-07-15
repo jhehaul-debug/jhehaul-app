@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Our Services - JHE Haul{% endblock %}
+{% block content %}
+
+<style>
+.services-header { text-align:center; margin-bottom:40px; }
+.services-header h1 { font-size:2rem; margin-bottom:8px; }
+.services-header p { color:#718096; font-size:1.05rem; max-width:520px; margin:0 auto; }
+.services-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; margin-bottom:40px; }
+.service-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:24px 20px; text-align:center; transition:box-shadow .15s,transform .15s; }
+.service-card:hover { box-shadow:0 6px 18px rgba(0,0,0,0.09); transform:translateY(-2px); }
+.service-icon { font-size:2.4rem; margin-bottom:12px; }
+.service-name { font-weight:700; font-size:1.02rem; color:#1a202c; margin-bottom:6px; }
+.service-desc { font-size:0.86rem; color:#718096; line-height:1.5; }
+.cta-bar { background:#1a202c; border-radius:14px; padding:36px 32px; text-align:center; color:#fff; }
+.cta-bar h2 { font-size:1.5rem; margin-bottom:10px; }
+.cta-bar p { color:#a0aec0; margin-bottom:22px; }
+</style>
+
+<div class="services-header">
+    <h1>Our Services</h1>
+    <p>Professional junk removal and hauling across the Twin Cities. Submit a request and we'll give you a quote — usually within 24 hours.</p>
+</div>
+
+<div class="services-grid">
+    <div class="service-card">
+        <div class="service-icon">🗑️</div>
+        <div class="service-name">Junk Removal</div>
+        <div class="service-desc">Furniture, appliances, old electronics, miscellaneous clutter — we haul it all away fast.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🛋️</div>
+        <div class="service-name">Furniture Removal</div>
+        <div class="service-desc">Sofas, mattresses, bed frames, dressers, tables — big or bulky, no problem.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🍽️</div>
+        <div class="service-name">Appliance Removal</div>
+        <div class="service-desc">Fridges, washers, dryers, dishwashers, stoves — properly hauled and disposed of.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🌿</div>
+        <div class="service-name">Yard Waste</div>
+        <div class="service-desc">Branches, brush, leaves, grass clippings, and general yard debris cleanups.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🏗️</div>
+        <div class="service-name">Construction Debris</div>
+        <div class="service-desc">Drywall, lumber, tiles, concrete pieces, roofing materials — post-project cleanups.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">📦</div>
+        <div class="service-name">Clean Outs</div>
+        <div class="service-desc">Full property clean outs — estates, rentals, hoarder situations, storage units.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🏠</div>
+        <div class="service-name">Garage Clean Out</div>
+        <div class="service-desc">Clear out years of garage clutter in one visit. We sort, haul, and leave it broom-clean.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">✂️</div>
+        <div class="service-name">Property Clean Up</div>
+        <div class="service-desc">General property cleanup — mixed junk, outdoor items, miscellaneous debris.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">💪</div>
+        <div class="service-name">Moving Labor</div>
+        <div class="service-desc">Need help loading or unloading? We provide the muscle — you provide the truck.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🚚</div>
+        <div class="service-name">Furniture Delivery</div>
+        <div class="service-desc">Large item delivery and setup — couches, appliances, and more.</div>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">⭐</div>
+        <div class="service-name">Special Request</div>
+        <div class="service-desc">Something unique? Describe what you need and we'll figure out the best approach.</div>
+    </div>
+</div>
+
+<div class="cta-bar">
+    <h2>Ready to get started?</h2>
+    <p>Submit a request in minutes. We review it, send you a quote, and schedule pickup at your convenience.</p>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('customer_request') }}" class="btn btn-success btn-lg">Request Service Now</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg">Get a Free Quote</a>
+    {% endif %}
+</div>
+
+{% endblock %}
