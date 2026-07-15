@@ -470,7 +470,10 @@ def customer_job_detail(job_id):
         return "Access denied", 403
 
     quotes = Quote.query.filter_by(job_id=job_id).order_by(Quote.created_at.desc()).all()
-    active_quote = next((q for q in quotes if q.status in ('pending', 'accepted')), None)
+    active_quote = (
+        next((q for q in quotes if q.status == 'accepted'), None) or
+        next((q for q in quotes if q.status == 'pending'), None)
+    )
 
     messages = Message.query.filter_by(job_id=job_id).order_by(Message.created_at.asc()).all()
     from datetime import datetime as _dt
@@ -755,9 +758,11 @@ def customer_accept_quote(quote_id):
     job = Job.query.get_or_404(quote.job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
-    if job.status != 'quoted':
+    if job.status != 'quoted' or quote.status != 'pending':
         flash("This quote is no longer available to accept.", "error")
         return redirect(url_for('customer_job_detail', job_id=job.id))
+    for other in Quote.query.filter_by(job_id=job.id).filter(Quote.id != quote.id, Quote.status == 'pending').all():
+        other.status = 'declined'
     quote.status = 'accepted'
     job.status = 'waiting_for_payment'
     db.session.commit()
@@ -809,6 +814,9 @@ def checkout_quote(quote_id):
     if job.customer_id != current_user.id:
         return "Access denied", 403
     if job.status != 'waiting_for_payment' or job.deposit_paid:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+    if quote.status != 'accepted':
+        flash("This quote has not been accepted. Please accept the quote before paying.", "error")
         return redirect(url_for('customer_job_detail', job_id=job.id))
     deposit = float(quote.deposit_amount or 0)
     if deposit <= 0:
@@ -864,6 +872,13 @@ def checkout_quote_success():
             app.logger.warning("Stripe session job_id mismatch: expected %s, got %s", job_id, meta_job_id)
             flash("Payment session does not match this request. Please contact support.", "error")
             return redirect(url_for('customer_jobs'))
+        meta_quote_id = int(meta.get('quote_id', 0))
+        if meta_quote_id:
+            auth_quote = Quote.query.get(meta_quote_id)
+            if not auth_quote or auth_quote.job_id != job_id or auth_quote.status != 'accepted':
+                app.logger.warning("Stripe quote auth failed (job #%s, quote #%s)", job_id, meta_quote_id)
+                flash("Payment session does not match an authorized quote. Please contact support.", "error")
+                return redirect(url_for('customer_jobs'))
         if cs.payment_status == 'paid':
             job.deposit_paid = True
             job.status = 'scheduled'
@@ -1152,7 +1167,7 @@ def customer_cancel_job(job_id):
     job = Job.query.get_or_404(job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
-    if job.status not in ['open', 'bidding']:
+    if job.status not in ['open', 'bidding', 'reviewing', 'quoted', 'waiting_for_payment']:
         return "Job cannot be cancelled at this stage", 400
     job.status = 'cancelled'
     job.cancelled_at = datetime.now()
