@@ -263,7 +263,7 @@ def home():
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
         if current_user.user_type == 'customer':
-            return redirect(url_for('customer_jobs'))
+            return redirect(url_for('customer_dashboard'))
         else:
             return redirect(url_for('choose_role'))
     return render_template('landing.html')
@@ -271,6 +271,8 @@ def home():
 @app.route("/invite")
 @app.route("/invite/<role>")
 def invite(role=None):
+    if role == 'hauler':
+        return redirect(url_for('home'))
     if role == 'customer':
         session['invited_role'] = role
     if current_user.is_authenticated:
@@ -278,7 +280,7 @@ def invite(role=None):
             return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-        return redirect(url_for('customer_jobs'))
+        return redirect(url_for('customer_dashboard'))
     return render_template('invite_landing.html', role=role)
 
 @app.route("/choose-role")
@@ -289,9 +291,17 @@ def choose_role():
         return redirect(url_for("admin_dashboard"))
     if current_user.user_type == "customer":
         session.pop("invited_role", None)
-        return redirect(url_for("customer_jobs"))
-    invited_role = session.pop("invited_role", None)
-    return render_template("choose_role.html", invited_role=invited_role)
+        return redirect(url_for("customer_dashboard"))
+    session.pop("invited_role", None)
+    current_user.user_type = 'customer'
+    db.session.commit()
+    try:
+        _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+        notify_admin_new_customer(_name, current_user.email)
+        notify_admin_new_customer_sms(_name, current_user.email)
+    except Exception as e:
+        app.logger.error("Admin notify failed (new customer): %s", e)
+    return redirect(url_for("customer_dashboard"))
 
 @app.route("/set-role", methods=["POST"])
 @require_login
@@ -306,15 +316,15 @@ def set_role():
         notify_admin_new_customer_sms(_name, current_user.email)
     except Exception as e:
         app.logger.error("Admin notify failed (new customer): %s", e)
-    return redirect(url_for('customer_jobs'))
+    return redirect(url_for('customer_dashboard'))
 
 @app.route("/hauler/setup")
 @app.route("/hauler/setup", methods=["POST"])
 def hauler_setup():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 def hauler_setup_save():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/about")
 def about():
@@ -322,7 +332,7 @@ def about():
 
 @app.route("/hauler-agreement")
 def hauler_agreement():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/customer-terms")
 def customer_terms():
@@ -759,18 +769,18 @@ def checkout_over500_success():
 
 @app.route("/hauler/jobs")
 def hauler_jobs():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/hauler/bid/<int:job_id>", methods=["GET", "POST"])
 def hauler_bid_form(job_id):
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 def hauler_bid_submit(job_id):
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/hauler/dashboard")
 def hauler_dashboard():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/profile")
 @require_login
@@ -815,12 +825,12 @@ def profile():
 
 @app.route("/hauler/service-zips/add", methods=["POST"])
 def hauler_service_zip_add():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 
 @app.route("/hauler/service-zips/remove", methods=["POST"])
 def hauler_service_zip_remove():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -1045,11 +1055,11 @@ def customer_review(job_id):
 
 @app.route("/hauler/earnings")
 def hauler_earnings():
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 @app.route("/hauler/upload_photos/<int:job_id>", methods=["GET", "POST"])
 def hauler_upload_photos(job_id):
-    return redirect(url_for('landing'))
+    return redirect(url_for('home'))
 
 
 @app.route("/customer/dashboard")
