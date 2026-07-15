@@ -438,6 +438,10 @@ def customer_jobs():
     return render_template('customer_jobs.html', jobs=jobs, unread_counts=unread_counts)
 
 @app.route("/customer/job/<int:job_id>")
+def customer_job_detail_legacy(job_id):
+    return redirect(url_for('customer_job_detail', job_id=job_id), code=301)
+
+@app.route("/customer/request/<int:job_id>")
 @require_role('customer')
 def customer_job_detail(job_id):
     job = Job.query.get_or_404(job_id)
@@ -662,7 +666,7 @@ def checkout_over500(bid_id):
             }],
             mode='payment',
             success_url=f"{domain}/checkout/over500/success?session_id={{CHECKOUT_SESSION_ID}}&job_id={job.id}",
-            cancel_url=f"{domain}/customer/job/{job.id}",
+            cancel_url=f"{domain}/customer/request/{job.id}",
             metadata={
                 'job_id': str(job.id),
                 'bid_id': str(bid.id),
@@ -805,7 +809,7 @@ def checkout_quote(quote_id):
             mode='payment',
             success_url=(f"{domain}/checkout/quote/success"
                          f"?session_id={{CHECKOUT_SESSION_ID}}&job_id={job.id}&quote_id={quote.id}"),
-            cancel_url=f"{domain}/customer/job/{job.id}",
+            cancel_url=f"{domain}/customer/request/{job.id}",
             metadata={'job_id': str(job.id), 'quote_id': str(quote.id), 'deposit_amount': str(deposit)},
         )
         return redirect(checkout_session.url, code=303)
@@ -829,6 +833,13 @@ def checkout_quote_success():
         return redirect(url_for('customer_job_detail', job_id=job.id))
     try:
         cs = stripe.checkout.Session.retrieve(session_id)
+        # Validate metadata to prevent session replay on a different request
+        meta = cs.metadata or {}
+        meta_job_id = int(meta.get('job_id', job_id))
+        if meta_job_id != job_id:
+            app.logger.warning("Stripe session job_id mismatch: expected %s, got %s", job_id, meta_job_id)
+            flash("Payment session does not match this request. Please contact support.", "error")
+            return redirect(url_for('customer_jobs'))
         if cs.payment_status == 'paid':
             job.deposit_paid = True
             job.status = 'scheduled'
@@ -839,6 +850,11 @@ def checkout_quote_success():
                 notify_admin_deposit_paid(job.id, _cname, None, job.accepted_quote)
             except Exception as e:
                 app.logger.error("Admin notify failed (quote deposit job #%s): %s", job.id, e)
+            try:
+                if current_user.email:
+                    notify_customer_deposit_confirmed(current_user.email, job.id, job.service_type)
+            except Exception as e:
+                app.logger.error("Customer deposit notify failed (job #%s): %s", job.id, e)
             flash("Deposit paid! Your service is now scheduled.", "success")
             return redirect(url_for('customer_job_detail', job_id=job.id))
         else:
@@ -853,6 +869,54 @@ def checkout_quote_success():
 @app.route("/services")
 def services():
     return render_template('services.html')
+
+
+@app.route("/admin/job/<int:job_id>/send_quote", methods=["POST"])
+@require_login
+def admin_send_quote(job_id):
+    if not current_user.is_admin:
+        return "Access denied", 403
+    job = Job.query.get_or_404(job_id)
+    try:
+        price = float(request.form.get("price", 0))
+        deposit = float(request.form.get("deposit_amount", 0))
+    except (ValueError, TypeError):
+        flash("Invalid price values.", "error")
+        return redirect(url_for('admin_job_detail', job_id=job_id) if 'admin_job_detail' in app.view_functions else url_for('home'))
+    admin_notes = request.form.get("admin_notes", "").strip() or None
+    estimated_completion = request.form.get("estimated_completion", "").strip() or None
+    if price <= 0 or deposit <= 0:
+        flash("Price and deposit must be greater than zero.", "error")
+        return redirect(url_for('home'))
+    quote = Quote(
+        job_id=job.id,
+        price=price,
+        deposit_amount=deposit,
+        admin_notes=admin_notes,
+        estimated_completion=estimated_completion,
+        status='pending',
+    )
+    db.session.add(quote)
+    job.status = 'quoted'
+    db.session.commit()
+    customer = User.query.get(job.customer_id)
+    if customer:
+        try:
+            if customer.email:
+                notify_customer_quote_received(
+                    customer.email, job.id, job.service_type or 'Service Request',
+                    price, deposit, admin_notes, estimated_completion
+                )
+        except Exception as e:
+            app.logger.error("notify_customer_quote_received failed (job #%s): %s", job.id, e)
+        try:
+            if customer.notify_sms and customer.phone:
+                notify_customer_quote_received_sms(customer.phone, job.id, job.service_type or 'Service Request', price)
+        except Exception as e:
+            app.logger.error("notify_customer_quote_received_sms failed (job #%s): %s", job.id, e)
+    flash(f"Quote sent to customer for Request #{job.id}.", "success")
+    dest = url_for('admin_job_detail', job_id=job_id) if 'admin_job_detail' in app.view_functions else url_for('home')
+    return redirect(dest)
 
 
 @app.route("/hauler/jobs")

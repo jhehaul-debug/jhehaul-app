@@ -9,9 +9,13 @@
 .stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 20px; min-width:100px; text-align:center; }
 .stat-card .stat-num { font-size:1.7rem; font-weight:800; line-height:1; }
 .stat-card .stat-lbl { font-size:0.75rem; color:#718096; margin-top:3px; text-transform:uppercase; letter-spacing:.04em; }
+.section-heading { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+    color:#718096; margin:24px 0 10px; padding-bottom:6px; border-bottom:1px solid #e2e8f0; }
+.section-heading.action { color:#c05621; border-color:#fed7aa; }
+.section-heading.completed { color:#15803d; border-color:#bbf7d0; }
 .job-cards { display:flex; flex-direction:column; gap:12px; }
 .job-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:18px 20px;
-            display:flex; justify-content:space-between; align-items:flex-start; gap:14px; transition:box-shadow .15s; }
+    display:flex; justify-content:space-between; align-items:flex-start; gap:14px; transition:box-shadow .15s; }
 .job-card:hover { box-shadow:0 3px 12px rgba(0,0,0,0.09); border-color:#cbd5e0; }
 .job-card.has-action { border-left:4px solid #dd6b20; }
 .job-card-left { flex:1; min-width:0; }
@@ -41,36 +45,63 @@
 </div>
 
 {% if jobs %}
-{% set active_count = jobs | selectattr('status', 'in', ['reviewing', 'open', 'bidding', 'quoted', 'waiting_for_payment', 'accepted']) | list | length %}
-{% set scheduled_count = jobs | selectattr('status', 'in', ['scheduled', 'deposit_paid', 'in_progress']) | list | length %}
-{% set completed_count = jobs | selectattr('status', 'equalto', 'completed') | list | length %}
-{% set total_unread = unread_counts.values() | sum %}
+
+{# --- Build stat counts --- #}
+{% set action_count = namespace(n=0) %}
+{% set scheduled_count = namespace(n=0) %}
+{% set completed_count = namespace(n=0) %}
+{% set total_unread = namespace(n=0) %}
+{% for job in jobs %}
+    {% if job.status in ('quoted', 'waiting_for_payment', 'accepted') %}{% set action_count.n = action_count.n + 1 %}{% endif %}
+    {% if job.status in ('scheduled', 'deposit_paid', 'in_progress') %}{% set scheduled_count.n = scheduled_count.n + 1 %}{% endif %}
+    {% if job.status == 'completed' %}{% set completed_count.n = completed_count.n + 1 %}{% endif %}
+    {% set total_unread.n = total_unread.n + unread_counts.get(job.id, 0) %}
+{% endfor %}
 
 <div class="stats-row">
+    {% if action_count.n > 0 %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#1d4ed8;">{{ active_count }}</div>
-        <div class="stat-lbl">Active</div>
+        <div class="stat-num" style="color:#c05621;">{{ action_count.n }}</div>
+        <div class="stat-lbl">Action Needed</div>
     </div>
+    {% endif %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#15803d;">{{ scheduled_count }}</div>
+        <div class="stat-num" style="color:#15803d;">{{ scheduled_count.n }}</div>
         <div class="stat-lbl">Scheduled</div>
     </div>
     <div class="stat-card">
-        <div class="stat-num" style="color:#718096;">{{ completed_count }}</div>
+        <div class="stat-num" style="color:#718096;">{{ completed_count.n }}</div>
         <div class="stat-lbl">Completed</div>
     </div>
-    {% if total_unread > 0 %}
+    {% if total_unread.n > 0 %}
     <div class="stat-card">
-        <div class="stat-num" style="color:#e53e3e;">{{ total_unread }}</div>
+        <div class="stat-num" style="color:#e53e3e;">{{ total_unread.n }}</div>
         <div class="stat-lbl">New Messages</div>
     </div>
     {% endif %}
 </div>
 
-<div class="job-cards">
+{# --- Group jobs into buckets --- #}
+{% set action_jobs = [] %}
+{% set active_list = [] %}
+{% set done_list = [] %}
+{% set closed_list = [] %}
 {% for job in jobs %}
+    {% if job.status in ('quoted', 'waiting_for_payment', 'accepted') %}
+        {% if action_jobs.append(job) %}{% endif %}
+    {% elif job.status in ('reviewing', 'open', 'bidding', 'scheduled', 'deposit_paid', 'in_progress') %}
+        {% if active_list.append(job) %}{% endif %}
+    {% elif job.status == 'completed' %}
+        {% if done_list.append(job) %}{% endif %}
+    {% else %}
+        {% if closed_list.append(job) %}{% endif %}
+    {% endif %}
+{% endfor %}
+
+{# --- Macro for a single job card --- #}
+{% macro job_card(job) %}
 {% set unread = unread_counts.get(job.id, 0) %}
-{% set needs_action = job.status in ('quoted', 'waiting_for_payment') %}
+{% set needs_action = job.status in ('quoted', 'waiting_for_payment', 'accepted') %}
 <div class="job-card{% if needs_action %} has-action{% endif %}">
     <div class="job-card-left">
         <div class="job-card-title">
@@ -112,8 +143,39 @@
         <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-sm">View Details</a>
     </div>
 </div>
-{% endfor %}
+{% endmacro %}
+
+{# --- Action Needed section --- #}
+{% if action_jobs %}
+<div class="section-heading action">⚡ Action Needed</div>
+<div class="job-cards">
+    {% for job in action_jobs %}{{ job_card(job) }}{% endfor %}
 </div>
+{% endif %}
+
+{# --- Active section --- #}
+{% if active_list %}
+<div class="section-heading">Active Requests</div>
+<div class="job-cards">
+    {% for job in active_list %}{{ job_card(job) }}{% endfor %}
+</div>
+{% endif %}
+
+{# --- Completed section --- #}
+{% if done_list %}
+<div class="section-heading completed">Completed</div>
+<div class="job-cards">
+    {% for job in done_list %}{{ job_card(job) }}{% endfor %}
+</div>
+{% endif %}
+
+{# --- Closed section (cancelled / expired) --- #}
+{% if closed_list %}
+<div class="section-heading">Closed</div>
+<div class="job-cards">
+    {% for job in closed_list %}{{ job_card(job) }}{% endfor %}
+</div>
+{% endif %}
 
 {% else %}
 <div class="empty-state">

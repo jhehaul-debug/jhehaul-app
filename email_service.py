@@ -318,7 +318,7 @@ def notify_customer_new_bid(customer_email, job_id, hauler_name, quote_amount):
       <p><strong>Quote:</strong> ${quote_amount:.2f}</p>
     </div>
     <p>Log in to review all bids and accept the best one!</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Bids →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">Review Bids →</a>"""
     return send_email(
         customer_email,
         f"New Bid on Your Job #{job_id} — ${quote_amount:.2f}",
@@ -339,7 +339,7 @@ def notify_customer_bid_accepted_confirm(customer_email, job_id, hauler_name, qu
     </div>
     <p><strong>Next step:</strong> Pay the booking deposit to confirm your job and
        release the pickup address to your hauler.</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Pay Deposit Now →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">Pay Deposit Now →</a>"""
     return send_email(
         customer_email,
         f"Bid Accepted — Now Pay Your Deposit (Job #{job_id})",
@@ -357,7 +357,7 @@ def notify_customer_job_completed(customer_email, job_id):
       <p><strong>Status:</strong> <span class="pill pill-green">Completed</span></p>
     </div>
     <p>Please take a moment to leave a review for your hauler — it helps them get more work!</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Leave a Review →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">Leave a Review →</a>"""
     return send_email(
         customer_email,
         f"Job #{job_id} Complete — Please Leave a Review!",
@@ -477,7 +477,7 @@ def notify_customer_pending_bids_reminder(customer_email, job_id, bid_count):
       <p><strong>Action needed:</strong> Review and accept a bid to move forward.</p>
     </div>
     <p style="color:#b45309;font-weight:600;">⚠️ If no action is taken, your job will be removed from active bidding in 48 hours.</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Bids Now →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">Review Bids Now →</a>"""
     return send_email(
         customer_email,
         f"⏰ Reminder: {bid_count} bid{'s' if bid_count != 1 else ''} waiting on Job #{job_id}",
@@ -497,7 +497,7 @@ def notify_customer_job_expiring_soon(customer_email, job_id):
     </div>
     <p style="color:#b91c1c;font-weight:600;">🚨 This job will be automatically closed in approximately 24 hours if no bid is accepted.</p>
     <p>Accept a bid now to lock in your hauler and keep your job active. You can always reactivate an expired job, but acting now is faster.</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn" style="background:#dc2626;">Accept a Bid Now →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn" style="background:#dc2626;">Accept a Bid Now →</a>"""
     return send_email(
         customer_email,
         f"🚨 Job #{job_id} Will Expire Soon — Action Required",
@@ -570,7 +570,7 @@ def notify_customer_quote_received(customer_email, job_id, service_type, price, 
     </div>
     {notes_html}
     <p>Log in to review the full quote, ask any questions, and confirm your booking.</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">Review Your Quote →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">Review Your Quote →</a>"""
     return send_email(
         customer_email,
         f"Your Quote Is Ready — {service_label} (Request #{job_id})",
@@ -593,7 +593,7 @@ def notify_customer_deposit_confirmed(customer_email, job_id, service_type, esti
       {est_html}
     </div>
     <p>We'll be in touch to coordinate the exact timing. You can message us anytime through your request page.</p>
-    <a href="{_APP_URL}/customer/job/{job_id}" class="btn">View Your Request →</a>"""
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">View Your Request →</a>"""
     return send_email(
         customer_email,
         f"Booking Confirmed — {service_label} (Request #{job_id})",
