@@ -99,6 +99,112 @@
 </div>
 {% endif %}
 
+<!-- Today's Schedule -->
+{% if todays_schedule %}
+<div class="section-header">
+    <span class="section-title">📅 Today's Schedule ({{ todays_schedule|length }})</span>
+    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;border-left:4px solid #10b981;">
+    {% for job in todays_schedule %}
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex-shrink:0;font-size:1.3rem;">📅</div>
+        <div style="flex:1;min-width:160px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
+                {% if job.preferred_time %}<strong>{{ job.preferred_time }}</strong> · {% endif %}
+                {{ job.pickup_zip or '' }}
+                {% if job.service_type %} · <span style="background:#ede9fe;color:#6d28d9;font-size:0.75rem;font-weight:600;padding:1px 6px;border-radius:8px;">{{ job.service_type }}</span>{% endif %}
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <span style="background:{% if job.status=='in_progress' %}#fff7ed;color:#ea580c;{% else %}#dcfce7;color:#15803d;{% endif %}font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">
+                {{ job.status.replace('_',' ').title() }}
+            </span>
+            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">View →</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Pending Quotes (waiting for customer response) -->
+{% if pending_quote_jobs %}
+<div class="section-header">
+    <span class="section-title">💬 Pending Quotes ({{ quoted_count }})</span>
+    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for job in pending_quote_jobs %}
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
+                {% if job.quotes %}
+                {% set q = job.quotes | sort(attribute='created_at') | last %}
+                Quote: <strong style="color:#7c3aed;">${{ "%.0f"|format(q.price) }}</strong> · Deposit: ${{ "%.0f"|format(q.deposit_amount) }}
+                {% endif %}
+                {% if job.pickup_zip %} · {{ job.pickup_zip }}{% endif %}
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span style="background:#ede9fe;color:#7c3aed;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">⏳ Awaiting Customer</span>
+            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-outline btn-sm">View →</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Accepted / Scheduled / In Progress -->
+{% if accepted_scheduled_jobs %}
+<div class="section-header">
+    <span class="section-title">🚛 Accepted / Scheduled ({{ accepted_scheduled_jobs|length }})</span>
+    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for job in accepted_scheduled_jobs %}
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
+                {% if job.preferred_date %}<strong>📅 {{ job.preferred_date }}</strong>{% if job.preferred_time %} ({{ job.preferred_time }}){% endif %} · {% endif %}
+                {{ job.pickup_zip or '' }}
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span style="background:{% if job.status=='in_progress' %}#fff7ed;color:#ea580c;{% elif job.status=='scheduled' %}#dcfce7;color:#15803d;{% else %}#dbeafe;color:#1d4ed8;{% endif %}font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">
+                {{ job.status.replace('_',' ').title() }}
+            </span>
+            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">Manage →</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recently Completed -->
+{% if recent_completed_jobs %}
+<div class="section-header">
+    <span class="section-title">✅ Recently Completed ({{ completed_jobs }} total)</span>
+    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for job in recent_completed_jobs %}
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+            <div style="font-weight:600;font-size:0.9rem;color:#4a5568;">Request #{{ job.id }} — {{ job.customer_name }}</div>
+            <div style="font-size:0.8rem;color:#a0aec0;margin-top:2px;">Completed {{ job.completed_at | ct('%b %d') if job.completed_at else '' }}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+            <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">✓ Done</span>
+            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View →</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- Stat Cards -->
 <div class="stat-grid">
     <div class="stat-card blue">

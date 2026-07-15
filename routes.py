@@ -955,6 +955,7 @@ def services():
 
 
 @app.route("/admin/job/<int:job_id>/send_quote", methods=["POST"])
+@app.route("/admin/quote/create/<int:job_id>", methods=["POST"])
 @require_login
 def admin_send_quote(job_id):
     if not current_user.is_admin:
@@ -1072,13 +1073,13 @@ def admin_request_detail(job_id):
 
 
 _VALID_TRANSITIONS = {
-    'reviewing':          {'quoted', 'cancelled'},
-    'quoted':             {'reviewing', 'scheduled', 'cancelled'},
-    'waiting_for_payment':{'quoted', 'scheduled', 'cancelled'},
-    'scheduled':          {'in_progress', 'reviewing', 'cancelled'},
-    'in_progress':        {'completed', 'scheduled', 'cancelled'},
-    'completed':          {'in_progress'},
-    'cancelled':          {'reviewing'},
+    'reviewing':           {'quoted', 'cancelled'},
+    'quoted':              {'scheduled', 'cancelled'},
+    'waiting_for_payment': {'scheduled', 'cancelled'},
+    'scheduled':           {'in_progress', 'cancelled'},
+    'in_progress':         {'completed', 'cancelled'},
+    'completed':           {'cancelled'},
+    'cancelled':           {'reviewing'},
 }
 
 
@@ -1177,6 +1178,7 @@ def admin_upload_completion_photo(job_id):
 
 
 @app.route("/admin/request/<int:job_id>/message", methods=["POST"])
+@app.route("/admin/message/<int:job_id>", methods=["POST"])
 @require_admin
 def admin_message_reply(job_id):
     job = Job.query.get_or_404(job_id)
@@ -1585,6 +1587,18 @@ def admin_dashboard():
     in_progress_count = Job.query.filter_by(status='in_progress').count()
     new_requests = (Job.query.filter_by(status='reviewing')
                     .order_by(Job.id.desc()).limit(5).all())
+    pending_quote_jobs = (Job.query.filter_by(status='quoted')
+                          .order_by(Job.id.desc()).limit(8).all())
+    accepted_scheduled_jobs = (Job.query
+                                .filter(Job.status.in_(['scheduled', 'in_progress', 'waiting_for_payment']))
+                                .order_by(Job.id.desc()).limit(8).all())
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    todays_schedule = (Job.query
+                       .filter(Job.status.in_(['scheduled', 'in_progress']),
+                               Job.preferred_date == today_str)
+                       .order_by(Job.preferred_time.asc()).all())
+    recent_completed_jobs = (Job.query.filter_by(status='completed')
+                             .order_by(Job.id.desc()).limit(5).all())
 
     return render_template('admin_dashboard.html',
                            spaces_configured=spaces_configured,
@@ -1612,7 +1626,11 @@ def admin_dashboard():
                            waiting_payment_count=waiting_payment_count,
                            scheduled_count=scheduled_count,
                            in_progress_count=in_progress_count,
-                           new_requests=new_requests)
+                           new_requests=new_requests,
+                           pending_quote_jobs=pending_quote_jobs,
+                           accepted_scheduled_jobs=accepted_scheduled_jobs,
+                           todays_schedule=todays_schedule,
+                           recent_completed_jobs=recent_completed_jobs)
 
 @app.route("/admin/customers")
 @require_admin
