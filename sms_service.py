@@ -19,14 +19,15 @@ _APP_URL = os.environ.get("APP_BASE_URL", "https://jhehaul.com")
 
 # Maps event_type string → SmsSettings column name
 _EVENT_TO_SETTING = {
-    'hauler_new_job_nearby': 'ev_job_nearby',
-    'customer_new_bid':      'ev_new_bid',
-    'hauler_bid_accepted':   'ev_bid_accepted',
-    'hauler_bid_rejected':   'ev_bid_rejected',
-    'hauler_deposit_paid':   'ev_deposit_paid',
-    'customer_job_completed':'ev_job_completed',
-    'hauler_job_cancelled':  'ev_job_cancelled',
-    'admin_alert':           'ev_admin_alert',
+    'hauler_new_job_nearby':   'ev_job_nearby',
+    'customer_new_bid':        'ev_new_bid',
+    'hauler_bid_accepted':     'ev_bid_accepted',
+    'hauler_bid_rejected':     'ev_bid_rejected',
+    'hauler_deposit_paid':     'ev_deposit_paid',
+    'customer_job_completed':  'ev_job_completed',
+    'hauler_job_cancelled':    'ev_job_cancelled',
+    'admin_alert':             'ev_admin_alert',
+    'customer_quote_received': 'ev_quote_received',
 }
 
 
@@ -292,6 +293,15 @@ def notify_customer_new_bid_sms(phone, job_id, hauler_name, quote_amount):
     msg = (f"JHE Haul: {hauler_name} bid ${quote_amount:.2f} on your job #{job_id}. "
            f"Log in to review bids: {_APP_URL}/customer/job/{job_id}")
     return send_sms(phone, msg, 'customer_new_bid')
+
+
+def notify_customer_quote_received_sms(phone, job_id, service_type, price):
+    if not is_sms_enabled('customer_quote_received'):
+        return False
+    service_label = service_type or 'your service'
+    msg = (f"JHE Haul: Your quote for {service_label} is ready — ${price:.2f}. "
+           f"Log in to review and confirm: {_APP_URL}/customer/job/{job_id}")
+    return send_sms(phone, msg, 'customer_quote_received')
 
 
 def notify_customer_job_completed_sms(phone, job_id):
