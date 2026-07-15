@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Post a Job - JHE Haul{% endblock %}
+{% block title %}Request Service - JHE Haul{% endblock %}
 {% block content %}
 
 
 <div class="card" style="max-width:640px;margin:0 auto;">
-    <h2 style="margin-bottom:4px;">Post a Hauling Job</h2>
-    <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">Fill in the details below and local haulers will send you quotes.</p>
+    <h2 style="margin-bottom:4px;">Request Service</h2>
+    <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">Fill in the details below and we'll send you a quote within 24 hours.</p>
     <hr>
 
     <form method="POST" action="{{ url_for('customer_create') }}" enctype="multipart/form-data"
