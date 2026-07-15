@@ -31,6 +31,74 @@
 </div>
 {% endif %}
 
+<!-- Portal Status Summary -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
+    <a href="{{ url_for('admin_requests') }}?filter=reviewing" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:4px solid #3b82f6;cursor:pointer;">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-value" style="color:#1d4ed8;">{{ reviewing_count }}</div>
+            <div class="stat-label">Reviewing</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#ede9fe);border-left:4px solid #8b5cf6;cursor:pointer;">
+            <div class="stat-icon">💬</div>
+            <div class="stat-value" style="color:#6d28d9;">{{ quoted_count }}</div>
+            <div class="stat-label">Quoted</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:4px solid #f59e0b;cursor:pointer;">
+            <div class="stat-icon">💳</div>
+            <div class="stat-value" style="color:#d97706;">{{ waiting_payment_count }}</div>
+            <div class="stat-label">Awaiting Pay</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;cursor:pointer;">
+            <div class="stat-icon">📅</div>
+            <div class="stat-value" style="color:#059669;">{{ scheduled_count }}</div>
+            <div class="stat-label">Scheduled</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;cursor:pointer;">
+            <div class="stat-icon">🚛</div>
+            <div class="stat-value" style="color:#ea580c;">{{ in_progress_count }}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+    </a>
+</div>
+
+{% if new_requests %}
+<div class="section-header">
+    <span class="section-title">🔍 New Requests Needing Review ({{ reviewing_count }})</span>
+    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for job in new_requests %}
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
+                {% if job.service_type %}<span style="background:#ede9fe;color:#6d28d9;font-size:0.75rem;font-weight:600;padding:1px 7px;border-radius:10px;margin-right:6px;">{{ job.service_type }}</span>{% endif %}
+                {{ job.pickup_zip or '' }}{% if job.pickup_zip %} · {% endif %}{{ job.created_at | ct('%b %d') or '' }}
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            {% if job.photos %}<span style="background:#f0fdf4;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid #bbf7d0;">📷 {{ job.photos|length }}</span>{% endif %}
+            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">Review →</a>
+        </div>
+    </div>
+    {% endfor %}
+    {% if reviewing_count > new_requests|length %}
+    <div style="padding:10px 18px;text-align:center;border-top:1px solid #f1f5f9;">
+        <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View {{ reviewing_count - new_requests|length }} more →</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <!-- Stat Cards -->
 <div class="stat-grid">
     <div class="stat-card blue">
@@ -93,13 +161,14 @@
 <div class="card">
     <h3 style="margin-bottom:14px;">⚡ Quick Actions</h3>
     <div class="quick-actions">
-        <a href="#post-test-job" onclick="document.getElementById('post-test-job').scrollIntoView({behavior:'smooth'});return false;"
-           class="btn btn-primary">📋 Post Test Job</a>
+        <a href="{{ url_for('admin_requests') }}" class="btn btn-primary">📋 View Requests</a>
+        <a href="{{ url_for('admin_messages') }}" class="btn btn-outline" style="position:relative;">
+            💬 Messages{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:2px;">{{ admin_unread_count }}</span>{% endif %}
+        </a>
         <button onclick="shareInvite('customer')" class="btn btn-outline">👤 Invite Customer</button>
         <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;"
            class="btn btn-secondary">📧 Send Notification</a>
         <a href="{{ url_for('admin_sms_settings') }}" class="btn btn-secondary">📱 SMS Settings</a>
-        <button onclick="shareInvite('general')" class="btn btn-secondary">🔗 General Invite</button>
     </div>
 </div>
 
@@ -401,7 +470,7 @@ function shareInvite(type) {
 
 <!-- User Management Cards -->
 <div style="margin-top:32px;margin-bottom:8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">User Management</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:6px;">
     <a href="{{ url_for('admin_customers') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(52,152,219,0.15)'" onmouseout="this.style.boxShadow=''">
         <div style="font-size:2.4rem;line-height:1;">👤</div>
         <div>
@@ -410,12 +479,12 @@ function shareInvite(type) {
             <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all customer accounts →</div>
         </div>
     </a>
-    <a href="{{ url_for('admin_haulers') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(39,174,96,0.15)'" onmouseout="this.style.boxShadow=''">
-        <div style="font-size:2.4rem;line-height:1;">🚛</div>
+    <a href="{{ url_for('admin_requests') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(139,92,246,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2.4rem;line-height:1;">📋</div>
         <div>
-            <div style="font-size:1.8rem;font-weight:800;color:#27ae60;line-height:1;">{{ total_haulers }}</div>
-            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Haulers</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all hauler accounts →</div>
+            <div style="font-size:1.8rem;font-weight:800;color:#7c3aed;line-height:1;">{{ total_jobs }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">All Requests</div>
+            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all service requests →</div>
         </div>
     </a>
 </div>

@@ -24,6 +24,7 @@ from email_service import (
     notify_admin_job_completed, notify_admin_job_cancelled,
     notify_admin_user_deleted,
     notify_customer_quote_received, notify_customer_deposit_confirmed,
+    notify_admin_new_request,
 )
 from sms_service import (
     notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms,
@@ -34,6 +35,7 @@ from sms_service import (
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
+    notify_admin_new_request_sms,
 )
 
 def get_badges(user, reviews=None, completed_count=0):
@@ -89,6 +91,20 @@ def require_admin(f):
             return render_template('403.html'), 403
         return f(*args, **kwargs)
     return decorated_function
+
+@app.context_processor
+def inject_admin_unread():
+    if current_user.is_authenticated and current_user.is_admin:
+        try:
+            count = (Message.query
+                     .join(User, Message.sender_id == User.id)
+                     .filter(Message.read_at == None, User.is_admin == False)
+                     .count())
+        except Exception:
+            count = 0
+        return {'admin_unread_count': count}
+    return {'admin_unread_count': 0}
+
 
 @app.before_request
 def make_session_permanent():
@@ -403,8 +419,8 @@ def customer_create():
     db.session.commit()
 
     try:
-        notify_admin_new_job(job.id, customer_name, pickup_zip, job_description)
-        notify_admin_new_job_sms(job.id, customer_name, pickup_zip, job_description)
+        notify_admin_new_request(job.id, customer_name, service_type, pickup_zip, job_description)
+        notify_admin_new_request_sms(job.id, customer_name, service_type, pickup_zip)
     except Exception as e:
         app.logger.error("Admin notify failed (new job #%s): %s", job.id, e)
 
@@ -959,8 +975,215 @@ def admin_send_quote(job_id):
         except Exception as e:
             app.logger.error("notify_customer_quote_received_sms failed (job #%s): %s", job.id, e)
     flash(f"Quote sent to customer for Request #{job.id}.", "success")
-    dest = url_for('admin_job_detail', job_id=job_id) if 'admin_job_detail' in app.view_functions else url_for('home')
-    return redirect(dest)
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+
+# ── ADMIN PORTAL ROUTES ────────────────────────────────────────────────────────
+
+_PORTAL_STATUSES = ['reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress', 'completed', 'cancelled']
+_STATUS_LABELS = {
+    'reviewing': ('🔍 Reviewing', '#3b82f6'),
+    'quoted': ('💬 Quoted', '#8b5cf6'),
+    'waiting_for_payment': ('💳 Awaiting Payment', '#f59e0b'),
+    'scheduled': ('📅 Scheduled', '#10b981'),
+    'in_progress': ('🚛 In Progress', '#f97316'),
+    'completed': ('✅ Completed', '#16a34a'),
+    'cancelled': ('❌ Cancelled', '#ef4444'),
+}
+
+
+@app.route("/admin/requests")
+@require_admin
+def admin_requests():
+    jobs = Job.query.order_by(Job.id.desc()).all()
+    grouped = {}
+    for s in _PORTAL_STATUSES:
+        grouped[s] = []
+    for job in jobs:
+        grouped.setdefault(job.status, []).append(job)
+    unread_by_job = {}
+    msgs = (Message.query
+            .join(User, Message.sender_id == User.id)
+            .filter(Message.read_at == None, User.is_admin == False)
+            .all())
+    for m in msgs:
+        unread_by_job[m.job_id] = unread_by_job.get(m.job_id, 0) + 1
+    return render_template('admin_requests.html',
+                           grouped=grouped,
+                           status_labels=_STATUS_LABELS,
+                           unread_by_job=unread_by_job)
+
+
+@app.route("/admin/request/<int:job_id>", methods=["GET"])
+@require_admin
+def admin_request_detail(job_id):
+    job = Job.query.get_or_404(job_id)
+    customer = User.query.get(job.customer_id) if job.customer_id else None
+    messages = (Message.query
+                .filter_by(job_id=job_id)
+                .order_by(Message.created_at.asc())
+                .all())
+    now = datetime.now()
+    for msg in messages:
+        if not msg.read_at and msg.sender_id != current_user.id:
+            msg.read_at = now
+    db.session.commit()
+    active_quote = (Quote.query
+                    .filter_by(job_id=job_id, status='pending')
+                    .order_by(Quote.created_at.desc())
+                    .first())
+    all_quotes = Quote.query.filter_by(job_id=job_id).order_by(Quote.created_at.desc()).all()
+    completion_photos = CompletionPhoto.query.filter_by(job_id=job_id).all()
+    return render_template('admin_request_detail.html',
+                           job=job,
+                           customer=customer,
+                           messages=messages,
+                           active_quote=active_quote,
+                           all_quotes=all_quotes,
+                           completion_photos=completion_photos,
+                           status_labels=_STATUS_LABELS,
+                           portal_statuses=_PORTAL_STATUSES)
+
+
+@app.route("/admin/request/<int:job_id>/status", methods=["POST"])
+@require_admin
+def admin_request_status(job_id):
+    job = Job.query.get_or_404(job_id)
+    new_status = request.form.get("status", "").strip()
+    if new_status not in _PORTAL_STATUSES:
+        flash("Invalid status.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    old_status = job.status
+    job.status = new_status
+    if new_status == 'completed' and not job.completed_at:
+        job.completed_at = datetime.now()
+    if new_status == 'cancelled' and not job.cancelled_at:
+        job.cancelled_at = datetime.now()
+    db.session.commit()
+    flash(f"Status updated: {old_status.replace('_',' ')} → {new_status.replace('_',' ')}.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+@app.route("/admin/request/<int:job_id>/complete", methods=["POST"])
+@require_admin
+def admin_request_complete(job_id):
+    job = Job.query.get_or_404(job_id)
+    job.status = 'completed'
+    job.completed_at = datetime.now()
+    from storage import upload_file as _upload_file
+    photos = request.files.getlist("photos")
+    for photo in photos:
+        if photo and photo.filename:
+            ext = os.path.splitext(photo.filename)[1]
+            photo_data, photo_ct = _read_photo_bytes(photo, ext)
+            filename, storage_url = _upload_file(photo, ext)
+            cp = CompletionPhoto(
+                job_id=job.id, filename=filename, storage_url=storage_url,
+                data=photo_data if not storage_url else None, content_type=photo_ct,
+                photo_type='after',
+            )
+            db.session.add(cp)
+    db.session.commit()
+    customer = User.query.get(job.customer_id) if job.customer_id else None
+    if customer:
+        try:
+            if customer.email:
+                notify_customer_job_completed(customer.email, job.id)
+        except Exception as e:
+            app.logger.error("notify_customer_job_completed failed (job #%s): %s", job.id, e)
+        try:
+            if customer.notify_sms and customer.phone:
+                from sms_service import notify_customer_job_completed_sms
+                notify_customer_job_completed_sms(customer.phone, job.id)
+        except Exception as e:
+            app.logger.error("notify_customer_job_completed_sms failed (job #%s): %s", job.id, e)
+    flash("Job marked complete. Customer has been notified.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+@app.route("/admin/request/<int:job_id>/upload_photo", methods=["POST"])
+@require_admin
+def admin_upload_completion_photo(job_id):
+    job = Job.query.get_or_404(job_id)
+    photo_type = request.form.get("photo_type", "after")
+    from storage import upload_file as _upload_file
+    photos = request.files.getlist("photos")
+    count = 0
+    for photo in photos:
+        if photo and photo.filename:
+            ext = os.path.splitext(photo.filename)[1]
+            photo_data, photo_ct = _read_photo_bytes(photo, ext)
+            filename, storage_url = _upload_file(photo, ext)
+            cp = CompletionPhoto(
+                job_id=job.id, filename=filename, storage_url=storage_url,
+                data=photo_data if not storage_url else None, content_type=photo_ct,
+                photo_type=photo_type,
+            )
+            db.session.add(cp)
+            count += 1
+    db.session.commit()
+    flash(f"{count} photo(s) uploaded.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+@app.route("/admin/request/<int:job_id>/message", methods=["POST"])
+@require_admin
+def admin_message_reply(job_id):
+    job = Job.query.get_or_404(job_id)
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("Message cannot be empty.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    msg = Message(job_id=job.id, sender_id=current_user.id, body=body)
+    db.session.add(msg)
+    db.session.commit()
+    customer = User.query.get(job.customer_id) if job.customer_id else None
+    if customer and customer.email:
+        try:
+            from email_service import send_email, _html
+            subject = f"New message about your Request #{job.id}"
+            body_html = f"""
+            <p>JHE Haul sent you a message about your service request.</p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin:14px 0;">
+              <p style="margin:0;color:#1a202c;">{body}</p>
+            </div>
+            <a href="{'/customer/request/' + str(job.id)}" class="btn">View &amp; Reply →</a>"""
+            send_email(customer.email, subject,
+                       _html("Message from JHE Haul", f"Re: Request #{job.id}",
+                             "💬 New Message", body_html),
+                       'admin_message_sent')
+        except Exception as e:
+            app.logger.error("admin_message_reply notify failed (job #%s): %s", job.id, e)
+    flash("Message sent.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+@app.route("/admin/messages")
+@require_admin
+def admin_messages():
+    threads = (db.session.query(Job, Message, User)
+               .join(Message, Message.job_id == Job.id)
+               .join(User, Message.sender_id == User.id)
+               .filter(User.is_admin == False)
+               .order_by(Message.created_at.desc())
+               .all())
+    seen_jobs = set()
+    job_threads = []
+    for job, msg, sender in threads:
+        if job.id not in seen_jobs:
+            seen_jobs.add(job.id)
+            unread = (Message.query
+                      .join(User, Message.sender_id == User.id)
+                      .filter(Message.job_id == job.id,
+                              Message.read_at == None,
+                              User.is_admin == False)
+                      .count())
+            job_threads.append({'job': job, 'last_msg': msg, 'sender': sender, 'unread': unread})
+    return render_template('admin_messages.html', job_threads=job_threads)
+
+
+# ── END ADMIN PORTAL ROUTES ────────────────────────────────────────────────────
 
 
 @app.route("/hauler/jobs")
@@ -1306,6 +1529,14 @@ def admin_dashboard():
     sms_failed_total = _SmsLog.query.filter_by(status='failed').count()
     twilio_configured = bool(_os.environ.get("TWILIO_ACCOUNT_SID"))
 
+    reviewing_count = Job.query.filter_by(status='reviewing').count()
+    quoted_count = Job.query.filter_by(status='quoted').count()
+    waiting_payment_count = Job.query.filter_by(status='waiting_for_payment').count()
+    scheduled_count = Job.query.filter_by(status='scheduled').count()
+    in_progress_count = Job.query.filter_by(status='in_progress').count()
+    new_requests = (Job.query.filter_by(status='reviewing')
+                    .order_by(Job.id.desc()).limit(5).all())
+
     return render_template('admin_dashboard.html',
                            spaces_configured=spaces_configured,
                            sms_sent_total=sms_sent_total,
@@ -1326,7 +1557,13 @@ def admin_dashboard():
                            total_revenue=total_revenue,
                            jobs=jobs,
                            recent_accepted=recent_accepted,
-                           pending_users=pending_users)
+                           pending_users=pending_users,
+                           reviewing_count=reviewing_count,
+                           quoted_count=quoted_count,
+                           waiting_payment_count=waiting_payment_count,
+                           scheduled_count=scheduled_count,
+                           in_progress_count=in_progress_count,
+                           new_requests=new_requests)
 
 @app.route("/admin/customers")
 @require_admin

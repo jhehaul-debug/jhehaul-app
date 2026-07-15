@@ -580,6 +580,25 @@ def notify_customer_quote_received(customer_email, job_id, service_type, price, 
     )
 
 
+def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, description):
+    """Admin email when a new service request is submitted."""
+    body = f"""
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Customer:</strong> {customer_name}</p>
+      <p><strong>Service Type:</strong> {service_type or '—'}</p>
+      <p><strong>Pickup ZIP:</strong> {pickup_zip or '—'}</p>
+      <p><strong>Description:</strong><br>{description[:300]}{'…' if len(description) > 300 else ''}</p>
+    </div>
+    <a href="{_APP_URL}/admin/request/{job_id}" class="btn">Review Request →</a>"""
+    return notify_admin(
+        f"[JHE Haul] New Service Request #{job_id} — {customer_name}",
+        _html("New Service Request", f"Request #{job_id} needs your review.",
+              "📋 New Request", body),
+        'admin_new_request'
+    )
+
+
 def notify_customer_deposit_confirmed(customer_email, job_id, service_type, estimated_completion=None):
     service_label = service_type or 'Service'
     est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'
