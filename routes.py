@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -23,12 +23,14 @@ from email_service import (
     notify_admin_bid_accepted, notify_admin_deposit_paid,
     notify_admin_job_completed, notify_admin_job_cancelled,
     notify_admin_user_deleted,
+    notify_customer_quote_received, notify_customer_deposit_confirmed,
 )
 from sms_service import (
     notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms,
     notify_hauler_deposit_paid_sms, notify_hauler_bid_rejected_sms,
     notify_hauler_job_cancelled_sms,
     notify_customer_new_bid_sms, notify_customer_job_completed_sms,
+    notify_customer_quote_received_sms,
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
@@ -339,9 +341,13 @@ def customer_terms():
     return render_template('customer_terms.html')
 
 @app.route("/customer/new", methods=["GET"])
-@require_role('customer')
 def customer_new():
-    return render_template('customer_new.html')
+    return redirect(url_for('customer_request'))
+
+@app.route("/customer/request", methods=["GET"])
+@require_role('customer')
+def customer_request():
+    return render_template('customer_request.html')
 
 @app.route("/customer/create", methods=["POST"])
 @require_role('customer')
@@ -353,11 +359,12 @@ def customer_create():
     preferred_date = request.form.get("preferred_date", "").strip()
     preferred_time = request.form.get("preferred_time", "").strip()
     job_description = request.form.get("job_description", "").strip()
+    service_type = request.form.get("service_type", "").strip()
 
     agree_terms = request.form.get("agree_terms")
     if not agree_terms:
-        flash("You must certify that you own or have legal authority over the property before posting a job.", "error")
-        return redirect(url_for('customer_new'))
+        flash("You must certify that you own or have legal authority over the property before submitting a request.", "error")
+        return redirect(url_for('customer_request'))
 
     if not customer_name or not pickup_address or not job_description or not pickup_zip:
         return "Missing required fields", 400
@@ -365,12 +372,12 @@ def customer_create():
     import re
     if not re.match(r'^\d{5}$', pickup_zip):
         flash("Please enter a valid 5-digit ZIP code.", "error")
-        return redirect(url_for('customer_new'))
+        return redirect(url_for('customer_request'))
 
     from models import ZipCode
     if not ZipCode.query.get(pickup_zip):
         flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
-        return redirect(url_for('customer_new'))
+        return redirect(url_for('customer_request'))
 
     from launch_zone import in_launch_zone
     allowed, _ = in_launch_zone(pickup_zip)
@@ -378,7 +385,7 @@ def customer_create():
         app.logger.warning("launch_zone: job posting rejected ZIP %s for user %s", pickup_zip, current_user.id)
         flash("JHE Haul is currently launching in select Minnesota areas. "
               "We're not in your area just yet — check back soon as we expand!", "error")
-        return redirect(url_for('customer_new'))
+        return redirect(url_for('customer_request'))
 
     job = Job(
         customer_id=current_user.id,
@@ -389,7 +396,8 @@ def customer_create():
         preferred_date=preferred_date if preferred_date else None,
         preferred_time=preferred_time if preferred_time else None,
         job_description=job_description,
-        status='open'
+        service_type=service_type if service_type else None,
+        status='reviewing'
     )
     db.session.add(job)
     db.session.commit()
@@ -414,86 +422,20 @@ def customer_create():
             db.session.add(photo_record)
     db.session.commit()
 
-    if pickup_zip:
-        from models import ZipCode
-        from distance import haversine_miles
-        job_zip_loc = ZipCode.query.get(pickup_zip)
-        if job_zip_loc:
-            # All haulers who have radius configured
-            radius_haulers = User.query.filter(
-                User.user_type == 'hauler',
-                User.home_zip.isnot(None),
-                User.max_travel_miles.isnot(None),
-                User.email.isnot(None),
-                User.notify_new_jobs == True
-            ).all()
-
-            # Hauler IDs who explicitly service this ZIP
-            explicit_ids = set(
-                sz.hauler_id for sz in
-                HaulerServiceZip.query.filter_by(zip_code=pickup_zip).all()
-            )
-
-            # Build (hauler, distance_miles) pairs for all qualifying haulers
-            to_notify = []   # list of (hauler, distance_miles)
-            notified_ids = set()
-
-            for hauler in radius_haulers:
-                try:
-                    hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
-                    if not hauler_zip_loc:
-                        continue
-                    dist = haversine_miles(
-                        hauler_zip_loc.lat, hauler_zip_loc.lon,
-                        job_zip_loc.lat,   job_zip_loc.lon
-                    )
-                    in_radius   = dist <= hauler.max_travel_miles
-                    in_explicit = hauler.id in explicit_ids
-                    if in_radius or in_explicit:
-                        to_notify.append((hauler, dist))
-                        notified_ids.add(hauler.id)
-                except Exception:
-                    pass
-
-            # Also pick up haulers who only have explicit ZIPs but no radius set
-            extra_haulers = User.query.filter(
-                User.id.in_(explicit_ids - notified_ids),
-                User.email.isnot(None),
-                User.notify_new_jobs == True
-            ).all()
-            for hauler in extra_haulers:
-                try:
-                    dist = 0.0
-                    if hauler.home_zip:
-                        hauler_zip_loc = ZipCode.query.get(hauler.home_zip)
-                        if hauler_zip_loc:
-                            dist = haversine_miles(
-                                hauler_zip_loc.lat, hauler_zip_loc.lon,
-                                job_zip_loc.lat,   job_zip_loc.lon
-                            )
-                    to_notify.append((hauler, dist))
-                    notified_ids.add(hauler.id)
-                except Exception:
-                    pass
-
-            # Sort closest-first so nearby haulers are contacted first
-            to_notify.sort(key=lambda x: x[1])
-
-            for hauler, distance_miles in to_notify:
-                try:
-                    notify_hauler_new_job_nearby(hauler.email, job.id, job_description, distance_miles)
-                    if hauler.notify_sms and hauler.phone:
-                        notify_hauler_new_job_sms(hauler.phone, job.id, distance_miles)
-                except Exception:
-                    pass
-
+    flash("Your service request has been submitted! We'll review it and send you a quote soon.", "success")
     return redirect(url_for("customer_jobs"))
 
 @app.route("/customer/jobs")
 @require_role('customer')
 def customer_jobs():
     jobs = Job.query.filter_by(customer_id=current_user.id).order_by(Job.id.desc()).all()
-    return render_template('customer_jobs.html', jobs=jobs)
+    unread_counts = {}
+    for job in jobs:
+        unread_counts[job.id] = Message.query.filter_by(job_id=job.id).filter(
+            Message.sender_id != current_user.id,
+            Message.read_at.is_(None)
+        ).count()
+    return render_template('customer_jobs.html', jobs=jobs, unread_counts=unread_counts)
 
 @app.route("/customer/job/<int:job_id>")
 @require_role('customer')
@@ -502,43 +444,55 @@ def customer_job_detail(job_id):
     if job.customer_id != current_user.id and not current_user.is_admin:
         return "Access denied", 403
 
-    bids = Bid.query.filter_by(job_id=job_id).order_by(Bid.quote_amount.asc()).all()
-    
+    quotes = Quote.query.filter_by(job_id=job_id).order_by(Quote.created_at.desc()).all()
+    active_quote = next((q for q in quotes if q.status in ('pending', 'accepted')), None)
+
+    messages = Message.query.filter_by(job_id=job_id).order_by(Message.created_at.asc()).all()
+    from datetime import datetime as _dt
+    changed = False
+    for msg in messages:
+        if msg.sender_id != current_user.id and not msg.read_at:
+            msg.read_at = _dt.now()
+            changed = True
+    if changed:
+        db.session.commit()
+
+    portal_checkout_url = None
     pay_link = None
     checkout_over500_url = None
     pay_link_missing = False
-    accepted_bid = None
-    if job.status == "accepted" and not job.deposit_paid:
+
+    if job.status == 'waiting_for_payment' and not job.deposit_paid and active_quote:
+        portal_checkout_url = url_for('checkout_quote', quote_id=active_quote.id)
+    elif job.status == "accepted" and not job.deposit_paid:
         accepted_bid = Bid.query.filter_by(job_id=job_id, status='accepted').first()
-        quote = float(job.accepted_quote or 0)
-        if quote > 500 and accepted_bid:
+        quote_amt = float(job.accepted_quote or 0)
+        if quote_amt > 500 and accepted_bid:
             checkout_over500_url = url_for('checkout_over500', bid_id=accepted_bid.id)
         else:
             pay_link = choose_pay_link(job.accepted_quote)
-            app.logger.info(
-                "Payment bracket resolved: job=%s quote=$%.2f pay_link_present=%s",
-                job_id, quote, bool(pay_link)
-            )
             if pay_link:
                 base_url = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
                 success_url = f"{base_url}/payment_success/{job.id}"
                 pay_link = f"{pay_link}?success_url={success_url}"
             else:
                 pay_link_missing = True
-                app.logger.warning(
-                    "No pay link configured: job=%s quote=$%.2f — "
-                    "check PAY_LINK_UNDER_150 / PAY_LINK_150_300 / PAY_LINK_300_500 env vars",
-                    job_id, quote
-                )
 
+    bids = Bid.query.filter_by(job_id=job_id).order_by(Bid.quote_amount.asc()).all()
     hauler_map = {}
     for bid in bids:
         if bid.hauler_id and bid.hauler_id not in hauler_map:
             h = User.query.get(bid.hauler_id)
             if h:
                 hauler_map[bid.hauler_id] = h
-    return render_template('customer_job_detail.html', job=job, bids=bids, pay_link=pay_link,
-                           checkout_over500_url=checkout_over500_url, pay_link_missing=pay_link_missing,
+    return render_template('customer_job_detail.html', job=job, bids=bids,
+                           pay_link=pay_link,
+                           checkout_over500_url=checkout_over500_url,
+                           pay_link_missing=pay_link_missing,
+                           portal_checkout_url=portal_checkout_url,
+                           active_quote=active_quote,
+                           quotes=quotes,
+                           messages=messages,
                            hauler_map=hauler_map)
 
 @app.route("/customer/upload_photos/<int:job_id>", methods=["POST"])
@@ -547,7 +501,8 @@ def customer_upload_photos(job_id):
     job = Job.query.get_or_404(job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
-    if job.status not in ['open', 'bidding', 'accepted', 'deposit_paid']:
+    if job.status not in ['open', 'bidding', 'accepted', 'deposit_paid',
+                          'reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress']:
         return "Cannot upload photos at this stage", 400
 
     from storage import upload_file as _upload_file
@@ -767,6 +722,139 @@ def checkout_over500_success():
         flash("Could not verify payment. Please contact support.", "error")
         return redirect(url_for('customer_job_detail', job_id=job.id))
 
+
+@app.route("/customer/quote/<int:quote_id>/accept", methods=["POST"])
+@require_role('customer')
+def customer_accept_quote(quote_id):
+    quote = Quote.query.get_or_404(quote_id)
+    job = Job.query.get_or_404(quote.job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'quoted':
+        flash("This quote is no longer available to accept.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+    quote.status = 'accepted'
+    job.status = 'waiting_for_payment'
+    db.session.commit()
+    flash("Quote accepted! Please pay the deposit below to confirm your booking.", "success")
+    return redirect(url_for('customer_job_detail', job_id=job.id))
+
+
+@app.route("/customer/quote/<int:quote_id>/decline", methods=["POST"])
+@require_role('customer')
+def customer_decline_quote(quote_id):
+    quote = Quote.query.get_or_404(quote_id)
+    job = Job.query.get_or_404(quote.job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    decline_note = request.form.get("decline_note", "").strip()
+    quote.status = 'declined'
+    if decline_note:
+        quote.customer_notes = decline_note
+    job.status = 'reviewing'
+    db.session.commit()
+    flash("Quote declined. We'll review your request and follow up with you soon.", "success")
+    return redirect(url_for('customer_job_detail', job_id=job.id))
+
+
+@app.route("/customer/message/<int:job_id>", methods=["POST"])
+@require_role('customer')
+def customer_send_message(job_id):
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("Message cannot be empty.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job_id))
+    msg = Message(job_id=job_id, sender_id=current_user.id, body=body)
+    db.session.add(msg)
+    db.session.commit()
+    return redirect(url_for('customer_job_detail', job_id=job_id) + '#messages')
+
+
+@app.route("/checkout/quote/<int:quote_id>")
+@require_role('customer')
+def checkout_quote(quote_id):
+    quote = Quote.query.get_or_404(quote_id)
+    job = Job.query.get_or_404(quote.job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.status != 'waiting_for_payment' or job.deposit_paid:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+    deposit = float(quote.deposit_amount or 0)
+    if deposit <= 0:
+        flash("Invalid deposit amount. Please contact support.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+    fee_cents = int(round(deposit * 100))
+    domain = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': f'JHE Haul — Deposit (Request #{job.id})',
+                        'description': f'{job.service_type or "Service"} — total quote ${quote.price:.2f}',
+                    },
+                    'unit_amount': fee_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=(f"{domain}/checkout/quote/success"
+                         f"?session_id={{CHECKOUT_SESSION_ID}}&job_id={job.id}&quote_id={quote.id}"),
+            cancel_url=f"{domain}/customer/job/{job.id}",
+            metadata={'job_id': str(job.id), 'quote_id': str(quote.id), 'deposit_amount': str(deposit)},
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        app.logger.error("Stripe checkout error (quote #%s): %s", quote_id, e)
+        flash("Payment error. Please try again.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+
+@app.route("/checkout/quote/success")
+@require_role('customer')
+def checkout_quote_success():
+    session_id = request.args.get('session_id')
+    job_id = request.args.get('job_id', type=int)
+    if not session_id or not job_id:
+        return redirect(url_for('customer_jobs'))
+    job = Job.query.get_or_404(job_id)
+    if job.customer_id != current_user.id:
+        return "Access denied", 403
+    if job.deposit_paid:
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+    try:
+        cs = stripe.checkout.Session.retrieve(session_id)
+        if cs.payment_status == 'paid':
+            job.deposit_paid = True
+            job.status = 'scheduled'
+            db.session.commit()
+            try:
+                _cname = (f"{current_user.first_name or ''} {current_user.last_name or ''}".strip()
+                          or current_user.email)
+                notify_admin_deposit_paid(job.id, _cname, None, job.accepted_quote)
+            except Exception as e:
+                app.logger.error("Admin notify failed (quote deposit job #%s): %s", job.id, e)
+            flash("Deposit paid! Your service is now scheduled.", "success")
+            return redirect(url_for('customer_job_detail', job_id=job.id))
+        else:
+            flash("Payment not completed. Please try again.", "error")
+            return redirect(url_for('customer_job_detail', job_id=job.id))
+    except Exception as e:
+        app.logger.error("Stripe verify error (quote checkout): %s", e)
+        flash("Could not verify payment. Please contact support.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
+
+
+@app.route("/services")
+def services():
+    return render_template('services.html')
+
+
 @app.route("/hauler/jobs")
 def hauler_jobs():
     return redirect(url_for('home'))
@@ -896,7 +984,10 @@ def delete_account():
     
     if user_type == 'customer':
         jobs = Job.query.filter_by(customer_id=user_id).all()
-        active_jobs = [j for j in jobs if j.status in ['open', 'bidding', 'accepted', 'deposit_paid']]
+        active_jobs = [j for j in jobs if j.status in [
+            'open', 'bidding', 'accepted', 'deposit_paid',
+            'reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress'
+        ]]
         if active_jobs:
             return "Cannot delete account with active jobs. Please complete or cancel all jobs first.", 400
         for job in jobs:
@@ -938,7 +1029,7 @@ def customer_complete_job(job_id):
     job = Job.query.get_or_404(job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
-    if job.status != 'deposit_paid':
+    if job.status not in ('deposit_paid', 'scheduled', 'in_progress'):
         return "Job cannot be completed yet", 400
     job.status = 'completed'
     job.completed_at = datetime.now()
