@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Request #{{ job.id }} — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+{% set label_pair = status_labels.get(job.status, (job.status, '#718096')) %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_requests') }}" style="color:#718096;font-size:0.9rem;">← Requests</a>
+        <h2 class="page-title" style="margin:0;">Request #{{ job.id }}</h2>
+        <span style="background:#f1f5f9;color:#4a5568;font-size:0.85rem;font-weight:700;padding:4px 12px;border-radius:20px;">{{ label_pair[0] }}</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}"
+              onsubmit="return confirm('Permanently delete Request #{{ job.id }}?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+    <!-- Job Info -->
+    <div class="card" style="grid-column:1;">
+        <h3 style="margin-bottom:14px;">📋 Request Info</h3>
+        <table style="width:100%;font-size:0.9rem;border-collapse:collapse;">
+            <tr><td style="padding:5px 0;color:#718096;width:40%;">Customer</td><td style="padding:5px 0;font-weight:600;">{{ job.customer_name }}</td></tr>
+            {% if customer %}
+            <tr><td style="padding:5px 0;color:#718096;">Email</td><td style="padding:5px 0;color:#4a5568;">{{ customer.email or '—' }}</td></tr>
+            <tr><td style="padding:5px 0;color:#718096;">Phone</td><td style="padding:5px 0;color:#4a5568;">{{ customer.phone_formatted or job.customer_phone or '—' }}</td></tr>
+            {% endif %}
+            <tr><td style="padding:5px 0;color:#718096;">Service</td><td style="padding:5px 0;">
+                {% if job.service_type %}<span style="background:#ede9fe;color:#6d28d9;font-size:0.8rem;font-weight:600;padding:2px 8px;border-radius:10px;">{{ job.service_type }}</span>{% else %}—{% endif %}
+            </td></tr>
+            <tr><td style="padding:5px 0;color:#718096;">Address</td><td style="padding:5px 0;color:#4a5568;">{{ job.pickup_address }}</td></tr>
+            <tr><td style="padding:5px 0;color:#718096;">ZIP</td><td style="padding:5px 0;color:#4a5568;">{{ job.pickup_zip or '—' }}</td></tr>
+            {% if job.preferred_date %}
+            <tr><td style="padding:5px 0;color:#718096;">Preferred Date</td><td style="padding:5px 0;color:#4a5568;">{{ job.preferred_date }}{% if job.preferred_time %} ({{ job.preferred_time }}){% endif %}</td></tr>
+            {% endif %}
+            <tr><td style="padding:5px 0;color:#718096;">Submitted</td><td style="padding:5px 0;color:#a0aec0;font-size:0.85rem;">{{ job.created_at | ct('%b %d, %Y %I:%M %p CT') or '—' }}</td></tr>
+        </table>
+        <hr style="margin:14px 0;">
+        <div style="font-size:0.85rem;color:#718096;font-weight:600;margin-bottom:6px;">Description</div>
+        <p style="font-size:0.92rem;color:#4a5568;line-height:1.6;margin:0;">{{ job.job_description }}</p>
+    </div>
+
+    <!-- Status + Quick Actions -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+            <h3 style="margin-bottom:14px;">⚙ Change Status</h3>
+            <form method="POST" action="{{ url_for('admin_request_status', job_id=job.id) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:1;min-width:160px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:#718096;display:block;margin-bottom:4px;">New Status</label>
+                    <select name="status" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;background:white;">
+                        {% for s in portal_statuses %}
+                        {% set lp = status_labels.get(s, (s, '#718096')) %}
+                        <option value="{{ s }}" {% if s == job.status %}selected{% endif %}>{{ lp[0] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Update →</button>
+            </form>
+        </div>
+
+        {% if job.status == 'in_progress' or job.status == 'scheduled' %}
+        <div class="card" style="border-left:4px solid #16a34a;">
+            <h3 style="margin-bottom:12px;">✅ Mark Complete</h3>
+            <form method="POST" action="{{ url_for('admin_request_complete', job_id=job.id) }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label style="font-size:0.82rem;">After Photos <span style="color:#a0aec0;">(optional)</span></label>
+                    <input type="file" name="photos" multiple accept="image/*"
+                           style="background:white;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;width:100%;box-sizing:border-box;">
+                </div>
+                <button type="submit" class="btn btn-success" onclick="return confirm('Mark this request as complete and notify the customer?');">
+                    ✅ Mark Complete & Notify Customer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <h3 style="margin-bottom:12px;">📷 Upload Photos</h3>
+            <form method="POST" action="{{ url_for('admin_upload_completion_photo', job_id=job.id) }}" enctype="multipart/form-data">
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <label style="display:flex;align-items:center;gap:5px;font-size:0.85rem;cursor:pointer;">
+                        <input type="radio" name="photo_type" value="before" style="margin:0;"> Before
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;font-size:0.85rem;cursor:pointer;">
+                        <input type="radio" name="photo_type" value="after" checked style="margin:0;"> After
+                    </label>
+                </div>
+                <input type="file" name="photos" multiple accept="image/*"
+                       style="background:white;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;width:100%;box-sizing:border-box;margin-bottom:10px;">
+                <button type="submit" class="btn btn-outline btn-sm">Upload Photos</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Photos -->
+{% if job.photos %}
+<div class="card">
+    <h3 style="margin-bottom:12px;">📷 Customer Photos ({{ job.photos|length }})</h3>
+    <div class="photo-grid">
+        {% for photo in job.photos %}
+        <img src="{{ photo.storage_url or (url_for('uploaded_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
+             alt="Job photo {{ loop.index }}"
+             onclick="window.open(this.src,'_blank')"
+             style="cursor:pointer;"
+             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo unavailable</div></div>'">
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Completion Photos -->
+{% if completion_photos %}
+<div class="card">
+    <h3 style="margin-bottom:12px;">📸 Completion Photos</h3>
+    {% set before_photos = completion_photos | selectattr('photo_type', 'equalto', 'before') | list %}
+    {% set after_photos = completion_photos | selectattr('photo_type', 'equalto', 'after') | list %}
+    {% if before_photos %}
+    <div style="font-size:0.82rem;font-weight:700;color:#718096;margin-bottom:6px;">BEFORE</div>
+    <div class="photo-grid" style="margin-bottom:12px;">
+        {% for photo in before_photos %}
+        <img src="{{ photo.storage_url or (url_for('uploaded_completion_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
+             alt="Before photo" onclick="window.open(this.src,'_blank')" style="cursor:pointer;"
+             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Unavailable</div></div>'">
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if after_photos %}
+    <div style="font-size:0.82rem;font-weight:700;color:#718096;margin-bottom:6px;">AFTER</div>
+    <div class="photo-grid">
+        {% for photo in after_photos %}
+        <img src="{{ photo.storage_url or (url_for('uploaded_completion_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
+             alt="After photo" onclick="window.open(this.src,'_blank')" style="cursor:pointer;"
+             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Unavailable</div></div>'">
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Quote Panel -->
+<div class="card" style="border-left:4px solid #8b5cf6;">
+    <h3 style="margin-bottom:4px;">💬 Send Quote</h3>
+    <p style="font-size:0.85rem;color:#718096;margin-bottom:14px;">
+        The customer will be emailed and SMSed immediately upon sending.
+        {% if all_quotes %}Previous quotes: {{ all_quotes|length }}.{% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('admin_send_quote', job_id=job.id) }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Total Price ($)</label>
+                {% set last_q = all_quotes[0] if all_quotes else None %}
+                <input type="number" name="price" step="0.01" min="1" required placeholder="250.00"
+                       value="{{ '%.2f'|format(last_q.price) if last_q else '' }}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Deposit Amount ($)</label>
+                <input type="number" name="deposit_amount" step="0.01" min="1" required placeholder="50.00"
+                       value="{{ '%.2f'|format(last_q.deposit_amount) if last_q else '' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Estimated Completion <span style="color:#a0aec0;font-weight:400;">(optional)</span></label>
+            <input type="text" name="estimated_completion" placeholder="e.g. Same day, Within 3 days, Aug 5"
+                   value="{{ last_q.estimated_completion or '' if last_q else '' }}">
+        </div>
+        <div class="form-group">
+            <label>Note to Customer <span style="color:#a0aec0;font-weight:400;">(customer-visible)</span></label>
+            <textarea name="customer_notes" rows="2" placeholder="e.g. Price includes all labor and disposal fees.">{{ last_q.customer_notes or '' if last_q else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Admin Notes <span style="color:#a0aec0;font-weight:400;">(internal only)</span></label>
+            <textarea name="admin_notes" rows="2" placeholder="Internal notes, not shown to customer...">{{ last_q.admin_notes or '' if last_q else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Send this quote to the customer?');">
+            💬 Send Quote to Customer
+        </button>
+    </form>
+</div>
+
+{% if all_quotes %}
+<div class="card">
+    <h3 style="margin-bottom:12px;">📜 Quote History</h3>
+    {% for q in all_quotes %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;{% if not loop.last %}border-bottom:1px solid #f1f5f9;{% endif %}flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+            <div style="font-weight:700;font-size:0.9rem;">
+                ${{ "%.2f"|format(q.price) }}
+                <span style="font-weight:400;color:#718096;margin-left:4px;">(deposit ${{ "%.2f"|format(q.deposit_amount) }})</span>
+            </div>
+            {% if q.estimated_completion %}<div style="font-size:0.82rem;color:#718096;">📅 {{ q.estimated_completion }}</div>{% endif %}
+            {% if q.customer_notes %}<div style="font-size:0.82rem;color:#4a5568;margin-top:2px;">"{{ q.customer_notes }}"</div>{% endif %}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            {% if q.status == 'accepted' %}
+            <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">✓ Accepted</span>
+            {% elif q.status == 'declined' %}
+            <span style="background:#fee2e2;color:#b91c1c;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">✗ Declined</span>
+            {% else %}
+            <span style="background:#fef9c3;color:#92400e;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">⏳ Pending</span>
+            {% endif %}
+            <span style="font-size:0.78rem;color:#a0aec0;">{{ q.created_at | ct('%b %d') or '' }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Message Thread -->
+<div class="card">
+    <h3 style="margin-bottom:14px;">💬 Messages</h3>
+
+    {% if messages %}
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;max-height:480px;overflow-y:auto;padding:4px 0;">
+        {% for msg in messages %}
+        {% set is_admin_msg = msg.sender.is_admin if msg.sender else false %}
+        <div style="display:flex;{% if is_admin_msg %}justify-content:flex-end;{% endif %}">
+            <div style="max-width:75%;padding:10px 14px;border-radius:12px;{% if is_admin_msg %}background:#1a202c;color:#fff;border-bottom-right-radius:4px;{% else %}background:#f1f5f9;color:#1a202c;border-bottom-left-radius:4px;{% endif %}">
+                <div style="font-size:0.78rem;font-weight:700;margin-bottom:4px;opacity:0.7;">
+                    {% if is_admin_msg %}You (Admin){% else %}{{ msg.sender.first_name or job.customer_name }}{% endif %}
+                    · {{ msg.created_at | ct('%b %d %I:%M %p') or '' }}
+                </div>
+                <div style="font-size:0.9rem;line-height:1.5;white-space:pre-wrap;">{{ msg.body }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#a0aec0;font-size:0.88rem;margin-bottom:16px;">No messages yet. Start the conversation below.</p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('admin_message_reply', job_id=job.id) }}">
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+            <textarea name="body" rows="3" placeholder="Type a message to the customer…"
+                      style="flex:1;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;resize:vertical;font-family:inherit;"
+                      required></textarea>
+            <button type="submit" class="btn btn-primary" style="flex-shrink:0;">Send →</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
