@@ -1,0 +1,300 @@
+Reconstruct the current JHE Haul application from a public marketplace into a private customer portal for JHE Haul.
+
+IMPORTANT:
+Do NOT rebuild the application from scratch.
+Do NOT remove or break any working functionality unless it is specifically being replaced.
+Keep the current database whenever possible.
+Keep Google OAuth, Stripe, DigitalOcean deployment, authentication, photo uploads, admin accounts, and customer accounts working.
+
+========================
+NEW APPLICATION PURPOSE
+
+The application is no longer a marketplace.
+
+Customers submit service requests directly to JHE Haul.
+
+Only JHE Haul administrators can review requests, prepare quotes, schedule jobs, and complete work.
+
+There are NO public haulers.
+
+========================
+REMOVE OR DISABLE
+
+Remove public access to:
+
+• Hauler registration
+• Hauler login
+• Hauler dashboard
+• Bid submission
+• Accept Bid workflow
+• Hauler invitations
+• Hauler profile pages
+• Hauler search
+• Public bidding
+
+Do not delete database tables unless absolutely necessary.
+Hide or disable these features.
+
+========================
+CUSTOMER WORKFLOW
+
+Customer logs in
+
+↓
+
+Creates Service Request
+
+↓
+
+Uploads photos
+
+↓
+
+Selects service
+
+↓
+
+Receives quote from JHE Haul
+
+↓
+
+Accepts quote
+
+↓
+
+Pays deposit
+
+↓
+
+Job scheduled
+
+↓
+
+Job completed
+
+↓
+
+Pays remaining balance
+
+========================
+SERVICE TYPES
+
+Replace “Post Job” with “Request Service”
+
+Services:
+
+• Junk Removal
+• Furniture Removal
+• Appliance Removal
+• Yard Waste
+• Construction Debris
+• Clean Outs
+• Garage Clean Outs
+• Property Clean Up
+• Moving Labor
+• Furniture Delivery
+• Special Request
+
+========================
+CUSTOMER DASHBOARD
+
+Dashboard should include:
+
+Request Service
+
+My Requests
+
+Quotes
+
+Invoices
+
+Payments
+
+Messages
+
+Appointments
+
+Completed Jobs
+
+Profile
+
+========================
+ADMIN DASHBOARD
+
+Admin should have:
+
+New Requests
+
+Pending Quotes
+
+Accepted Quotes
+
+Today’s Schedule
+
+Completed Jobs
+
+Invoices
+
+Payments
+
+Customer Management
+
+Calendar
+
+Analytics
+
+Photo Gallery
+
+Notes
+
+========================
+REQUEST STATUS
+
+Requested
+
+Reviewing
+
+Quoted
+
+Waiting for Customer
+
+Scheduled
+
+In Progress
+
+Completed
+
+Cancelled
+
+========================
+QUOTE SYSTEM
+
+Admin enters:
+
+Price
+
+Deposit
+
+Notes
+
+Estimated completion time
+
+Customer can:
+
+Accept quote
+
+Decline quote
+
+Pay deposit
+
+========================
+PAYMENTS
+
+Keep Stripe.
+
+Customer pays:
+
+Deposit first.
+
+Remaining balance after completion.
+
+========================
+MESSAGING
+
+Keep messaging.
+
+Only customer ↔ JHE Haul Admin.
+
+========================
+HOME PAGE
+
+Redesign homepage.
+
+Hero section:
+
+Professional JHE Haul branding.
+
+Large “Request Service” button.
+
+Customer testimonials placeholder.
+
+Services grid.
+
+Before/after gallery placeholder.
+
+Request a Quote CTA.
+
+Contact information.
+
+========================
+NAVIGATION
+
+Home
+
+Services
+
+Request Service
+
+My Account
+
+Messages
+
+Contact
+
+Admin (admins only)
+
+========================
+LOGO / BRANDING
+
+Replace marketplace terminology throughout the UI.
+
+Use branding such as:
+
+JHE Haul
+
+Professional Junk Removal & Hauling
+
+Fast • Reliable • Affordable
+
+Replace wording like:
+
+Post Job
+
+Bid
+
+Hauler
+
+Available Jobs
+
+with business-focused wording such as:
+
+Request Service
+
+Quote
+
+JHE Haul Team
+
+Service Requests
+
+========================
+DO NOT BREAK
+
+Google OAuth
+
+Stripe
+
+DigitalOcean deployment
+
+Authentication
+
+Current database
+
+Customer accounts
+
+Admin accounts
+
+Photo uploads
+
+Health endpoint
+
+Environment
