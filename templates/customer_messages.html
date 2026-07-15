@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Messages - JHE Haul{% endblock %}
+{% block content %}
+
+<style>
+.msg-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.msg-header h2 { margin:0; font-size:1.5rem; }
+.conv-list { display:flex; flex-direction:column; gap:10px; }
+.conv-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px 20px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+    text-decoration:none; color:inherit; transition:box-shadow .15s; }
+.conv-card:hover { box-shadow:0 3px 12px rgba(0,0,0,0.09); border-color:#cbd5e0; }
+.conv-card.has-unread { border-left:4px solid #e53e3e; }
+.conv-left { flex:1; min-width:0; }
+.conv-title { font-weight:700; font-size:1rem; color:#1a202c; margin-bottom:3px; }
+.conv-preview { font-size:0.86rem; color:#718096; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:500px; }
+.conv-time { font-size:0.8rem; color:#a0aec0; margin-top:4px; }
+.conv-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.unread-badge { background:#e53e3e; color:#fff; font-size:0.75rem; font-weight:800;
+    border-radius:20px; padding:3px 10px; white-space:nowrap; }
+.empty-state { text-align:center; padding:60px 20px; background:#fff;
+    border:1px solid #e2e8f0; border-radius:12px; }
+.empty-state h3 { color:#1a202c; margin-bottom:8px; }
+.empty-state p { color:#718096; margin-bottom:22px; }
+</style>
+
+<div class="msg-header">
+    <h2>Messages</h2>
+    <a href="{{ url_for('customer_jobs') }}" class="btn btn-sm">My Requests</a>
+</div>
+
+{% if conversations %}
+<div class="conv-list">
+{% for conv in conversations %}
+<a href="{{ url_for('customer_job_detail', job_id=conv.job.id) }}#messages"
+   class="conv-card{% if conv.unread_count > 0 %} has-unread{% endif %}">
+    <div class="conv-left">
+        <div class="conv-title">
+            {{ conv.job.service_type or 'Service Request' }}
+            <span style="font-weight:400;color:#a0aec0;font-size:0.87rem;">&nbsp;#{{ conv.job.id }}</span>
+        </div>
+        <div class="conv-preview">
+            {% if conv.last_message %}
+                {% if conv.last_message.sender_id == current_user.id %}
+                    <span style="color:#a0aec0;">You: </span>
+                {% else %}
+                    <span style="color:#dd6b20;font-weight:600;">JHE Haul: </span>
+                {% endif %}
+                {{ (conv.last_message.body or '')[:100] }}{% if conv.last_message.body and conv.last_message.body|length > 100 %}…{% endif %}
+            {% else %}
+                No messages yet
+            {% endif %}
+        </div>
+        {% if conv.last_message and conv.last_message.created_at %}
+        <div class="conv-time">{{ conv.last_message.created_at.strftime('%b %d, %Y · %I:%M %p') }}</div>
+        {% endif %}
+    </div>
+    <div class="conv-right">
+        {% if conv.unread_count > 0 %}
+        <span class="unread-badge">{{ conv.unread_count }} new</span>
+        {% else %}
+        <span style="font-size:0.8rem;color:#a0aec0;">Read</span>
+        {% endif %}
+    </div>
+</a>
+{% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div style="font-size:3rem;margin-bottom:12px;">💬</div>
+    <h3>No messages yet</h3>
+    <p>Messages from JHE Haul about your service requests will appear here.</p>
+    <a href="{{ url_for('customer_request') }}" class="btn btn-success">Request Service</a>
+</div>
+{% endif %}
+
+{% endblock %}

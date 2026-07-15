@@ -30,7 +30,7 @@ from sms_service import (
     notify_hauler_deposit_paid_sms, notify_hauler_bid_rejected_sms,
     notify_hauler_job_cancelled_sms,
     notify_customer_new_bid_sms, notify_customer_job_completed_sms,
-    notify_customer_quote_received_sms,
+    notify_customer_quote_received_sms, notify_customer_deposit_confirmed_sms,
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
@@ -437,6 +437,27 @@ def customer_jobs():
         ).count()
     return render_template('customer_jobs.html', jobs=jobs, unread_counts=unread_counts)
 
+
+@app.route("/customer/messages")
+@require_role('customer')
+def customer_messages():
+    jobs = Job.query.filter_by(customer_id=current_user.id).order_by(Job.id.desc()).all()
+    conversations = []
+    for job in jobs:
+        msgs = Message.query.filter_by(job_id=job.id).order_by(Message.created_at.asc()).all()
+        if not msgs:
+            continue
+        last_msg = msgs[-1]
+        unread = sum(1 for m in msgs if m.sender_id != current_user.id and m.read_at is None)
+        conversations.append({
+            'job': job,
+            'last_message': last_msg,
+            'unread_count': unread,
+        })
+    conversations.sort(key=lambda c: c['last_message'].created_at or 0, reverse=True)
+    return render_template('customer_messages.html', conversations=conversations)
+
+
 @app.route("/customer/job/<int:job_id>")
 def customer_job_detail_legacy(job_id):
     return redirect(url_for('customer_job_detail', job_id=job_id), code=301)
@@ -751,6 +772,9 @@ def customer_decline_quote(quote_id):
     job = Job.query.get_or_404(quote.job_id)
     if job.customer_id != current_user.id:
         return "Access denied", 403
+    if job.status != 'quoted' or quote.status != 'pending':
+        flash("This quote can no longer be declined.", "error")
+        return redirect(url_for('customer_job_detail', job_id=job.id))
     decline_note = request.form.get("decline_note", "").strip()
     quote.status = 'declined'
     if decline_note:
@@ -855,6 +879,11 @@ def checkout_quote_success():
                     notify_customer_deposit_confirmed(current_user.email, job.id, job.service_type)
             except Exception as e:
                 app.logger.error("Customer deposit notify failed (job #%s): %s", job.id, e)
+            try:
+                if current_user.notify_sms and current_user.phone:
+                    notify_customer_deposit_confirmed_sms(current_user.phone, job.id, job.service_type)
+            except Exception as e:
+                app.logger.error("Customer deposit SMS failed (job #%s): %s", job.id, e)
             flash("Deposit paid! Your service is now scheduled.", "success")
             return redirect(url_for('customer_job_detail', job_id=job.id))
         else:

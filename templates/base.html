@@ -42,8 +42,10 @@
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">Admin</a>
                     {% elif current_user.user_type == 'customer' %}
+                        <a href="{{ url_for('home') }}">Home</a>
                         <a href="{{ url_for('customer_request') }}">Request Service</a>
                         <a href="{{ url_for('customer_jobs') }}">My Requests</a>
+                        <a href="{{ url_for('customer_messages') }}">Messages</a>
                     {% endif %}
                     <a href="{{ url_for('profile') }}">Profile</a>
                     <a href="{{ url_for('auth.logout') }}" class="nav-signout">Sign Out</a>
@@ -72,8 +74,10 @@
             {% if current_user.is_admin %}
                 <a href="{{ url_for('admin_dashboard') }}">⚙ Admin Dashboard</a>
             {% elif current_user.user_type == 'customer' %}
+                <a href="{{ url_for('home') }}">🏠 Home</a>
                 <a href="{{ url_for('customer_request') }}">📋 Request Service</a>
                 <a href="{{ url_for('customer_jobs') }}">📦 My Requests</a>
+                <a href="{{ url_for('customer_messages') }}">💬 Messages</a>
             {% endif %}
             <a href="{{ url_for('profile') }}">👤 Profile</a>
             <a href="{{ url_for('about') }}">ℹ About</a>
