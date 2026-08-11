@@ -1,0 +1,72 @@
+I approve the audit and reconstruction plan, with the following correction before development begins:
+
+TASK #8 — HOMEPAGE TESTIMONIALS/GALLERY
+
+Do NOT require me to provide customer testimonials or before/after hauling photos.
+
+JHE Haul is being reconstructed into JHE Haul Marketplace, so the homepage should primarily showcase marketplace inventory rather than old hauling-service testimonials and job galleries.
+
+Remove all fake/placeholder:
+- Testimonials
+- Customer names
+- Reviews
+- Star ratings
+- Before/after job photos
+- Fake marketplace listings
+- Fake sellers
+- Fake sales/activity
+
+Do not replace them with fabricated content.
+
+Instead, redesign that homepage area to dynamically display REAL marketplace content from the database as listings become available.
+
+Use sections such as:
+
+- Recently Listed
+- Near You
+- Featured Listings
+- Great Deals
+- Free Items
+- Popular Near You
+
+If a section does not yet contain enough real listings, either hide that section or display a clean empty-state message. Do not populate it with fake content.
+
+The owner/admin must be able to create legitimate marketplace listings immediately so I can initially populate the marketplace with real items belonging to me, family, friends, and early sellers.
+
+IMPORTANT:
+
+Proceed with the approved phased reconstruction plan.
+
+Do NOT rebuild the application from scratch.
+
+Preserve:
+- Existing users
+- Authentication
+- Admin functionality
+- Existing database data
+- Stripe integration
+- Existing integrations
+- GitHub repository
+- Deployment configuration
+
+Use proper database migrations and preserve old JHE Haul data even when old hauling functionality is removed from the public-facing interface.
+
+Begin with the first approved development phase after the audit.
+
+After completing each phase:
+
+1. Run all relevant tests.
+2. Run the production build.
+3. Fix critical errors.
+4. Verify authentication and permissions.
+5. Verify admin access.
+6. Verify no secrets are committed.
+7. Commit the changes.
+8. PUSH the completed phase to the EXISTING GitHub repository.
+9. Verify the push succeeded.
+10. Verify deployment if deployment is triggered.
+11. Report exactly what was changed, test/build results, commit ID, push status, deployment status, and any issues.
+
+Do not proceed to the next major phase if the current phase has critical errors.
+
+Proceed with Phase 2 now.
