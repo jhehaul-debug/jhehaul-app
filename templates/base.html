@@ -51,7 +51,7 @@
                 {% else %}
                     <a href="/">Home</a>
                     <a href="/services">Services</a>
-                    <a href="{{ url_for('auth.login') }}">Request Service</a>
+                    <a href="/invite/customer">Request Service</a>
                     <a href="/#contact">Contact</a>
                     <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
                 {% endif %}
@@ -85,7 +85,7 @@
         {% else %}
             <a href="/">🏠 Home</a>
             <a href="/services">🚛 Services</a>
-            <a href="{{ url_for('auth.login') }}">📋 Request Service</a>
+            <a href="/invite/customer">📋 Request Service</a>
             <a href="/#contact">📞 Contact</a>
             <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
         {% endif %}
