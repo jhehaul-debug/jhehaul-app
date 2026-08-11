@@ -282,6 +282,32 @@ def uploaded_file(filename):
     response.headers["Cache-Control"] = "no-cache, max-age=0"
     return response
 
+def _marketplace_categories():
+    from models import Category
+    return (Category.query
+            .filter_by(is_active=True, parent_id=None)
+            .order_by(Category.display_order, Category.name)
+            .all())
+
+
+def _marketplace_homepage_ctx():
+    """Build context dict for the marketplace homepage (no active filters)."""
+    from models import Listing
+    recent = (Listing.query
+              .filter_by(status='active', moderation_status='approved')
+              .order_by(Listing.created_at.desc())
+              .limit(8).all())
+    free_items = (Listing.query
+                  .filter_by(status='active', moderation_status='approved', price_type='free')
+                  .order_by(Listing.created_at.desc())
+                  .limit(8).all())
+    featured = (Listing.query
+                .filter_by(status='active', moderation_status='approved', featured=True)
+                .order_by(Listing.created_at.desc())
+                .limit(8).all())
+    return dict(recent_listings=recent, free_listings=free_items, featured_listings=featured)
+
+
 @app.route("/")
 def home():
     if current_user.is_authenticated:
@@ -289,11 +315,105 @@ def home():
             return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-        if current_user.user_type == 'customer':
-            return redirect(url_for('customer_dashboard'))
-        else:
-            return redirect(url_for('choose_role'))
-    return render_template('landing.html')
+    categories = _marketplace_categories()
+    ctx = _marketplace_homepage_ctx()
+    return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+
+
+@app.route("/marketplace")
+def marketplace():
+    from models import Category, Listing
+    categories = _marketplace_categories()
+
+    q = request.args.get('q', '').strip()
+    category_slug = request.args.get('category', '').strip()
+    price_type_filter = request.args.get('price_type', '').strip()
+    featured_filter = request.args.get('featured', '').strip()
+
+    is_search = bool(q or category_slug or price_type_filter or featured_filter)
+
+    if is_search:
+        qobj = Listing.query.filter_by(status='active', moderation_status='approved')
+        if q:
+            qobj = qobj.filter(
+                db.or_(Listing.title.ilike(f'%{q}%'),
+                       Listing.description.ilike(f'%{q}%'))
+            )
+        if category_slug:
+            cat = Category.query.filter_by(slug=category_slug, is_active=True).first()
+            if cat:
+                qobj = qobj.filter(Listing.category_id == cat.id)
+        if price_type_filter in ('free', 'fixed', 'negotiable'):
+            qobj = qobj.filter(Listing.price_type == price_type_filter)
+        if featured_filter:
+            qobj = qobj.filter(Listing.featured == True)
+
+        search_results = qobj.order_by(Listing.created_at.desc()).limit(48).all()
+        active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
+        return render_template('marketplace.html',
+                               categories=categories,
+                               is_search=True,
+                               search_query=q,
+                               search_results=search_results,
+                               active_category=active_category,
+                               price_type_filter=price_type_filter,
+                               featured_filter=featured_filter,
+                               recent_listings=[], free_listings=[], featured_listings=[])
+    else:
+        ctx = _marketplace_homepage_ctx()
+        return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+
+
+@app.route("/sell")
+def sell():
+    """Placeholder for the sell flow (Phase 4)."""
+    if not current_user.is_authenticated:
+        session["next_url"] = url_for('sell')
+        return redirect(url_for('auth.login'))
+    if not current_user.user_type:
+        return redirect(url_for('choose_role'))
+    flash("The sell flow is coming soon! You'll be able to list your items here shortly.", "success")
+    return redirect(url_for('marketplace'))
+
+
+@app.route("/listing/<int:listing_id>")
+def listing_detail(listing_id):
+    """Placeholder for individual listing pages (Phase 5–6)."""
+    from models import Listing
+    listing = Listing.query.filter_by(
+        id=listing_id, status='active', moderation_status='approved'
+    ).first_or_404()
+    flash(f"Full listing page for \"{listing.title}\" is coming soon.", "success")
+    return redirect(url_for('marketplace'))
+
+
+@app.route("/uploads/listing/db/<int:photo_id>")
+def serve_listing_photo(photo_id):
+    """Serve a listing photo stored as binary in the database.
+
+    Public access is restricted to photos whose parent listing is active and
+    approved.  The listing seller and site admins may also access photos for
+    listings in other states (draft, pending, removed, etc.).
+    """
+    from models import ListingPhoto, Listing
+    photo = ListingPhoto.query.get(photo_id)
+    if not photo or not photo.data:
+        return "", 404
+    listing = Listing.query.get(photo.listing_id)
+    if not listing:
+        return "", 404
+
+    is_public = (listing.status == 'active' and listing.moderation_status == 'approved')
+    is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
+    is_admin = current_user.is_authenticated and current_user.is_admin
+    if not (is_public or is_owner or is_admin):
+        return "", 404
+
+    from flask import Response
+    r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
+    cache = "public, max-age=3600" if is_public else "private, no-cache"
+    r.headers["Cache-Control"] = cache
+    return r
 
 @app.route("/invite")
 @app.route("/invite/<role>")

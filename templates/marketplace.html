@@ -1,32 +1,515 @@
 {% extends "base.html" %}
-{% block title %}Marketplace - JHE Haul{% endblock %}
+
+{% block title %}JHE Marketplace | Buy & Sell Furniture, Appliances & More{% endblock %}
+
+{% block meta_description %}<meta name="description" content="JHE Marketplace — Buy and sell furniture, appliances, electronics, tools, and more in Minnesota and Wisconsin. Free listings, local pickup, and JHE delivery available.">{% endblock %}
+
+{% block og_meta %}
+<meta property="og:title" content="JHE Marketplace | Buy & Sell Locally">
+<meta property="og:description" content="Find great deals on furniture, appliances, electronics, and more. List your items for free.">
+<meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
+<meta property="og:url" content="https://jhehaul.com/marketplace">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JHE Haul">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jhehaul.com/marketplace">
+{% endblock %}
+
 {% block content %}
+<style>
+/* ── Marketplace Hero ── */
+.mp-hero {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-radius: 16px;
+    padding: 48px 32px 40px;
+    margin-bottom: 24px;
+    color: #fff;
+    text-align: center;
+}
+.mp-hero h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin: 0 0 10px;
+    line-height: 1.2;
+}
+.mp-hero p {
+    color: #a0aec0;
+    font-size: 1rem;
+    margin: 0 0 24px;
+}
+.mp-search-wrap {
+    max-width: 580px;
+    margin: 0 auto 20px;
+    display: flex;
+    gap: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.mp-search-wrap input {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    font-size: 1rem;
+    outline: none;
+    color: #2d3748;
+    background: #fff;
+}
+.mp-search-wrap button {
+    background: #38a169;
+    color: #fff;
+    border: none;
+    padding: 15px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.mp-search-wrap button:hover { background: #2f855a; }
+.mp-hero-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.mp-btn-sell {
+    background: #f6ad55;
+    color: #1a202c;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 12px 32px;
+    border-radius: 9px;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    display: inline-block;
+}
+.mp-btn-sell:hover { background: #ed8936; color: #1a202c; text-decoration: none; transform: translateY(-1px); }
+.mp-btn-browse {
+    background: transparent;
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 28px;
+    border-radius: 9px;
+    border: 2px solid #4a5568;
+    text-decoration: none;
+    transition: border-color 0.15s;
+    display: inline-block;
+}
+.mp-btn-browse:hover { border-color: #a0aec0; color: #fff; text-decoration: none; }
 
-<div class="page-header">
-    <h2 class="page-title">Marketplace</h2>
-</div>
+/* ── Category Chips ── */
+.mp-cats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    padding: 4px 0;
+}
+.mp-cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 6px 16px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.mp-cat-chip:hover {
+    border-color: #38a169;
+    background: #f0fff4;
+    color: #276749;
+    text-decoration: none;
+}
+.mp-cat-chip .cat-icon { font-size: 1rem; }
 
-<div class="card" style="text-align: center; padding: 48px 32px; max-width: 560px; margin: 0 auto;">
-    <div style="font-size: 3rem; margin-bottom: 14px;">🚛</div>
-    <h2 style="margin-bottom: 12px;">Welcome to JHE Haul</h2>
-    <p style="color: #718096; margin-bottom: 28px;">Post hauling jobs or find work hauling junk in your area.</p>
+/* ── Section headings ── */
+.mp-section { margin-bottom: 32px; }
+.mp-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.mp-section-head h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1a202c;
+    margin: 0;
+}
+.mp-section-head a {
+    font-size: 0.86rem;
+    color: #38a169;
+    font-weight: 600;
+    text-decoration: none;
+}
+.mp-section-head a:hover { text-decoration: underline; }
 
-    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 340px; margin: 0 auto;">
-        {% if current_user.is_authenticated %}
-            {% if current_user.user_type == 'customer' %}
-                <a href="{{ url_for('customer_new') }}" class="btn btn-success btn-lg btn-block">📋 Post a Job</a>
-                <a href="{{ url_for('customer_jobs') }}" class="btn btn-primary btn-lg btn-block">📦 My Jobs</a>
-            {% elif current_user.user_type == 'hauler' %}
-                <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary btn-lg btn-block">🔍 Browse Open Jobs</a>
-                <a href="{{ url_for('hauler_dashboard') }}" class="btn btn-outline btn-lg btn-block">📊 My Dashboard</a>
-            {% else %}
-                <a href="{{ url_for('choose_role') }}" class="btn btn-primary btn-lg btn-block">Choose Your Role</a>
-            {% endif %}
-        {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg btn-block">I'm a Customer (Post a Job)</a>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg btn-block">I'm a Hauler (Find Jobs)</a>
-        {% endif %}
+/* ── Listing Grid ── */
+.mp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+.mp-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+.mp-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: inherit;
+}
+.mp-card-img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    background: #f1f5f9;
+}
+.mp-card-img-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #edf2f7, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #cbd5e0;
+}
+.mp-card-body {
+    padding: 12px 14px 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.mp-card-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1a202c;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.mp-card-price {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #276749;
+}
+.mp-card-price.free {
+    color: #2b6cb0;
+}
+.mp-card-meta {
+    font-size: 0.76rem;
+    color: #a0aec0;
+    margin-top: auto;
+}
+.mp-badge-free {
+    display: inline-block;
+    background: #ebf8ff;
+    color: #2b6cb0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.mp-badge-featured {
+    display: inline-block;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Empty state ── */
+.mp-empty {
+    text-align: center;
+    padding: 48px 24px;
+    background: #fff;
+    border-radius: 14px;
+    border: 2px dashed #e2e8f0;
+    color: #a0aec0;
+}
+.mp-empty-icon { font-size: 3rem; margin-bottom: 14px; }
+.mp-empty h3 { font-size: 1.15rem; font-weight: 700; color: #4a5568; margin: 0 0 8px; }
+.mp-empty p { font-size: 0.92rem; max-width: 360px; margin: 0 auto 20px; line-height: 1.6; }
+
+/* ── Sell CTA banner ── */
+.mp-sell-cta {
+    background: linear-gradient(135deg, #276749 0%, #38a169 100%);
+    border-radius: 14px;
+    padding: 36px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    color: #fff;
+}
+.mp-sell-cta-text h2 { font-size: 1.4rem; font-weight: 800; margin: 0 0 6px; color: #fff; }
+.mp-sell-cta-text p { font-size: 0.95rem; color: rgba(255,255,255,0.8); margin: 0; }
+.mp-sell-cta a {
+    background: #fff;
+    color: #276749;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 13px 30px;
+    border-radius: 9px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+}
+.mp-sell-cta a:hover { background: #f0fff4; text-decoration: none; transform: translateY(-1px); }
+
+@media (max-width: 600px) {
+    .mp-hero { padding: 36px 20px 28px; }
+    .mp-hero h1 { font-size: 1.6rem; }
+    .mp-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mp-sell-cta { text-align: center; justify-content: center; }
+    .mp-sell-cta-text { text-align: center; }
+}
+</style>
+
+{# ── Hero ── #}
+<div class="mp-hero">
+    <h1>🛋️ JHE Marketplace</h1>
+    <p>Buy and sell furniture, appliances, electronics, tools, and more — locally.</p>
+
+    <form action="/marketplace" method="get" class="mp-search-wrap">
+        <input type="text" name="q" placeholder="Search furniture, appliances, electronics, tools and more…" autocomplete="off" value="{{ request.args.get('q', '') }}">
+        <button type="submit">Search</button>
+    </form>
+
+    <div class="mp-hero-btns">
+        <a href="/sell" class="mp-btn-sell">+ Sell Something</a>
+        <a href="/marketplace" class="mp-btn-browse">Browse All</a>
     </div>
 </div>
+
+{# ── Category Chips ── #}
+{% if categories %}
+<div class="mp-cats">
+    <a href="/marketplace" class="mp-cat-chip">
+        <span class="cat-icon">🏷️</span> All Items
+    </a>
+    {% for cat in categories %}
+    <a href="/marketplace?category={{ cat.slug }}" class="mp-cat-chip">
+        {% if cat.icon %}<span class="cat-icon">{{ cat.icon }}</span> {% endif %}{{ cat.name }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Search Results View ── #}
+{% if is_search %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>
+            {% if search_query %}Results for "{{ search_query }}"
+            {% elif active_category %}{{ active_category.icon or '' }} {{ active_category.name }}
+            {% elif price_type_filter == 'free' %}🎁 Free Items
+            {% elif featured_filter %}⭐ Featured Listings
+            {% else %}All Listings{% endif %}
+        </h2>
+        <a href="/marketplace">← Back to home</a>
+    </div>
+    {% if search_results %}
+    <div class="mp-grid">
+        {% for listing in search_results %}
+        <a href="/listing/{{ listing.id }}" class="mp-card">
+            {% if listing.primary_photo %}
+                {% if listing.primary_photo.storage_url %}
+                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
+                {% else %}
+                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+                {% endif %}
+            {% else %}
+                <div class="mp-card-img-placeholder">📦</div>
+            {% endif %}
+            <div class="mp-card-body">
+                <div class="mp-card-title">{{ listing.title }}</div>
+                <div>
+                    {% if listing.price_type == 'free' %}
+                        <span class="mp-card-price free">FREE</span>
+                    {% elif listing.price %}
+                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
+                    {% else %}
+                        <span class="mp-card-price">Make offer</span>
+                    {% endif %}
+                    {% if listing.featured %}<span class="mp-badge-featured">Featured</span>{% endif %}
+                    {% if listing.price_type == 'free' %}<span class="mp-badge-free">Free</span>{% endif %}
+                </div>
+                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="mp-empty">
+        <div class="mp-empty-icon">🔍</div>
+        <h3>No listings found</h3>
+        <p>Try a different search term or browse all categories.</p>
+        <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">Browse All Listings</a>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+
+{# ── Featured Listings ── #}
+{% if featured_listings %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>⭐ Featured Listings</h2>
+        <a href="/marketplace?featured=1">View all →</a>
+    </div>
+    <div class="mp-grid">
+        {% for listing in featured_listings %}
+        <a href="/listing/{{ listing.id }}" class="mp-card">
+            {% if listing.primary_photo %}
+                {% if listing.primary_photo.storage_url %}
+                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
+                {% else %}
+                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+                {% endif %}
+            {% else %}
+                <div class="mp-card-img-placeholder">🛋️</div>
+            {% endif %}
+            <div class="mp-card-body">
+                <div class="mp-card-title">{{ listing.title }}</div>
+                <div>
+                    {% if listing.price_type == 'free' %}
+                        <span class="mp-card-price free">FREE</span>
+                    {% elif listing.price %}
+                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
+                    {% else %}
+                        <span class="mp-card-price">Make offer</span>
+                    {% endif %}
+                    <span class="mp-badge-featured">Featured</span>
+                </div>
+                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Recently Listed ── #}
+{% if recent_listings %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>🕐 Recently Listed</h2>
+        <a href="/marketplace">View all →</a>
+    </div>
+    <div class="mp-grid">
+        {% for listing in recent_listings %}
+        <a href="/listing/{{ listing.id }}" class="mp-card">
+            {% if listing.primary_photo %}
+                {% if listing.primary_photo.storage_url %}
+                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
+                {% else %}
+                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+                {% endif %}
+            {% else %}
+                <div class="mp-card-img-placeholder">📦</div>
+            {% endif %}
+            <div class="mp-card-body">
+                <div class="mp-card-title">{{ listing.title }}</div>
+                <div>
+                    {% if listing.price_type == 'free' %}
+                        <span class="mp-card-price free">FREE</span>
+                    {% elif listing.price %}
+                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
+                    {% else %}
+                        <span class="mp-card-price">Make offer</span>
+                    {% endif %}
+                </div>
+                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% elif not featured_listings and not free_listings %}
+{# ── Empty state (no listings at all) ── #}
+<div class="mp-empty" style="margin-bottom:32px;">
+    <div class="mp-empty-icon">🛍️</div>
+    <h3>No listings yet — be the first!</h3>
+    <p>The marketplace is just getting started. List something and help kick things off.</p>
+    <a href="/sell" class="mp-btn-sell" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">+ List Your First Item</a>
+</div>
+{% endif %}
+
+{# ── Free Items ── #}
+{% if free_listings %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>🎁 Free Items</h2>
+        <a href="/marketplace?price_type=free">View all →</a>
+    </div>
+    <div class="mp-grid">
+        {% for listing in free_listings %}
+        <a href="/listing/{{ listing.id }}" class="mp-card">
+            {% if listing.primary_photo %}
+                {% if listing.primary_photo.storage_url %}
+                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
+                {% else %}
+                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+                {% endif %}
+            {% else %}
+                <div class="mp-card-img-placeholder">🎁</div>
+            {% endif %}
+            <div class="mp-card-body">
+                <div class="mp-card-title">{{ listing.title }}</div>
+                <div>
+                    <span class="mp-card-price free">FREE</span>
+                    <span class="mp-badge-free">Free</span>
+                </div>
+                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Sell CTA ── #}
+<div class="mp-sell-cta">
+    <div class="mp-sell-cta-text">
+        <h2>Have something to sell?</h2>
+        <p>List furniture, appliances, electronics, or anything else — it's free and takes under 2 minutes.</p>
+    </div>
+    <a href="/sell">+ Sell Something</a>
+</div>
+
+{% endif %}{# end is_search / else #}
 
 {% endblock %}
