@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <h2 class="page-title" style="margin:0;">👥 Manage Users</h2>
+        <span style="background:#dbeafe;color:#1d4ed8;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ total }} total</span>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card" style="padding:14px 16px;margin-bottom:14px;">
+    <form method="GET" action="{{ url_for('admin_users') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Search users</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="Name or email…" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+            <button type="submit" class="btn btn-primary" style="padding:8px 18px;">Search</button>
+            {% if q %}
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline" style="padding:8px 14px;">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% if users %}
+<div class="card" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.86rem;min-width:680px;">
+            <thead>
+                <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">User</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Email</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;white-space:nowrap;">Listings</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;white-space:nowrap;">Joined</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;">Status</th>
+                    <th style="padding:11px 14px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+            <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+                <td style="padding:10px 14px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        {% if u.profile_image_url %}
+                        <img src="{{ u.profile_image_url }}" alt="{{ u.first_name or 'User' }}"
+                             style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0;flex-shrink:0;"
+                             onerror="this.style.display='none';">
+                        {% else %}
+                        <div style="width:32px;height:32px;border-radius:50%;background:#2563eb;color:#fff;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            {{ ((u.first_name or u.email or '?')[0])|upper }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <div style="font-weight:600;color:#1a202c;">{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
+                                {% if u.is_admin %}<span style="color:#e74c3c;font-size:0.72rem;"> (Admin)</span>{% endif %}
+                            </div>
+                            {% if u.phone %}<div style="font-size:0.76rem;color:#94a3b8;">{{ u.phone_formatted }}</div>{% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td style="padding:10px 14px;color:#4a5568;word-break:break-all;">{{ u.email or '—' }}</td>
+                <td style="padding:10px 14px;text-align:center;">
+                    {% set lcount = listing_counts.get(u.id, 0) %}
+                    {% if lcount > 0 %}
+                    <span style="background:#dbeafe;color:#1d4ed8;font-weight:700;padding:2px 10px;border-radius:12px;">{{ lcount }}</span>
+                    {% else %}
+                    <span style="color:#cbd5e0;">0</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;white-space:nowrap;color:#718096;font-size:0.82rem;">
+                    {{ u.created_at | ct or '—' }}
+                </td>
+                <td style="padding:10px 14px;text-align:center;">
+                    {% if u.is_admin %}
+                    <span style="background:#ede9fe;color:#7c3aed;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Admin</span>
+                    {% elif u.is_suspended %}
+                    <span style="background:#fee2e2;color:#dc2626;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Suspended</span>
+                    {% else %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Active</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;text-align:right;">
+                    {% if not u.is_admin %}
+                    <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
+                        {% if u.is_suspended %}
+                        <form method="POST" action="{{ url_for('admin_user_restore', user_id=u.id) }}" style="margin:0;">
+                            <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Restore</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('admin_user_suspend', user_id=u.id) }}" style="margin:0;"
+                              onsubmit="return confirm('Suspend {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }}?');">
+                            <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#d97706;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Suspend</button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="margin:0;"
+                              onsubmit="return confirm('Permanently delete this user and all their data?');">
+                            <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:0.78rem;">Delete</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <span style="color:#cbd5e0;font-size:0.8rem;">Protected</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <p>No users found{% if q %} matching "{{ q }}"{% endif %}.</p>
+        {% if q %}<a href="{{ url_for('admin_users') }}" class="btn btn-outline">Clear search</a>{% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

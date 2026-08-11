@@ -1,0 +1,43 @@
+{# Admin navigation bar — include at top of every admin page #}
+<div style="background:#1e293b;color:#fff;padding:0;margin-bottom:20px;border-radius:10px;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0;min-height:48px;">
+        <nav style="display:flex;align-items:stretch;flex-wrap:wrap;">
+            <a href="{{ url_for('admin_dashboard') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_dashboard' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_dashboard' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                ⚙ Dashboard
+            </a>
+            <a href="{{ url_for('admin_listings') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_listings' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_listings' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_listings' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_listings' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                📋 Listings
+            </a>
+            <a href="{{ url_for('admin_users') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_users' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_users' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_users' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_users' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                👥 Users
+            </a>
+            <a href="{{ url_for('admin_reports') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_reports' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_reports' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_reports' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;position:relative;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_reports' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                🚩 Reports{% if reported_listings is defined and reported_listings > 0 %}<span style="background:#ef4444;color:#fff;font-size:0.68rem;font-weight:800;padding:1px 5px;border-radius:10px;margin-left:3px;">{{ reported_listings }}</span>{% endif %}
+            </a>
+            <a href="{{ url_for('admin_categories') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_categories' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_categories' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_categories' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_categories' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                🗂 Categories
+            </a>
+            <a href="{{ url_for('admin_sms_settings') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if 'admin_sms' in request.endpoint or 'admin_notification' in request.endpoint %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:500;font-size:0.88rem;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">
+                ⚙ Settings
+            </a>
+        </nav>
+        <div style="padding:10px 16px;">
+            <a href="{{ url_for('marketplace') }}" style="display:flex;align-items:center;gap:6px;color:#64748b;font-size:0.82rem;text-decoration:none;white-space:nowrap;"
+               onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+                ← View Marketplace
+            </a>
+        </div>
+    </div>
+</div>

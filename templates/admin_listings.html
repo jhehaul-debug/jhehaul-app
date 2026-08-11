@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Listings — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <h2 class="page-title" style="margin:0;">📋 Manage Listings</h2>
+        <span style="background:#dbeafe;color:#1d4ed8;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ total }} total</span>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="card" style="padding:14px 16px;margin-bottom:14px;">
+    <form method="GET" action="{{ url_for('admin_listings') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:2;min-width:200px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Search</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="Search by title…" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+        </div>
+        <div style="flex:1;min-width:130px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Status</label>
+            <select name="status" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+                <option value="">All statuses</option>
+                <option value="active" {% if status_filter=='active' %}selected{% endif %}>Active</option>
+                <option value="pending" {% if status_filter=='pending' %}selected{% endif %}>Pending</option>
+                <option value="sold" {% if status_filter=='sold' %}selected{% endif %}>Sold</option>
+                <option value="removed" {% if status_filter=='removed' %}selected{% endif %}>Removed</option>
+                <option value="draft" {% if status_filter=='draft' %}selected{% endif %}>Draft</option>
+                <option value="expired" {% if status_filter=='expired' %}selected{% endif %}>Expired</option>
+            </select>
+        </div>
+        <div style="flex:1;min-width:140px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Category</label>
+            <select name="category" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+                <option value="">All categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if category_filter == cat.id|string %}selected{% endif %}>{{ cat.icon or '' }} {{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:0;">
+            <button type="submit" class="btn btn-primary" style="padding:8px 18px;">Search</button>
+            {% if q or status_filter or category_filter %}
+            <a href="{{ url_for('admin_listings') }}" class="btn btn-outline" style="padding:8px 14px;">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% if listings %}
+<div class="card" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.86rem;min-width:700px;">
+            <thead>
+                <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Listing</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;white-space:nowrap;">Seller</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Category</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Price</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;">Status</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;white-space:nowrap;">Posted</th>
+                    <th style="padding:11px 14px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for l in listings %}
+            <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}vertical-align:top;">
+                <td style="padding:10px 14px;max-width:240px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        {% if l.primary_photo %}
+                        <img src="{{ l.primary_photo.storage_url or url_for('uploaded_file_db', photo_id=l.primary_photo.id) if l.primary_photo.data else '' }}"
+                             style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid #e2e8f0;"
+                             onerror="this.style.display='none'">
+                        {% else %}
+                        <div style="width:40px;height:40px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">📦</div>
+                        {% endif %}
+                        <div>
+                            <div style="font-weight:600;color:#1a202c;word-break:break-word;max-width:180px;">{{ l.title }}</div>
+                            <div style="font-size:0.76rem;color:#94a3b8;margin-top:1px;">ID #{{ l.id }} · {{ l.photos|length }} photo{% if l.photos|length != 1 %}s{% endif %}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="padding:10px 14px;white-space:nowrap;color:#4a5568;">
+                    {% if l.seller %}
+                    <div style="font-weight:500;">{{ ((l.seller.first_name or '') ~ ' ' ~ (l.seller.last_name or '')).strip() or '—' }}</div>
+                    <div style="font-size:0.76rem;color:#94a3b8;">{{ l.seller.email or '' }}</div>
+                    {% else %}<span style="color:#cbd5e0;">—</span>{% endif %}
+                </td>
+                <td style="padding:10px 14px;color:#4a5568;">
+                    {% if l.category %}{{ l.category.icon or '' }} {{ l.category.name }}{% else %}<span style="color:#cbd5e0;">—</span>{% endif %}
+                </td>
+                <td style="padding:10px 14px;font-weight:600;white-space:nowrap;">
+                    {% if l.price_type == 'free' or not l.price %}
+                    <span style="color:#16a34a;">FREE</span>
+                    {% else %}
+                    ${{ "%.0f"|format(l.price) }}{% if l.price_type == 'negotiable' %}<span style="font-size:0.74rem;color:#64748b;font-weight:400;"> OBO</span>{% endif %}
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;text-align:center;">
+                    {% set s = l.status %}
+                    <span style="background:{% if s=='active' %}#dcfce7;color:#15803d{% elif s=='pending' %}#fef3c7;color:#d97706{% elif s=='sold' %}#dbeafe;color:#1d4ed8{% elif s=='removed' %}#fee2e2;color:#dc2626{% elif s=='draft' %}#f1f5f9;color:#64748b{% else %}#f1f5f9;color:#64748b{% endif %};font-size:0.76rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">
+                        {{ s.title() }}
+                    </span>
+                    {% if l.moderation_status == 'flagged' %}
+                    <div style="margin-top:3px;"><span style="background:#fee2e2;color:#dc2626;font-size:0.68rem;font-weight:700;padding:2px 6px;border-radius:10px;">⚑ Flagged</span></div>
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;white-space:nowrap;color:#718096;font-size:0.8rem;">
+                    {{ l.created_at | ct('%b %d, %Y') or '—' }}
+                </td>
+                <td style="padding:10px 14px;text-align:right;white-space:nowrap;">
+                    <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+                        {% if l.status != 'active' or l.moderation_status != 'approved' %}
+                        <form method="POST" action="{{ url_for('admin_listing_approve', listing_id=l.id) }}" style="margin:0;">
+                            <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">✓ Approve</button>
+                        </form>
+                        {% endif %}
+                        {% if l.status not in ['sold'] %}
+                        <form method="POST" action="{{ url_for('admin_listing_mark_sold', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Mark this listing as sold?');">
+                            <button type="submit" class="btn btn-sm" style="background:#dbeafe;color:#1d4ed8;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Sold</button>
+                        </form>
+                        {% endif %}
+                        {% if l.status != 'removed' %}
+                        <form method="POST" action="{{ url_for('admin_listing_hide', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Hide this listing?');">
+                            <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#d97706;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Hide</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_listing_remove', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Remove this listing from the marketplace?');">
+                            <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:0.78rem;">Remove</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>No listings found{% if q or status_filter or category_filter %} matching your filters{% endif %}.</p>
+        {% if q or status_filter or category_filter %}
+        <a href="{{ url_for('admin_listings') }}" class="btn btn-outline">Clear filters</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

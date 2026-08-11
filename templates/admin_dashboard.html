@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Admin Dashboard - JHE Haul{% endblock %}
 {% block content %}
+{% set reported_listings = reported_listings %}
+{% include "admin_nav.html" %}
 
 <div class="page-header">
     <h2 class="page-title">⚙ Admin Dashboard</h2>
@@ -17,235 +19,216 @@
                style="font-size:0.8rem;font-weight:400;color:#276749;text-decoration:underline;margin-left:6px;">Details</a>
         </div>
         <div id="storage-warning-detail" style="display:none;font-size:0.82rem;color:#22543d;line-height:1.5;margin-top:6px;">
-            New photos are saved directly to PostgreSQL — they persist forever regardless of container restarts or DigitalOcean deploys.
-            Photos uploaded before this fix (if any) may show "unavailable" — those would need to be re-uploaded.
-            For unlimited photo scale, set <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_KEY</code>,
+            Set <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_KEY</code>,
             <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_SECRET</code>, and
             <code style="background:#c6f6d5;padding:1px 4px;border-radius:3px;">SPACES_BUCKET</code>
-            in DigitalOcean → App Platform → Settings → Environment Variables to switch to DigitalOcean Spaces.
+            in DigitalOcean → App Platform → Settings → Environment Variables to switch to DO Spaces for unlimited photo scale.
         </div>
     </div>
     <button onclick="document.getElementById('storage-warning').style.display='none'"
-            style="background:none;border:none;cursor:pointer;color:#276749;font-size:1.1rem;flex-shrink:0;padding:0;line-height:1;"
-            title="Dismiss">✕</button>
+            style="background:none;border:none;cursor:pointer;color:#276749;font-size:1.1rem;flex-shrink:0;padding:0;line-height:1;" title="Dismiss">✕</button>
 </div>
 {% endif %}
 
-<!-- Portal Status Summary -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
-    <a href="{{ url_for('admin_requests') }}?filter=reviewing" style="text-decoration:none;">
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;">
+    <a href="{{ url_for('admin_users') }}" style="text-decoration:none;">
         <div class="stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:4px solid #3b82f6;cursor:pointer;">
-            <div class="stat-icon">🔍</div>
-            <div class="stat-value" style="color:#1d4ed8;">{{ reviewing_count }}</div>
-            <div class="stat-label">Reviewing</div>
+            <div class="stat-icon">👥</div>
+            <div class="stat-value" style="color:#1d4ed8;">{{ total_users }}</div>
+            <div class="stat-label">Total Users</div>
         </div>
     </a>
-    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
-        <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#ede9fe);border-left:4px solid #8b5cf6;cursor:pointer;">
-            <div class="stat-icon">💬</div>
-            <div class="stat-value" style="color:#6d28d9;">{{ quoted_count }}</div>
-            <div class="stat-label">Quoted</div>
-        </div>
-    </a>
-    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
-        <div class="stat-card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:4px solid #f59e0b;cursor:pointer;">
-            <div class="stat-icon">💳</div>
-            <div class="stat-value" style="color:#d97706;">{{ waiting_payment_count }}</div>
-            <div class="stat-label">Awaiting Pay</div>
-        </div>
-    </a>
-    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
+    <a href="{{ url_for('admin_listings') }}?status=active" style="text-decoration:none;">
         <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;cursor:pointer;">
-            <div class="stat-icon">📅</div>
-            <div class="stat-value" style="color:#059669;">{{ scheduled_count }}</div>
-            <div class="stat-label">Scheduled</div>
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" style="color:#059669;">{{ active_listings }}</div>
+            <div class="stat-label">Active Listings</div>
         </div>
     </a>
-    <a href="{{ url_for('admin_requests') }}" style="text-decoration:none;">
-        <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;cursor:pointer;">
-            <div class="stat-icon">🚛</div>
-            <div class="stat-value" style="color:#ea580c;">{{ in_progress_count }}</div>
-            <div class="stat-label">In Progress</div>
+    <a href="{{ url_for('admin_listings') }}?status=pending" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:4px solid #f59e0b;cursor:pointer;">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-value" style="color:#d97706;">{{ pending_listings }}</div>
+            <div class="stat-label">Pending</div>
         </div>
     </a>
-</div>
-
-{% if new_requests %}
-<div class="section-header">
-    <span class="section-title">🔍 New Requests Needing Review ({{ reviewing_count }})</span>
-    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
-</div>
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
-    {% for job in new_requests %}
-    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
-            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-                {% if job.service_type %}<span style="background:#ede9fe;color:#6d28d9;font-size:0.75rem;font-weight:600;padding:1px 7px;border-radius:10px;margin-right:6px;">{{ job.service_type }}</span>{% endif %}
-                {{ job.pickup_zip or '' }}{% if job.pickup_zip %} · {% endif %}{{ job.created_at | ct('%b %d') or '' }}
-            </div>
+    <a href="{{ url_for('admin_listings') }}?status=sold" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#ede9fe);border-left:4px solid #8b5cf6;cursor:pointer;">
+            <div class="stat-icon">🏷</div>
+            <div class="stat-value" style="color:#6d28d9;">{{ sold_items }}</div>
+            <div class="stat-label">Sold Items</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            {% if job.photos %}<span style="background:#f0fdf4;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid #bbf7d0;">📷 {{ job.photos|length }}</span>{% endif %}
-            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">Review →</a>
+    </a>
+    <a href="{{ url_for('admin_reports') }}" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,{% if reported_listings > 0 %}#fff1f2,#fee2e2);border-left:4px solid #ef4444{% else %}#f9fafb,#f3f4f6);border-left:4px solid #9ca3af{% endif %};cursor:pointer;">
+            <div class="stat-icon">🚩</div>
+            <div class="stat-value" style="color:{% if reported_listings > 0 %}#dc2626{% else %}#6b7280{% endif %};">{{ reported_listings }}</div>
+            <div class="stat-label">Reports</div>
         </div>
-    </div>
-    {% endfor %}
-    {% if reviewing_count > new_requests|length %}
-    <div style="padding:10px 18px;text-align:center;border-top:1px solid #f1f5f9;">
-        <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View {{ reviewing_count - new_requests|length }} more →</a>
-    </div>
-    {% endif %}
-</div>
-{% endif %}
-
-<!-- Today's Schedule -->
-{% if todays_schedule %}
-<div class="section-header">
-    <span class="section-title">📅 Today's Schedule ({{ todays_schedule|length }})</span>
-    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
-</div>
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;border-left:4px solid #10b981;">
-    {% for job in todays_schedule %}
-    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
-        <div style="flex-shrink:0;font-size:1.3rem;">📅</div>
-        <div style="flex:1;min-width:160px;">
-            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-                {% if job.preferred_time %}<strong>{{ job.preferred_time }}</strong> · {% endif %}
-                {{ job.pickup_zip or '' }}
-                {% if job.service_type %} · <span style="background:#ede9fe;color:#6d28d9;font-size:0.75rem;font-weight:600;padding:1px 6px;border-radius:8px;">{{ job.service_type }}</span>{% endif %}
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-            <span style="background:{% if job.status=='in_progress' %}#fff7ed;color:#ea580c;{% else %}#dcfce7;color:#15803d;{% endif %}font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">
-                {{ job.status.replace('_',' ').title() }}
-            </span>
-            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">View →</a>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- Pending Quotes (waiting for customer response) -->
-{% if pending_quote_jobs %}
-<div class="section-header">
-    <span class="section-title">💬 Pending Quotes ({{ quoted_count }})</span>
-    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
-</div>
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
-    {% for job in pending_quote_jobs %}
-    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
-            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-                {% if job.quotes %}
-                {% set q = job.quotes | sort(attribute='created_at') | last %}
-                Quote: <strong style="color:#7c3aed;">${{ "%.0f"|format(q.price) }}</strong> · Deposit: ${{ "%.0f"|format(q.deposit_amount) }}
-                {% endif %}
-                {% if job.pickup_zip %} · {{ job.pickup_zip }}{% endif %}
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            <span style="background:#ede9fe;color:#7c3aed;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">⏳ Awaiting Customer</span>
-            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-outline btn-sm">View →</a>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- Accepted / Scheduled / In Progress -->
-{% if accepted_scheduled_jobs %}
-<div class="section-header">
-    <span class="section-title">🚛 Accepted / Scheduled ({{ accepted_scheduled_jobs|length }})</span>
-    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
-</div>
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
-    {% for job in accepted_scheduled_jobs %}
-    <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
-            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">Request #{{ job.id }} — {{ job.customer_name }}</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-                {% if job.preferred_date %}<strong>📅 {{ job.preferred_date }}</strong>{% if job.preferred_time %} ({{ job.preferred_time }}){% endif %} · {% endif %}
-                {{ job.pickup_zip or '' }}
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            <span style="background:{% if job.status=='in_progress' %}#fff7ed;color:#ea580c;{% elif job.status=='scheduled' %}#dcfce7;color:#15803d;{% else %}#dbeafe;color:#1d4ed8;{% endif %}font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">
-                {{ job.status.replace('_',' ').title() }}
-            </span>
-            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">Manage →</a>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- Recently Completed -->
-{% if recent_completed_jobs %}
-<div class="section-header">
-    <span class="section-title">✅ Recently Completed ({{ completed_jobs }} total)</span>
-    <a href="{{ url_for('admin_requests') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
-</div>
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
-    {% for job in recent_completed_jobs %}
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
-            <div style="font-weight:600;font-size:0.9rem;color:#4a5568;">Request #{{ job.id }} — {{ job.customer_name }}</div>
-            <div style="font-size:0.8rem;color:#a0aec0;margin-top:2px;">Completed {{ job.completed_at | ct('%b %d') if job.completed_at else '' }}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-            <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 10px;border-radius:20px;">✓ Done</span>
-            <a href="{{ url_for('admin_request_detail', job_id=job.id) }}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View →</a>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- Stat Cards -->
-<div class="stat-grid">
-    <div class="stat-card blue">
-        <div class="stat-icon">👥</div>
-        <div class="stat-value" style="color:#3498db;">{{ total_users }}</div>
-        <div class="stat-label">Total Users</div>
-        <div class="stat-sub">{{ total_customers }} customers</div>
-    </div>
-    <div class="stat-card green">
-        <div class="stat-icon">📦</div>
-        <div class="stat-value" style="color:#27ae60;">{{ total_jobs }}</div>
-        <div class="stat-label">Total Jobs</div>
-        <div class="stat-sub">{{ open_jobs }} open · {{ active_jobs }} active</div>
-    </div>
-    <div class="stat-card orange">
-        <div class="stat-icon">✅</div>
-        <div class="stat-value" style="color:#e67e22;">{{ completed_jobs }}</div>
-        <div class="stat-label">Completed</div>
-        <div class="stat-sub">{{ cancelled_jobs }} cancelled · {{ expired_jobs }} expired</div>
-    </div>
-    <div class="stat-card purple">
-        <div class="stat-icon">🏷</div>
-        <div class="stat-value" style="color:#9b59b6;">{{ total_bids }}</div>
-        <div class="stat-label">Total Bids</div>
-        <div class="stat-sub">{{ pending_bids }} pending · {{ accepted_bids }} accepted</div>
-    </div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;">
-        <div class="stat-icon">🤝</div>
-        <div class="stat-value" style="color:#ea580c;">{{ accepted_bids }}</div>
-        <div class="stat-label">Accepted Bids</div>
-        <div class="stat-sub">{{ pending_bids }} still open</div>
-    </div>
-    <div class="stat-card teal">
+    </a>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #14b8a6;">
         <div class="stat-icon">💰</div>
-        <div class="stat-value" style="color:#1abc9c;">${{ "%.0f"|format(total_revenue) }}</div>
-        <div class="stat-label">Revenue</div>
-        <div class="stat-sub">${{ "%.2f"|format(total_revenue) }} total</div>
+        <div class="stat-value" style="color:#0f766e;">{{ total_listings }}</div>
+        <div class="stat-label">Total Listings</div>
     </div>
 </div>
 
-<!-- SMS Stat Card -->
+<!-- Quick Actions -->
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-bottom:14px;">⚡ Quick Actions</h3>
+    <div class="quick-actions" style="flex-wrap:wrap;gap:10px;">
+        <a href="{{ url_for('admin_listings') }}" class="btn btn-primary">📋 Manage Listings</a>
+        <a href="{{ url_for('admin_users') }}" class="btn btn-outline">👥 Manage Users</a>
+        <a href="{{ url_for('admin_reports') }}" class="btn btn-outline" style="position:relative;">
+            🚩 Review Reports{% if reported_listings > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:2px;">{{ reported_listings }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('admin_categories') }}" class="btn btn-outline">🗂 Manage Categories</a>
+        <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;" class="btn btn-secondary">📧 Send Notification</a>
+        <a href="{{ url_for('admin_analytics') }}" class="btn btn-secondary">📊 Analytics</a>
+    </div>
+</div>
+
+<!-- Recent Listings -->
+{% if recent_listings %}
+<div class="section-header">
+    <span class="section-title">🆕 Recent Listings</span>
+    <a href="{{ url_for('admin_listings') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for l in recent_listings %}
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">{{ l.title }}</div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:2px;">
+                {% if l.seller %}{{ ((l.seller.first_name or '') ~ ' ' ~ (l.seller.last_name or '')).strip() or l.seller.email }}{% endif %}
+                {% if l.category %} · {{ l.category.icon or '' }} {{ l.category.name }}{% endif %}
+                · {{ l.created_at | ct('%b %d') or '' }}
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            {% if l.price_type == 'free' or not l.price %}
+            <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 9px;border-radius:20px;">FREE</span>
+            {% else %}
+            <span style="font-weight:700;color:#1a202c;font-size:0.9rem;">${{ "%.0f"|format(l.price) }}</span>
+            {% endif %}
+            {% set s = l.status %}
+            <span style="background:{% if s=='active' %}#dcfce7;color:#15803d{% elif s=='pending' %}#fef3c7;color:#d97706{% elif s=='sold' %}#dbeafe;color:#1d4ed8{% else %}#f1f5f9;color:#64748b{% endif %};font-size:0.76rem;font-weight:700;padding:2px 9px;border-radius:20px;">{{ s.title() }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Pending Reports (if any) -->
+{% if pending_reports %}
+<div class="section-header">
+    <span class="section-title">🚩 Reports Needing Review ({{ reported_listings }})</span>
+    <a href="{{ url_for('admin_reports') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;border-left:4px solid #ef4444;">
+    {% for r in pending_reports %}
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">
+                {% if r.listing %}{{ r.listing.title }}{% else %}Listing #{{ r.listing_id }}{% endif %}
+            </div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:2px;">{{ r.reason }} · {{ r.created_at | ct('%b %d') or '' }}</div>
+        </div>
+        <a href="{{ url_for('admin_reports') }}" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 12px;border-radius:6px;font-size:0.8rem;font-weight:700;white-space:nowrap;">Review →</a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent Users -->
+{% if recent_users %}
+<div class="section-header">
+    <span class="section-title">👥 Recently Joined</span>
+    <a href="{{ url_for('admin_users') }}" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for u in recent_users %}
+    <div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};">
+        <div style="width:32px;height:32px;border-radius:50%;background:#2563eb;color:#fff;font-size:0.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            {{ ((u.first_name or u.email or '?')[0])|upper }}
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.9rem;color:#1a202c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email or 'Unknown' }}
+                {% if u.is_admin %}<span style="font-size:0.72rem;color:#e74c3c;"> (Admin)</span>{% endif %}
+            </div>
+            <div style="font-size:0.78rem;color:#94a3b8;">{{ u.email or '' }} · Joined {{ u.created_at | ct('%b %d') or '' }}</div>
+        </div>
+        {% if u.is_suspended %}
+        <span style="background:#fee2e2;color:#dc2626;font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;">Suspended</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recently Sold -->
+{% if recent_sold %}
+<div class="section-header">
+    <span class="section-title">🏷 Recently Sold ({{ sold_items }} total)</span>
+    <a href="{{ url_for('admin_listings') }}?status=sold" style="font-size:0.85rem;color:#3498db;">View All →</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+    {% for l in recent_sold %}
+    <div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:{% if not loop.last %}1px solid #f1f5f9{% else %}none{% endif %};flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+            <div style="font-weight:600;font-size:0.9rem;color:#4a5568;">{{ l.title }}</div>
+            <div style="font-size:0.78rem;color:#a0aec0;margin-top:2px;">
+                {% if l.seller %}{{ ((l.seller.first_name or '') ~ ' ' ~ (l.seller.last_name or '')).strip() or l.seller.email }}{% endif %}
+                {% if l.price %} · ${{ "%.0f"|format(l.price) }}{% endif %}
+                {% if l.sold_at %} · sold {{ l.sold_at | ct('%b %d') or '' }}{% endif %}
+            </div>
+        </div>
+        <span style="background:#dcfce7;color:#15803d;font-size:0.76rem;font-weight:700;padding:2px 10px;border-radius:20px;white-space:nowrap;">✓ Sold</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Marketplace Links -->
+<div style="margin-top:8px;margin-bottom:8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Marketplace Management</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px;">
+    <a href="{{ url_for('admin_listings') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:14px;padding:18px 20px;" onmouseover="this.style.boxShadow='0 4px 16px rgba(59,130,246,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2rem;line-height:1;">📋</div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:800;color:#3b82f6;line-height:1;">{{ total_listings }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">All Listings</div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:1px;">View &amp; manage →</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_users') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:14px;padding:18px 20px;" onmouseover="this.style.boxShadow='0 4px 16px rgba(16,185,129,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2rem;line-height:1;">👥</div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:800;color:#059669;line-height:1;">{{ total_users }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">All Users</div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:1px;">View &amp; manage →</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_categories') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:14px;padding:18px 20px;" onmouseover="this.style.boxShadow='0 4px 16px rgba(139,92,246,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2rem;line-height:1;">🗂</div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:800;color:#7c3aed;line-height:1;">{{ categories_count }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Categories</div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:1px;">View &amp; manage →</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_reports') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:14px;padding:18px 20px;{% if reported_listings > 0 %}border-left:3px solid #ef4444;{% endif %}" onmouseover="this.style.boxShadow='0 4px 16px rgba(239,68,68,0.12)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:2rem;line-height:1;">🚩</div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:800;color:{% if reported_listings > 0 %}#dc2626{% else %}#6b7280{% endif %};line-height:1;">{{ reported_listings }}</div>
+            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Reports</div>
+            <div style="font-size:0.8rem;color:#718096;margin-top:1px;">Review &amp; moderate →</div>
+        </div>
+    </a>
+</div>
+
+<!-- SMS Card -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
     <div class="stat-card" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);border-left:4px solid #a855f7;">
         <div class="stat-icon">📱</div>
@@ -256,115 +239,34 @@
             <span style="color:#dc2626;">⚠ Twilio not configured</span>
             {% elif sms_failed_total > 0 %}
             {{ sms_failed_total }} failed · <a href="{{ url_for('admin_sms_logs') }}" style="color:#7e22ce;">logs →</a>
-            {% else %}
-            All delivered
-            {% endif %}
+            {% else %}All delivered{% endif %}
         </div>
     </div>
+    <a href="{{ url_for('admin_sms_settings') }}" class="stat-card" style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-left:4px solid #94a3b8;text-decoration:none;cursor:pointer;">
+        <div class="stat-icon">⚙</div>
+        <div class="stat-label" style="font-size:0.88rem;font-weight:700;margin-top:6px;">SMS Settings</div>
+        <div class="stat-sub" style="margin-top:4px;">Configure →</div>
+    </a>
+    <a href="{{ url_for('admin_notifications') }}" class="stat-card" style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-left:4px solid #94a3b8;text-decoration:none;cursor:pointer;">
+        <div class="stat-icon">📬</div>
+        <div class="stat-label" style="font-size:0.88rem;font-weight:700;margin-top:6px;">Notification Log</div>
+        <div class="stat-sub" style="margin-top:4px;">View history →</div>
+    </a>
 </div>
 
-<!-- Quick Actions -->
-<div class="card">
-    <h3 style="margin-bottom:14px;">⚡ Quick Actions</h3>
-    <div class="quick-actions">
-        <a href="{{ url_for('admin_requests') }}" class="btn btn-primary">📋 View Requests</a>
-        <a href="{{ url_for('admin_messages') }}" class="btn btn-outline" style="position:relative;">
-            💬 Messages{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:2px;">{{ admin_unread_count }}</span>{% endif %}
-        </a>
-        <button onclick="shareInvite('customer')" class="btn btn-outline">👤 Invite Customer</button>
-        <a href="#send-notification" onclick="document.getElementById('send-notification').scrollIntoView({behavior:'smooth'});return false;"
-           class="btn btn-secondary">📧 Send Notification</a>
-        <a href="{{ url_for('admin_sms_settings') }}" class="btn btn-secondary">📱 SMS Settings</a>
+<!-- Share Invite -->
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-bottom:8px;">📣 Share Marketplace</h3>
+    <p style="color:#718096;margin-bottom:14px;font-size:0.9rem;">Invite people to buy and sell on JHE Marketplace.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="shareInvite('customer')" class="btn btn-primary" style="flex:1;min-width:160px;">👤 Invite a Buyer/Seller</button>
+        <button onclick="shareInvite('general')" class="btn btn-secondary btn-block" style="flex:1;min-width:160px;">🔗 General Invite</button>
     </div>
-</div>
-
-<!-- Share Invite Links -->
-<div class="card">
-    <h3 style="margin-bottom:8px;">📣 Share Invite Links</h3>
-    <p style="color:#718096;margin-bottom:16px;font-size:0.92rem;">Share invite links via text, email, or any app.</p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button onclick="shareInvite('customer')" class="btn btn-primary" style="flex:1;min-width:180px;">
-            👤 Invite a Customer
-        </button>
-    </div>
-    <div style="margin-top:10px;">
-        <button onclick="shareInvite('general')" class="btn btn-secondary btn-block">
-            🔗 General Invite (they pick their role)
-        </button>
-    </div>
-</div>
-<script>
-function shareInvite(type) {
-    var baseUrl = window.location.origin + '/';
-    var url, title, text;
-    if (type === 'customer') {
-        url = baseUrl + 'invite/customer';
-        title = 'JHE Haul — Junk Removal';
-        text = 'Book junk removal and hauling services online at JHE Haul!';
-    } else {
-        url = baseUrl + 'invite';
-        title = 'JHE Haul — Junk Removal';
-        text = 'Check out JHE Haul — fast, affordable junk removal and hauling services!';
-    }
-    if (navigator.share) {
-        navigator.share({ title: title, text: text, url: url });
-    } else {
-        window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
-    }
-}
-</script>
-
-<!-- Post Test Job -->
-<div class="card" id="post-test-job">
-    <h3 style="margin-bottom:16px;">📋 Post Test Job</h3>
-    <form method="POST" action="{{ url_for('admin_test_job') }}" enctype="multipart/form-data">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="form-group">
-                <label>Customer Name</label>
-                <input type="text" name="customer_name" required placeholder="Test Customer">
-            </div>
-            <div class="form-group">
-                <label>Pickup ZIP</label>
-                <input type="text" name="pickup_zip" required placeholder="55401" maxlength="5"
-                       pattern="\d{5}" inputmode="numeric"
-                       oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Pickup Address</label>
-            <input type="text" name="pickup_address" required placeholder="Street Address, City, State">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="form-group">
-                <label>Preferred Date</label>
-                <input type="date" name="preferred_date">
-            </div>
-            <div class="form-group">
-                <label>Preferred Time</label>
-                <select name="preferred_time">
-                    <option value="">-- Select --</option>
-                    <option value="Morning">Morning</option>
-                    <option value="Afternoon">Afternoon</option>
-                    <option value="Evening">Evening</option>
-                </select>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Job Description</label>
-            <textarea name="job_description" required rows="3" placeholder="Describe the items to be hauled..."></textarea>
-        </div>
-        <div class="form-group">
-            <label>Photos <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
-            <input type="file" name="photos" multiple accept="image/*"
-                   style="background:white;padding:8px;border:1.5px solid #e2e8f0;border-radius:8px;">
-        </div>
-        <button type="submit" class="btn btn-primary">Post Test Job</button>
-    </form>
 </div>
 
 <!-- Send Test Notification -->
 <div class="card" id="send-notification">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
         <h3 style="margin:0;">📧 Send Test Notification</h3>
         <a href="{{ url_for('admin_notifications') }}" class="btn btn-outline btn-sm">📬 Notification Log →</a>
     </div>
@@ -378,245 +280,33 @@ function shareInvite(type) {
                 <label>Notification Type</label>
                 <select name="notification_type" required>
                     <option value="">-- Select --</option>
-                    <optgroup label="Admin Alerts (→ jhehaul@gmail.com)">
-                        <option value="admin_new_customer">Admin: New Customer Signup</option>
-                        <option value="admin_new_hauler">Admin: New Hauler Signup</option>
-                        <option value="admin_new_job">Admin: New Job Posted</option>
-                        <option value="admin_new_bid">Admin: New Bid Submitted</option>
-                        <option value="admin_bid_accepted">Admin: Bid Accepted</option>
-                        <option value="admin_deposit_paid">Admin: Deposit Paid</option>
-                        <option value="admin_job_completed">Admin: Job Completed</option>
-                        <option value="admin_job_cancelled">Admin: Job Cancelled</option>
+                    <optgroup label="Admin Alerts">
+                        <option value="admin_new_customer">Admin: New User Signup</option>
+                        <option value="admin_new_job">Admin: New Delivery Request</option>
                         <option value="admin_user_deleted">Admin: User Deleted Account</option>
-                        <option value="admin_job_expired">Admin: Job Auto-Expired</option>
                     </optgroup>
-                    <optgroup label="Customer Notifications">
-                        <option value="new_bid">Customer: New Bid Received</option>
-                        <option value="bid_accepted_confirm">Customer: Bid Accepted Confirmation</option>
-                        <option value="customer_job_completed">Customer: Job Completed</option>
-                        <option value="customer_bid_reminder_24h">Customer: 24h Reminder (Bids Waiting)</option>
-                        <option value="customer_bid_reminder_48h">Customer: 48h Warning (Job Expiring)</option>
-                    </optgroup>
-                    <optgroup label="Hauler Notifications">
-                        <option value="bid_accepted">Hauler: Bid Accepted</option>
-                        <option value="bid_rejected">Hauler: Bid Not Selected</option>
-                        <option value="deposit_paid">Hauler: Deposit Paid (Address Unlocked)</option>
-                        <option value="hauler_job_cancelled">Hauler: Job Cancelled</option>
-                        <option value="new_job_nearby">Hauler: New Job Nearby</option>
+                    <optgroup label="User Notifications">
+                        <option value="new_bid">User: New Message Received</option>
+                        <option value="customer_job_completed">User: Delivery Completed</option>
                     </optgroup>
                 </select>
             </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <button type="submit" class="btn btn-primary">Send Test Email</button>
-            <a href="{{ url_for('admin_notifications') }}" style="font-size:0.85rem;color:#3498db;">View delivery log →</a>
-        </div>
+        <button type="submit" class="btn btn-primary">Send Test Email</button>
     </form>
 </div>
 
-<!-- Recent Accepted Bids Activity Feed -->
-{% if recent_accepted %}
-<div class="section-header">
-    <span class="section-title">🤝 Recently Accepted Bids ({{ accepted_bids }} total)</span>
-</div>
-<div class="card" style="padding:0;overflow:hidden;">
-    {% for job in recent_accepted %}
-    <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;{% if loop.last %}border-bottom:none;{% endif %}">
-        <div style="flex-shrink:0;width:38px;height:38px;border-radius:50%;background:#fff7ed;border:2px solid #fed7aa;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🤝</div>
-        <div style="flex:1;min-width:180px;">
-            <div style="font-weight:700;font-size:0.92rem;color:#1a202c;">
-                Job #{{ job.id }} — {{ job.customer_name }}
-            </div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">
-                Hauler: <strong style="color:#4a5568;">{{ job.accepted_hauler }}</strong>
-                &nbsp;·&nbsp; Quote: <strong style="color:#ea580c;">${{ "%.2f"|format(job.accepted_quote or 0) }}</strong>
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            {% if job.status == 'completed' %}
-            <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✓ Completed</span>
-            {% elif job.deposit_paid %}
-            <span style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">💳 Deposit Paid</span>
-            {% else %}
-            <span style="background:#fef9c3;color:#92400e;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">⏳ Awaiting Deposit</span>
-            {% endif %}
-            <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-outline btn-sm" style="font-size:0.78rem;padding:3px 10px;">View →</a>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- All Jobs -->
-<div class="section-header" id="jobs">
-    <span class="section-title">All Jobs ({{ jobs|length }})</span>
-</div>
-{% if jobs %}
-{% for job in jobs %}
-<div class="card">
-    <div class="card-header">
-        <div>
-            <h4 style="margin-bottom:4px;">Job #{{ job.id }} — {{ job.customer_name }}</h4>
-            <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
-            {% if job.bids %}
-            <span style="display:inline-block;margin-left:6px;background:#1565c0;color:#fff;font-size:0.76rem;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle;">
-                {{ job.bids|length }} bid{% if job.bids|length != 1 %}s{% endif %}
-            </span>
-            {% endif %}
-            {% if job.photos %}
-            <span style="display:inline-block;margin-left:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:0.76rem;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle;">
-                📷 {{ job.photos|length }} photo{% if job.photos|length != 1 %}s{% endif %}
-            </span>
-            {% endif %}
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            {% if job.bids and job.status in ['open', 'bidding', 'accepted'] %}
-            <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-success btn-sm">Review Bids →</a>
-            {% else %}
-            <a href="{{ url_for('customer_job_detail', job_id=job.id) }}" class="btn btn-primary btn-sm">View Job</a>
-            {% endif %}
-            {% if job.status == 'expired' %}
-            <form method="POST" action="{{ url_for('admin_reactivate_job', job_id=job.id) }}" style="margin:0;">
-                <button type="submit" class="btn btn-outline btn-sm" style="color:#1565c0;border-color:#1565c0;">♻ Reactivate</button>
-            </form>
-            {% endif %}
-            <form method="POST" action="{{ url_for('admin_delete_job', job_id=job.id) }}"
-                  onsubmit="return confirm('Delete job #{{ job.id }}?');">
-                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-            </form>
-        </div>
-    </div>
-    <hr>
-    <p><strong>Description:</strong> {{ job.job_description[:200] }}{% if job.job_description|length > 200 %}…{% endif %}</p>
-    {% if job.photos %}
-    <div style="margin:8px 0 4px;">
-        <span style="font-size:0.82rem;font-weight:700;color:#4a5568;">📷 Customer Photos ({{ job.photos|length }})</span>
-        {% set db_photos = job.photos | selectattr('data') | list %}
-        {% if db_photos | length < job.photos | length %}
-        <span style="font-size:0.75rem;color:#c2410c;margin-left:8px;">⚠️ {{ job.photos|length - db_photos|length }} photo(s) pre-date DB storage — may not display</span>
-        {% endif %}
-    </div>
-    <div class="photo-grid" style="margin:6px 0 12px;">
-        {% for photo in job.photos %}
-        <img src="{{ photo.storage_url or (url_for('uploaded_file_db', photo_id=photo.id) if photo.data else url_for('uploaded_file', filename=photo.filename)) }}"
-             alt="Job photo {{ loop.index }}"
-             onclick="window.open(this.src,'_blank')"
-             onerror="this.outerHTML='<div class=\'photo-broken\'><div class=\'photo-broken-icon\'>🖼️</div><div>Photo unavailable</div></div>'">
-        {% endfor %}
-    </div>
-    {% endif %}
-    <p><strong>Address:</strong>
-        {% if job.deposit_paid %}{{ job.pickup_address }}{% else %}<span style="color:#a0aec0;">🔒 Hidden until deposit paid</span>{% endif %}
-    </p>
-    <p><strong>ZIP:</strong> {{ job.pickup_zip or 'N/A' }}</p>
-    {% if job.accepted_hauler %}
-    <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin:8px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-        <span style="font-size:1.1rem;">🤝</span>
-        <div>
-            <span style="font-weight:700;color:#ea580c;">Bid Accepted</span>
-            <span style="color:#4a5568;margin-left:8px;">{{ job.accepted_hauler }}</span>
-            <span style="background:#ea580c;color:#fff;font-weight:700;font-size:0.82rem;padding:2px 10px;border-radius:20px;margin-left:8px;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
-        </div>
-        {% if job.deposit_paid %}
-        <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 9px;border-radius:20px;">✓ Deposit Paid</span>
-        {% else %}
-        <span style="background:#fef9c3;color:#92400e;font-size:0.78rem;font-weight:700;padding:2px 9px;border-radius:20px;">⏳ Awaiting Deposit</span>
-        {% endif %}
-    </div>
-    {% endif %}
-    <p style="font-size:0.82rem;color:#a0aec0;margin-top:4px;">Posted: {{ job.created_at | ct('%b %d, %Y %I:%M %p CT') or 'N/A' }}</p>
-    {% if job.bids %}
-    <hr>
-    <p style="font-weight:600;margin-bottom:6px;">Bids ({{ job.bids|length }})</p>
-    {% for bid in job.bids %}
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 4px 12px;flex-wrap:wrap;">
-        {% if bid.status == 'accepted' %}
-        <span style="background:#fff7ed;border:1px solid #fed7aa;color:#ea580c;font-size:0.75rem;font-weight:700;padding:1px 8px;border-radius:12px;">✓ ACCEPTED</span>
-        {% else %}
-        <span style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:1px 8px;border-radius:12px;">pending</span>
-        {% endif %}
-        <span style="font-size:0.88rem;color:#4a5568;">{{ bid.hauler_name }}</span>
-        <span style="font-weight:700;font-size:0.88rem;">${{ "%.2f"|format(bid.quote_amount) }}</span>
-    </div>
-    {% endfor %}
-    {% endif %}
-    {% if job.status in ['open', 'bidding'] %}
-    <hr>
-    <details style="margin-top:6px;">
-        <summary style="cursor:pointer;color:#3498db;font-weight:600;font-size:0.9rem;">Submit Test Bid</summary>
-        <form method="POST" action="{{ url_for('admin_test_bid', job_id=job.id) }}" style="margin-top:12px;">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                <div style="flex:1;min-width:140px;" class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.82rem;">Hauler Name</label>
-                    <input type="text" name="hauler_name" required value="Test Hauler">
-                </div>
-                <div style="flex:1;min-width:110px;" class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.82rem;">Quote ($)</label>
-                    <input type="number" name="quote_amount" step="0.01" required value="150.00">
-                </div>
-                <div style="flex:2;min-width:180px;" class="form-group" style="margin-bottom:0">
-                    <label style="font-size:0.82rem;">Message (optional)</label>
-                    <input type="text" name="message" placeholder="I can do this job today">
-                </div>
-                <button type="submit" class="btn btn-success btn-sm">Submit Bid</button>
-            </div>
-        </form>
-    </details>
-    {% endif %}
-</div>
-{% endfor %}
-{% else %}
-<div class="card">
-    <div class="empty-state">
-        <div class="empty-icon">📦</div>
-        <p>No jobs posted yet.</p>
-    </div>
-</div>
-{% endif %}
-
-<!-- User Management Cards -->
-<div style="margin-top:32px;margin-bottom:8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">User Management</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:6px;">
-    <a href="{{ url_for('admin_customers') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(52,152,219,0.15)'" onmouseout="this.style.boxShadow=''">
-        <div style="font-size:2.4rem;line-height:1;">👤</div>
-        <div>
-            <div style="font-size:1.8rem;font-weight:800;color:#3498db;line-height:1;">{{ total_customers }}</div>
-            <div style="font-weight:700;color:#1a202c;margin-top:2px;">Customers</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all customer accounts →</div>
-        </div>
-    </a>
-    <a href="{{ url_for('admin_requests') }}" class="card" style="text-decoration:none;display:flex;align-items:center;gap:18px;padding:20px 24px;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(139,92,246,0.15)'" onmouseout="this.style.boxShadow=''">
-        <div style="font-size:2.4rem;line-height:1;">📋</div>
-        <div>
-            <div style="font-size:1.8rem;font-weight:800;color:#7c3aed;line-height:1;">{{ total_jobs }}</div>
-            <div style="font-weight:700;color:#1a202c;margin-top:2px;">All Requests</div>
-            <div style="font-size:0.82rem;color:#718096;margin-top:2px;">View &amp; manage all service requests →</div>
-        </div>
-    </a>
-</div>
-
-<!-- Pending / No Role -->
-{% if pending_users %}
-<div class="card" style="border-left:4px solid #e2e8f0;padding:14px 20px;margin-top:10px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <span style="font-weight:700;color:#718096;font-size:0.9rem;">⏳ Pending — No Role Selected ({{ pending_users|length }})</span>
-    </div>
-    {% for user in pending_users %}
-    <div class="user-row" style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
-        <div class="user-meta">
-            <div class="user-name" style="font-size:0.9rem;">{{ user.first_name or 'Unknown' }} {{ user.last_name or '' }}</div>
-            <div class="user-email" style="font-size:0.82rem;">{{ user.email or 'No email' }}</div>
-            <div class="user-detail" style="font-size:0.78rem;">
-                Joined {{ user.created_at | ct or 'N/A' }}
-            </div>
-        </div>
-        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}"
-              onsubmit="return confirm('Delete this user and all their data?');">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-        </form>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
+<script>
+function shareInvite(type) {
+    var baseUrl = window.location.origin + '/';
+    var url = type === 'customer' ? baseUrl + 'invite/customer' : baseUrl + 'invite';
+    var title = 'JHE Haul Marketplace';
+    var text = 'Buy, sell, and get it delivered — JHE Haul Marketplace!';
+    if (navigator.share) {
+        navigator.share({ title: title, text: text, url: url });
+    } else {
+        window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
+    }
+}
+</script>
 {% endblock %}

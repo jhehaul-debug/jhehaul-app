@@ -517,6 +517,14 @@ with app.app_context():
         db.session.rollback()
         logging.info("Table migration (user_blocks) skipped: %s", _e)
 
+    try:
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE"))
+        db.session.commit()
+        logging.info("Column migration: users.is_suspended ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.is_suspended) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

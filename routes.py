@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -1678,92 +1678,51 @@ def customer_dashboard():
 @app.route("/admin")
 @require_admin
 def admin_dashboard():
-    total_users = User.query.count()
-    total_customers = User.query.filter_by(user_type='customer').count()
-    total_haulers = User.query.filter_by(user_type='hauler').count()
-    total_jobs = Job.query.count()
-    open_jobs = Job.query.filter_by(status='open').count()
-    active_jobs = Job.query.filter(Job.status.in_(['accepted', 'deposit_paid'])).count()
-    completed_jobs = Job.query.filter_by(status='completed').count()
-    cancelled_jobs = Job.query.filter_by(status='cancelled').count()
-    expired_jobs = Job.query.filter_by(status='expired').count()
-    total_bids = Bid.query.count()
-    accepted_bids = Bid.query.filter_by(status='accepted').count()
-    pending_bids = (Bid.query
-                    .join(Job, Bid.job_id == Job.id)
-                    .filter(Job.status.in_(['open', 'bidding']))
-                    .count())
-    total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status == 'completed').scalar() or 0
-
-    pending_users = User.query.filter(
-        User.user_type == None, User.is_admin == False
-    ).order_by(User.created_at.desc()).all()
-    jobs = Job.query.order_by(Job.id.desc()).all()
-    recent_accepted = (Job.query
-                       .filter(Job.accepted_hauler_id != None)
-                       .order_by(Job.id.desc())
-                       .limit(8)
-                       .all())
-
     import os as _os
-    spaces_configured = bool(_os.environ.get("SPACES_KEY"))
-
     from models import SmsLog as _SmsLog
+
+    # Marketplace stats
+    total_users = User.query.count()
+    active_listings = Listing.query.filter_by(status='active').count()
+    pending_listings = Listing.query.filter(
+        db.or_(Listing.status == 'pending', Listing.moderation_status == 'pending')
+    ).count()
+    sold_items = Listing.query.filter_by(status='sold').count()
+    reported_listings = ListingReport.query.filter_by(status='pending').count()
+    total_listings = Listing.query.count()
+
+    # Recent activity
+    recent_listings = Listing.query.order_by(Listing.created_at.desc()).limit(8).all()
+    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    recent_sold = (Listing.query.filter_by(status='sold')
+                   .order_by(Listing.sold_at.desc()).limit(5).all())
+    pending_reports = (ListingReport.query.filter_by(status='pending')
+                       .order_by(ListingReport.created_at.desc()).limit(5).all())
+
+    categories_count = Category.query.count()
+
+    # SMS/infra stats
     sms_sent_total = _SmsLog.query.filter_by(status='sent').count()
     sms_failed_total = _SmsLog.query.filter_by(status='failed').count()
     twilio_configured = bool(_os.environ.get("TWILIO_ACCOUNT_SID"))
-
-    reviewing_count = Job.query.filter_by(status='reviewing').count()
-    quoted_count = Job.query.filter_by(status='quoted').count()
-    waiting_payment_count = Job.query.filter_by(status='waiting_for_payment').count()
-    scheduled_count = Job.query.filter_by(status='scheduled').count()
-    in_progress_count = Job.query.filter_by(status='in_progress').count()
-    new_requests = (Job.query.filter_by(status='reviewing')
-                    .order_by(Job.id.desc()).limit(5).all())
-    pending_quote_jobs = (Job.query.filter_by(status='quoted')
-                          .order_by(Job.id.desc()).limit(8).all())
-    accepted_scheduled_jobs = (Job.query
-                                .filter(Job.status.in_(['scheduled', 'in_progress', 'waiting_for_payment']))
-                                .order_by(Job.id.desc()).limit(8).all())
-    today_str = datetime.now().strftime('%Y-%m-%d')
-    todays_schedule = (Job.query
-                       .filter(Job.status.in_(['scheduled', 'in_progress']),
-                               Job.preferred_date == today_str)
-                       .order_by(Job.preferred_time.asc()).all())
-    recent_completed_jobs = (Job.query.filter_by(status='completed')
-                             .order_by(Job.id.desc()).limit(5).all())
+    spaces_configured = bool(_os.environ.get("SPACES_KEY"))
 
     return render_template('admin_dashboard.html',
-                           spaces_configured=spaces_configured,
+                           total_users=total_users,
+                           active_listings=active_listings,
+                           pending_listings=pending_listings,
+                           sold_items=sold_items,
+                           reported_listings=reported_listings,
+                           total_listings=total_listings,
+                           recent_listings=recent_listings,
+                           recent_users=recent_users,
+                           recent_sold=recent_sold,
+                           pending_reports=pending_reports,
+                           categories_count=categories_count,
                            sms_sent_total=sms_sent_total,
                            sms_failed_total=sms_failed_total,
                            twilio_configured=twilio_configured,
-                           total_users=total_users,
-                           total_customers=total_customers,
-                           total_haulers=total_haulers,
-                           total_jobs=total_jobs,
-                           open_jobs=open_jobs,
-                           active_jobs=active_jobs,
-                           completed_jobs=completed_jobs,
-                           cancelled_jobs=cancelled_jobs,
-                           expired_jobs=expired_jobs,
-                           total_bids=total_bids,
-                           accepted_bids=accepted_bids,
-                           pending_bids=pending_bids,
-                           total_revenue=total_revenue,
-                           jobs=jobs,
-                           recent_accepted=recent_accepted,
-                           pending_users=pending_users,
-                           reviewing_count=reviewing_count,
-                           quoted_count=quoted_count,
-                           waiting_payment_count=waiting_payment_count,
-                           scheduled_count=scheduled_count,
-                           in_progress_count=in_progress_count,
-                           new_requests=new_requests,
-                           pending_quote_jobs=pending_quote_jobs,
-                           accepted_scheduled_jobs=accepted_scheduled_jobs,
-                           todays_schedule=todays_schedule,
-                           recent_completed_jobs=recent_completed_jobs)
+                           spaces_configured=spaces_configured)
 
 @app.route("/admin/customers")
 @require_admin
@@ -2137,10 +2096,233 @@ def admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     flash(f"{user_name}'s account has been deleted.", "success")
-    if user_type == 'hauler':
-        return redirect(url_for('admin_haulers'))
-    return redirect(url_for('admin_customers'))
+    return redirect(url_for('admin_users'))
 
+
+# ── Admin: Listings ────────────────────────────────────────────────────────
+
+@app.route("/admin/listings")
+@require_admin
+def admin_listings():
+    q = request.args.get('q', '').strip()
+    status_filter = request.args.get('status', '')
+    category_filter = request.args.get('category', '')
+
+    query = Listing.query
+    if q:
+        query = query.filter(Listing.title.ilike(f'%{q}%'))
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    if category_filter:
+        try:
+            query = query.filter_by(category_id=int(category_filter))
+        except (ValueError, TypeError):
+            pass
+
+    listings = query.order_by(Listing.created_at.desc()).limit(200).all()
+    categories = Category.query.order_by(Category.display_order).all()
+    total = Listing.query.count()
+    return render_template('admin_listings.html',
+                           listings=listings, categories=categories,
+                           total=total, q=q, status_filter=status_filter,
+                           category_filter=category_filter)
+
+
+@app.route("/admin/listings/<int:listing_id>/approve", methods=["POST"])
+@require_admin
+def admin_listing_approve(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    listing.moderation_status = 'approved'
+    if listing.status == 'pending':
+        listing.status = 'active'
+    db.session.commit()
+    flash(f'Listing "{listing.title}" approved.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>/hide", methods=["POST"])
+@require_admin
+def admin_listing_hide(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    listing.moderation_status = 'flagged'
+    listing.status = 'removed'
+    db.session.commit()
+    flash(f'Listing "{listing.title}" hidden.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>/remove", methods=["POST"])
+@require_admin
+def admin_listing_remove(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    listing.moderation_status = 'removed'
+    listing.status = 'removed'
+    db.session.commit()
+    flash(f'Listing "{listing.title}" removed.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>/sold", methods=["POST"])
+@require_admin
+def admin_listing_mark_sold(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    listing.status = 'sold'
+    listing.sold_at = datetime.now()
+    db.session.commit()
+    flash(f'Listing "{listing.title}" marked as sold.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+# ── Admin: Users ───────────────────────────────────────────────────────────
+
+@app.route("/admin/users")
+@require_admin
+def admin_users():
+    q = request.args.get('q', '').strip()
+    query = User.query
+    if q:
+        query = query.filter(
+            db.or_(
+                User.first_name.ilike(f'%{q}%'),
+                User.last_name.ilike(f'%{q}%'),
+                User.email.ilike(f'%{q}%')
+            )
+        )
+    users = query.order_by(User.created_at.desc()).all()
+    listing_counts = {u.id: Listing.query.filter_by(seller_id=u.id).count() for u in users}
+    total = len(users)
+    return render_template('admin_users.html', users=users, total=total,
+                           listing_counts=listing_counts, q=q)
+
+
+@app.route("/admin/users/<string:user_id>/suspend", methods=["POST"])
+@require_admin
+def admin_user_suspend(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        flash("Admin accounts cannot be suspended.", "error")
+        return redirect(url_for('admin_users'))
+    user.is_suspended = True
+    db.session.commit()
+    name = ((user.first_name or '') + ' ' + (user.last_name or '')).strip() or user.email
+    flash(f"{name}'s account suspended.", "success")
+    return redirect(url_for('admin_users'))
+
+
+@app.route("/admin/users/<string:user_id>/restore", methods=["POST"])
+@require_admin
+def admin_user_restore(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_suspended = False
+    db.session.commit()
+    name = ((user.first_name or '') + ' ' + (user.last_name or '')).strip() or user.email
+    flash(f"{name}'s account restored.", "success")
+    return redirect(url_for('admin_users'))
+
+
+# ── Admin: Reports ─────────────────────────────────────────────────────────
+
+@app.route("/admin/reports")
+@require_admin
+def admin_reports():
+    status_filter = request.args.get('status', 'pending')
+    query = ListingReport.query
+    if status_filter and status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    reports = query.order_by(ListingReport.created_at.desc()).all()
+    pending_count = ListingReport.query.filter_by(status='pending').count()
+    return render_template('admin_reports.html', reports=reports,
+                           status_filter=status_filter, pending_count=pending_count)
+
+
+@app.route("/admin/reports/<int:report_id>/dismiss", methods=["POST"])
+@require_admin
+def admin_report_dismiss(report_id):
+    report = ListingReport.query.get_or_404(report_id)
+    report.status = 'resolved'
+    db.session.commit()
+    flash("Report dismissed.", "success")
+    return redirect(url_for('admin_reports'))
+
+
+@app.route("/admin/reports/<int:report_id>/remove-listing", methods=["POST"])
+@require_admin
+def admin_report_remove_listing(report_id):
+    report = ListingReport.query.get_or_404(report_id)
+    listing = Listing.query.get(report.listing_id)
+    if listing:
+        listing.status = 'removed'
+        listing.moderation_status = 'removed'
+    report.status = 'resolved'
+    db.session.commit()
+    flash("Listing removed and report resolved.", "success")
+    return redirect(url_for('admin_reports'))
+
+
+# ── Admin: Categories ──────────────────────────────────────────────────────
+
+@app.route("/admin/categories")
+@require_admin
+def admin_categories():
+    categories = Category.query.order_by(Category.display_order, Category.name).all()
+    listing_counts = {c.id: Listing.query.filter_by(category_id=c.id).count() for c in categories}
+    return render_template('admin_categories.html', categories=categories,
+                           listing_counts=listing_counts)
+
+
+@app.route("/admin/categories/add", methods=["POST"])
+@require_admin
+def admin_category_add():
+    import re
+    name = request.form.get('name', '').strip()
+    icon = request.form.get('icon', '').strip()
+    display_order = request.form.get('display_order', 0)
+    if not name:
+        flash("Category name is required.", "error")
+        return redirect(url_for('admin_categories'))
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    base_slug = slug
+    i = 1
+    while Category.query.filter_by(slug=slug).first():
+        slug = f"{base_slug}-{i}"
+        i += 1
+    cat = Category(name=name, slug=slug, icon=icon or None,
+                   display_order=int(display_order) if display_order else 0)
+    db.session.add(cat)
+    db.session.commit()
+    flash(f'Category "{name}" added.', 'success')
+    return redirect(url_for('admin_categories'))
+
+
+@app.route("/admin/categories/<int:cat_id>/edit", methods=["POST"])
+@require_admin
+def admin_category_edit(cat_id):
+    cat = Category.query.get_or_404(cat_id)
+    name = request.form.get('name', '').strip()
+    icon = request.form.get('icon', '').strip()
+    display_order = request.form.get('display_order', 0)
+    if name:
+        cat.name = name
+    if icon:
+        cat.icon = icon
+    cat.display_order = int(display_order) if display_order else 0
+    db.session.commit()
+    flash(f'Category "{cat.name}" updated.', 'success')
+    return redirect(url_for('admin_categories'))
+
+
+@app.route("/admin/categories/<int:cat_id>/toggle", methods=["POST"])
+@require_admin
+def admin_category_toggle(cat_id):
+    cat = Category.query.get_or_404(cat_id)
+    cat.is_active = not cat.is_active
+    db.session.commit()
+    state = 'enabled' if cat.is_active else 'disabled'
+    flash(f'Category "{cat.name}" {state}.', 'success')
+    return redirect(url_for('admin_categories'))
+
+
+# ── Admin: Analytics ───────────────────────────────────────────────────────
 
 @app.route("/admin/analytics")
 @require_admin
@@ -2208,7 +2390,41 @@ def admin_analytics():
     daily_signup_labels = [str(r[0]) for r in _ds]
     daily_signup_values = [r[1] for r in _ds]
 
-    # ── Marketplace stats ──────────────────────────────────────────────────────
+    # ── Marketplace listing stats ──────────────────────────────────────────────
+    total_listings_a     = Listing.query.count()
+    active_listings_a    = Listing.query.filter_by(status='active').count()
+    sold_listings_a      = Listing.query.filter_by(status='sold').count()
+    pending_listings_a   = Listing.query.filter(
+        db.or_(Listing.status == 'pending', Listing.moderation_status == 'pending')
+    ).count()
+    removed_listings_a   = Listing.query.filter_by(status='removed').count()
+
+    # Listings by category
+    listings_by_cat = db.session.execute(db.text("""
+        SELECT c.name, COUNT(l.id) AS cnt
+        FROM categories c
+        LEFT JOIN listings l ON l.category_id = c.id AND l.status = 'active'
+        WHERE c.is_active = TRUE
+        GROUP BY c.id, c.name
+        ORDER BY cnt DESC
+        LIMIT 15
+    """)).fetchall()
+    cat_labels = json.dumps([r[0] for r in listings_by_cat])
+    cat_values = json.dumps([r[1] for r in listings_by_cat])
+
+    # Daily listings last 30 days
+    _dl = db.session.execute(
+        db.text("SELECT DATE(created_at) AS d, COUNT(*) AS c FROM listings WHERE created_at >= :s GROUP BY DATE(created_at) ORDER BY d"),
+        {"s": month_ago}
+    ).fetchall()
+    daily_listing_labels = [str(r[0]) for r in _dl]
+    daily_listing_values = [r[1] for r in _dl]
+
+    # Listing status chart
+    listing_status_labels = json.dumps(['Active', 'Pending', 'Sold', 'Removed'])
+    listing_status_values = json.dumps([active_listings_a, pending_listings_a, sold_listings_a, removed_listings_a])
+
+    # ── Legacy job stats (kept for historical reference) ───────────────────────
     total_jobs     = Job.query.count()
     open_jobs      = Job.query.filter_by(status='open').count()
     active_jobs    = Job.query.filter(Job.status.in_(['accepted','deposit_paid'])).count()
@@ -2221,7 +2437,6 @@ def admin_analytics():
     ).scalar() or 0
     total_revenue = db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0
 
-    # Job status chart
     job_status_labels = ['Open','Active','Completed','Cancelled','Expired']
     job_status_values = [open_jobs, active_jobs, completed_jobs, cancelled_jobs, expired_jobs]
 
@@ -2436,6 +2651,18 @@ def admin_analytics():
         new_today=new_today, new_week=new_week, active_users=active_users,
         daily_signup_labels=json.dumps(daily_signup_labels),
         daily_signup_values=json.dumps(daily_signup_values),
+        # Marketplace listing stats
+        total_listings_a=total_listings_a,
+        active_listings_a=active_listings_a,
+        sold_listings_a=sold_listings_a,
+        pending_listings_a=pending_listings_a,
+        removed_listings_a=removed_listings_a,
+        cat_labels=cat_labels, cat_values=cat_values,
+        daily_listing_labels=json.dumps(daily_listing_labels),
+        daily_listing_values=json.dumps(daily_listing_values),
+        listing_status_labels=listing_status_labels,
+        listing_status_values=listing_status_values,
+        # Legacy job stats
         total_jobs=total_jobs, open_jobs=open_jobs, active_jobs=active_jobs,
         completed_jobs=completed_jobs, cancelled_jobs=cancelled_jobs, expired_jobs=expired_jobs,
         total_bids=total_bids, bids_accepted=bids_accepted,

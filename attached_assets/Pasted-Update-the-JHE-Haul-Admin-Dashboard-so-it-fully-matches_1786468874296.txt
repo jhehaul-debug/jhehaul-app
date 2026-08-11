@@ -1,0 +1,160 @@
+Update the JHE Haul Admin Dashboard so it fully matches the new JHE Haul marketplace model.
+
+IMPORTANT:
+Do NOT rebuild the application from scratch.
+Do NOT break existing authentication, database connections, photo storage, messaging, user accounts, or working marketplace functionality.
+Preserve existing data.
+Make the changes carefully within the existing application.
+
+The current Admin Dashboard still contains features from the old hauling/job-bidding version of JHE Haul. Remove or retire those old admin elements from the visible marketplace admin interface.
+
+REMOVE FROM THE ADMIN DASHBOARD:
+
+* Reviewing
+* Quoted
+* Awaiting Pay
+* Scheduled
+* In Progress
+* View Requests
+* Post Test Job
+* Pickup ZIP
+* Pickup Address
+* Preferred Date
+* Preferred Time
+* Job Description
+* Job bids
+* Accepted bids
+* Hauling/service-request management
+* Old service-request statistics
+* Any other admin controls that only belong to the previous hauling/job-bidding business model
+
+Do not delete database tables or historical data simply because these elements are removed from the interface.
+
+REBUILD THE ADMIN DASHBOARD AROUND THE MARKETPLACE.
+
+TOP SUMMARY CARDS:
+
+* Total Users
+* Active Listings
+* Pending Listings
+* Sold Items
+* Reported Listings
+* Marketplace Revenue
+
+ADMIN MANAGEMENT SECTIONS:
+
+1. LISTINGS
+
+* View all listings
+* Search listings
+* Filter by category/status
+* View listing details and photos
+* Approve listing
+* Hide listing
+* Remove listing
+* Mark listing sold if necessary
+* View seller associated with listing
+
+2. USERS
+
+* View all users
+* Search users
+* View user profile
+* View user’s listings
+* View account status
+* Suspend/restore account
+* Admin role management where appropriate
+
+3. REPORTS & MODERATION
+
+* Reported listings
+* Reported users
+* Reason for report
+* Review report
+* Dismiss report
+* Remove listing
+* Suspend user when necessary
+
+4. MARKETPLACE ACTIVITY
+
+* New listings
+* Recently sold items
+* New users
+* Recent messages/activity where administratively appropriate
+
+5. CATEGORIES
+
+* View categories
+* Add category
+* Edit category
+* Disable category
+* Do not delete existing listing data when changing categories
+
+6. ANALYTICS
+    Keep the existing Analytics button but update analytics for the marketplace:
+
+* Total listings
+* Active listings
+* Sold listings
+* New users
+* Listings by category
+* Marketplace activity
+* Revenue/fees when applicable
+
+7. ADMIN QUICK ACTIONS
+    Replace the old Quick Actions with:
+
+* Manage Listings
+* Manage Users
+* Review Reports
+* Manage Categories
+* Send Notification
+* Analytics
+
+PHOTO STORAGE:
+Keep the existing database-backed photo storage functionality. Do not break it.
+
+MOBILE DESIGN:
+The Admin Dashboard must remain fully mobile responsive.
+Use clean cards and sections, but reduce unnecessary oversized cards so more useful information fits on the screen.
+Keep buttons large enough for mobile use.
+
+ADMIN NAVIGATION:
+Create admin-specific navigation while the user is inside the Admin Dashboard:
+
+* Dashboard
+* Listings
+* Users
+* Reports
+* Settings
+
+Provide an obvious “View Marketplace” option that returns the admin to the normal JHE Haul marketplace.
+
+Do not expose admin controls to regular users.
+
+CLEANUP:
+Search the Admin Dashboard templates/routes for old hauling terminology and replace/remove it where it is no longer appropriate for the marketplace.
+
+Do NOT remove historical backend data or perform destructive database migrations.
+
+TEST BEFORE FINISHING:
+
+* Admin login
+* Admin dashboard
+* Marketplace homepage
+* Browse
+* Sell/create listing
+* Listing photos
+* Messages
+* Account
+* Admin listing management
+* Admin user management
+* Mobile layout
+
+After testing successfully:
+
+1. Commit all changes.
+2. Push them to the same GitHub branch connected to DigitalOcean.
+3. Give me the commit hash.
+4. Confirm the GitHub push succeeded.
+5. Tell me whether DigitalOcean should automatically deploy this commit.

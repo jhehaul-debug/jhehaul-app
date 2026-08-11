@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Categories — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <h2 class="page-title" style="margin:0;">🗂 Manage Categories</h2>
+</div>
+
+<!-- Add category -->
+<div class="card" style="margin-bottom:18px;">
+    <h3 style="margin-bottom:14px;font-size:1rem;">➕ Add Category</h3>
+    <form method="POST" action="{{ url_for('admin_category_add') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:2;min-width:180px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Category Name *</label>
+            <input type="text" name="name" required placeholder="e.g. Musical Instruments" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+        </div>
+        <div style="flex:1;min-width:120px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Icon (emoji)</label>
+            <input type="text" name="icon" placeholder="🎸" maxlength="8" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;text-align:center;">
+        </div>
+        <div style="flex:1;min-width:100px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Display Order</label>
+            <input type="number" name="display_order" placeholder="0" min="0" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding:8px 18px;white-space:nowrap;">Add Category</button>
+    </form>
+</div>
+
+<!-- Category list -->
+{% if categories %}
+<div class="card" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;min-width:560px;">
+            <thead>
+                <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Category</th>
+                    <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">Slug</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;">Listings</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;">Order</th>
+                    <th style="text-align:center;padding:11px 14px;color:#64748b;font-weight:600;">Status</th>
+                    <th style="padding:11px 14px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for cat in categories %}
+            <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+                <td style="padding:10px 14px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.4rem;line-height:1;">{{ cat.icon or '📦' }}</span>
+                        <span style="font-weight:600;color:#1a202c;">{{ cat.name }}</span>
+                    </div>
+                </td>
+                <td style="padding:10px 14px;color:#94a3b8;font-size:0.82rem;font-family:monospace;">{{ cat.slug }}</td>
+                <td style="padding:10px 14px;text-align:center;">
+                    {% set lc = listing_counts.get(cat.id, 0) %}
+                    {% if lc > 0 %}
+                    <span style="background:#dbeafe;color:#1d4ed8;font-weight:700;padding:2px 10px;border-radius:12px;">{{ lc }}</span>
+                    {% else %}
+                    <span style="color:#cbd5e0;">0</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;text-align:center;color:#4a5568;">{{ cat.display_order }}</td>
+                <td style="padding:10px 14px;text-align:center;">
+                    {% if cat.is_active %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Active</span>
+                    {% else %}
+                    <span style="background:#f1f5f9;color:#64748b;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Disabled</span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px 14px;text-align:right;">
+                    <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+                        <!-- Edit inline -->
+                        <button onclick="document.getElementById('edit-{{ cat.id }}').style.display=document.getElementById('edit-{{ cat.id }}').style.display==='none'?'block':'none';"
+                                class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:0.78rem;">Edit</button>
+                        <form method="POST" action="{{ url_for('admin_category_toggle', cat_id=cat.id) }}" style="margin:0;">
+                            <button type="submit" class="btn btn-sm"
+                                    style="padding:4px 10px;font-size:0.78rem;border:1.5px solid #e2e8f0;background:{% if cat.is_active %}#fef3c7;color:#d97706{% else %}#dcfce7;color:#15803d{% endif %};">
+                                {% if cat.is_active %}Disable{% else %}Enable{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                    <!-- Edit form (hidden) -->
+                    <div id="edit-{{ cat.id }}" style="display:none;margin-top:10px;">
+                        <form method="POST" action="{{ url_for('admin_category_edit', cat_id=cat.id) }}"
+                              style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;background:#f8fafc;padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;">
+                            <div style="flex:2;min-width:120px;">
+                                <label style="font-size:0.76rem;color:#64748b;display:block;margin-bottom:3px;">Name</label>
+                                <input type="text" name="name" value="{{ cat.name }}" style="width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:0.85rem;">
+                            </div>
+                            <div style="width:80px;">
+                                <label style="font-size:0.76rem;color:#64748b;display:block;margin-bottom:3px;">Icon</label>
+                                <input type="text" name="icon" value="{{ cat.icon or '' }}" maxlength="8" style="width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:0.85rem;text-align:center;">
+                            </div>
+                            <div style="width:70px;">
+                                <label style="font-size:0.76rem;color:#64748b;display:block;margin-bottom:3px;">Order</label>
+                                <input type="number" name="display_order" value="{{ cat.display_order }}" min="0" style="width:100%;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:0.85rem;">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm" style="padding:6px 14px;font-size:0.82rem;">Save</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon">🗂</div>
+        <p>No categories yet.</p>
+    </div>
+</div>
+{% endif %}
+<p style="font-size:0.8rem;color:#94a3b8;margin-top:10px;">⚠️ Disabling a category hides it from the sell form but does not remove existing listings.</p>
+{% endblock %}

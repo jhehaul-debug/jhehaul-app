@@ -67,37 +67,37 @@
 </div>
 
 <!-- ─────────────────────── MARKETPLACE ANALYTICS ─────────────────────── -->
-<div style="margin:18px 0 8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Marketplace Analytics</div>
+<div style="margin:18px 0 8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Listing Analytics</div>
 <div class="stat-grid">
     <div class="stat-card blue">
-        <div class="stat-icon">📦</div>
-        <div class="stat-value" style="color:#3498db;">{{ total_jobs }}</div>
-        <div class="stat-label">Total Jobs</div>
-        <div class="stat-sub">{{ open_jobs }} open · {{ active_jobs }} active</div>
+        <div class="stat-icon">📋</div>
+        <div class="stat-value" style="color:#3498db;">{{ total_listings_a }}</div>
+        <div class="stat-label">Total Listings</div>
+        <div class="stat-sub">{{ active_listings_a }} active · {{ pending_listings_a }} pending</div>
     </div>
     <div class="stat-card green">
         <div class="stat-icon">✅</div>
-        <div class="stat-value" style="color:#27ae60;">{{ completed_jobs }}</div>
-        <div class="stat-label">Completed Jobs</div>
-        <div class="stat-sub">{{ cancelled_jobs }} cancelled</div>
+        <div class="stat-value" style="color:#27ae60;">{{ active_listings_a }}</div>
+        <div class="stat-label">Active Listings</div>
+        <div class="stat-sub">live on marketplace</div>
     </div>
     <div class="stat-card orange">
         <div class="stat-icon">🏷</div>
-        <div class="stat-value" style="color:#e67e22;">{{ total_bids }}</div>
-        <div class="stat-label">Total Bids</div>
-        <div class="stat-sub">{{ bids_accepted }} accepted</div>
+        <div class="stat-value" style="color:#e67e22;">{{ sold_listings_a }}</div>
+        <div class="stat-label">Sold Items</div>
+        <div class="stat-sub">{{ pending_listings_a }} pending review</div>
     </div>
     <div class="stat-card purple">
-        <div class="stat-icon">💰</div>
-        <div class="stat-value" style="color:#9b59b6;">${{ "%.0f"|format(total_revenue) }}</div>
-        <div class="stat-label">Total Revenue</div>
-        <div class="stat-sub">from completed jobs</div>
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value" style="color:#9b59b6;">{{ pending_listings_a }}</div>
+        <div class="stat-label">Pending</div>
+        <div class="stat-sub">awaiting approval</div>
     </div>
     <div class="stat-card" style="background:linear-gradient(135deg,#f9fafb,#f3f4f6);border-left:4px solid #9ca3af;">
-        <div class="stat-icon">⏰</div>
-        <div class="stat-value" style="color:#6b7280;">{{ expired_jobs }}</div>
-        <div class="stat-label">Expired Jobs</div>
-        <div class="stat-sub">72h inactivity</div>
+        <div class="stat-icon">🚫</div>
+        <div class="stat-value" style="color:#6b7280;">{{ removed_listings_a }}</div>
+        <div class="stat-label">Removed</div>
+        <div class="stat-sub">moderated off marketplace</div>
     </div>
 </div>
 
