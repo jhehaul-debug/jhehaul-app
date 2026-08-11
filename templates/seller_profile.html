@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ seller.first_name or 'Seller' }}{% if seller.last_name %} {{ seller.last_name[0] }}.{% endif %} — Seller Profile - JHE Haul{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:0 auto;padding:16px 16px 80px;">
+
+  <!-- Seller header card -->
+  <div class="card" style="padding:24px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <!-- Avatar -->
+      <div style="flex-shrink:0;">
+        {% if seller.profile_image_url %}
+        <img src="{{ seller.profile_image_url }}" alt="{{ seller.first_name }}"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;">
+        {% elif seller.profile_photo_data %}
+        <img src="{{ url_for('serve_profile_photo', user_id=seller.id) }}" alt="{{ seller.first_name }}"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;">
+        {% else %}
+        <div style="width:80px;height:80px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:2.2rem;">👤</div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div style="flex:1;min-width:160px;">
+        <h1 style="margin:0 0 4px;font-size:1.4rem;font-weight:800;color:#1a202c;">
+          {{ seller.first_name or 'Seller' }}{% if seller.last_name %} {{ seller.last_name[0] }}.{% endif %}
+        </h1>
+        {% if seller.city %}
+        <div style="color:#6b7280;font-size:0.9rem;margin-bottom:4px;">📍 {{ seller.city }}</div>
+        {% endif %}
+        <div style="color:#94a3b8;font-size:0.82rem;">Member since {{ seller.created_at.strftime('%B %Y') }}</div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div style="text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:#2563eb;">{{ active_count }}</div>
+          <div style="font-size:0.75rem;color:#6b7280;font-weight:600;">Active{{ ' Listing' if active_count == 1 else ' Listings' }}</div>
+        </div>
+        {% if sold_count > 0 %}
+        <div style="text-align:center;">
+          <div style="font-size:1.6rem;font-weight:800;color:#15803d;">{{ sold_count }}</div>
+          <div style="font-size:0.75rem;color:#6b7280;font-weight:600;">Sold</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Action buttons (logged-in non-owner) -->
+    {% if current_user.is_authenticated and current_user.id|string != seller.id|string %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid #f1f5f9;">
+      {% if featured_listing %}
+      <a href="{{ url_for('listing_message', listing_id=featured_listing.id) }}"
+         class="btn btn-primary btn-sm">💬 Message Seller</a>
+      {% endif %}
+      <button type="button" onclick="document.getElementById('report-user-modal').style.display='flex'"
+              class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fca5a5;">🚩 Report User</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Active listings -->
+  <h3 style="margin:0 0 12px;font-size:0.95rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;">
+    Active Listings
+    {% if active_count > 0 %}
+    <span style="font-size:0.8rem;color:#94a3b8;font-weight:400;text-transform:none;">({{ active_count }})</span>
+    {% endif %}
+  </h3>
+
+  {% if listings %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:24px;">
+    {% for listing in listings %}
+    <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" style="text-decoration:none;color:inherit;">
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;overflow:hidden;transition:box-shadow .15s,border-color .15s;"
+           onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)';this.style.borderColor='#93c5fd'"
+           onmouseout="this.style.boxShadow='';this.style.borderColor='#e5e7eb'">
+        {% set photo = listing.photos | selectattr('is_primary') | first %}
+        {% if not photo and listing.photos %}{% set photo = listing.photos[0] %}{% endif %}
+        {% if photo %}
+        <img src="{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"
+             alt="{{ listing.title }}" style="width:100%;height:130px;object-fit:cover;display:block;">
+        {% else %}
+        <div style="width:100%;height:130px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:2.2rem;">📦</div>
+        {% endif %}
+        <div style="padding:10px 12px;">
+          <div style="font-weight:600;font-size:0.87rem;color:#1a202c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ listing.title }}</div>
+          <div style="font-size:0.82rem;font-weight:700;margin-top:3px;
+            {% if listing.price_type == 'free' %}color:#15803d;{% else %}color:#2563eb;{% endif %}">
+            {% if listing.price %}${{ "{:,.0f}".format(listing.price) }}
+            {% elif listing.price_type == 'free' %}Free
+            {% else %}Make Offer{% endif %}
+          </div>
+          {% if listing.city %}
+          <div style="font-size:0.74rem;color:#9ca3af;margin-top:2px;">{{ listing.city }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px;color:#9ca3af;">
+    <div style="font-size:2rem;margin-bottom:8px;">📦</div>
+    <p style="margin:0;">No active listings right now.</p>
+    <a href="{{ url_for('marketplace') }}" style="display:inline-block;margin-top:12px;color:#2563eb;font-size:.875rem;">Browse marketplace →</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Report User modal -->
+{% if current_user.is_authenticated and current_user.id|string != seller.id|string %}
+<div id="report-user-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:16px;"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18);"
+       onclick="event.stopPropagation()">
+    <h3 style="margin:0 0 16px;font-size:1.1rem;font-weight:700;">🚩 Report this user</h3>
+    <form method="POST" action="{{ url_for('report_user', user_id=seller.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Reason</label>
+      <select name="reason" required
+              style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;margin-bottom:14px;font-size:.9rem;background:#fff;box-sizing:border-box;">
+        <option value="">Select a reason…</option>
+        <option value="Scam/Fraud">Scam / Fraud</option>
+        <option value="Harassment">Harassment</option>
+        <option value="Prohibited Item">Prohibited Item</option>
+        <option value="Misleading Listing">Misleading Listing</option>
+        <option value="Duplicate Listing">Duplicate Listing</option>
+        <option value="Other">Other</option>
+      </select>
+      <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">
+        Details <span style="font-weight:400;color:#9ca3af">(optional)</span>
+      </label>
+      <textarea name="details" placeholder="Tell us more about what happened…" maxlength="1000"
+                style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;min-height:80px;resize:vertical;font-size:.9rem;box-sizing:border-box;font-family:inherit;"></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="button" class="btn btn-outline btn-sm" style="flex:1;"
+                onclick="document.getElementById('report-user-modal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn btn-sm" style="flex:1;background:#dc2626;color:#fff;border:none;">Submit Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -31,12 +31,21 @@
             <div style="margin-bottom:8px;">
                 <span style="font-size:0.82rem;color:#64748b;font-weight:600;">Listing:</span>
                 {% if r.listing %}
-                <span style="font-weight:600;color:#1a202c;margin-left:4px;">{{ r.listing.title }}</span>
+                <a href="{{ url_for('listing_detail', listing_id=r.listing_id) }}" target="_blank"
+                   style="font-weight:600;color:#2563eb;margin-left:4px;text-decoration:none;">{{ r.listing.title }}</a>
                 <span style="color:#94a3b8;font-size:0.78rem;margin-left:4px;">(#{{ r.listing_id }}, {{ r.listing.status }})</span>
                 {% else %}
                 <span style="color:#94a3b8;font-size:0.82rem;margin-left:4px;">Listing #{{ r.listing_id }} (deleted)</span>
                 {% endif %}
             </div>
+            {% if r.listing and r.listing.seller %}
+            <div style="margin-bottom:6px;">
+                <span style="font-size:0.82rem;color:#64748b;font-weight:600;">Seller:</span>
+                <span style="margin-left:4px;font-size:0.85rem;">{{ ((r.listing.seller.first_name or '') ~ ' ' ~ (r.listing.seller.last_name or '')).strip() or r.listing.seller.email }}</span>
+                <a href="{{ url_for('admin_user_detail', user_id=r.listing.seller.id) }}"
+                   style="font-size:0.78rem;color:#2563eb;margin-left:6px;">View Profile →</a>
+            </div>
+            {% endif %}
             <div style="margin-bottom:6px;">
                 <span style="font-size:0.82rem;color:#64748b;font-weight:600;">Reported by:</span>
                 {% if r.reporter %}
@@ -54,15 +63,32 @@
             </div>
         </div>
         {% if r.status == 'pending' %}
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:140px;">
             <form method="POST" action="{{ url_for('admin_report_dismiss', report_id=r.id) }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline btn-sm" style="width:100%;white-space:nowrap;">✓ Dismiss</button>
             </form>
-            {% if r.listing and r.listing.status != 'removed' %}
-            <form method="POST" action="{{ url_for('admin_report_remove_listing', report_id=r.id) }}" style="margin:0;"
-                  onsubmit="return confirm('Remove this listing and resolve the report?');">
-                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;">🗑 Remove Listing</button>
-            </form>
+            {% if r.listing %}
+              {% if r.listing.status != 'removed' %}
+              <form method="POST" action="{{ url_for('admin_report_remove_listing', report_id=r.id) }}" style="margin:0;"
+                    onsubmit="return confirm('Remove this listing and resolve the report?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;">🗑 Remove Listing</button>
+              </form>
+              {% else %}
+              <form method="POST" action="{{ url_for('admin_report_restore_listing', report_id=r.id) }}" style="margin:0;"
+                    onsubmit="return confirm('Restore this listing?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm" style="width:100%;white-space:nowrap;background:#16a34a;color:#fff;border:none;">↩ Restore Listing</button>
+              </form>
+              {% endif %}
+              {% if r.listing.seller and not r.listing.seller.is_admin and not r.listing.seller.is_suspended %}
+              <form method="POST" action="{{ url_for('admin_report_suspend_seller', report_id=r.id) }}" style="margin:0;"
+                    onsubmit="return confirm('Suspend this seller?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;background:#7c2d12;border-color:#7c2d12;">🚫 Suspend Seller</button>
+              </form>
+              {% endif %}
             {% endif %}
         </div>
         {% endif %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}My Offers - JHE Haul{% endblock %}
+{% block content %}
+<div style="max-width:720px;margin:0 auto;padding:16px 16px 80px;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <h2 style="margin:0;font-size:1.3rem;font-weight:800;">💰 My Offers</h2>
+    {% if offers %}
+    <span style="background:#f1f5f9;color:#64748b;font-size:.8rem;font-weight:700;padding:2px 10px;border-radius:12px;">{{ offers|length }}</span>
+    {% endif %}
+  </div>
+
+  {% if offers %}
+  {% for offer in offers %}
+  {% set listing = offer.listing %}
+  {% set status = offer.status %}
+
+  {% if status == 'pending' %}{% set border_color = '#f59e0b' %}{% set bg = '#fffbeb' %}{% set badge_bg = '#fef3c7' %}{% set badge_color = '#92400e' %}{% set status_icon = '⏳' %}{% set status_label = 'Pending' %}
+  {% elif status == 'countered' %}{% set border_color = '#8b5cf6' %}{% set bg = '#faf5ff' %}{% set badge_bg = '#ede9fe' %}{% set badge_color = '#5b21b6' %}{% set status_icon = '🔄' %}{% set status_label = 'Countered' %}
+  {% elif status == 'accepted' %}{% set border_color = '#22c55e' %}{% set bg = '#f0fdf4' %}{% set badge_bg = '#dcfce7' %}{% set badge_color = '#15803d' %}{% set status_icon = '✅' %}{% set status_label = 'Accepted' %}
+  {% elif status == 'declined' %}{% set border_color = '#ef4444' %}{% set bg = '#fef2f2' %}{% set badge_bg = '#fee2e2' %}{% set badge_color = '#991b1b' %}{% set status_icon = '❌' %}{% set status_label = 'Declined' %}
+  {% elif status == 'withdrawn' %}{% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}{% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}{% set status_icon = '↩️' %}{% set status_label = 'Withdrawn' %}
+  {% else %}{% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}{% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}{% set status_icon = '•' %}{% set status_label = status.title() %}
+  {% endif %}
+
+  <div style="background:{{ bg }};border:1.5px solid {{ border_color }};border-radius:12px;padding:16px 18px;margin-bottom:12px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+
+      <!-- Listing thumbnail -->
+      {% if listing %}
+      {% set photo = listing.photos | selectattr('is_primary') | first %}
+      {% if not photo and listing.photos %}{% set photo = listing.photos[0] %}{% endif %}
+      <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" style="flex-shrink:0;">
+        {% if photo %}
+        <img src="{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"
+             alt="{{ listing.title }}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;display:block;">
+        {% else %}
+        <div style="width:72px;height:72px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">📦</div>
+        {% endif %}
+      </a>
+      {% endif %}
+
+      <!-- Info -->
+      <div style="flex:1;min-width:160px;">
+        {% if listing %}
+        <a href="{{ url_for('listing_detail', listing_id=listing.id) }}"
+           style="font-weight:700;font-size:.95rem;color:#1a202c;text-decoration:none;">{{ listing.title }}</a>
+        {% else %}
+        <span style="font-weight:700;font-size:.95rem;color:#6b7280;">Listing no longer available</span>
+        {% endif %}
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;">
+          <span style="background:{{ badge_bg }};color:{{ badge_color }};font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">
+            {{ status_icon }} {{ status_label }}
+          </span>
+          <span style="font-size:.82rem;color:#6b7280;">{{ offer.created_at.strftime('%-m/%-d/%Y') }}</span>
+        </div>
+
+        <!-- Amount info -->
+        <div style="margin-top:8px;">
+          <span style="font-size:.85rem;color:#374151;">Your offer: <strong>${{ "%.0f"|format(offer.amount) }}</strong></span>
+          {% if status == 'countered' and offer.counter_amount %}
+          <span style="font-size:.85rem;color:#5b21b6;margin-left:10px;">Seller counter: <strong>${{ "%.0f"|format(offer.counter_amount) }}</strong></span>
+          {% endif %}
+          {% if listing and listing.price %}
+          <span style="font-size:.78rem;color:#9ca3af;margin-left:10px;">Listed: ${{ "%.0f"|format(listing.price) }}</span>
+          {% endif %}
+        </div>
+
+        {% if offer.message %}
+        <div style="margin-top:6px;font-size:.82rem;color:#6b7280;font-style:italic;">"{{ offer.message | truncate(80) }}"</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    {% if listing %}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+
+      {% if status == 'countered' and offer.counter_amount %}
+      <!-- Buyer: respond to counteroffer -->
+      <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:contents;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" name="action" value="accept_counter" class="btn btn-sm"
+                style="background:#16a34a;color:#fff;border:none;"
+                onclick="return confirm('Accept the ${{ "%.0f"|format(offer.counter_amount) }} counteroffer?')">✅ Accept ${{ "%.0f"|format(offer.counter_amount) }}</button>
+        <button type="submit" name="action" value="decline_counter" class="btn btn-outline btn-sm"
+                style="color:#dc2626;border-color:#fca5a5;"
+                onclick="return confirm('Decline this counteroffer?')">❌ Decline</button>
+      </form>
+      {% endif %}
+
+      {% if status in ('pending', 'countered') %}
+      <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" name="action" value="withdraw" class="btn btn-outline btn-sm"
+                style="color:#64748b;" onclick="return confirm('Withdraw this offer?')">↩️ Withdraw</button>
+      </form>
+      {% endif %}
+
+      {% if status == 'accepted' %}
+      <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn btn-primary btn-sm">💬 Message Seller</a>
+      {% if not listing.is_property %}
+      <a href="{{ url_for('listing_request_delivery', listing_id=listing.id) }}" class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1.5px solid #86efac;">🚚 Schedule Delivery</a>
+      {% endif %}
+      {% endif %}
+
+      <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="btn btn-outline btn-sm" style="margin-left:auto;">View Listing →</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:48px 24px;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">💰</div>
+    <h3 style="margin:0 0 8px;color:#374151;">No offers yet</h3>
+    <p style="margin:0 0 20px;color:#9ca3af;font-size:.9rem;">When you make offers on listings, they'll appear here.</p>
+    <a href="{{ url_for('marketplace') }}" class="btn btn-primary">Browse Marketplace</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -853,7 +853,11 @@
               {{ listing.seller.first_name or '' }}{% if listing.seller.first_name and listing.seller.last_name %} {{ listing.seller.last_name[0] }}.{% endif %}
             </div>
             <div class="ld-seller-since">Member since {{ listing.seller.created_at.strftime('%B %Y') }}</div>
-            <div class="ld-seller-stats">{{ seller_active_count }} active listing{{ '' if seller_active_count == 1 else 's' }}</div>
+            <div class="ld-seller-stats">{{ seller_active_count }} active listing{{ '' if seller_active_count == 1 else 's' }}{% if seller_sold_count > 0 %} · {{ seller_sold_count }} sold{% endif %}</div>
+            {% if not is_owner %}
+            <a href="{{ url_for('seller_profile', user_id=listing.seller.id) }}"
+               style="display:inline-block;margin-top:5px;font-size:.8rem;color:#2563eb;text-decoration:none;font-weight:600;">View Seller Profile →</a>
+            {% endif %}
           </div>
         </div>
 
@@ -862,6 +866,66 @@
           <!-- Seller / admin always see messages inbox + edit -->
           <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 View Messages ({{ listing.conversations | length }})</a>
           <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-secondary">✏️ Edit Listing</a>
+
+          {# ── Seller: incoming offers panel (negotiable listings only) ── #}
+          {% if is_owner and listing.price_type == 'negotiable' %}
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
+            <div style="font-size:.8rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">
+              Offers {% if seller_offers %}({{ seller_offers|length }}){% endif %}
+            </div>
+            {% if seller_offers %}
+            {% for offer in seller_offers %}
+            <div style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                <div>
+                  <div style="font-weight:700;font-size:.95rem;color:#1a202c;">
+                    ${{ "%.0f"|format(offer.amount) }}
+                    {% if offer.status == 'countered' and offer.counter_amount %}
+                    <span style="font-size:.74rem;color:#5b21b6;font-weight:400;margin-left:4px;">counter: ${{ "%.0f"|format(offer.counter_amount) }}</span>
+                    {% endif %}
+                  </div>
+                  <div style="font-size:.77rem;color:#6b7280;margin-top:2px;">
+                    {{ offer.buyer.first_name or '' }}{% if offer.buyer.first_name and offer.buyer.last_name %} {{ offer.buyer.last_name[0] }}.{% endif %}
+                    · {{ offer.created_at.strftime('%b %d') }}
+                  </div>
+                  {% if offer.message %}
+                  <div style="font-size:.76rem;color:#9ca3af;font-style:italic;margin-top:2px;">"{{ offer.message|truncate(55) }}"</div>
+                  {% endif %}
+                </div>
+                <span style="font-size:.71rem;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap;flex-shrink:0;
+                  {% if offer.status == 'pending' %}background:#fef3c7;color:#92400e;
+                  {% elif offer.status == 'accepted' %}background:#dcfce7;color:#15803d;
+                  {% elif offer.status == 'countered' %}background:#ede9fe;color:#5b21b6;
+                  {% else %}background:#f1f5f9;color:#64748b;{% endif %}">
+                  {{ offer.status.title() }}
+                </span>
+              </div>
+              {% if offer.status in ('pending', 'countered') %}
+              <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}"
+                    style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if offer.status == 'pending' %}
+                <button type="submit" name="action" value="accept"
+                        style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;"
+                        onclick="return confirm('Accept this offer?')">✅ Accept</button>
+                {% endif %}
+                <button type="submit" name="action" value="decline"
+                        style="padding:6px 12px;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;">❌ Decline</button>
+                <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:130px;">
+                  <input type="number" name="counter_amount" placeholder="Counter $" min="1" step="1"
+                         style="flex:1;min-width:70px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.8rem;box-sizing:border-box;">
+                  <button type="submit" name="action" value="counter"
+                          style="padding:6px 10px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">Counter</button>
+                </div>
+              </form>
+              {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="font-size:.82rem;color:#9ca3af;text-align:center;padding:8px 0;">No offers yet.</div>
+            {% endif %}
+          </div>
+          {% endif %}
 
         {% elif listing.status == 'active' and listing.moderation_status == 'approved' %}
 
@@ -898,6 +962,30 @@
                   <div class="offer-status-label">❌ Offer Declined</div>
                   <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
                   <div class="offer-status-sub">The seller passed on this offer.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'countered' and buyer_offer.counter_amount %}
+                <div style="background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:10px;padding:16px;text-align:center;margin-top:4px;">
+                  <div style="font-size:.82rem;font-weight:700;color:#5b21b6;margin-bottom:6px;">🔄 Counteroffer Received</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:#4c1d95;">${{ "%.0f"|format(buyer_offer.counter_amount) }}</div>
+                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ "%.0f"|format(buyer_offer.amount) }} · Seller countered at ${{ "%.0f"|format(buyer_offer.counter_amount) }}</div>
+                  <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=buyer_offer.id) }}"
+                        style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" name="action" value="accept_counter"
+                            style="padding:9px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;"
+                            onclick="return confirm('Accept the ${{ "%.0f"|format(buyer_offer.counter_amount) }} counteroffer?')">✅ Accept ${{ "%.0f"|format(buyer_offer.counter_amount) }}</button>
+                    <button type="submit" name="action" value="decline_counter"
+                            style="padding:9px 14px;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;">❌ Decline</button>
+                    <button type="submit" name="action" value="withdraw"
+                            style="padding:9px 14px;background:#f8fafc;color:#64748b;border:1.5px solid #d1d5db;border-radius:8px;font-size:.82rem;cursor:pointer;"
+                            onclick="return confirm('Withdraw your offer?')">↩ Withdraw</button>
+                  </form>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'withdrawn' %}
+                <div class="offer-status-box" style="background:#f8fafc;border:1.5px solid #d1d5db;border-radius:10px;padding:14px;text-align:center;">
+                  <div class="offer-status-label" style="color:#64748b;">↩️ Offer Withdrawn</div>
+                  <div class="offer-status-sub">You withdrew your previous offer.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
               {% else %}

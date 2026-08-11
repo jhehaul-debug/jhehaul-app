@@ -1,0 +1,209 @@
+JHE HAUL — MARKETPLACE TRUST & TRANSACTION FLOW
+
+Now complete the core marketplace experience so buyers and sellers can safely move from browsing to making an offer, communicating, arranging delivery, and marking an item sold.
+
+IMPORTANT:
+Do NOT rebuild the app.
+Do NOT remove Housing & Real Estate.
+Do NOT remove Haul & Delivery.
+Do NOT break authentication, messaging, SMS, photos, admin, listings, or existing production data.
+
+1. SELLER PROFILES
+
+Every marketplace seller should have a public seller profile showing:
+
+- Profile picture
+- First name or display name
+- City, MN
+- Member since
+- Active listings
+- Sold listings count if appropriate
+- Basic trust information
+
+Do NOT publicly show:
+- phone number
+- email
+- exact street address
+
+Add:
+“View Seller Profile”
+
+2. FAVORITES / SAVED ITEMS
+
+Make sure logged-in users can:
+
+- Save a listing
+- Remove from saved
+- View all Saved Items from Account
+
+Use a heart/save icon on listing cards and listing detail pages.
+
+3. OFFERS
+
+For ordinary marketplace items, add:
+
+“Make Offer”
+
+Offer flow should allow:
+- Offer amount
+- Optional message
+
+Seller should be able to:
+- Accept
+- Decline
+- Counteroffer
+
+Buyer should be able to:
+- Accept counteroffer
+- Decline counteroffer
+- Withdraw an open offer
+
+Use marketplace language:
+Offer
+Counteroffer
+Accepted
+Declined
+
+Do NOT use Quote or Bid for ordinary marketplace items.
+
+4. LISTING STATUS
+
+Marketplace item statuses:
+
+- Active
+- Pending
+- Sold
+- Removed
+
+Seller can mark:
+Pending
+Sold
+
+When an offer is accepted, allow the seller to optionally mark the listing Pending.
+
+Once transaction is completed, seller can mark Sold.
+
+Sold listings should no longer appear as actively available but may remain visible as Sold if appropriate.
+
+5. MESSAGING
+
+Tie marketplace messages to the relevant listing when possible.
+
+Show:
+Listing title
+Listing photo
+Buyer
+Seller
+
+Do not expose personal contact information publicly.
+
+6. DELIVERY CONNECTION
+
+If an item listing supports delivery, show:
+
+🚚 Need Delivery?
+
+After a buyer/seller reaches an agreement, make it easy to open the existing Schedule Delivery flow.
+
+Automatically attach:
+- listing
+- item photo
+- buyer
+- seller
+
+Do not make users re-enter data already known.
+
+7. REPORTING & SAFETY
+
+Add or verify:
+
+Report Listing
+Report User
+
+Reasons:
+- Scam/Fraud
+- Prohibited Item
+- Misleading Listing
+- Harassment
+- Duplicate Listing
+- Other
+
+Housing listings should also retain housing-specific reporting options.
+
+Reports must appear in Admin.
+
+8. ADMIN MODERATION
+
+Admin should be able to:
+
+- View report
+- View listing
+- View seller
+- Hide listing
+- Restore listing
+- Remove listing
+- Suspend user
+- Restore user
+- Dismiss report
+
+Do not permanently delete historical records unless explicitly required.
+
+9. ACCOUNT PAGE
+
+Make sure Account has clear access to:
+
+- My Listings
+- My Offers
+- Saved Items
+- Messages
+- My Housing & Real Estate Listings
+- Delivery Requests
+- Profile Settings
+- Notification Settings
+
+10. MOBILE EXPERIENCE
+
+Test all of this on iPhone-size mobile layouts.
+
+The fixed navigation must not cover:
+- buttons
+- forms
+- listing cards
+- confirmation dialogs
+- admin controls
+
+11. FINAL TEST
+
+Test the full flow:
+
+Browse item
+→ View listing
+→ View seller
+→ Save item
+→ Make offer
+→ Counteroffer
+→ Accept
+→ Message seller
+→ Schedule delivery
+→ Mark pending
+→ Mark sold
+
+Also test:
+- Report listing
+- Report user
+- Admin moderation
+- Saved Items
+- My Offers
+- Delivery Requests
+
+Before pushing/deploying, give me:
+
+1. What was added
+2. What already existed and was reused
+3. Which files were changed
+4. Any database changes
+5. Any errors found
+6. Screens/routes created
+7. Anything still incomplete
+
+DO NOT PUSH OR DEPLOY until I review it.

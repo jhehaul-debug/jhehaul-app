@@ -557,3 +557,21 @@ class UserBlock(db.Model):
                               backref=db.backref('blocks_initiated', lazy=True))
     blocked = db.relationship('User', foreign_keys=[blocked_id],
                               backref=db.backref('blocks_received', lazy=True))
+
+
+class UserReport(db.Model):
+    """A user reporting another user to admin."""
+    __tablename__ = 'user_reports'
+    # Status values: pending | reviewed | resolved
+    id = db.Column(db.Integer, primary_key=True)
+    reported_user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    reporter_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    reason = db.Column(db.String(100), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    reported_user = db.relationship('User', foreign_keys=[reported_user_id],
+                                    backref=db.backref('reports_against', lazy=True))
+    reporter = db.relationship('User', foreign_keys=[reporter_id],
+                               backref=db.backref('user_reports_filed', lazy=True))

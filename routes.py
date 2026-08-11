@@ -1104,6 +1104,9 @@ def listing_detail(listing_id):
     seller_active_count = _L.query.filter_by(
         seller_id=listing.seller_id, status='active', moderation_status='approved'
     ).count()
+    seller_sold_count = _L.query.filter_by(
+        seller_id=listing.seller_id, status='sold'
+    ).count()
 
     # Favorite status
     is_favorited = False
@@ -1124,6 +1127,16 @@ def listing_detail(listing_id):
                        .order_by(ListingOffer.created_at.desc())
                        .first())
 
+    # Seller's incoming offers (owner view only, negotiable listings)
+    seller_offers = []
+    if is_owner and listing.price_type == 'negotiable':
+        from models import ListingOffer
+        seller_offers = (ListingOffer.query
+                         .filter_by(listing_id=listing_id)
+                         .filter(ListingOffer.status.in_(['pending', 'countered', 'accepted']))
+                         .order_by(ListingOffer.created_at.desc())
+                         .all())
+
     return render_template(
         'listing_detail.html',
         listing=listing,
@@ -1132,7 +1145,9 @@ def listing_detail(listing_id):
         is_owner=is_owner,
         is_admin=is_admin,
         seller_active_count=seller_active_count,
+        seller_sold_count=seller_sold_count,
         buyer_offer=buyer_offer,
+        seller_offers=seller_offers,
     )
 
 
@@ -1282,6 +1297,216 @@ def listing_make_offer(listing_id):
 
     flash("Your offer has been sent to the seller!", "success")
     return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+# ── Offer: Seller respond (accept / decline / counter) ─────────────────────
+
+@app.route("/listing/<int:listing_id>/offer/<int:offer_id>/respond", methods=["POST"])
+@require_login
+def offer_seller_respond(listing_id, offer_id):
+    """Seller accepts, declines, or counters a buyer offer."""
+    _check_listing_csrf()
+    from models import ListingOffer
+    offer = ListingOffer.query.get_or_404(offer_id)
+    listing = offer.listing
+
+    if listing.id != listing_id or str(current_user.id) != str(listing.seller_id):
+        abort(403)
+    if offer.status not in ('pending', 'countered'):
+        flash("This offer is no longer open.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    action = request.form.get('action', '').strip()
+    import math as _math
+
+    if action == 'accept':
+        offer.status = 'accepted'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        try:
+            from sms_service import send_sms
+            buyer = offer.buyer
+            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
+                send_sms(buyer.phone,
+                         f"✅ Your ${offer.amount:,.0f} offer on \"{listing.title[:40]}\" was accepted! "
+                         f"Message the seller to arrange pickup.",
+                         'customer_new_bid')
+        except Exception:
+            pass
+        flash("Offer accepted! The buyer has been notified.", "success")
+
+    elif action == 'decline':
+        offer.status = 'declined'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        try:
+            from sms_service import send_sms
+            buyer = offer.buyer
+            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
+                send_sms(buyer.phone,
+                         f"Your offer on \"{listing.title[:40]}\" was declined. "
+                         f"Browse more listings at JHEHaul.com.",
+                         'customer_new_bid')
+        except Exception:
+            pass
+        flash("Offer declined.", "success")
+
+    elif action == 'counter':
+        try:
+            counter_amount = float(request.form.get('counter_amount', '').strip())
+            if not _math.isfinite(counter_amount) or counter_amount <= 0 or counter_amount > 999_999_999:
+                raise ValueError
+        except (ValueError, AttributeError):
+            flash("Please enter a valid counter offer amount.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
+        offer.counter_amount = counter_amount
+        offer.status = 'countered'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        try:
+            from sms_service import send_sms
+            buyer = offer.buyer
+            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
+                send_sms(buyer.phone,
+                         f"💬 The seller countered your offer on \"{listing.title[:40]}\" "
+                         f"at ${counter_amount:,.0f}. Log in to respond.",
+                         'customer_new_bid')
+        except Exception:
+            pass
+        flash(f"Counteroffer of ${counter_amount:,.0f} sent to the buyer.", "success")
+
+    else:
+        flash("Invalid action.", "error")
+
+    return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+# ── Offer: Buyer respond to counter (accept / decline / withdraw) ────────────
+
+@app.route("/listing/<int:listing_id>/offer/<int:offer_id>/buyer-respond", methods=["POST"])
+@require_login
+def offer_buyer_respond(listing_id, offer_id):
+    """Buyer accepts a counteroffer, declines it, or withdraws their offer."""
+    _check_listing_csrf()
+    from models import ListingOffer
+    offer = ListingOffer.query.get_or_404(offer_id)
+
+    if offer.listing_id != listing_id or str(current_user.id) != str(offer.buyer_id):
+        abort(403)
+
+    action = request.form.get('action', '').strip()
+
+    if action == 'accept_counter':
+        if offer.status != 'countered' or not offer.counter_amount:
+            flash("No active counteroffer to accept.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
+        offer.amount = offer.counter_amount
+        offer.status = 'accepted'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        try:
+            from sms_service import send_sms
+            seller = offer.seller
+            if seller and seller.notify_sms and seller.sms_consent and seller.phone:
+                send_sms(seller.phone,
+                         f"✅ {current_user.first_name or 'A buyer'} accepted your ${offer.amount:,.0f} "
+                         f"counteroffer on \"{offer.listing.title[:40]}\".",
+                         'customer_new_bid')
+        except Exception:
+            pass
+        flash("You accepted the counteroffer! Contact the seller to arrange pickup.", "success")
+
+    elif action == 'decline_counter':
+        offer.status = 'declined'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        flash("Counteroffer declined.", "success")
+
+    elif action == 'withdraw':
+        if offer.status not in ('pending', 'countered'):
+            flash("This offer can no longer be withdrawn.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
+        offer.status = 'withdrawn'
+        offer.updated_at = datetime.now()
+        db.session.commit()
+        flash("Your offer has been withdrawn.", "success")
+
+    else:
+        flash("Invalid action.", "error")
+
+    return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+# ── My Offers (buyer dashboard) ──────────────────────────────────────────────
+
+@app.route("/my-offers")
+@require_login
+def my_offers():
+    """Buyer's full offer history."""
+    from models import ListingOffer
+    offers = (ListingOffer.query
+              .filter_by(buyer_id=current_user.id)
+              .order_by(ListingOffer.updated_at.desc())
+              .all())
+    return render_template('my_offers.html', offers=offers)
+
+
+# ── Seller Profile (public) ──────────────────────────────────────────────────
+
+@app.route("/seller/<user_id>")
+def seller_profile(user_id):
+    """Public seller profile — name, city, active listings, sold count."""
+    from models import Listing as _L
+    seller = User.query.get_or_404(user_id)
+
+    listings = (_L.query
+                .filter_by(seller_id=user_id, status='active', moderation_status='approved')
+                .order_by(_L.created_at.desc())
+                .limit(24)
+                .all())
+    active_count = (_L.query
+                    .filter_by(seller_id=user_id, status='active', moderation_status='approved')
+                    .count())
+    sold_count = _L.query.filter_by(seller_id=user_id, status='sold').count()
+    featured_listing = listings[0] if listings else None
+
+    return render_template('seller_profile.html',
+                           seller=seller,
+                           listings=listings,
+                           active_count=active_count,
+                           sold_count=sold_count,
+                           featured_listing=featured_listing)
+
+
+# ── Report User ──────────────────────────────────────────────────────────────
+
+@app.route("/report-user/<user_id>", methods=["POST"])
+@require_login
+def report_user(user_id):
+    """Submit a report against another user."""
+    from models import UserReport
+    _check_listing_csrf()
+    target = User.query.get_or_404(user_id)
+    if str(target.id) == str(current_user.id):
+        flash("You cannot report yourself.", "error")
+        return redirect(url_for('seller_profile', user_id=user_id))
+
+    reason = (request.form.get('reason', '') or '').strip()[:100]
+    details = (request.form.get('details', '') or '').strip()[:1000]
+    if not reason:
+        flash("Please select a reason.", "error")
+        return redirect(url_for('seller_profile', user_id=user_id))
+
+    report = UserReport(
+        reported_user_id=str(user_id),
+        reporter_id=str(current_user.id),
+        reason=reason,
+        details=details or None,
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash("Report submitted. Our team will review it shortly.", "success")
+    return redirect(url_for('seller_profile', user_id=user_id))
 
 
 @app.route("/marketplace/messages")
@@ -3897,6 +4122,29 @@ def admin_user_restore(user_id):
     return redirect(url_for('admin_users'))
 
 
+@app.route("/admin/users/<user_id>/detail")
+@require_admin
+def admin_user_detail(user_id):
+    """Admin: view a single user's profile, listings, and reports."""
+    from models import Listing as _L, UserReport, ListingReport
+    seller = User.query.get_or_404(user_id)
+    listings = _L.query.filter_by(seller_id=user_id).order_by(_L.created_at.desc()).all()
+    user_reports = (UserReport.query
+                    .filter_by(reported_user_id=str(user_id))
+                    .order_by(UserReport.created_at.desc())
+                    .all())
+    listing_reports = (db.session.query(ListingReport)
+                       .join(_L, ListingReport.listing_id == _L.id)
+                       .filter(_L.seller_id == user_id)
+                       .order_by(ListingReport.created_at.desc())
+                       .all())
+    return render_template('admin_user_detail.html',
+                           seller=seller,
+                           listings=listings,
+                           user_reports=user_reports,
+                           listing_reports=listing_reports)
+
+
 # ── Admin: Reports ─────────────────────────────────────────────────────────
 
 @app.route("/admin/reports")
@@ -3934,6 +4182,83 @@ def admin_report_remove_listing(report_id):
     db.session.commit()
     flash("Listing removed and report resolved.", "success")
     return redirect(url_for('admin_reports'))
+
+
+@app.route("/admin/reports/<int:report_id>/restore-listing", methods=["POST"])
+@require_admin
+def admin_report_restore_listing(report_id):
+    report = ListingReport.query.get_or_404(report_id)
+    listing = Listing.query.get(report.listing_id)
+    if listing:
+        listing.status = 'active'
+        listing.moderation_status = 'approved'
+    report.status = 'resolved'
+    db.session.commit()
+    flash("Listing restored and report resolved.", "success")
+    return redirect(url_for('admin_reports'))
+
+
+@app.route("/admin/reports/<int:report_id>/suspend-seller", methods=["POST"])
+@require_admin
+def admin_report_suspend_seller(report_id):
+    report = ListingReport.query.get_or_404(report_id)
+    listing = Listing.query.get(report.listing_id)
+    if listing:
+        seller = User.query.get(listing.seller_id)
+        if seller and not seller.is_admin:
+            seller.is_suspended = True
+            report.status = 'resolved'
+            db.session.commit()
+            flash("Seller suspended and report resolved.", "success")
+        else:
+            flash("Cannot suspend this seller.", "error")
+    else:
+        flash("Listing not found.", "error")
+    return redirect(url_for('admin_reports'))
+
+
+# ── Admin: User Reports ─────────────────────────────────────────────────────
+
+@app.route("/admin/user-reports")
+@require_admin
+def admin_user_reports():
+    """Admin view of user-against-user reports."""
+    from models import UserReport
+    status_filter = request.args.get('status', 'pending')
+    query = UserReport.query
+    if status_filter and status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    reports = query.order_by(UserReport.created_at.desc()).all()
+    pending_count = UserReport.query.filter_by(status='pending').count()
+    return render_template('admin_user_reports.html', reports=reports,
+                           status_filter=status_filter, pending_count=pending_count)
+
+
+@app.route("/admin/user-reports/<int:report_id>/dismiss", methods=["POST"])
+@require_admin
+def admin_user_report_dismiss(report_id):
+    from models import UserReport
+    report = UserReport.query.get_or_404(report_id)
+    report.status = 'resolved'
+    db.session.commit()
+    flash("Report dismissed.", "success")
+    return redirect(url_for('admin_user_reports'))
+
+
+@app.route("/admin/user-reports/<int:report_id>/suspend", methods=["POST"])
+@require_admin
+def admin_user_report_suspend(report_id):
+    from models import UserReport
+    report = UserReport.query.get_or_404(report_id)
+    user = User.query.get(report.reported_user_id)
+    if user and not user.is_admin:
+        user.is_suspended = True
+        report.status = 'resolved'
+        db.session.commit()
+        flash("User suspended and report resolved.", "success")
+    else:
+        flash("Cannot suspend this user.", "error")
+    return redirect(url_for('admin_user_reports'))
 
 
 # ── Admin: Categories ──────────────────────────────────────────────────────

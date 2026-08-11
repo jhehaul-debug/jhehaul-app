@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}User: {{ ((seller.first_name or '') ~ ' ' ~ (seller.last_name or '')).strip() or seller.email }} — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+{% set full_name = ((seller.first_name or '') ~ ' ' ~ (seller.last_name or '')).strip() or seller.email %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <a href="{{ url_for('admin_users') }}" style="color:#64748b;font-size:.85rem;text-decoration:none;">← Users</a>
+    <h2 class="page-title" style="margin:0;">👤 {{ full_name }}</h2>
+    {% if seller.is_admin %}<span style="background:#fef3c7;color:#92400e;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">Admin</span>{% endif %}
+    {% if seller.is_suspended %}<span style="background:#fee2e2;color:#dc2626;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">Suspended</span>{% endif %}
+  </div>
+  {% if not seller.is_admin %}
+  <div style="display:flex;gap:8px;">
+    {% if seller.is_suspended %}
+    <form method="POST" action="{{ url_for('admin_user_restore', user_id=seller.id) }}" style="margin:0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm" style="background:#16a34a;color:#fff;border:none;">✅ Restore Account</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('admin_user_suspend', user_id=seller.id) }}" style="margin:0;"
+          onsubmit="return confirm('Suspend {{ full_name }}? They will not be able to log in.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-danger">🚫 Suspend Account</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- User info card -->
+<div class="card" style="padding:20px;margin-bottom:14px;">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+    {% if seller.profile_image_url %}
+    <img src="{{ seller.profile_image_url }}" alt="{{ full_name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;">
+    {% elif seller.profile_photo_data %}
+    <img src="{{ url_for('serve_profile_photo', user_id=seller.id) }}" alt="{{ full_name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;">
+    {% else %}
+    <div style="width:64px;height:64px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">👤</div>
+    {% endif %}
+    <div>
+      <div style="font-weight:700;font-size:1.05rem;color:#1a202c;">{{ full_name }}</div>
+      <div style="font-size:.85rem;color:#64748b;">{{ seller.email }}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;font-size:.875rem;">
+    <div><span style="color:#94a3b8;font-weight:600;">Type:</span> {{ seller.user_type or 'customer' }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">Phone:</span> {{ seller.phone or '—' }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">City:</span> {{ seller.city or '—' }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">ZIP:</span> {{ seller.zip_code or '—' }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">Joined:</span> {{ seller.created_at.strftime('%b %d, %Y') }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">SMS:</span> {% if seller.sms_consent %}Opted in{% else %}Not opted in{% endif %}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">Listings:</span> {{ listings|length }}</div>
+    <div><span style="color:#94a3b8;font-weight:600;">User Reports:</span> {{ user_reports|length }}</div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('seller_profile', user_id=seller.id) }}" target="_blank" class="btn btn-outline btn-sm">👁 View Public Profile</a>
+  </div>
+</div>
+
+<!-- Listings -->
+<h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+  Listings ({{ listings|length }})
+</h3>
+{% if listings %}
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:1.5px solid #e5e7eb;">
+          <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;">Title</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;">Status</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;">Moderation</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;color:#374151;">Posted</th>
+          <th style="padding:10px 14px;text-align:right;font-weight:700;color:#374151;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for listing in listings %}
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:10px 14px;font-weight:600;color:#1a202c;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ listing.title }}</td>
+          <td style="padding:10px 14px;">
+            <span style="font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:10px;
+              {% if listing.status == 'active' %}background:#dcfce7;color:#15803d;
+              {% elif listing.status == 'sold' %}background:#dbeafe;color:#1d4ed8;
+              {% elif listing.status == 'removed' %}background:#fee2e2;color:#dc2626;
+              {% else %}background:#f1f5f9;color:#64748b;{% endif %}">
+              {{ listing.status.title() }}
+            </span>
+          </td>
+          <td style="padding:10px 14px;">
+            <span style="font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:10px;
+              {% if listing.moderation_status == 'approved' %}background:#dcfce7;color:#15803d;
+              {% elif listing.moderation_status in ('flagged','removed') %}background:#fee2e2;color:#dc2626;
+              {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+              {{ listing.moderation_status.title() }}
+            </span>
+          </td>
+          <td style="padding:10px 14px;color:#6b7280;">{{ listing.created_at.strftime('%b %d, %Y') }}</td>
+          <td style="padding:10px 14px;text-align:right;">
+            <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" target="_blank"
+               class="btn btn-outline btn-sm" style="font-size:.75rem;">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:20px;color:#9ca3af;margin-bottom:14px;font-size:.875rem;">No listings.</div>
+{% endif %}
+
+<!-- User Reports against this user -->
+<h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+  Reports Against This User ({{ user_reports|length }})
+</h3>
+{% if user_reports %}
+{% for r in user_reports %}
+<div class="card" style="padding:14px 18px;margin-bottom:10px;border-left:4px solid {% if r.status == 'pending' %}#ef4444{% else %}#d1d5db{% endif %};">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+    <div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+        <span style="font-weight:700;font-size:.9rem;">{{ r.reason }}</span>
+        <span style="background:{% if r.status == 'pending' %}#fee2e2;color:#dc2626{% else %}#dcfce7;color:#15803d{% endif %};font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:9px;">{{ r.status.title() }}</span>
+        <span style="font-size:.78rem;color:#94a3b8;">{{ r.created_at.strftime('%b %d, %Y') }}</span>
+      </div>
+      {% if r.details %}<div style="font-size:.84rem;color:#4a5568;">{{ r.details }}</div>{% endif %}
+      <div style="font-size:.78rem;color:#94a3b8;margin-top:4px;">Reported by: {{ ((r.reporter.first_name or '') ~ ' ' ~ (r.reporter.last_name or '')).strip() or r.reporter.email if r.reporter else 'Unknown' }}</div>
+    </div>
+    {% if r.status == 'pending' %}
+    <form method="POST" action="{{ url_for('admin_user_report_dismiss', report_id=r.id) }}" style="margin:0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline btn-sm" style="white-space:nowrap;">✓ Dismiss</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card" style="text-align:center;padding:20px;color:#9ca3af;margin-bottom:14px;font-size:.875rem;">No reports against this user.</div>
+{% endif %}
+
+<!-- Listing Reports on their listings -->
+{% if listing_reports %}
+<h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+  Listing Reports ({{ listing_reports|length }})
+</h3>
+{% for r in listing_reports %}
+<div class="card" style="padding:12px 16px;margin-bottom:8px;border-left:3px solid {% if r.status == 'pending' %}#f59e0b{% else %}#d1d5db{% endif %};">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:.82rem;font-weight:700;color:#374151;">{{ r.reason }}</span>
+    {% if r.listing %}<a href="{{ url_for('listing_detail', listing_id=r.listing_id) }}" target="_blank" style="font-size:.8rem;color:#2563eb;">{{ r.listing.title }}</a>{% endif %}
+    <span style="background:{% if r.status == 'pending' %}#fef3c7;color:#92400e{% else %}#dcfce7;color:#15803d{% endif %};font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:9px;">{{ r.status.title() }}</span>
+    <span style="font-size:.75rem;color:#94a3b8;margin-left:auto;">{{ r.created_at.strftime('%b %d, %Y') }}</span>
+    <a href="{{ url_for('admin_reports') }}" class="btn btn-outline btn-sm" style="font-size:.75rem;padding:3px 8px;">View in Reports</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
