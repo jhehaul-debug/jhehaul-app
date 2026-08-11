@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, expire_pending_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -1146,6 +1146,7 @@ def listing_delete(listing_id):
     return redirect(url_for('my_listings'))
 
 
+
 @app.route("/listing/<int:listing_id>/status", methods=["POST"])
 @require_login
 def listing_set_status(listing_id):
@@ -1179,6 +1180,9 @@ def listing_set_status(listing_id):
         elif not listing.expires_at or listing.expires_at <= datetime.datetime.now():
             # Reactivating from sold/reserved with no valid future expiry — reset to 30 days
             listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
+    # Expire any open offers when the listing is no longer available
+    if new_status in ('sold', 'reserved'):
+        expire_pending_offers(listing_id)
     db.session.commit()
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
     flash(labels[new_status], "success")
@@ -4216,6 +4220,7 @@ def admin_listing_hide(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'flagged'
     listing.status = 'removed'
+    expire_pending_offers(listing.id)
     db.session.commit()
     flash(f'Listing "{listing.title}" hidden.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4228,6 +4233,7 @@ def admin_listing_remove(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'removed'
     listing.status = 'removed'
+    expire_pending_offers(listing.id)
     db.session.commit()
     flash(f'Listing "{listing.title}" removed.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4240,6 +4246,7 @@ def admin_listing_mark_sold(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.status = 'sold'
     listing.sold_at = datetime.now()
+    expire_pending_offers(listing.id)
     db.session.commit()
     flash(f'Listing "{listing.title}" marked as sold.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4396,6 +4403,7 @@ def admin_report_remove_listing(report_id):
     if listing:
         listing.status = 'removed'
         listing.moderation_status = 'removed'
+        expire_pending_offers(listing.id)
     report.status = 'resolved'
     db.session.commit()
     flash("Listing removed and report resolved.", "success")

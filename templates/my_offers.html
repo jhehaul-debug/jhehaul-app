@@ -20,6 +20,7 @@
   {% elif status == 'accepted' %}{% set border_color = '#22c55e' %}{% set bg = '#f0fdf4' %}{% set badge_bg = '#dcfce7' %}{% set badge_color = '#15803d' %}{% set status_icon = '✅' %}{% set status_label = 'Accepted' %}
   {% elif status == 'declined' %}{% set border_color = '#ef4444' %}{% set bg = '#fef2f2' %}{% set badge_bg = '#fee2e2' %}{% set badge_color = '#991b1b' %}{% set status_icon = '❌' %}{% set status_label = 'Declined' %}
   {% elif status == 'withdrawn' %}{% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}{% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}{% set status_icon = '↩️' %}{% set status_label = 'Withdrawn' %}
+  {% elif status == 'expired' %}{% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}{% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}{% set status_icon = '🚫' %}{% set status_label = 'Listing No Longer Available' %}
   {% else %}{% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}{% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}{% set status_icon = '•' %}{% set status_label = status.title() %}
   {% endif %}
 

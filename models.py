@@ -587,3 +587,22 @@ class UserReport(db.Model):
                                     backref=db.backref('reports_against', lazy=True))
     reporter = db.relationship('User', foreign_keys=[reporter_id],
                                backref=db.backref('user_reports_filed', lazy=True))
+
+
+# ── Shared helpers ────────────────────────────────────────────────────────────
+
+def expire_pending_offers(listing_id):
+    """Set all pending/countered offers on a listing to 'expired'.
+
+    Call this (before db.session.commit) whenever a listing transitions to
+    sold, reserved, expired, or removed so buyers don't see stale 'pending'
+    offers. Safe to call from both routes.py and background threads in
+    job_expiry.py without introducing import cycles.
+    """
+    (ListingOffer.query
+     .filter(
+         ListingOffer.listing_id == listing_id,
+         ListingOffer.status.in_(['pending', 'countered'])
+     )
+     .update({'status': 'expired', 'updated_at': datetime.now()},
+             synchronize_session=False))
