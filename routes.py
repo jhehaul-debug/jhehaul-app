@@ -339,9 +339,11 @@ def home():
             return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
+        show_welcome = session.pop('new_member', False)
         categories = _marketplace_categories()
         ctx = _marketplace_homepage_ctx()
-        return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+        return render_template('marketplace.html', categories=categories, is_search=False,
+                               show_welcome=show_welcome, **ctx)
     # Logged-out visitors see the marketing landing page
     return redirect(url_for('landing'))
 
@@ -369,6 +371,10 @@ _TWIN_CITIES_CITIES = frozenset({
 
 @app.route("/marketplace")
 def marketplace():
+    # Authenticated users who haven't completed onboarding must see the welcome screen first
+    if current_user.is_authenticated and not current_user.user_type and not current_user.is_admin:
+        return redirect(url_for('choose_role'))
+
     from models import Category, Listing
     categories = _marketplace_categories()
 
@@ -507,10 +513,11 @@ def marketplace():
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
+        show_welcome = session.pop('new_member', False)
         ctx = _marketplace_homepage_ctx()
         return render_template('marketplace.html', categories=categories, is_search=False,
                                listing_type_filter='', area_filter='', city_zip_filter='',
-                               hide_sold='', **ctx)
+                               hide_sold='', show_welcome=show_welcome, **ctx)
 
 
 @app.route("/sell")
@@ -1924,29 +1931,26 @@ def choose_role():
         session.pop("invited_role", None)
         return redirect(url_for("marketplace"))
     session.pop("invited_role", None)
-    current_user.user_type = 'customer'
-    db.session.commit()
-    try:
-        _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
-        notify_admin_new_customer(_name, current_user.email)
-        notify_admin_new_customer_sms(_name, current_user.email)
-    except Exception as e:
-        app.logger.error("Admin notify failed (new customer): %s", e)
-    return redirect(url_for("marketplace"))
+    # Render the welcome screen — role is assigned when they click "Get Started"
+    return render_template("choose_role.html")
 
 @app.route("/set-role", methods=["POST"])
 @require_login
 def set_role():
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
+    # Only assign the role the first time
+    is_new = not current_user.user_type
     current_user.user_type = 'customer'
     db.session.commit()
-    try:
-        _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
-        notify_admin_new_customer(_name, current_user.email)
-        notify_admin_new_customer_sms(_name, current_user.email)
-    except Exception as e:
-        app.logger.error("Admin notify failed (new customer): %s", e)
+    if is_new:
+        session['new_member'] = True
+        try:
+            _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+            notify_admin_new_customer(_name, current_user.email)
+            notify_admin_new_customer_sms(_name, current_user.email)
+        except Exception as e:
+            app.logger.error("Admin notify failed (new customer): %s", e)
     return redirect(url_for('marketplace'))
 
 @app.route("/hauler/setup")

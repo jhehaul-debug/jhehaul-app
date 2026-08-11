@@ -2,23 +2,134 @@
 {% block title %}Welcome to JHE Haul{% endblock %}
 {% block content %}
 
-<div style="max-width:480px;margin:0 auto;">
-    <div class="card" style="text-align:center;padding:40px 32px;">
-        <div style="font-size:3rem;margin-bottom:14px;">🛍️</div>
-        <h2 style="margin-bottom:8px;">Welcome to JHE Haul!</h2>
-        <p style="color:#718096;margin-bottom:28px;">
-            Your local marketplace for buying, selling, and renting across the Twin Cities.<br>
-            Click below to finish setting up your account.
-        </p>
+<style>
+.welcome-card {
+    max-width: 520px;
+    margin: 48px auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    overflow: hidden;
+}
+.welcome-header {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    padding: 40px 36px 32px;
+    text-align: center;
+    color: #fff;
+}
+.welcome-header .welcome-emoji { font-size: 3.2rem; margin-bottom: 12px; display: block; }
+.welcome-header h1 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin: 0 0 8px;
+    color: #fff;
+}
+.welcome-header p {
+    color: #a0aec0;
+    font-size: 0.97rem;
+    margin: 0;
+    line-height: 1.6;
+}
+.welcome-body { padding: 32px 36px 36px; }
+.welcome-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.welcome-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+}
+.welcome-features li .feat-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.welcome-features li .feat-text strong {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 2px;
+}
+.welcome-features li .feat-text span {
+    font-size: 0.83rem;
+    color: #718096;
+    line-height: 1.5;
+}
+.welcome-cta {
+    display: block;
+    width: 100%;
+    background: #38a169;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    padding: 15px 24px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, transform 0.1s;
+}
+.welcome-cta:hover { background: #2f855a; transform: translateY(-1px); }
+@media (max-width: 560px) {
+    .welcome-card { margin: 16px; }
+    .welcome-header { padding: 28px 20px 24px; }
+    .welcome-body { padding: 24px 20px 28px; }
+    .welcome-header h1 { font-size: 1.5rem; }
+}
+</style>
+
+<div class="welcome-card">
+    <div class="welcome-header">
+        <span class="welcome-emoji">🎉</span>
+        <h1>Welcome to JHE Haul!</h1>
+        <p>Your local marketplace for buying, selling, and renting across the Twin Cities. Here's what you can do:</p>
+    </div>
+    <div class="welcome-body">
+        <ul class="welcome-features">
+            <li>
+                <span class="feat-icon">🛋️</span>
+                <div class="feat-text">
+                    <strong>Browse Listings</strong>
+                    <span>Explore furniture, appliances, electronics, properties, and more — all from local sellers.</span>
+                </div>
+            </li>
+            <li>
+                <span class="feat-icon">🏷️</span>
+                <div class="feat-text">
+                    <strong>Post Something for Sale</strong>
+                    <span>List your items for free. Set your price, add photos, and reach local buyers fast.</span>
+                </div>
+            </li>
+            <li>
+                <span class="feat-icon">💬</span>
+                <div class="feat-text">
+                    <strong>Message Sellers</strong>
+                    <span>Ask questions, negotiate, and arrange pickup — all through our built-in messaging.</span>
+                </div>
+            </li>
+            <li>
+                <span class="feat-icon">🖼️</span>
+                <div class="feat-text">
+                    <strong>Add a Profile Photo</strong>
+                    <span>Build trust with other members by adding your photo to your profile.</span>
+                </div>
+            </li>
+        </ul>
         <form method="POST" action="{{ url_for('set_role') }}">
-            <input type="hidden" name="role" value="customer">
-            <button type="submit" class="btn btn-primary btn-lg btn-block">
-                Get Started — Browse the Marketplace 🛍️
+            <button type="submit" class="welcome-cta">
+                Get Started — Explore the Marketplace 🛒
             </button>
         </form>
-        <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
-            Already have an account? <a href="{{ url_for('auth.login') }}" style="color:#3182ce;">Sign in</a>
-        </p>
     </div>
 </div>
 

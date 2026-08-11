@@ -332,6 +332,36 @@
 }
 </style>
 
+{# ── New-member welcome banner (shown exactly once after first login) ── #}
+{% if show_welcome %}
+<div id="welcome-banner" style="
+    background: linear-gradient(135deg, #276749 0%, #38a169 100%);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    color: #fff;
+    position: relative;
+">
+    <div style="font-size:2rem;flex-shrink:0;margin-top:2px">🎉</div>
+    <div style="flex:1;min-width:0">
+        <div style="font-size:1.05rem;font-weight:800;margin-bottom:6px">Welcome to JHE Haul!</div>
+        <div style="font-size:0.87rem;color:rgba(255,255,255,0.88);line-height:1.6;display:flex;flex-wrap:wrap;gap:12px">
+            <span>🛋️ <strong>Browse</strong> local listings</span>
+            <span>🏷️ <strong>Post</strong> items for free</span>
+            <span>💬 <strong>Message</strong> sellers directly</span>
+            <span>🖼️ <strong>Add a photo</strong> to your <a href="/profile" style="color:#d1fae5;font-weight:700">profile</a></span>
+        </div>
+    </div>
+    <button onclick="document.getElementById('welcome-banner').style.display='none'" aria-label="Dismiss" style="
+        background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.4rem;
+        cursor:pointer;padding:0 4px;flex-shrink:0;line-height:1;margin-top:-2px
+    ">&times;</button>
+</div>
+{% endif %}
+
 {# ── Hero ── #}
 <div class="mp-hero">
     <h1>🛋️ JHE Marketplace</h1>
