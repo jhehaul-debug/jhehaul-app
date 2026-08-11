@@ -108,6 +108,15 @@
   @media (max-width: 480px) { .location-row { grid-template-columns: 1fr 1fr; } }
 
   .disclaimer { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; font-size: 0.8rem; color: #6b7280; line-height: 1.6; margin-top: 16px; }
+
+  /* Draft-expiry warning banner */
+  .draft-expiry-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff7ed; border: 1.5px solid #fed7aa;
+    border-radius: 10px; padding: 11px 16px; margin-bottom: 20px;
+    font-size: 0.88rem; color: #9a3412;
+  }
+  .draft-expiry-banner .banner-icon { font-size: 1.1rem; flex-shrink: 0; }
 </style>
 
 <div class="wizard-wrap">
@@ -134,6 +143,17 @@
       {% endfor %}
     </div>
   </div>
+
+  {# Draft-expiry warning: shown on steps 1–5 for untitled property/rental drafts #}
+  {% if step < 6 and not listing.title %}
+  <div class="draft-expiry-banner">
+    <span class="banner-icon">⏳</span>
+    <span>
+      <strong>Unsaved draft</strong> — this listing will be automatically deleted if you leave it unfinished for more than 48 hours.
+      Complete at least the title to keep it safe.
+    </span>
+  </div>
+  {% endif %}
 
   {# ── STEP 1: PHOTOS ── #}
   {% if step == 1 %}
@@ -169,7 +189,7 @@
     </div>
     {% endif %}
     <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="wizard-nav">
         <a href="{{ url_for('sell') }}" class="btn-back">← Back</a>
@@ -224,7 +244,7 @@
       {% if listing.listing_type == 'rental' %}Describe the rental so prospective tenants can find it.
       {% else %}Describe the property so prospective buyers can find it.{% endif %}
     </p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       {# Property type #}
@@ -384,7 +404,7 @@
     <h2>💰 Asking Price</h2>
     <p class="hint">Set the asking price. Real estate transactions happen outside JHE Haul.</p>
     {% endif %}
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="price-options">
         <div class="price-option">
@@ -422,7 +442,7 @@
     <p class="hint">
       City and ZIP are always shown. The street address is optional — only add it if you want it publicly visible on your listing.
     </p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Street / Property Address <span class="opt">(optional — visible publicly)</span></label>
@@ -465,7 +485,7 @@
     <h2>🗓️ Open House & Showings</h2>
     <p class="hint">Optionally schedule an open house. Buyers can also message you to schedule a private showing.</p>
     {% endif %}
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if listing.listing_type == 'property_sale' %}
       <div class="form-group">
@@ -574,7 +594,7 @@
       </div>
     </div>
 
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="wizard-nav">
         <a href="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" class="btn-back">← Back</a>
@@ -588,4 +608,22 @@
   </div>
   {% endif %}
 </div>
+
+{# ─── beforeunload: warn seller when navigating away mid-property-wizard ─── #}
+{% if step < 6 %}
+<script>
+(function () {
+  var _wizardSubmitting = false;
+  document.querySelectorAll('form[data-wizard-nav]').forEach(function(f) {
+    f.addEventListener('submit', function() { _wizardSubmitting = true; });
+  });
+  window.addEventListener('beforeunload', function(e) {
+    if (!_wizardSubmitting) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

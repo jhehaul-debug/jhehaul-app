@@ -112,6 +112,15 @@
 
   .location-row { display: grid; grid-template-columns: 1fr 80px 100px; gap: 10px; }
   @media (max-width: 480px) { .location-row { grid-template-columns: 1fr 1fr; } }
+
+  /* Draft-expiry warning banner */
+  .draft-expiry-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff7ed; border: 1.5px solid #fed7aa;
+    border-radius: 10px; padding: 11px 16px; margin-bottom: 20px;
+    font-size: 0.88rem; color: #9a3412;
+  }
+  .draft-expiry-banner .banner-icon { font-size: 1.1rem; flex-shrink: 0; }
 </style>
 
 <div class="wizard-wrap">
@@ -128,6 +137,17 @@
       {% endfor %}
     </div>
   </div>
+
+  {# Draft-expiry warning: shown on steps 1–5 when an untitled draft exists in the DB #}
+  {% if step < 6 and listing and not listing.title %}
+  <div class="draft-expiry-banner">
+    <span class="banner-icon">⏳</span>
+    <span>
+      <strong>Unsaved draft</strong> — this listing will be automatically deleted if you leave it unfinished for more than 48 hours.
+      Complete at least the title to keep it safe.
+    </span>
+  </div>
+  {% endif %}
 
   {# ─── STEP 1: PHOTOS ─── #}
   {% if step == 1 %}
@@ -174,7 +194,7 @@
     {# When listing=None the form posts to /listing/new (which creates the draft on demand).
        When listing already exists the form posts to the normal step-1 handler. #}
     {% if listing %}
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="listing_id" value="{{ listing.id }}">
       <div class="wizard-nav">
@@ -183,7 +203,7 @@
       </div>
     </form>
     {% else %}
-    <form method="POST" action="{{ url_for('listing_new') }}?type={{ listing_type or 'item' }}" id="step1Form">
+    <form method="POST" action="{{ url_for('listing_new') }}?type={{ listing_type or 'item' }}" id="step1Form" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="listing_type" value="{{ listing_type or 'item' }}">
       {# Populated by JS after the first photo is lazily uploaded #}
@@ -372,7 +392,7 @@
   <div class="step-card">
     <h2>📝 Item Details</h2>
     <p class="hint">Give buyers a clear picture of what you're selling.</p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Title <span class="req">*</span></label>
@@ -437,7 +457,7 @@
   <div class="step-card">
     <h2>💰 Pricing</h2>
     <p class="hint">How would you like to price this item?</p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="price-options">
         <div class="price-option">
@@ -485,7 +505,7 @@
   <div class="step-card">
     <h2>📍 Location</h2>
     <p class="hint">Buyers will see the city and state — no street address is stored or displayed.</p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="location-row">
         <div class="form-group">
@@ -518,7 +538,7 @@
   <div class="step-card">
     <h2>🚚 Delivery Options</h2>
     <p class="hint">Select all that apply.</p>
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% set current_opts = listing.delivery_options_list %}
       <div class="delivery-options">
@@ -617,7 +637,7 @@
       </div>
     </div>
 
-    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}">
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="wizard-nav">
         <a href="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" class="btn-back">← Back</a>
@@ -631,4 +651,30 @@
   </div>
   {% endif %}
 </div>
+
+{# ─── beforeunload: warn seller when navigating away mid-wizard ─── #}
+{% if step < 6 %}
+<script>
+(function () {
+  // Only bypass the prompt when the seller submits a wizard navigation form.
+  // Scoped to [data-wizard-nav] so non-wizard forms (e.g. base-template logout)
+  // cannot silently suppress the leave warning.
+  var _wizardSubmitting = false;
+  document.querySelectorAll('form[data-wizard-nav]').forEach(function(f) {
+    f.addEventListener('submit', function() { _wizardSubmitting = true; });
+  });
+
+  window.addEventListener('beforeunload', function(e) {
+    // LISTING_ID is declared by the step-1 inline script.
+    // On steps 2+ the listing always exists; use a server-side sentinel.
+    var hasActiveDraft = (typeof LISTING_ID !== 'undefined' && LISTING_ID !== null)
+                       || {{ 'true' if (listing and step > 1) else 'false' }};
+    if (hasActiveDraft && !_wizardSubmitting) {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires returnValue to be set
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

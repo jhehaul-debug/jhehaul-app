@@ -1152,8 +1152,10 @@ def my_listings():
     # Interleave: drafts first (most recent work-in-progress), then the rest
     listings = visible_drafts + non_drafts
 
+    from datetime import datetime as _dt
     return render_template('my_listings.html', listings=listings,
-                           hidden_draft_count=hidden_draft_count)
+                           hidden_draft_count=hidden_draft_count,
+                           now=_dt.now())
 
 
 @app.route("/listing/<int:listing_id>")

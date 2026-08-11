@@ -141,6 +141,21 @@
         {% if listing.view_count %}
         <span style="font-size:.75rem;color:#9ca3af">{{ listing.view_count }} view{{ 's' if listing.view_count != 1 }}</span>
         {% endif %}
+        {# Show purge countdown for untitled drafts (at risk of auto-deletion) #}
+        {% if listing.status == 'draft' and not listing.title and now is defined %}
+          {% set hours_left = (48 - ((now - listing.created_at).total_seconds() / 3600)) | round(0, 'floor') | int %}
+          {% if hours_left <= 48 %}
+            {% if hours_left <= 0 %}
+            <span style="font-size:.72rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px">⚠️ Deletes soon</span>
+            {% elif hours_left <= 6 %}
+            <span style="font-size:.72rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px">⚠️ Deletes in {{ hours_left }}h</span>
+            {% elif hours_left <= 24 %}
+            <span style="font-size:.72rem;font-weight:700;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:20px">⏳ Deletes in {{ hours_left }}h</span>
+            {% else %}
+            <span style="font-size:.72rem;color:#92400e;background:#fef9c3;padding:2px 8px;border-radius:20px">⏳ {{ hours_left }}h left to complete</span>
+            {% endif %}
+          {% endif %}
+        {% endif %}
       </div>
     </div>
 
