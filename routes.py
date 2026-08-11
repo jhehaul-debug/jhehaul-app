@@ -308,7 +308,7 @@ def _marketplace_categories():
             .all())
 
 
-def _marketplace_homepage_ctx():
+def _marketplace_homepage_ctx(hide_sold=False):
     """Build context dict for the marketplace homepage (no active filters)."""
     from models import Listing
     _base = Listing.query.filter(
@@ -316,16 +316,19 @@ def _marketplace_homepage_ctx():
         Listing.moderation_status == 'approved'
     )
     _active = Listing.query.filter_by(status='active', moderation_status='approved')
-    recent = (_base.filter(Listing.listing_type == 'item')
+    # When hide_sold is on, all sections show only active listings
+    _recent_base = _active if hide_sold else _base
+    _prop_base   = _active if hide_sold else _base
+    recent = (_recent_base.filter(Listing.listing_type == 'item')
               .order_by(Listing.created_at.desc()).limit(8).all())
     free_items = (_active.filter_by(price_type='free')
                   .filter(Listing.listing_type == 'item')
                   .order_by(Listing.created_at.desc()).limit(8).all())
     featured = (_active.filter_by(featured=True)
                 .order_by(Listing.created_at.desc()).limit(8).all())
-    for_sale = (_base.filter(Listing.listing_type == 'property_sale')
+    for_sale = (_prop_base.filter(Listing.listing_type == 'property_sale')
                 .order_by(Listing.created_at.desc()).limit(6).all())
-    rentals  = (_base.filter(Listing.listing_type == 'rental')
+    rentals  = (_prop_base.filter(Listing.listing_type == 'rental')
                 .order_by(Listing.created_at.desc()).limit(6).all())
     return dict(recent_listings=recent, free_listings=free_items,
                 featured_listings=featured, for_sale_listings=for_sale,
@@ -341,8 +344,14 @@ def home():
             return redirect(url_for('choose_role'))
         show_welcome = session.pop('new_member', False)
         categories = _marketplace_categories()
-        ctx = _marketplace_homepage_ctx()
+        # Respect hide_sold query param; persist choice in session
+        hs_param = request.args.get('hide_sold', None)
+        if hs_param is not None:
+            session['hide_sold'] = bool(hs_param and hs_param != '0')
+        hide_sold_pref = session.get('hide_sold', False)
+        ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
         return render_template('marketplace.html', categories=categories, is_search=False,
+                               hide_sold='1' if hide_sold_pref else '',
                                show_welcome=show_welcome, **ctx)
     # Logged-out visitors see the marketing landing page
     return redirect(url_for('landing'))
@@ -514,10 +523,16 @@ def marketplace():
                                for_sale_listings=[], rental_listings=[])
     else:
         show_welcome = session.pop('new_member', False)
-        ctx = _marketplace_homepage_ctx()
+        # Respect hide_sold query param; persist choice in session
+        hs_param = request.args.get('hide_sold', None)
+        if hs_param is not None:
+            session['hide_sold'] = bool(hs_param and hs_param != '0')
+        hide_sold_pref = session.get('hide_sold', False)
+        ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
         return render_template('marketplace.html', categories=categories, is_search=False,
                                listing_type_filter='', area_filter='', city_zip_filter='',
-                               hide_sold='', show_welcome=show_welcome, **ctx)
+                               hide_sold='1' if hide_sold_pref else '',
+                               show_welcome=show_welcome, **ctx)
 
 
 @app.route("/sell")

@@ -559,6 +559,15 @@
 </div>
 {% else %}
 
+{# ── Homepage hide-sold toggle ── #}
+<div style="display:flex;justify-content:flex-end;padding:0 4px 8px">
+    {% if hide_sold %}
+        <a href="?hide_sold=0" class="mp-hide-sold-btn active">✅ Hiding sold &amp; reserved</a>
+    {% else %}
+        <a href="?hide_sold=1" class="mp-hide-sold-btn">👁 Show active only</a>
+    {% endif %}
+</div>
+
 {# ── Featured Listings ── #}
 {% if featured_listings %}
 <div class="mp-section">
