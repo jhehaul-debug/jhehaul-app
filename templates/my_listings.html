@@ -66,7 +66,7 @@
 <div class="my-listings-wrap">
   <div class="page-header">
     <h1>My Listings</h1>
-    <a href="{{ url_for('listing_new') }}" class="btn-new">+ New Listing</a>
+    <a href="{{ url_for('sell') }}" class="btn-new">+ New Listing</a>
   </div>
 
   {% if not listings %}
@@ -85,24 +85,33 @@
     <div class="listing-thumb">
       {% if primary %}
         <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="">
-      {% else %}
-        📦
+      {% elif listing.listing_type == 'property_sale' %}🏠
+      {% elif listing.listing_type == 'rental' %}🔑
+      {% else %}📦
       {% endif %}
     </div>
 
     <!-- Info -->
     <div class="listing-info">
-      <div class="listing-title" title="{{ listing.title }}">{{ listing.title or '(untitled draft)' }}</div>
+      <div class="listing-title" title="{{ listing.title }}">
+        {% if listing.listing_type == 'property_sale' %}
+          <span style="font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:#dcfce7;color:#15803d;margin-right:5px;vertical-align:middle">🏠 For Sale</span>
+        {% elif listing.listing_type == 'rental' %}
+          <span style="font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:#dbeafe;color:#1e40af;margin-right:5px;vertical-align:middle">🔑 Rental</span>
+        {% endif %}
+        {{ listing.title or '(untitled draft)' }}
+      </div>
 
       {% if listing.price_type == 'free' %}
         <div class="listing-price free">Free</div>
       {% elif listing.price is not none %}
-        <div class="listing-price">${{ '%.2f'|format(listing.price) }}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+        <div class="listing-price">${{ '%.0f'|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
       {% else %}
         <div class="listing-price" style="color:#6b7280;">—</div>
       {% endif %}
 
       <div class="listing-meta">
+        {% if listing.is_property and listing.beds_baths_display %}{{ listing.beds_baths_display }} &nbsp;·&nbsp; {% endif %}
         {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }} &nbsp;·&nbsp; {% endif %}
         Listed {{ listing.created_at.strftime('%b %-d, %Y') }}
         {% if listing.photos|length > 0 %}&nbsp;·&nbsp; {{ listing.photos|length }} photo{{ 's' if listing.photos|length != 1 }}{% endif %}

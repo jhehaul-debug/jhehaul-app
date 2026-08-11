@@ -331,6 +331,28 @@ class Listing(db.Model):
     sold_at = db.Column(db.DateTime, nullable=True)
     expired_at = db.Column(db.DateTime, nullable=True)
 
+    # ── Housing & Real Estate fields ──────────────────────────────────────────
+    # listing_type: 'item' | 'property_sale' | 'rental'
+    listing_type       = db.Column(db.String(20), default='item')
+    # property_type for sales: house|condo|multi_family|land|commercial|manufactured|other
+    # property_type for rentals: apartment|house|room|commercial|short_term|other
+    property_type      = db.Column(db.String(50), nullable=True)
+    property_address   = db.Column(db.String(200), nullable=True)  # optional public address
+    bedrooms           = db.Column(db.Float,   nullable=True)
+    bathrooms          = db.Column(db.Float,   nullable=True)
+    sqft               = db.Column(db.Integer, nullable=True)
+    lot_size           = db.Column(db.String(50),  nullable=True)
+    year_built         = db.Column(db.Integer, nullable=True)
+    garage_parking     = db.Column(db.String(100), nullable=True)
+    hoa_fee            = db.Column(db.Float,   nullable=True)   # monthly HOA
+    property_tax_annual= db.Column(db.Float,   nullable=True)   # annual property tax
+    open_house_dt      = db.Column(db.DateTime,nullable=True)
+    amenities          = db.Column(db.Text,    nullable=True)   # newline-separated list
+    listed_by          = db.Column(db.String(20), nullable=True)  # owner|agent|builder
+    rent_terms         = db.Column(db.String(20), nullable=True)  # monthly|weekly|annual
+    pets_allowed       = db.Column(db.Boolean, nullable=True)
+    utilities_included = db.Column(db.String(200), nullable=True)
+
     seller = db.relationship('User', backref=db.backref('listings', lazy=True), foreign_keys=[seller_id])
     photos = db.relationship('ListingPhoto', backref='listing', lazy=True,
                              cascade='all, delete-orphan', order_by='ListingPhoto.display_order')
@@ -352,6 +374,29 @@ class Listing(db.Model):
         if not self.delivery_option:
             return []
         return [d.strip() for d in self.delivery_option.split(',') if d.strip()]
+
+    @property
+    def is_property(self):
+        return self.listing_type in ('property_sale', 'rental')
+
+    @property
+    def beds_baths_display(self):
+        parts = []
+        if self.bedrooms is not None:
+            b = int(self.bedrooms) if self.bedrooms == int(self.bedrooms) else self.bedrooms
+            parts.append(f"{b} bd")
+        if self.bathrooms is not None:
+            ba = int(self.bathrooms) if self.bathrooms == int(self.bathrooms) else self.bathrooms
+            parts.append(f"{ba} ba")
+        if self.sqft:
+            parts.append(f"{self.sqft:,} sqft")
+        return ' · '.join(parts) if parts else ''
+
+    @property
+    def amenities_list(self):
+        if not self.amenities:
+            return []
+        return [a.strip() for a in self.amenities.split('\n') if a.strip()]
 
 
 class ListingPhoto(db.Model):

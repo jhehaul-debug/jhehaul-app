@@ -29,6 +29,15 @@
                 <option value="expired" {% if status_filter=='expired' %}selected{% endif %}>Expired</option>
             </select>
         </div>
+        <div style="flex:1;min-width:130px;" class="form-group" style="margin:0;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Type</label>
+            <select name="listing_type" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+                <option value="">All types</option>
+                <option value="item" {% if request.args.get('listing_type')=='item' %}selected{% endif %}>📦 Items</option>
+                <option value="property_sale" {% if request.args.get('listing_type')=='property_sale' %}selected{% endif %}>🏠 For Sale</option>
+                <option value="rental" {% if request.args.get('listing_type')=='rental' %}selected{% endif %}>🔑 Rentals</option>
+            </select>
+        </div>
         <div style="flex:1;min-width:140px;" class="form-group" style="margin:0;">
             <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Category</label>
             <select name="category" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
@@ -75,8 +84,16 @@
                         <div style="width:40px;height:40px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">📦</div>
                         {% endif %}
                         <div>
-                            <div style="font-weight:600;color:#1a202c;word-break:break-word;max-width:180px;">{{ l.title }}</div>
-                            <div style="font-size:0.76rem;color:#94a3b8;margin-top:1px;">ID #{{ l.id }} · {{ l.photos|length }} photo{% if l.photos|length != 1 %}s{% endif %}</div>
+                            <div style="font-weight:600;color:#1a202c;word-break:break-word;max-width:180px;">
+                                {% if l.is_property %}
+                                <span style="font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:4px;{% if l.listing_type=='rental' %}background:#dbeafe;color:#1e40af{% else %}background:#dcfce7;color:#15803d{% endif %}">{{ '🔑 Rent' if l.listing_type=='rental' else '🏠 Sale' }}</span>
+                                {% endif %}
+                                {{ l.title }}
+                            </div>
+                            <div style="font-size:0.76rem;color:#94a3b8;margin-top:1px;">
+                                ID #{{ l.id }} · {{ l.photos|length }} photo{% if l.photos|length != 1 %}s{% endif %}
+                                {% if l.is_property and l.beds_baths_display %} · {{ l.beds_baths_display }}{% endif %}
+                            </div>
                         </div>
                     </div>
                 </td>

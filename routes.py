@@ -295,19 +295,21 @@ def _marketplace_categories():
 def _marketplace_homepage_ctx():
     """Build context dict for the marketplace homepage (no active filters)."""
     from models import Listing
-    recent = (Listing.query
-              .filter_by(status='active', moderation_status='approved')
-              .order_by(Listing.created_at.desc())
-              .limit(8).all())
-    free_items = (Listing.query
-                  .filter_by(status='active', moderation_status='approved', price_type='free')
-                  .order_by(Listing.created_at.desc())
-                  .limit(8).all())
-    featured = (Listing.query
-                .filter_by(status='active', moderation_status='approved', featured=True)
-                .order_by(Listing.created_at.desc())
-                .limit(8).all())
-    return dict(recent_listings=recent, free_listings=free_items, featured_listings=featured)
+    _base = Listing.query.filter_by(status='active', moderation_status='approved')
+    recent = (_base.filter(Listing.listing_type == 'item')
+              .order_by(Listing.created_at.desc()).limit(8).all())
+    free_items = (_base.filter_by(price_type='free')
+                  .filter(Listing.listing_type == 'item')
+                  .order_by(Listing.created_at.desc()).limit(8).all())
+    featured = (_base.filter_by(featured=True)
+                .order_by(Listing.created_at.desc()).limit(8).all())
+    for_sale = (_base.filter(Listing.listing_type == 'property_sale')
+                .order_by(Listing.created_at.desc()).limit(6).all())
+    rentals  = (_base.filter(Listing.listing_type == 'rental')
+                .order_by(Listing.created_at.desc()).limit(6).all())
+    return dict(recent_listings=recent, free_listings=free_items,
+                featured_listings=featured, for_sale_listings=for_sale,
+                rental_listings=rentals)
 
 
 @app.route("/")
@@ -322,20 +324,57 @@ def home():
     return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
 
 
+# Twin Cities metro cities (expansion-ready: add more cities later)
+_TWIN_CITIES_CITIES = frozenset({
+    'minneapolis', 'saint paul', 'st. paul', 'bloomington', 'plymouth',
+    'brooklyn park', 'maple grove', 'eagan', 'woodbury', 'coon rapids',
+    'apple valley', 'edina', 'burnsville', 'minnetonka', 'saint louis park',
+    'st. louis park', 'shakopee', 'maplewood', 'roseville', 'blaine',
+    'eden prairie', 'lakeville', 'richfield', 'inver grove heights', 'fridley',
+    'shoreview', 'brooklyn center', 'crystal', 'robbinsdale', 'hopkins',
+    'golden valley', 'new hope', 'columbia heights', 'new brighton', 'arden hills',
+    'rosemount', 'farmington', 'prior lake', 'chanhassen', 'chaska', 'savage',
+    'stillwater', 'white bear lake', 'cottage grove', 'oakdale', 'mendota heights',
+    'vadnais heights', 'mounds view', 'little canada', 'champlin', 'andover',
+    'ham lake', 'circle pines', 'hugo', 'south st. paul', 'west st. paul',
+    'north st. paul', 'newport', 'falcon heights', 'lauderdale', 'elk river',
+    'rogers', 'osseo', 'dayton', 'medina', 'wayzata', 'excelsior',
+    'tonka bay', 'deephaven', 'shorewood', 'victoria', 'carver', 'jordan',
+    'spring lake park', 'st. anthony', 'mahtomedi', 'lake elmo', 'bayport',
+    'st. paul park', 'lilydale', 'mendota', 'sunfish lake', 'pine springs',
+})
+
+
 @app.route("/marketplace")
 def marketplace():
     from models import Category, Listing
     categories = _marketplace_categories()
 
-    q = request.args.get('q', '').strip()
-    category_slug = request.args.get('category', '').strip()
-    price_type_filter = request.args.get('price_type', '').strip()
-    featured_filter = request.args.get('featured', '').strip()
+    q                  = request.args.get('q',            '').strip()
+    category_slug      = request.args.get('category',     '').strip()
+    price_type_filter  = request.args.get('price_type',   '').strip()
+    featured_filter    = request.args.get('featured',     '').strip()
+    listing_type_filter= request.args.get('listing_type', '').strip()
+    area_filter        = request.args.get('area',         '').strip()
+    min_price_raw      = request.args.get('min_price',    '').strip()
+    max_price_raw      = request.args.get('max_price',    '').strip()
+    min_beds_raw       = request.args.get('min_beds',     '').strip()
+    open_house_only    = request.args.get('open_house',   '').strip()
 
-    is_search = bool(q or category_slug or price_type_filter or featured_filter)
+    try: min_price = float(min_price_raw) if min_price_raw else None
+    except ValueError: min_price = None
+    try: max_price = float(max_price_raw) if max_price_raw else None
+    except ValueError: max_price = None
+    try: min_beds = float(min_beds_raw) if min_beds_raw else None
+    except ValueError: min_beds = None
+
+    is_search = bool(q or category_slug or price_type_filter or featured_filter
+                     or listing_type_filter or area_filter or min_price is not None
+                     or max_price is not None or min_beds is not None or open_house_only)
 
     if is_search:
         qobj = Listing.query.filter_by(status='active', moderation_status='approved')
+
         if q:
             qobj = qobj.filter(
                 db.or_(Listing.title.ilike(f'%{q}%'),
@@ -344,13 +383,45 @@ def marketplace():
         if category_slug:
             cat = Category.query.filter_by(slug=category_slug, is_active=True).first()
             if cat:
-                qobj = qobj.filter(Listing.category_id == cat.id)
+                # Match category OR any of its subcategory children
+                child_ids = [c.id for c in cat.subcategories]
+                if child_ids:
+                    qobj = qobj.filter(
+                        db.or_(Listing.category_id == cat.id,
+                               Listing.category_id.in_(child_ids))
+                    )
+                else:
+                    qobj = qobj.filter(Listing.category_id == cat.id)
+
         if price_type_filter in ('free', 'fixed', 'negotiable'):
             qobj = qobj.filter(Listing.price_type == price_type_filter)
         if featured_filter:
             qobj = qobj.filter(Listing.featured == True)
 
-        search_results = qobj.order_by(Listing.created_at.desc()).limit(48).all()
+        # Listing type filter (item | property_sale | rental | housing)
+        if listing_type_filter == 'housing':
+            qobj = qobj.filter(Listing.listing_type.in_(['property_sale', 'rental']))
+        elif listing_type_filter in ('item', 'property_sale', 'rental'):
+            qobj = qobj.filter(Listing.listing_type == listing_type_filter)
+
+        # Twin Cities area filter (MN + metro city list)
+        if area_filter == 'twin-cities':
+            qobj = qobj.filter(Listing.state == 'MN').filter(
+                db.func.lower(Listing.city).in_(_TWIN_CITIES_CITIES)
+            )
+
+        # Property-specific numeric filters
+        if min_price is not None:
+            qobj = qobj.filter(Listing.price >= min_price)
+        if max_price is not None:
+            qobj = qobj.filter(Listing.price <= max_price)
+        if min_beds is not None:
+            qobj = qobj.filter(Listing.bedrooms >= min_beds)
+        if open_house_only:
+            from datetime import datetime as _now_dt
+            qobj = qobj.filter(Listing.open_house_dt >= _now_dt.utcnow())
+
+        search_results = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(48).all()
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
         return render_template('marketplace.html',
                                categories=categories,
@@ -360,19 +431,25 @@ def marketplace():
                                active_category=active_category,
                                price_type_filter=price_type_filter,
                                featured_filter=featured_filter,
-                               recent_listings=[], free_listings=[], featured_listings=[])
+                               listing_type_filter=listing_type_filter,
+                               area_filter=area_filter,
+                               min_price=min_price, max_price=max_price,
+                               min_beds=min_beds, open_house_only=open_house_only,
+                               recent_listings=[], free_listings=[], featured_listings=[],
+                               for_sale_listings=[], rental_listings=[])
     else:
         ctx = _marketplace_homepage_ctx()
-        return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+        return render_template('marketplace.html', categories=categories, is_search=False,
+                               listing_type_filter='', area_filter='', **ctx)
 
 
 @app.route("/sell")
 @require_login
 def sell():
-    """Entry point for selling — redirects to the listing creation wizard."""
+    """Entry point for selling — shows listing type chooser."""
     if not current_user.user_type and not current_user.is_admin:
         return redirect(url_for('choose_role'))
-    return redirect(url_for('listing_new'))
+    return render_template('sell_choose.html')
 
 
 # ── Listing / Sell Flow (Phase 4) ──────────────────────────────────────────────
@@ -427,9 +504,6 @@ def _apply_listing_fields(listing, form):
     else:
         listing.subcategory_id = None
 
-    raw_condition = form.get('condition', '').strip()
-    listing.condition = raw_condition if raw_condition in _VALID_CONDITIONS else None
-
     price_type = form.get('price_type', 'fixed')
     listing.price_type = price_type if price_type in _VALID_PRICE_TYPES else 'fixed'
 
@@ -455,9 +529,53 @@ def _apply_listing_fields(listing, form):
             if not listing.city:  listing.city  = zc.city
             if not listing.state: listing.state = zc.state
 
-    raw_opts = form.getlist('delivery_option')
-    valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
-    listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+    if listing.is_property:
+        # Property-specific fields
+        listing.property_type   = form.get('property_type',   '').strip() or None
+        _lb = form.get('listed_by', 'owner').strip()
+        listing.listed_by = _lb if _lb in ('owner', 'agent', 'builder') else 'owner'
+        listing.property_address = form.get('property_address', '').strip()[:200] or None
+        for _fld in ('bedrooms', 'bathrooms'):
+            _v = form.get(_fld, '').strip()
+            try:    setattr(listing, _fld, float(_v) if _v else None)
+            except: setattr(listing, _fld, None)
+        _sqft = form.get('sqft', '').strip()
+        listing.sqft = int(_sqft) if _sqft.isdigit() else None
+        _lot = form.get('lot_size', '').strip()
+        listing.lot_size = _lot[:50] if _lot else None
+        _yr = form.get('year_built', '').strip()
+        try:
+            _yr_int = int(_yr)
+            listing.year_built = _yr_int if 1800 <= _yr_int <= 2030 else None
+        except (ValueError, TypeError):
+            listing.year_built = None
+        listing.garage_parking = form.get('garage_parking', '').strip()[:100] or None
+        for _fld in ('hoa_fee', 'property_tax_annual'):
+            _v = form.get(_fld, '').strip()
+            try:    setattr(listing, _fld, float(_v) if _v else None)
+            except: setattr(listing, _fld, None)
+        listing.amenities = form.get('amenities', '').strip() or None
+        if listing.listing_type == 'rental':
+            _rt = form.get('rent_terms', '').strip()
+            listing.rent_terms = _rt if _rt in ('monthly', 'annual', 'weekly', 'short_term') else None
+            listing.pets_allowed = form.get('pets_allowed') == '1'
+            listing.utilities_included = form.get('utilities_included', '').strip()[:200] or None
+        _odt = form.get('open_house_dt', '').strip()
+        if _odt:
+            try:
+                from datetime import datetime as _dt3
+                listing.open_house_dt = _dt3.fromisoformat(_odt)
+            except ValueError:
+                listing.open_house_dt = None
+        else:
+            listing.open_house_dt = None
+    else:
+        # Item-specific fields
+        raw_condition = form.get('condition', '').strip()
+        listing.condition = raw_condition if raw_condition in _VALID_CONDITIONS else None
+        raw_opts = form.getlist('delivery_option')
+        valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
+        listing.delivery_option = ','.join(valid_opts) if valid_opts else None
 
 
 def _validate_listing(listing, require_photos=False):
@@ -487,7 +605,11 @@ def listing_new():
     if not current_user.user_type and not current_user.is_admin:
         return redirect(url_for('choose_role'))
     from models import Listing
-    draft = Listing(seller_id=current_user.id, title='', status='draft', moderation_status='approved')
+    lt = request.args.get('type', 'item')
+    if lt not in ('item', 'property_sale', 'rental'):
+        lt = 'item'
+    draft = Listing(seller_id=current_user.id, title='', status='draft',
+                    moderation_status='approved', listing_type=lt)
     db.session.add(draft)
     db.session.commit()
     return redirect(url_for('listing_step', listing_id=draft.id, step=1))
@@ -514,24 +636,62 @@ def listing_step(listing_id, step):
             pass
 
         elif step == 2:
-            # Apply only the details-step fields using whitelisted helper
             listing.title = request.form.get('title', '').strip()[:200]
             listing.description = request.form.get('description', '').strip()
-            cat_id = request.form.get('category_id', '').strip()
-            listing.category_id = int(cat_id) if cat_id.isdigit() else None
-            sub_id = request.form.get('subcategory_id', '').strip()
-            raw_sub = int(sub_id) if sub_id.isdigit() else None
-            if raw_sub and listing.category_id:
-                from models import Category as _Cat2
-                sub_obj = _Cat2.query.get(raw_sub)
-                listing.subcategory_id = raw_sub if (sub_obj and sub_obj.parent_id == listing.category_id) else None
+
+            if listing.is_property:
+                # Property-specific details
+                listing.property_type = request.form.get('property_type', '').strip() or None
+                _lb = request.form.get('listed_by', 'owner').strip()
+                listing.listed_by = _lb if _lb in ('owner', 'agent', 'builder') else 'owner'
+                for _fld in ('bedrooms', 'bathrooms'):
+                    _v = request.form.get(_fld, '').strip()
+                    try:
+                        setattr(listing, _fld, float(_v) if _v else None)
+                    except (ValueError, TypeError):
+                        setattr(listing, _fld, None)
+                _sqft = request.form.get('sqft', '').strip()
+                listing.sqft = int(_sqft) if _sqft.isdigit() else None
+                _lot = request.form.get('lot_size', '').strip()
+                listing.lot_size = _lot[:50] if _lot else None
+                _yr = request.form.get('year_built', '').strip()
+                try:
+                    _yr_int = int(_yr)
+                    listing.year_built = _yr_int if 1800 <= _yr_int <= 2030 else None
+                except (ValueError, TypeError):
+                    listing.year_built = None
+                listing.garage_parking = request.form.get('garage_parking', '').strip()[:100] or None
+                for _fld in ('hoa_fee', 'property_tax_annual'):
+                    _v = request.form.get(_fld, '').strip()
+                    try:
+                        setattr(listing, _fld, float(_v) if _v else None)
+                    except (ValueError, TypeError):
+                        setattr(listing, _fld, None)
+                listing.amenities = request.form.get('amenities', '').strip() or None
+                if listing.listing_type == 'rental':
+                    _rt = request.form.get('rent_terms', '').strip()
+                    listing.rent_terms = _rt if _rt in ('monthly', 'annual', 'weekly', 'short_term') else None
+                    listing.pets_allowed = request.form.get('pets_allowed') == '1'
+                    listing.utilities_included = request.form.get('utilities_included', '').strip()[:200] or None
             else:
-                listing.subcategory_id = None
-            raw_cond = request.form.get('condition', '').strip()
-            listing.condition = raw_cond if raw_cond in _VALID_CONDITIONS else None
+                # Item-specific details
+                cat_id = request.form.get('category_id', '').strip()
+                listing.category_id = int(cat_id) if cat_id.isdigit() else None
+                sub_id = request.form.get('subcategory_id', '').strip()
+                raw_sub = int(sub_id) if sub_id.isdigit() else None
+                if raw_sub and listing.category_id:
+                    from models import Category as _Cat2
+                    sub_obj = _Cat2.query.get(raw_sub)
+                    listing.subcategory_id = raw_sub if (sub_obj and sub_obj.parent_id == listing.category_id) else None
+                else:
+                    listing.subcategory_id = None
+                raw_cond = request.form.get('condition', '').strip()
+                listing.condition = raw_cond if raw_cond in _VALID_CONDITIONS else None
+
             if not listing.title:
                 flash("A title is required.", "error")
-                return render_template('listing_wizard.html', listing=listing,
+                _tpl = 'property_wizard.html' if listing.is_property else 'listing_wizard.html'
+                return render_template(_tpl, listing=listing,
                                        step=step, total_steps=TOTAL_STEPS, categories=categories)
 
         elif step == 3:
@@ -548,7 +708,8 @@ def listing_step(listing_id, step):
                     listing.price = None
                 if listing.price is None:
                     flash("Please enter a valid price (0 or higher).", "error")
-                    return render_template('listing_wizard.html', listing=listing,
+                    _tpl = 'property_wizard.html' if listing.is_property else 'listing_wizard.html'
+                    return render_template(_tpl, listing=listing,
                                            step=step, total_steps=TOTAL_STEPS, categories=categories)
 
         elif step == 4:
@@ -563,11 +724,24 @@ def listing_step(listing_id, step):
                     listing.longitude = zc.lon
                     if not listing.city:  listing.city  = zc.city
                     if not listing.state: listing.state = zc.state
+            if listing.is_property:
+                listing.property_address = request.form.get('property_address', '').strip()[:200] or None
 
         elif step == 5:
-            raw_opts = request.form.getlist('delivery_option')
-            valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
-            listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+            if listing.is_property:
+                _odt = request.form.get('open_house_dt', '').strip()
+                if _odt:
+                    try:
+                        from datetime import datetime as _dt2
+                        listing.open_house_dt = _dt2.fromisoformat(_odt)
+                    except ValueError:
+                        listing.open_house_dt = None
+                else:
+                    listing.open_house_dt = None
+            else:
+                raw_opts = request.form.getlist('delivery_option')
+                valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
+                listing.delivery_option = ','.join(valid_opts) if valid_opts else None
 
         elif step == 6:
             # Publish — full server-side validation including photos
@@ -588,7 +762,8 @@ def listing_step(listing_id, step):
             return redirect(url_for('listing_step', listing_id=listing_id, step=step + 1))
         return redirect(url_for('listing_step', listing_id=listing_id, step=6))
 
-    return render_template('listing_wizard.html',
+    _tpl = 'property_wizard.html' if listing.is_property else 'listing_wizard.html'
+    return render_template(_tpl,
                            listing=listing,
                            step=step,
                            total_steps=TOTAL_STEPS,
@@ -2877,8 +3052,9 @@ def admin_delete_user(user_id):
 @require_admin
 def admin_listings():
     q = request.args.get('q', '').strip()
-    status_filter = request.args.get('status', '')
+    status_filter   = request.args.get('status', '')
     category_filter = request.args.get('category', '')
+    lt_filter       = request.args.get('listing_type', '')
 
     query = Listing.query
     if q:
@@ -2890,6 +3066,8 @@ def admin_listings():
             query = query.filter_by(category_id=int(category_filter))
         except (ValueError, TypeError):
             pass
+    if lt_filter in ('item', 'property_sale', 'rental'):
+        query = query.filter(Listing.listing_type == lt_filter)
 
     listings = query.order_by(Listing.created_at.desc()).limit(200).all()
     categories = Category.query.order_by(Category.display_order).all()

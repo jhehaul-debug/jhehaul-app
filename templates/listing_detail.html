@@ -583,31 +583,82 @@
         <h1 class="ld-title">{{ listing.title }}</h1>
 
         <div class="ld-price-row">
+          {% if listing.is_property %}
+            <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:8px;{% if listing.listing_type == 'rental' %}background:#dbeafe;color:#1e40af{% else %}background:#dcfce7;color:#15803d{% endif %}">
+              {{ '🔑 For Rent' if listing.listing_type == 'rental' else '🏠 For Sale' }}
+            </span>
+          {% endif %}
           {% if listing.price_type == 'free' %}
             <span class="ld-price free">Free</span>
           {% elif listing.price is not none %}
-            <span class="ld-price">${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}</span>
+            <span class="ld-price">${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.8rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
             {% if listing.price_type == 'negotiable' %}
-              <span class="ld-badge-offer">Make Offer</span>
+              <span class="ld-badge-offer">Negotiable</span>
             {% endif %}
           {% else %}
             <span class="ld-price">Contact for price</span>
           {% endif %}
         </div>
 
+        {# ── Property Stats Row (beds/baths/sqft) ── #}
+        {% if listing.is_property and (listing.bedrooms is not none or listing.bathrooms is not none or listing.sqft) %}
+        <div style="display:flex;gap:20px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:14px">
+          {% if listing.bedrooms is not none %}
+          <div style="text-align:center">
+            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.bedrooms|int if listing.bedrooms == listing.bedrooms|int else listing.bedrooms }}</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Beds</div>
+          </div>
+          {% endif %}
+          {% if listing.bathrooms is not none %}
+          <div style="text-align:center">
+            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.bathrooms|int if listing.bathrooms == listing.bathrooms|int else listing.bathrooms }}</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Baths</div>
+          </div>
+          {% endif %}
+          {% if listing.sqft %}
+          <div style="text-align:center">
+            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ '{:,}'.format(listing.sqft) }}</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Sq Ft</div>
+          </div>
+          {% endif %}
+          {% if listing.year_built %}
+          <div style="text-align:center">
+            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.year_built }}</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Year Built</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {# ── Open House Banner ── #}
+        {% if listing.open_house_dt %}
+        <div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-weight:600;color:#713f12;font-size:.92rem">
+          🗓️ <strong>Open House:</strong> {{ listing.open_house_dt.strftime('%A, %B %-d at %-I:%M %p') }}
+        </div>
+        {% endif %}
+
         <div class="ld-meta-chips">
-          {% if listing.condition %}
-          <span class="ld-chip">
-            <span class="chip-icon">
-              {% if listing.condition == 'new' %}✨
-              {% elif listing.condition == 'like_new' %}🌟
-              {% elif listing.condition == 'good' %}👍
-              {% elif listing.condition == 'fair' %}🔧
-              {% elif listing.condition == 'for_parts' %}🔩
-              {% else %}❓{% endif %}
+          {% if listing.is_property %}
+            {# Property type #}
+            {% if listing.property_type %}
+            <span class="ld-chip">🏠 {{ {'house':'House','condo':'Condo/Townhome','multi_family':'Multi-Family','land':'Land','commercial':'Commercial','manufactured':'Manufactured/Mobile','other':'Other Real Estate','apartment':'Apartment','room':'Room','short_term':'Short-term Rental'}.get(listing.property_type, listing.property_type.replace('_',' ').title()) }}</span>
+            {% endif %}
+            {# Listed by #}
+            {% if listing.listed_by %}
+            <span class="ld-chip">{{ {'owner':'🏠 Owner/FSBO','agent':'🤝 Agent','builder':'🏗️ Builder'}.get(listing.listed_by, listing.listed_by) }}</span>
+            {% endif %}
+            {# Pets #}
+            {% if listing.listing_type == 'rental' %}
+            <span class="ld-chip">{{ '🐾 Pets OK' if listing.pets_allowed else '🚫 No Pets' }}</span>
+            {% endif %}
+          {% else %}
+            {# Item condition #}
+            {% if listing.condition %}
+            <span class="ld-chip">
+              <span class="chip-icon">{% if listing.condition == 'new' %}✨{% elif listing.condition == 'like_new' %}🌟{% elif listing.condition == 'good' %}👍{% elif listing.condition == 'fair' %}🔧{% elif listing.condition == 'for_parts' %}🔩{% else %}❓{% endif %}</span>
+              {{ listing.condition.replace('_', ' ').title() }}
             </span>
-            {{ listing.condition.replace('_', ' ').title() }}
-          </span>
+            {% endif %}
           {% endif %}
           {% if listing.city or listing.state %}
           <span class="ld-chip">📍 {{ [listing.city, listing.state] | select | join(', ') }}</span>
@@ -619,12 +670,56 @@
           <span class="ld-chip">👁 {{ listing.view_count or 0 }} view{{ '' if (listing.view_count or 0) == 1 else 's' }}</span>
         </div>
 
+        {# ── Property Address ── #}
+        {% if listing.is_property and listing.property_address %}
+        <div style="font-size:.9rem;color:#4b5563;margin-bottom:12px">
+          📍 {{ listing.property_address }}, {{ listing.city or '' }}{% if listing.state %}, {{ listing.state }}{% endif %} {{ listing.zip_code or '' }}
+        </div>
+        {% endif %}
+
         {% if listing.description %}
         <div class="ld-section-label">Description</div>
         <div class="ld-description">{{ listing.description }}</div>
         {% endif %}
 
-        {% if listing.delivery_options_list %}
+        {# ── Property Details Table ── #}
+        {% if listing.is_property %}
+        {% set prop_details = [] %}
+        {% if listing.lot_size %}{% set _ = prop_details.append(('Lot Size', listing.lot_size)) %}{% endif %}
+        {% if listing.garage_parking %}{% set _ = prop_details.append(('Garage/Parking', listing.garage_parking)) %}{% endif %}
+        {% if listing.hoa_fee is not none %}{% set _ = prop_details.append(('HOA', '$' ~ '%.0f'|format(listing.hoa_fee) ~ '/mo')) %}{% endif %}
+        {% if listing.property_tax_annual is not none %}{% set _ = prop_details.append(('Property Tax', '$' ~ '{:,.0f}'.format(listing.property_tax_annual) ~ '/yr')) %}{% endif %}
+        {% if listing.rent_terms %}{% set _ = prop_details.append(('Lease Terms', {'monthly':'Month-to-month','annual':'Annual','weekly':'Weekly','short_term':'Short-term/nightly'}.get(listing.rent_terms, listing.rent_terms))) %}{% endif %}
+        {% if listing.utilities_included %}{% set _ = prop_details.append(('Utilities Included', listing.utilities_included)) %}{% endif %}
+        {% if prop_details %}
+        <div class="ld-section-label">Property Details</div>
+        <table style="width:100%;font-size:.88rem;border-collapse:collapse;margin-bottom:14px">
+          {% for label, val in prop_details %}
+          <tr style="border-bottom:1px solid #f3f4f6">
+            <td style="padding:7px 0;color:#6b7280;font-weight:600;width:45%">{{ label }}</td>
+            <td style="padding:7px 0;color:#1a1a2e">{{ val }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+
+        {# Amenities #}
+        {% if listing.amenities_list %}
+        <div class="ld-section-label">Amenities</div>
+        <ul style="list-style:none;padding:0;margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+          {% for a in listing.amenities_list %}
+          <li style="font-size:.85rem;color:#374151;padding:3px 0">✓ {{ a }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        {# Real estate disclaimer #}
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#6b7280;line-height:1.6;margin-bottom:12px">
+          📋 JHE Haul connects buyers and renters with sellers and landlords. We do not process real estate payments, provide escrow services, or act as a brokerage.
+        </div>
+        {% endif %}
+
+        {% if not listing.is_property and listing.delivery_options_list %}
         <div class="ld-section-label">Delivery options</div>
         <div class="ld-delivery-opts">
           {% for opt in listing.delivery_options_list %}
@@ -684,17 +779,32 @@
 
           {% if current_user.is_authenticated %}
             <!-- Logged-in buyer -->
-            <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
-
-            {% if 'jhe_haul' in listing.delivery_options_list %}
-            <a href="{{ url_for('customer_request') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+            {% if listing.is_property %}
+              {% if listing.listing_type == 'rental' %}
+                <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🔑 Contact Landlord</a>
+              {% else %}
+                <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
+              {% if 'jhe_haul' in listing.delivery_options_list %}
+              <a href="{{ url_for('customer_request') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+              {% endif %}
             {% endif %}
 
           {% else %}
             <!-- Logged-out visitor -->
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">💬 Message Seller</a>
-            {% if 'jhe_haul' in listing.delivery_options_list %}
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+            {% if listing.is_property %}
+              {% if listing.listing_type == 'rental' %}
+                <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">🔑 Contact Landlord</a>
+              {% else %}
+                <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">💬 Message Seller</a>
+              {% if 'jhe_haul' in listing.delivery_options_list %}
+              <a href="{{ url_for('invite', role='customer') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+              {% endif %}
             {% endif %}
           {% endif %}
 

@@ -1,0 +1,581 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'List a Property' if listing.status == 'draft' else 'Edit Property Listing' }} — JHE Haul{% endblock %}
+
+{% block content %}
+<style>
+  .wizard-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+  .wizard-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0 0 6px; }
+  .wizard-header .wiz-sub { color: #6b7280; font-size: 0.88rem; margin: 0 0 18px; }
+
+  .progress-bar { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
+  .progress-step { flex: 1; text-align: center; position: relative; }
+  .progress-step-circle { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; background: #e5e7eb; color: #6b7280; position: relative; z-index: 1; }
+  .progress-step.done .progress-step-circle { background: #16a34a; color: #fff; }
+  .progress-step.active .progress-step-circle { background: #7c3aed; color: #fff; box-shadow: 0 0 0 4px #ede9fe; }
+  .progress-step-label { font-size: 0.64rem; color: #6b7280; margin-top: 4px; display: block; }
+  .progress-step.active .progress-step-label { color: #7c3aed; font-weight: 600; }
+  .progress-step.done .progress-step-label { color: #16a34a; }
+  .progress-connector { flex: 0 0 auto; width: 32px; height: 2px; background: #e5e7eb; margin-bottom: 16px; }
+  .progress-connector.done { background: #16a34a; }
+
+  .step-card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 1px 4px rgba(0,0,0,.08); border: 1px solid #f0f0f0; }
+  .step-card h2 { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
+  .step-card .hint { color: #6b7280; font-size: 0.87rem; margin: 0 0 20px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 0.87rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
+  .form-label .req { color: #ef4444; margin-left: 2px; }
+  .form-label .opt { color: #9ca3af; font-weight: 400; font-size: 0.8rem; margin-left: 4px; }
+  .form-control { width: 100%; padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.94rem; color: #1a1a2e; background: #fff; box-sizing: border-box; transition: border-color .15s; }
+  .form-control:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px #ede9fe; }
+  textarea.form-control { min-height: 100px; resize: vertical; }
+  .form-row { display: grid; gap: 12px; }
+  .form-row-2 { grid-template-columns: 1fr 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 540px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 380px) { .form-row-2, .form-row-3 { grid-template-columns: 1fr; } }
+
+  .prop-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 18px; }
+  .prop-type-opt input[type=radio] { display: none; }
+  .prop-type-opt label { display: block; text-align: center; padding: 12px 8px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; font-size: 0.84rem; font-weight: 600; transition: border-color .12s, background .12s; }
+  .prop-type-opt label .pt-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+  .prop-type-opt input:checked + label { border-color: #7c3aed; background: #f5f3ff; color: #5b21b6; }
+
+  .listed-by-opts { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .lb-opt input[type=radio] { display: none; }
+  .lb-opt label { display: block; padding: 10px 18px; border: 2px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: border-color .12s, background .12s; }
+  .lb-opt input:checked + label { border-color: #7c3aed; background: #f5f3ff; color: #5b21b6; }
+
+  .price-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .price-option input[type=radio] { display: none; }
+  .price-option label { display: block; text-align: center; padding: 14px 8px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+  .price-option label .po-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+  .price-option input:checked + label { border-color: #7c3aed; background: #f5f3ff; color: #5b21b6; }
+
+  .toggle-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 9px; margin-bottom: 10px; cursor: pointer; }
+  .toggle-row input[type=checkbox] { accent-color: #7c3aed; width: 18px; height: 18px; flex-shrink: 0; }
+  .toggle-row-text strong { display: block; font-size: 0.92rem; color: #1a1a2e; }
+  .toggle-row-text span { font-size: 0.8rem; color: #6b7280; }
+
+  .wizard-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+  .btn-back { background: none; border: 1.5px solid #d1d5db; color: #374151; padding: 10px 20px; border-radius: 8px; font-size: 0.92rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn-back:hover { background: #f9fafb; }
+  .btn-next { background: #7c3aed; color: #fff; border: none; padding: 11px 28px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-next:hover { background: #6d28d9; }
+  .btn-publish { background: #16a34a; color: #fff; border: none; padding: 11px 28px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-publish:hover { background: #15803d; }
+
+  /* Photo (same as item wizard) */
+  .photo-upload-zone { border: 2px dashed #c4b5fd; border-radius: 12px; padding: 32px; text-align: center; background: #f5f3ff; cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 20px; }
+  .photo-upload-zone:hover, .photo-upload-zone.drag-over { border-color: #7c3aed; background: #ede9fe; }
+  .photo-upload-zone input[type=file] { display: none; }
+  .photo-upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .photo-upload-zone p { margin: 0; font-size: 0.9rem; color: #6b7280; }
+  .photo-upload-zone .upload-btn { display: inline-block; margin-top: 10px; background: #7c3aed; color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 480px) { .photo-grid { grid-template-columns: repeat(2, 1fr); } }
+  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f3f4f6; border: 2px solid transparent; cursor: grab; }
+  .photo-thumb.is-primary { border-color: #7c3aed; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .photo-thumb-actions { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.55); display: flex; gap: 4px; padding: 5px; }
+  .thumb-btn { flex: 1; background: rgba(255,255,255,.2); border: none; color: #fff; font-size: 0.7rem; padding: 3px 4px; border-radius: 4px; cursor: pointer; font-weight: 600; text-align: center; }
+  .thumb-btn:hover { background: rgba(255,255,255,.4); }
+  .thumb-btn.danger { color: #fca5a5; }
+  .primary-badge { position: absolute; top: 4px; left: 4px; background: #7c3aed; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .drag-handle { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.45); color: #fff; font-size: 0.75rem; padding: 2px 5px; border-radius: 4px; cursor: grab; line-height: 1; }
+  .photo-count { font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; }
+  .upload-spinner { display: none; font-size: 0.85rem; color: #7c3aed; }
+  .reorder-hint { font-size: 0.8rem; color: #6b7280; margin-bottom: 10px; }
+
+  /* Preview */
+  .prop-preview { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+  .prop-preview-photo { width: 100%; aspect-ratio: 16/9; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; overflow: hidden; }
+  .prop-preview-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .prop-preview-body { padding: 20px; }
+  .prop-preview-price { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+  .prop-preview-title { font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
+  .prop-preview-stats { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
+  .prop-stat { font-size: 0.9rem; font-weight: 600; color: #374151; }
+  .prop-stat .ps-label { font-size: 0.74rem; color: #9ca3af; display: block; font-weight: 400; }
+  .prop-preview-meta { font-size: 0.84rem; color: #6b7280; margin-bottom: 12px; }
+  .prop-badge { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-right: 6px; }
+  .prop-badge-sale { background: #dcfce7; color: #15803d; }
+  .prop-badge-rent { background: #dbeafe; color: #1e40af; }
+  .prop-badge-by { background: #f3f4f6; color: #374151; }
+  .incomplete-warning { background: #fef9c3; border: 1.5px solid #fde047; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.88rem; color: #854d0e; }
+  .incomplete-warning strong { display: block; margin-bottom: 4px; }
+  .location-row { display: grid; grid-template-columns: 1fr 80px 100px; gap: 10px; }
+  @media (max-width: 480px) { .location-row { grid-template-columns: 1fr 1fr; } }
+
+  .disclaimer { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; font-size: 0.8rem; color: #6b7280; line-height: 1.6; margin-top: 16px; }
+</style>
+
+<div class="wizard-wrap">
+  <div class="wizard-header">
+    <h1>
+      {% if listing.listing_type == 'rental' %}
+        {% if listing.status == 'draft' %}🔑 List a Rental{% else %}Edit Rental Listing{% endif %}
+      {% else %}
+        {% if listing.status == 'draft' %}🏠 List a Property for Sale{% else %}Edit Property Listing{% endif %}
+      {% endif %}
+    </h1>
+    <p class="wiz-sub">
+      {% if listing.listing_type == 'rental' %}Add your rental details and connect with prospective tenants.
+      {% else %}Add your property details and connect with prospective buyers.{% endif %}
+    </p>
+    <div class="progress-bar">
+      {% set labels = ['Photos', 'Details', 'Price', 'Location', 'Extras', 'Preview'] %}
+      {% for i in range(1, total_steps + 1) %}
+        {% if i > 1 %}<div class="progress-connector {{ 'done' if i <= step else '' }}"></div>{% endif %}
+        <div class="progress-step {{ 'done' if i < step else ('active' if i == step else '') }}">
+          <div class="progress-step-circle">{% if i < step %}✓{% else %}{{ i }}{% endif %}</div>
+          <span class="progress-step-label">{{ labels[i-1] }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── STEP 1: PHOTOS ── #}
+  {% if step == 1 %}
+  <div class="step-card">
+    <h2>📸 Add Property Photos</h2>
+    <p class="hint">Upload up to 10 photos. Drag to reorder. The starred photo is the cover image.</p>
+    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
+    {% if listing.photos|length > 1 %}<div class="reorder-hint">⠿ Drag photos to reorder them</div>{% endif %}
+    <div class="photo-grid" id="photoGrid">
+      {% for photo in listing.photos %}
+      <div class="photo-thumb {{ 'is-primary' if photo.is_primary }}" id="thumb-{{ photo.id }}" data-id="{{ photo.id }}" draggable="true">
+        {% if photo.is_primary %}<div class="primary-badge">⭐ Cover</div>{% endif %}
+        <div class="drag-handle">⠿</div>
+        <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="Photo">
+        <div class="photo-thumb-actions">
+          {% if not photo.is_primary %}
+          <button class="thumb-btn" onclick="setPrimary({{ photo.id }})">⭐ Cover</button>
+          {% else %}
+          <span class="thumb-btn" style="opacity:.5;cursor:default">⭐ Cover</span>
+          {% endif %}
+          <button class="thumb-btn danger" onclick="deletePhoto({{ photo.id }})">✕</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if listing.photos|length < 10 %}
+    <div class="photo-upload-zone" id="uploadZone">
+      <input type="file" id="photoInput" accept="image/*" multiple>
+      <div class="upload-icon">🏠</div>
+      <p>Drag photos here or</p>
+      <span class="upload-btn">Browse Photos</span>
+      <p style="margin-top:8px;font-size:0.78rem">JPG, PNG, WebP — up to 15 MB each</p>
+    </div>
+    {% endif %}
+    <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="wizard-nav">
+        <a href="{{ url_for('sell') }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Details →</button>
+      </div>
+    </form>
+  </div>
+  <script>
+  const LISTING_ID = {{ listing.id }};
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  const photoGrid = document.getElementById('photoGrid');
+  const photoCount = document.getElementById('photoCount');
+  const uploadZone = document.getElementById('uploadZone');
+  const photoInput = document.getElementById('photoInput');
+  const spinner = document.getElementById('uploadSpinner');
+  let currentCount = {{ listing.photos|length }};
+  function updateCount() { photoCount.textContent = currentCount + ' / 10 photos'; if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : ''; }
+  let dragSrc = null;
+  function addDragListeners(thumb) {
+    thumb.setAttribute('draggable','true');
+    thumb.addEventListener('dragstart',e=>{ dragSrc=thumb; e.dataTransfer.effectAllowed='move'; setTimeout(()=>thumb.style.opacity='0.5',0); });
+    thumb.addEventListener('dragend',()=>{ thumb.style.opacity=''; document.querySelectorAll('.photo-thumb').forEach(t=>t.classList.remove('drag-over-thumb')); const ids=Array.from(photoGrid.querySelectorAll('.photo-thumb[data-id]')).map(t=>parseInt(t.dataset.id)); if(ids.length>1)saveOrder(ids); });
+    thumb.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; if(thumb!==dragSrc)thumb.classList.add('drag-over-thumb'); });
+    thumb.addEventListener('dragleave',()=>thumb.classList.remove('drag-over-thumb'));
+    thumb.addEventListener('drop',e=>{ e.stopPropagation(); thumb.classList.remove('drag-over-thumb'); if(dragSrc&&dragSrc!==thumb){ const kids=Array.from(photoGrid.children); const si=kids.indexOf(dragSrc),di=kids.indexOf(thumb); if(si<di)photoGrid.insertBefore(dragSrc,thumb.nextSibling); else photoGrid.insertBefore(dragSrc,thumb); } });
+  }
+  async function saveOrder(ids) { try { await fetch(`/listing/${LISTING_ID}/photo/reorder`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},body:JSON.stringify({order:ids})}); } catch(e){} }
+  photoGrid.querySelectorAll('.photo-thumb[data-id]').forEach(addDragListeners);
+  function buildThumb(id,url,isPrimary) {
+    const div=document.createElement('div'); div.className='photo-thumb'+(isPrimary?' is-primary':''); div.id='thumb-'+id; div.dataset.id=id;
+    div.innerHTML=`${isPrimary?'<div class="primary-badge">⭐ Cover</div>':''}<div class="drag-handle">⠿</div><img src="${url}" alt="Photo"><div class="photo-thumb-actions"><button class="thumb-btn" onclick="setPrimary(${id})">⭐ Cover</button><button class="thumb-btn danger" onclick="deletePhoto(${id})">✕</button></div>`;
+    addDragListeners(div); return div;
+  }
+  async function uploadFiles(files) {
+    for (const file of files) {
+      if (currentCount >= 10) break; spinner.style.display='block';
+      const fd=new FormData(); fd.append('photo',file);
+      try { const res=await fetch(`/listing/${LISTING_ID}/photo/upload`,{method:'POST',headers:{'X-CSRFToken':csrfToken},body:fd}); const data=await res.json(); if(res.ok){currentCount++;photoGrid.appendChild(buildThumb(data.id,data.url,data.is_primary));updateCount();}else{alert(data.error||'Upload failed.');} } catch(e){alert('Upload error: '+e);}
+    }
+    spinner.style.display='none';
+  }
+  if(uploadZone){ uploadZone.addEventListener('click',()=>photoInput.click()); photoInput.addEventListener('change',()=>uploadFiles(photoInput.files)); uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag-over');}); uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag-over')); uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag-over');uploadFiles(e.dataTransfer.files);}); }
+  async function deletePhoto(id) { if(!confirm('Remove this photo?'))return; const res=await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`,{method:'POST',headers:{'X-CSRFToken':csrfToken}}); if(res.ok){document.getElementById('thumb-'+id)?.remove();currentCount=Math.max(0,currentCount-1);updateCount();} }
+  async function setPrimary(id) { const res=await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`,{method:'POST',headers:{'X-CSRFToken':csrfToken}}); if(res.ok){document.querySelectorAll('.photo-thumb').forEach(t=>{t.classList.remove('is-primary');t.querySelector('.primary-badge')?.remove();}); const el=document.getElementById('thumb-'+id); if(el){el.classList.add('is-primary');el.insertAdjacentHTML('afterbegin','<div class="primary-badge">⭐ Cover</div>');}} }
+  </script>
+
+  {# ── STEP 2: PROPERTY DETAILS ── #}
+  {% elif step == 2 %}
+  <div class="step-card">
+    <h2>🏠 Property Details</h2>
+    <p class="hint">
+      {% if listing.listing_type == 'rental' %}Describe the rental so prospective tenants can find it.
+      {% else %}Describe the property so prospective buyers can find it.{% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {# Property type #}
+      <div class="form-group">
+        <label class="form-label">Property Type <span class="req">*</span></label>
+        {% if listing.listing_type == 'property_sale' %}
+        <div class="prop-type-grid">
+          {% for val, icon, label in [
+            ('house','🏡','House'), ('condo','🏢','Condo/Townhome'),
+            ('multi_family','🏘️','Multi-Family'), ('land','🌾','Land & Lots'),
+            ('commercial','🏗️','Commercial'), ('manufactured','🚐','Manufactured/Mobile'),
+            ('other','📦','Other')
+          ] %}
+          <div class="prop-type-opt">
+            <input type="radio" name="property_type" id="pt_{{ val }}" value="{{ val }}" {{ 'checked' if listing.property_type == val }}>
+            <label for="pt_{{ val }}"><span class="pt-icon">{{ icon }}</span>{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="prop-type-grid">
+          {% for val, icon, label in [
+            ('apartment','🏢','Apartment'), ('house','🏡','House'),
+            ('room','🛏️','Room'), ('commercial','🏗️','Commercial'),
+            ('short_term','🌴','Short-term'), ('other','📦','Other')
+          ] %}
+          <div class="prop-type-opt">
+            <input type="radio" name="property_type" id="pt_{{ val }}" value="{{ val }}" {{ 'checked' if listing.property_type == val }}>
+            <label for="pt_{{ val }}"><span class="pt-icon">{{ icon }}</span>{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      {# Listed by #}
+      <div class="form-group">
+        <label class="form-label">Listed By</label>
+        <div class="listed-by-opts">
+          {% for val, label in [('owner','🏠 Owner/FSBO'), ('agent','🤝 Licensed Agent'), ('builder','🏗️ Builder')] %}
+          <div class="lb-opt">
+            <input type="radio" name="listed_by" id="lb_{{ val }}" value="{{ val }}" {{ 'checked' if (listing.listed_by or 'owner') == val }}>
+            <label for="lb_{{ val }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# Title #}
+      <div class="form-group">
+        <label class="form-label">Listing Title <span class="req">*</span></label>
+        <input class="form-control" type="text" name="title" value="{{ listing.title or '' }}" placeholder="e.g. 3-Bedroom Ranch in Eden Prairie" maxlength="200" required>
+      </div>
+
+      {# Description #}
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" name="description" rows="5" placeholder="Describe the property — layout, updates, neighborhood, what's included…">{{ listing.description or '' }}</textarea>
+      </div>
+
+      {# Beds / Baths / Sqft #}
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label class="form-label">Bedrooms</label>
+          <input class="form-control" type="number" name="bedrooms" value="{{ listing.bedrooms or '' }}" min="0" max="20" step="0.5" placeholder="e.g. 3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bathrooms</label>
+          <input class="form-control" type="number" name="bathrooms" value="{{ listing.bathrooms or '' }}" min="0" max="20" step="0.5" placeholder="e.g. 2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sq Ft <span class="opt">(optional)</span></label>
+          <input class="form-control" type="number" name="sqft" value="{{ listing.sqft or '' }}" min="0" placeholder="e.g. 1500">
+        </div>
+      </div>
+
+      {# For-sale specific: lot size, year built, HOA, property tax #}
+      {% if listing.listing_type == 'property_sale' %}
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Lot Size <span class="opt">(optional)</span></label>
+          <input class="form-control" type="text" name="lot_size" value="{{ listing.lot_size or '' }}" placeholder="e.g. 0.25 acres">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year Built <span class="opt">(optional)</span></label>
+          <input class="form-control" type="number" name="year_built" value="{{ listing.year_built or '' }}" min="1800" max="2030" placeholder="e.g. 1995">
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Monthly HOA <span class="opt">(if applicable)</span></label>
+          <div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af">$</span>
+          <input class="form-control" style="padding-left:26px" type="number" name="hoa_fee" value="{{ listing.hoa_fee or '' }}" min="0" step="0.01" placeholder="0"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Property Tax <span class="opt">(if known)</span></label>
+          <div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af">$</span>
+          <input class="form-control" style="padding-left:26px" type="number" name="property_tax_annual" value="{{ listing.property_tax_annual or '' }}" min="0" step="0.01" placeholder="0"></div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Rental-specific: pets, utilities, terms #}
+      {% if listing.listing_type == 'rental' %}
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label class="form-label">Lease Terms</label>
+          <select class="form-control" name="rent_terms">
+            <option value="">— Select —</option>
+            <option value="monthly" {{ 'selected' if listing.rent_terms == 'monthly' }}>Month-to-month</option>
+            <option value="annual" {{ 'selected' if listing.rent_terms == 'annual' }}>Annual lease</option>
+            <option value="weekly" {{ 'selected' if listing.rent_terms == 'weekly' }}>Weekly</option>
+            <option value="short_term" {{ 'selected' if listing.rent_terms == 'short_term' }}>Short-term / nightly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year Built <span class="opt">(optional)</span></label>
+          <input class="form-control" type="number" name="year_built" value="{{ listing.year_built or '' }}" min="1800" max="2030" placeholder="e.g. 2005">
+        </div>
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" name="pets_allowed" value="1" {{ 'checked' if listing.pets_allowed }}>
+        <div class="toggle-row-text"><strong>🐾 Pets Allowed</strong><span>Check if pets are permitted</span></div>
+      </label>
+      <div class="form-group" style="margin-top:10px;">
+        <label class="form-label">Utilities Included <span class="opt">(optional)</span></label>
+        <input class="form-control" type="text" name="utilities_included" value="{{ listing.utilities_included or '' }}" placeholder="e.g. Water, trash, WiFi">
+      </div>
+      {% endif %}
+
+      {# Garage #}
+      <div class="form-group">
+        <label class="form-label">Garage / Parking <span class="opt">(optional)</span></label>
+        <input class="form-control" type="text" name="garage_parking" value="{{ listing.garage_parking or '' }}" placeholder="e.g. 2-car attached garage, driveway">
+      </div>
+
+      {# Amenities #}
+      <div class="form-group">
+        <label class="form-label">Amenities <span class="opt">(one per line)</span></label>
+        <textarea class="form-control" name="amenities" rows="4" placeholder="Central A/C&#10;Washer/Dryer in unit&#10;Hardwood floors&#10;New kitchen appliances">{{ listing.amenities or '' }}</textarea>
+      </div>
+
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Price →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── STEP 3: PRICE ── #}
+  {% elif step == 3 %}
+  <div class="step-card">
+    {% if listing.listing_type == 'rental' %}
+    <h2>💰 Rental Price</h2>
+    <p class="hint">Enter the monthly rent. You can also mark as negotiable.</p>
+    {% else %}
+    <h2>💰 Asking Price</h2>
+    <p class="hint">Set the asking price. Real estate transactions happen outside JHE Haul.</p>
+    {% endif %}
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="price-options">
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_fixed" value="fixed" {{ 'checked' if (listing.price_type or 'fixed') == 'fixed' }}>
+          <label for="pt_fixed"><span class="po-icon">🏷️</span>{{ 'Monthly Rent' if listing.listing_type == 'rental' else 'Asking Price' }}</label>
+        </div>
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_neg" value="negotiable" {{ 'checked' if listing.price_type == 'negotiable' }}>
+          <label for="pt_neg"><span class="po-icon">🤝</span>Negotiable</label>
+        </div>
+      </div>
+      <div class="form-group" id="priceGroup">
+        <label class="form-label">{{ 'Monthly Rent' if listing.listing_type == 'rental' else 'Asking Price' }} <span class="req">*</span></label>
+        <div style="position:relative">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-weight:700">$</span>
+          <input class="form-control" style="padding-left:28px" type="number" name="price" id="priceInput"
+            value="{{ '%.0f'|format(listing.price) if listing.price is not none else '' }}"
+            min="0" step="1" placeholder="0">
+        </div>
+        {% if listing.listing_type == 'rental' %}
+        <small style="color:#9ca3af;font-size:0.8rem;margin-top:4px;display:block">Per month. Enter 0 for contact for pricing.</small>
+        {% endif %}
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=2) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Location →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── STEP 4: LOCATION ── #}
+  {% elif step == 4 %}
+  <div class="step-card">
+    <h2>📍 Property Location</h2>
+    <p class="hint">
+      City and ZIP are always shown. The street address is optional — only add it if you want it publicly visible on your listing.
+    </p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label">Street / Property Address <span class="opt">(optional — visible publicly)</span></label>
+        <input class="form-control" type="text" name="property_address" value="{{ listing.property_address or '' }}" placeholder="e.g. 123 Main St" maxlength="200">
+        <small style="color:#9ca3af;font-size:0.78rem;margin-top:4px;display:block">Only add this if you want buyers to see the exact address. City/ZIP are always shown.</small>
+      </div>
+      <div class="location-row">
+        <div class="form-group">
+          <label class="form-label">City <span class="req">*</span></label>
+          <input class="form-control" type="text" name="city" value="{{ listing.city or '' }}" placeholder="e.g. Minneapolis" maxlength="100" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <select class="form-control" name="state">
+            <option value="">—</option>
+            {% for abbr in ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] %}
+            <option value="{{ abbr }}" {{ 'selected' if listing.state == abbr }}>{{ abbr }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ZIP Code <span class="req">*</span></label>
+          <input class="form-control" type="text" name="zip_code" value="{{ listing.zip_code or '' }}" placeholder="55401" maxlength="10" required>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=3) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Extras →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── STEP 5: OPEN HOUSE / EXTRAS ── #}
+  {% elif step == 5 %}
+  <div class="step-card">
+    {% if listing.listing_type == 'rental' %}
+    <h2>📋 Rental Details</h2>
+    <p class="hint">Additional information to help renters — all fields optional.</p>
+    {% else %}
+    <h2>🗓️ Open House & Showings</h2>
+    <p class="hint">Optionally schedule an open house. Buyers can also message you to schedule a private showing.</p>
+    {% endif %}
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if listing.listing_type == 'property_sale' %}
+      <div class="form-group">
+        <label class="form-label">Open House Date &amp; Time <span class="opt">(optional)</span></label>
+        <input class="form-control" type="datetime-local" name="open_house_dt"
+          value="{{ listing.open_house_dt.strftime('%Y-%m-%dT%H:%M') if listing.open_house_dt else '' }}">
+        <small style="color:#9ca3af;font-size:0.78rem;margin-top:4px;display:block">This will be prominently shown on your listing. Leave blank if no open house.</small>
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label class="form-label">Available From <span class="opt">(optional)</span></label>
+        <input class="form-control" type="date" name="open_house_dt"
+          value="{{ listing.open_house_dt.strftime('%Y-%m-%d') if listing.open_house_dt else '' }}">
+      </div>
+      {% endif %}
+      <div class="disclaimer">
+        <strong>📋 Platform Notice:</strong>
+        JHE Haul connects buyers/renters with sellers/landlords. We do not process real estate payments,
+        hold earnest money, provide escrow services, or act as a brokerage. All transactions occur
+        directly between parties.
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=4) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Preview →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── STEP 6: PREVIEW & PUBLISH ── #}
+  {% elif step == 6 %}
+  <div class="step-card">
+    <h2>👀 Preview Your Listing</h2>
+    <p class="hint">Here's how your listing will appear. Publish when ready, or go back to make changes.</p>
+
+    {% set missing = [] %}
+    {% if not listing.title %}{% set _ = missing.append('title') %}{% endif %}
+    {% if not listing.photos %}{% set _ = missing.append('at least one photo') %}{% endif %}
+    {% if listing.price_type in ('fixed', 'negotiable') and listing.price is none %}{% set _ = missing.append('price') %}{% endif %}
+    {% if not listing.city %}{% set _ = missing.append('city') %}{% endif %}
+
+    {% if missing %}
+    <div class="incomplete-warning">
+      <strong>⚠️ Missing required info:</strong>
+      Please go back and add: {{ missing | join(', ') }}.
+    </div>
+    {% endif %}
+
+    <div class="prop-preview" style="margin-bottom:24px">
+      {% set primary = listing.primary_photo %}
+      <div class="prop-preview-photo">
+        {% if primary %}
+          <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="{{ listing.title }}">
+        {% else %}
+          🏠
+        {% endif %}
+      </div>
+      <div class="prop-preview-body">
+        <div style="margin-bottom:10px">
+          {% if listing.listing_type == 'rental' %}
+            <span class="prop-badge prop-badge-rent">🔑 For Rent</span>
+          {% else %}
+            <span class="prop-badge prop-badge-sale">🏷️ For Sale</span>
+          {% endif %}
+          {% if listing.listed_by %}
+            <span class="prop-badge prop-badge-by">{{ {'owner':'Owner/FSBO','agent':'Licensed Agent','builder':'Builder'}.get(listing.listed_by, listing.listed_by) }}</span>
+          {% endif %}
+        </div>
+        {% if listing.price_type == 'free' %}
+          <div class="prop-preview-price" style="color:#16a34a">Contact for Pricing</div>
+        {% elif listing.price is not none %}
+          <div class="prop-preview-price">${{ '{:,.0f}'.format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:0.8rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:0.8rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+        {% else %}
+          <div class="prop-preview-price" style="color:#6b7280">Price not set</div>
+        {% endif %}
+        <div class="prop-preview-title">{{ listing.title or '(no title)' }}</div>
+        {% if listing.beds_baths_display %}
+        <div class="prop-preview-stats">
+          {% if listing.bedrooms is not none %}<div class="prop-stat"><strong>{{ listing.bedrooms|int if listing.bedrooms == listing.bedrooms|int else listing.bedrooms }}</strong><span class="ps-label">Beds</span></div>{% endif %}
+          {% if listing.bathrooms is not none %}<div class="prop-stat"><strong>{{ listing.bathrooms|int if listing.bathrooms == listing.bathrooms|int else listing.bathrooms }}</strong><span class="ps-label">Baths</span></div>{% endif %}
+          {% if listing.sqft %}<div class="prop-stat"><strong>{{ '{:,}'.format(listing.sqft) }}</strong><span class="ps-label">Sq Ft</span></div>{% endif %}
+          {% if listing.year_built %}<div class="prop-stat"><strong>{{ listing.year_built }}</strong><span class="ps-label">Built</span></div>{% endif %}
+        </div>
+        {% endif %}
+        <div class="prop-preview-meta">
+          {% if listing.property_address %}📍 {{ listing.property_address }}, {% elif listing.city %}📍 {% endif %}
+          {{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }} {{ listing.zip_code or '' }}
+        </div>
+        {% if listing.open_house_dt %}
+        <div style="background:#fefce8;border:1px solid #fde047;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#713f12;margin-bottom:10px;">
+          🗓️ Open House: {{ listing.open_house_dt.strftime('%b %-d at %-I:%M %p') }}
+        </div>
+        {% endif %}
+        {% if listing.description %}
+        <div style="font-size:0.88rem;color:#4a5568;border-top:1px solid #f0f0f0;padding-top:12px;margin-top:12px;white-space:pre-wrap;">{{ listing.description[:400] }}{% if listing.description|length > 400 %}…{% endif %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" class="btn-back">← Back</a>
+        {% if not missing %}
+        <button type="submit" class="btn-publish">🚀 Publish Listing</button>
+        {% else %}
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-back" style="background:#f59e0b;border-color:#f59e0b;color:#fff">Fix & Complete</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -546,6 +546,38 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.is_suspended) skipped: %s", _e)
 
+    # ── Housing & Real Estate property columns ────────────────────────────────
+    try:
+        from sqlalchemy import text as _text
+        _prop_cols = [
+            ('listing_type',        "VARCHAR(20) DEFAULT 'item'"),
+            ('property_type',       'VARCHAR(50)'),
+            ('property_address',    'VARCHAR(200)'),
+            ('bedrooms',            'FLOAT'),
+            ('bathrooms',           'FLOAT'),
+            ('sqft',                'INTEGER'),
+            ('lot_size',            'VARCHAR(50)'),
+            ('year_built',          'INTEGER'),
+            ('garage_parking',      'VARCHAR(100)'),
+            ('hoa_fee',             'FLOAT'),
+            ('property_tax_annual', 'FLOAT'),
+            ('open_house_dt',       'TIMESTAMP'),
+            ('amenities',           'TEXT'),
+            ('listed_by',           'VARCHAR(20)'),
+            ('rent_terms',          'VARCHAR(20)'),
+            ('pets_allowed',        'BOOLEAN'),
+            ('utilities_included',  'VARCHAR(200)'),
+        ]
+        for _col, _defn in _prop_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE listings ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: listings property fields ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listings property fields) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category
@@ -574,6 +606,53 @@ with app.app_context():
     except Exception as _e:
         db.session.rollback()
         logging.info("Category seed skipped: %s", _e)
+
+    # ── Ensure Housing & Real Estate category tree ────────────────────────────
+    try:
+        from models import Category as _HC
+        if not _HC.query.filter_by(slug='housing').first():
+            _housing = _HC(name='Housing & Real Estate', slug='housing',
+                           icon='🏠', display_order=16, is_active=True)
+            db.session.add(_housing)
+            db.session.flush()
+
+            _for_sale = _HC(name='For Sale', slug='housing-for-sale',
+                            icon='🏷️', display_order=1, is_active=True,
+                            parent_id=_housing.id)
+            db.session.add(_for_sale)
+            db.session.flush()
+            for _i, (_nm, _sl) in enumerate([
+                ('Houses for Sale',           'houses-for-sale'),
+                ('Condos & Townhomes',         'condos-townhomes'),
+                ('Multi-Family Properties',    'multi-family'),
+                ('Land & Lots',                'land-lots'),
+                ('Commercial Property',        'commercial-property'),
+                ('Manufactured/Mobile Homes',  'manufactured-homes'),
+                ('Other Real Estate',          'other-real-estate'),
+            ], 1):
+                db.session.add(_HC(name=_nm, slug=_sl, display_order=_i,
+                                   is_active=True, parent_id=_for_sale.id))
+
+            _for_rent = _HC(name='For Rent', slug='housing-for-rent',
+                            icon='🔑', display_order=2, is_active=True,
+                            parent_id=_housing.id)
+            db.session.add(_for_rent)
+            db.session.flush()
+            for _i, (_nm, _sl) in enumerate([
+                ('Apartments for Rent',           'apartments-rent'),
+                ('Houses for Rent',               'houses-rent'),
+                ('Rooms for Rent',                'rooms-rent'),
+                ('Commercial Space for Rent',     'commercial-rent'),
+                ('Short-term / Vacation Rental',  'short-term-rental'),
+            ], 1):
+                db.session.add(_HC(name=_nm, slug=_sl, display_order=_i,
+                                   is_active=True, parent_id=_for_rent.id))
+
+            db.session.commit()
+            logging.info("Category migration: Housing & Real Estate seeded")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Category migration (housing) skipped: %s", _e)
 
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}List Something — JHE Haul Marketplace{% endblock %}
+{% block content %}
+<style>
+.sell-wrap { max-width: 640px; margin: 0 auto; padding: 32px 16px 80px; }
+.sell-wrap h1 { font-size: 1.6rem; font-weight: 800; color: #1a1a2e; margin: 0 0 8px; }
+.sell-wrap .sub { color: #6b7280; font-size: 0.95rem; margin: 0 0 32px; }
+.sell-card {
+  display: flex; align-items: flex-start; gap: 18px;
+  background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+  padding: 24px 22px; margin-bottom: 14px; text-decoration: none; color: inherit;
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+  cursor: pointer;
+}
+.sell-card:hover {
+  border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,.12);
+  transform: translateY(-2px); text-decoration: none; color: inherit;
+}
+.sell-card-icon { font-size: 2.6rem; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+.sell-card-body h2 { font-size: 1.1rem; font-weight: 800; color: #1a1a2e; margin: 0 0 4px; }
+.sell-card-body p { font-size: 0.88rem; color: #6b7280; margin: 0 0 10px; line-height: 1.5; }
+.sell-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.sell-tag { font-size: 0.75rem; background: #f3f4f6; color: #374151; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.sell-card.blue:hover { border-color: #7c3aed; box-shadow: 0 4px 16px rgba(124,58,237,.12); }
+.sell-card.green:hover { border-color: #059669; box-shadow: 0 4px 16px rgba(5,150,105,.12); }
+.sell-divider { text-align: center; color: #d1d5db; font-size: 0.85rem; margin: 8px 0 16px; font-weight: 600; letter-spacing: 0.5px; }
+</style>
+
+<div class="sell-wrap">
+  <h1>What would you like to list?</h1>
+  <p class="sub">Choose a listing type to get started — it's free.</p>
+
+  <a href="{{ url_for('listing_new') }}?type=item" class="sell-card">
+    <div class="sell-card-icon">📦</div>
+    <div class="sell-card-body">
+      <h2>Sell an Item</h2>
+      <p>Furniture, appliances, electronics, tools, clothing, collectibles, and more.</p>
+      <div class="sell-tags">
+        <div class="sell-card-tags">
+          <span class="sell-tag">🛋️ Furniture</span>
+          <span class="sell-tag">📱 Electronics</span>
+          <span class="sell-tag">🔨 Tools</span>
+          <span class="sell-tag">🎁 Free Items</span>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  <div class="sell-divider">— HOUSING —</div>
+
+  <a href="{{ url_for('listing_new') }}?type=property_sale" class="sell-card blue">
+    <div class="sell-card-icon">🏠</div>
+    <div class="sell-card-body">
+      <h2>List a Property for Sale</h2>
+      <p>Sell a house, condo, townhome, land, commercial property, or other real estate.</p>
+      <div class="sell-card-tags">
+        <span class="sell-tag">🏡 Houses</span>
+        <span class="sell-tag">🏢 Condos</span>
+        <span class="sell-tag">🌾 Land</span>
+        <span class="sell-tag">🏗️ Multi-Family</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="{{ url_for('listing_new') }}?type=rental" class="sell-card green">
+    <div class="sell-card-icon">🔑</div>
+    <div class="sell-card-body">
+      <h2>List a Rental</h2>
+      <p>List an apartment, house, room, commercial space, or short-term rental.</p>
+      <div class="sell-card-tags">
+        <span class="sell-tag">🏠 Houses</span>
+        <span class="sell-tag">🏢 Apartments</span>
+        <span class="sell-tag">🛏️ Rooms</span>
+        <span class="sell-tag">🌴 Short-term</span>
+      </div>
+    </div>
+  </a>
+
+  <p style="text-align:center;font-size:0.82rem;color:#a0aec0;margin-top:24px;">
+    JHE Haul is a listing and communication platform — not a brokerage, lender, or escrow service.
+    We do not process real estate payments.
+  </p>
+</div>
+{% endblock %}

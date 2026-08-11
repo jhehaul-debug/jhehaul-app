@@ -289,6 +289,14 @@
 }
 .mp-sell-cta a:hover { background: #f0fff4; text-decoration: none; transform: translateY(-1px); }
 
+/* Property badge overlays on cards */
+.mp-prop-badge { font-size: .68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+.mp-prop-badge.sale { background: #dcfce7; color: #15803d; }
+.mp-prop-badge.rent { background: #dbeafe; color: #1e40af; }
+.mp-prop-badge.oh   { background: #fef9c3; color: #713f12; }
+/* Active chip highlight */
+.mp-cat-chip.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+
 @media (max-width: 600px) {
     .mp-hero { padding: 36px 20px 28px; }
     .mp-hero h1 { font-size: 1.6rem; }
@@ -301,32 +309,89 @@
 {# ── Hero ── #}
 <div class="mp-hero">
     <h1>🛋️ JHE Marketplace</h1>
-    <p>Buy and sell furniture, appliances, electronics, tools, and more — locally.</p>
+    <p>Buy, sell, and rent locally — items, homes, apartments, and more.</p>
 
     <form action="/marketplace" method="get" class="mp-search-wrap">
-        <input type="text" name="q" placeholder="Search furniture, appliances, electronics, tools and more…" autocomplete="off" value="{{ request.args.get('q', '') }}">
+        <input type="text" name="q" placeholder="Search items, homes, rentals, and more…" autocomplete="off" value="{{ request.args.get('q', '') }}">
+        {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+        {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
         <button type="submit">Search</button>
     </form>
 
     <div class="mp-hero-btns">
-        <a href="/sell" class="mp-btn-sell">+ Sell Something</a>
+        <a href="/sell" class="mp-btn-sell">+ List Something</a>
         <a href="/marketplace" class="mp-btn-browse">Browse All</a>
     </div>
 </div>
 
-{# ── Category Chips ── #}
-{% if categories %}
-<div class="mp-cats">
-    <a href="/marketplace" class="mp-cat-chip">
-        <span class="cat-icon">🏷️</span> All Items
+{# ── Type Filter Tabs ── #}
+<div class="mp-cats" style="border-bottom:1px solid #f0f0f0;padding-bottom:10px;margin-bottom:2px;">
+    <a href="/marketplace" class="mp-cat-chip {{ 'active' if not listing_type_filter and not area_filter }}">
+        <span class="cat-icon">🏷️</span> All
     </a>
+    <a href="/marketplace?listing_type=item" class="mp-cat-chip {{ 'active' if listing_type_filter == 'item' }}">
+        <span class="cat-icon">📦</span> Items
+    </a>
+    <a href="/marketplace?listing_type=property_sale" class="mp-cat-chip {{ 'active' if listing_type_filter == 'property_sale' }}">
+        <span class="cat-icon">🏠</span> For Sale
+    </a>
+    <a href="/marketplace?listing_type=rental" class="mp-cat-chip {{ 'active' if listing_type_filter == 'rental' }}">
+        <span class="cat-icon">🔑</span> Rentals
+    </a>
+    <a href="/marketplace?listing_type=item&area=twin-cities" class="mp-cat-chip {{ 'active' if area_filter == 'twin-cities' }}">
+        <span class="cat-icon">📍</span> Twin Cities
+    </a>
+</div>
+
+{# ── Category Chips (items only, hidden when browsing properties) ── #}
+{% if categories and listing_type_filter not in ('property_sale', 'rental', 'housing') %}
+<div class="mp-cats">
     {% for cat in categories %}
-    <a href="/marketplace?category={{ cat.slug }}" class="mp-cat-chip">
+    <a href="/marketplace?category={{ cat.slug }}" class="mp-cat-chip {{ 'active' if active_category and active_category.id == cat.id else '' }}">
         {% if cat.icon %}<span class="cat-icon">{{ cat.icon }}</span> {% endif %}{{ cat.name }}
     </a>
     {% endfor %}
 </div>
 {% endif %}
+
+{# ── Reusable listing card macro ── #}
+{% macro listing_card(listing, placeholder='📦') %}
+<a href="/listing/{{ listing.id }}" class="mp-card">
+    {% set photo = listing.primary_photo %}
+    {% if photo %}
+        <img class="mp-card-img" src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+    {% else %}
+        <div class="mp-card-img-placeholder">{{ '🏠' if listing.is_property else placeholder }}</div>
+    {% endif %}
+    {% if listing.is_property %}
+        {# Property type badge overlay #}
+        <div style="position:absolute;top:8px;left:8px">
+            {% if listing.listing_type == 'property_sale' %}<span class="mp-prop-badge sale">For Sale</span>
+            {% else %}<span class="mp-prop-badge rent">For Rent</span>{% endif %}
+        </div>
+        {% if listing.open_house_dt %}<div style="position:absolute;top:8px;right:8px"><span class="mp-prop-badge oh">Open House</span></div>{% endif %}
+    {% endif %}
+    <div class="mp-card-body">
+        <div class="mp-card-title">{{ listing.title }}</div>
+        <div>
+            {% if listing.price_type == 'free' %}
+                <span class="mp-card-price free">FREE</span>
+            {% elif listing.price %}
+                <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
+            {% else %}
+                <span class="mp-card-price">{{ 'Contact' if listing.is_property else 'Make offer' }}</span>
+            {% endif %}
+            {% if listing.featured %}<span class="mp-badge-featured">Featured</span>{% endif %}
+            {% if listing.price_type == 'free' %}<span class="mp-badge-free">Free</span>{% endif %}
+            {% if listing.price_type == 'negotiable' %}<span style="font-size:.7rem;color:#9ca3af;margin-left:4px">· negotiable</span>{% endif %}
+        </div>
+        {% if listing.is_property and listing.beds_baths_display %}
+            <div style="font-size:.8rem;color:#374151;font-weight:600;margin-top:3px">{{ listing.beds_baths_display }}</div>
+        {% endif %}
+        <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
+    </div>
+</a>
+{% endmacro %}
 
 {# ── Search Results View ── #}
 {% if is_search %}
@@ -334,49 +399,64 @@
     <div class="mp-section-head">
         <h2>
             {% if search_query %}Results for "{{ search_query }}"
+            {% elif listing_type_filter == 'property_sale' %}🏠 Properties for Sale
+            {% elif listing_type_filter == 'rental' %}🔑 Rentals
+            {% elif listing_type_filter == 'housing' %}🏠 Housing & Real Estate
             {% elif active_category %}{{ active_category.icon or '' }} {{ active_category.name }}
             {% elif price_type_filter == 'free' %}🎁 Free Items
             {% elif featured_filter %}⭐ Featured Listings
+            {% elif area_filter == 'twin-cities' %}📍 Twin Cities Area
             {% else %}All Listings{% endif %}
         </h2>
         <a href="/marketplace">← Back to home</a>
     </div>
+
+    {# Property-specific filter bar #}
+    {% if listing_type_filter in ('property_sale', 'rental', 'housing') %}
+    <form method="get" action="/marketplace" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end">
+        <input type="hidden" name="listing_type" value="{{ listing_type_filter }}">
+        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+        <div>
+            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Min Price</label>
+            <input type="number" name="min_price" value="{{ request.args.get('min_price','') }}" placeholder="$0" style="width:90px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
+        </div>
+        <div>
+            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Max Price</label>
+            <input type="number" name="max_price" value="{{ request.args.get('max_price','') }}" placeholder="Any" style="width:90px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
+        </div>
+        <div>
+            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Min Beds</label>
+            <select name="min_beds" style="padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
+                <option value="">Any</option>
+                {% for b in [1,2,3,4,5] %}
+                <option value="{{ b }}" {{ 'selected' if request.args.get('min_beds','') == b|string }}>{{ b }}+</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if listing_type_filter == 'property_sale' %}
+        <div>
+            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Open House</label>
+            <select name="open_house" style="padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
+                <option value="">Any</option>
+                <option value="1" {{ 'selected' if request.args.get('open_house') }}>Has open house</option>
+            </select>
+        </div>
+        {% endif %}
+        <button type="submit" style="background:#7c3aed;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;height:34px;margin-top:16px">Filter</button>
+    </form>
+    {% endif %}
+
     {% if search_results %}
-    <div class="mp-grid">
+    <div class="mp-grid" style="position:relative">
         {% for listing in search_results %}
-        <a href="/listing/{{ listing.id }}" class="mp-card">
-            {% if listing.primary_photo %}
-                {% if listing.primary_photo.storage_url %}
-                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
-                {% else %}
-                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
-                {% endif %}
-            {% else %}
-                <div class="mp-card-img-placeholder">📦</div>
-            {% endif %}
-            <div class="mp-card-body">
-                <div class="mp-card-title">{{ listing.title }}</div>
-                <div>
-                    {% if listing.price_type == 'free' %}
-                        <span class="mp-card-price free">FREE</span>
-                    {% elif listing.price %}
-                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
-                    {% else %}
-                        <span class="mp-card-price">Make offer</span>
-                    {% endif %}
-                    {% if listing.featured %}<span class="mp-badge-featured">Featured</span>{% endif %}
-                    {% if listing.price_type == 'free' %}<span class="mp-badge-free">Free</span>{% endif %}
-                </div>
-                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
-            </div>
-        </a>
+        <div style="position:relative">{{ listing_card(listing) }}</div>
         {% endfor %}
     </div>
     {% else %}
     <div class="mp-empty">
         <div class="mp-empty-icon">🔍</div>
         <h3>No listings found</h3>
-        <p>Try a different search term or browse all categories.</p>
+        <p>Try adjusting your filters or browse all listings.</p>
         <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">Browse All Listings</a>
     </div>
     {% endif %}
@@ -390,75 +470,50 @@
         <h2>⭐ Featured Listings</h2>
         <a href="/marketplace?featured=1">View all →</a>
     </div>
-    <div class="mp-grid">
-        {% for listing in featured_listings %}
-        <a href="/listing/{{ listing.id }}" class="mp-card">
-            {% if listing.primary_photo %}
-                {% if listing.primary_photo.storage_url %}
-                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
-                {% else %}
-                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
-                {% endif %}
-            {% else %}
-                <div class="mp-card-img-placeholder">🛋️</div>
-            {% endif %}
-            <div class="mp-card-body">
-                <div class="mp-card-title">{{ listing.title }}</div>
-                <div>
-                    {% if listing.price_type == 'free' %}
-                        <span class="mp-card-price free">FREE</span>
-                    {% elif listing.price %}
-                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
-                    {% else %}
-                        <span class="mp-card-price">Make offer</span>
-                    {% endif %}
-                    <span class="mp-badge-featured">Featured</span>
-                </div>
-                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="mp-grid" style="position:relative">
+        {% for listing in featured_listings %}<div style="position:relative">{{ listing_card(listing, '🛋️') }}</div>{% endfor %}
     </div>
 </div>
 {% endif %}
 
-{# ── Recently Listed ── #}
+{# ── Housing For Sale ── #}
+{% if for_sale_listings %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>🏠 Properties for Sale</h2>
+        <a href="/marketplace?listing_type=property_sale">View all →</a>
+    </div>
+    <div class="mp-grid" style="position:relative">
+        {% for listing in for_sale_listings %}<div style="position:relative">{{ listing_card(listing, '🏠') }}</div>{% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Rentals ── #}
+{% if rental_listings %}
+<div class="mp-section">
+    <div class="mp-section-head">
+        <h2>🔑 Rentals</h2>
+        <a href="/marketplace?listing_type=rental">View all →</a>
+    </div>
+    <div class="mp-grid" style="position:relative">
+        {% for listing in rental_listings %}<div style="position:relative">{{ listing_card(listing, '🔑') }}</div>{% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Recently Listed (items) ── #}
 {% if recent_listings %}
 <div class="mp-section">
     <div class="mp-section-head">
         <h2>🕐 Recently Listed</h2>
-        <a href="/marketplace">View all →</a>
+        <a href="/marketplace?listing_type=item">View all →</a>
     </div>
-    <div class="mp-grid">
-        {% for listing in recent_listings %}
-        <a href="/listing/{{ listing.id }}" class="mp-card">
-            {% if listing.primary_photo %}
-                {% if listing.primary_photo.storage_url %}
-                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
-                {% else %}
-                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
-                {% endif %}
-            {% else %}
-                <div class="mp-card-img-placeholder">📦</div>
-            {% endif %}
-            <div class="mp-card-body">
-                <div class="mp-card-title">{{ listing.title }}</div>
-                <div>
-                    {% if listing.price_type == 'free' %}
-                        <span class="mp-card-price free">FREE</span>
-                    {% elif listing.price %}
-                        <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}</span>
-                    {% else %}
-                        <span class="mp-card-price">Make offer</span>
-                    {% endif %}
-                </div>
-                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="mp-grid" style="position:relative">
+        {% for listing in recent_listings %}<div style="position:relative">{{ listing_card(listing) }}</div>{% endfor %}
     </div>
 </div>
-{% elif not featured_listings and not free_listings %}
+{% elif not featured_listings and not free_listings and not for_sale_listings and not rental_listings %}
 {# ── Empty state (no listings at all) ── #}
 <div class="mp-empty" style="margin-bottom:32px;">
     <div class="mp-empty-icon">🛍️</div>
@@ -475,28 +530,8 @@
         <h2>🎁 Free Items</h2>
         <a href="/marketplace?price_type=free">View all →</a>
     </div>
-    <div class="mp-grid">
-        {% for listing in free_listings %}
-        <a href="/listing/{{ listing.id }}" class="mp-card">
-            {% if listing.primary_photo %}
-                {% if listing.primary_photo.storage_url %}
-                    <img class="mp-card-img" src="{{ listing.primary_photo.storage_url }}" alt="{{ listing.title }}" loading="lazy">
-                {% else %}
-                    <img class="mp-card-img" src="{{ url_for('serve_listing_photo', photo_id=listing.primary_photo.id) }}" alt="{{ listing.title }}" loading="lazy">
-                {% endif %}
-            {% else %}
-                <div class="mp-card-img-placeholder">🎁</div>
-            {% endif %}
-            <div class="mp-card-body">
-                <div class="mp-card-title">{{ listing.title }}</div>
-                <div>
-                    <span class="mp-card-price free">FREE</span>
-                    <span class="mp-badge-free">Free</span>
-                </div>
-                <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="mp-grid" style="position:relative">
+        {% for listing in free_listings %}<div style="position:relative">{{ listing_card(listing, '🎁') }}</div>{% endfor %}
     </div>
 </div>
 {% endif %}
@@ -504,10 +539,10 @@
 {# ── Sell CTA ── #}
 <div class="mp-sell-cta">
     <div class="mp-sell-cta-text">
-        <h2>Have something to sell?</h2>
-        <p>List furniture, appliances, electronics, or anything else — it's free and takes under 2 minutes.</p>
+        <h2>Have something to list?</h2>
+        <p>Sell items, list a property for sale, or advertise a rental — it's free and takes under 2 minutes.</p>
     </div>
-    <a href="/sell">+ Sell Something</a>
+    <a href="/sell">+ List Something</a>
 </div>
 
 {% endif %}{# end is_search / else #}

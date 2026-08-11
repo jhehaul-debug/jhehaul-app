@@ -120,7 +120,11 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="section">
-      <h2>📝 Details</h2>
+      <h2>
+        {% if listing.listing_type == 'property_sale' %}🏠 Property Details
+        {% elif listing.listing_type == 'rental' %}🔑 Rental Details
+        {% else %}📝 Details{% endif %}
+      </h2>
       <div class="form-group">
         <label class="form-label">Title <span class="req">*</span></label>
         <input class="form-control" type="text" name="title" value="{{ listing.title or '' }}" maxlength="200" required>
@@ -129,6 +133,106 @@
         <label class="form-label">Description</label>
         <textarea class="form-control" name="description">{{ listing.description or '' }}</textarea>
       </div>
+
+      {% if listing.is_property %}
+      {# ── Property-specific fields ── #}
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Property Type</label>
+          <select class="form-control" name="property_type">
+            <option value="">— Select —</option>
+            {% if listing.listing_type == 'property_sale' %}
+            {% for val, label in [('house','House'),('condo','Condo/Townhome'),('multi_family','Multi-Family'),('land','Land & Lots'),('commercial','Commercial'),('manufactured','Manufactured/Mobile'),('other','Other')] %}
+            <option value="{{ val }}" {{ 'selected' if listing.property_type == val }}>{{ label }}</option>
+            {% endfor %}
+            {% else %}
+            {% for val, label in [('apartment','Apartment'),('house','House'),('room','Room'),('commercial','Commercial Space'),('short_term','Short-term / Vacation'),('other','Other')] %}
+            <option value="{{ val }}" {{ 'selected' if listing.property_type == val }}>{{ label }}</option>
+            {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Listed By</label>
+          <select class="form-control" name="listed_by">
+            <option value="owner" {{ 'selected' if (listing.listed_by or 'owner') == 'owner' }}>🏠 Owner / FSBO</option>
+            <option value="agent" {{ 'selected' if listing.listed_by == 'agent' }}>🤝 Licensed Agent</option>
+            <option value="builder" {{ 'selected' if listing.listed_by == 'builder' }}>🏗️ Builder</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Bedrooms</label>
+          <input class="form-control" type="number" name="bedrooms" value="{{ listing.bedrooms or '' }}" min="0" max="20" step="0.5" placeholder="e.g. 3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bathrooms</label>
+          <input class="form-control" type="number" name="bathrooms" value="{{ listing.bathrooms or '' }}" min="0" max="20" step="0.5" placeholder="e.g. 2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sq Ft</label>
+          <input class="form-control" type="number" name="sqft" value="{{ listing.sqft or '' }}" min="0" placeholder="e.g. 1500">
+        </div>
+      </div>
+      {% if listing.listing_type == 'property_sale' %}
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lot Size</label>
+          <input class="form-control" type="text" name="lot_size" value="{{ listing.lot_size or '' }}" placeholder="e.g. 0.25 acres">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year Built</label>
+          <input class="form-control" type="number" name="year_built" value="{{ listing.year_built or '' }}" min="1800" max="2030" placeholder="e.g. 1995">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">HOA ($/mo)</label>
+          <input class="form-control" type="number" name="hoa_fee" value="{{ listing.hoa_fee or '' }}" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Property Tax ($/yr)</label>
+          <input class="form-control" type="number" name="property_tax_annual" value="{{ listing.property_tax_annual or '' }}" min="0" step="0.01" placeholder="0">
+        </div>
+      </div>
+      {% else %}
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Year Built</label>
+          <input class="form-control" type="number" name="year_built" value="{{ listing.year_built or '' }}" min="1800" max="2030" placeholder="e.g. 2005">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lease Terms</label>
+          <select class="form-control" name="rent_terms">
+            <option value="">— Select —</option>
+            <option value="monthly" {{ 'selected' if listing.rent_terms == 'monthly' }}>Month-to-month</option>
+            <option value="annual" {{ 'selected' if listing.rent_terms == 'annual' }}>Annual lease</option>
+            <option value="weekly" {{ 'selected' if listing.rent_terms == 'weekly' }}>Weekly</option>
+            <option value="short_term" {{ 'selected' if listing.rent_terms == 'short_term' }}>Short-term / nightly</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;margin-bottom:12px">
+        <input type="checkbox" name="pets_allowed" value="1" {{ 'checked' if listing.pets_allowed }} style="accent-color:#7c3aed;width:18px;height:18px">
+        <span style="font-size:.9rem;font-weight:600">🐾 Pets Allowed</span>
+      </label>
+      <div class="form-group">
+        <label class="form-label">Utilities Included</label>
+        <input class="form-control" type="text" name="utilities_included" value="{{ listing.utilities_included or '' }}" placeholder="e.g. Water, trash, WiFi">
+      </div>
+      {% endif %}
+      <div class="form-group">
+        <label class="form-label">Garage / Parking</label>
+        <input class="form-control" type="text" name="garage_parking" value="{{ listing.garage_parking or '' }}" placeholder="e.g. 2-car attached garage">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amenities <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(one per line)</span></label>
+        <textarea class="form-control" name="amenities" rows="4" placeholder="Central A/C&#10;Hardwood floors&#10;In-unit washer/dryer">{{ listing.amenities or '' }}</textarea>
+      </div>
+
+      {% else %}
+      {# ── Item-specific fields ── #}
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Category</label>
@@ -160,6 +264,7 @@
           <option value="for_parts" {{ 'selected' if listing.condition == 'for_parts' }}>For Parts / As-Is</option>
         </select>
       </div>
+      {% endif %}
     </div>
 
     <div class="section">
@@ -191,7 +296,14 @@
 
     <div class="section">
       <h2>📍 Location</h2>
+      {% if listing.is_property %}
+      <div class="form-group">
+        <label class="form-label">Street / Property Address <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(optional — publicly visible)</span></label>
+        <input class="form-control" type="text" name="property_address" value="{{ listing.property_address or '' }}" placeholder="e.g. 123 Main St" maxlength="200">
+      </div>
+      {% else %}
       <p style="font-size:.85rem;color:#6b7280;margin:0 0 14px">Only city and state are shown to buyers — no street address.</p>
+      {% endif %}
       <div class="form-row-3">
         <div class="form-group">
           <label class="form-label">City</label>
@@ -213,6 +325,19 @@
       </div>
     </div>
 
+    {% if listing.is_property %}
+    <div class="section">
+      <h2>🗓️ {{ 'Open House' if listing.listing_type == 'property_sale' else 'Availability' }}</h2>
+      <div class="form-group">
+        <label class="form-label">{{ 'Open House Date & Time' if listing.listing_type == 'property_sale' else 'Available From' }} <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(optional)</span></label>
+        <input class="form-control" type="{{ 'datetime-local' if listing.listing_type == 'property_sale' else 'date' }}" name="open_house_dt"
+          value="{{ listing.open_house_dt.strftime('%Y-%m-%dT%H:%M') if listing.open_house_dt and listing.listing_type == 'property_sale' else (listing.open_house_dt.strftime('%Y-%m-%d') if listing.open_house_dt else '') }}">
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#6b7280;line-height:1.6;">
+        📋 JHE Haul connects buyers/renters with sellers/landlords. We do not process real estate payments or provide escrow services.
+      </div>
+    </div>
+    {% else %}
     <div class="section">
       <h2>🚚 Delivery Options</h2>
       {% set current_opts = listing.delivery_options_list %}
@@ -231,6 +356,7 @@
         </label>
       </div>
     </div>
+    {% endif %}
 
     <div class="edit-actions">
       <a href="{{ url_for('my_listings') }}" class="btn-cancel">Cancel</a>

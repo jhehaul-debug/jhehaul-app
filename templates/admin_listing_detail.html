@@ -135,16 +135,101 @@
                 </tr>
                 {% endif %}
                 <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Type</td>
+                    <td style="padding:7px 0;color:#1a202c;font-weight:600;">
+                        {% if listing.listing_type == 'property_sale' %}<span style="background:#dcfce7;color:#15803d;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">🏠 For Sale</span>
+                        {% elif listing.listing_type == 'rental' %}<span style="background:#dbeafe;color:#1e40af;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">🔑 Rental</span>
+                        {% else %}<span style="background:#f3f4f6;color:#374151;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;">📦 Item</span>{% endif %}
+                    </td>
+                </tr>
+                {% if listing.is_property %}
+                {% if listing.property_type %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Property Type</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ {'house':'House','condo':'Condo/Townhome','multi_family':'Multi-Family','land':'Land','commercial':'Commercial','manufactured':'Manufactured/Mobile','apartment':'Apartment','room':'Room','short_term':'Short-term Rental','other':'Other'}.get(listing.property_type, listing.property_type.replace('_',' ').title()) }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.listed_by %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Listed By</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ {'owner':'Owner/FSBO','agent':'Licensed Agent','builder':'Builder'}.get(listing.listed_by, listing.listed_by) }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.bedrooms is not none or listing.bathrooms is not none or listing.sqft %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Beds / Baths / Sqft</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.beds_baths_display or '—' }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.year_built %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Year Built</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.year_built }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.lot_size %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Lot Size</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.lot_size }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.garage_parking %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Garage/Parking</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.garage_parking }}</td>
+                </tr>
+                {% endif %}
+                {% if listing.hoa_fee is not none %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">HOA</td>
+                    <td style="padding:7px 0;color:#1a202c;">${{ '%.0f'|format(listing.hoa_fee) }}/mo</td>
+                </tr>
+                {% endif %}
+                {% if listing.property_tax_annual is not none %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Property Tax</td>
+                    <td style="padding:7px 0;color:#1a202c;">${{ '{:,.0f}'.format(listing.property_tax_annual) }}/yr</td>
+                </tr>
+                {% endif %}
+                {% if listing.listing_type == 'rental' %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Lease Terms</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ {'monthly':'Month-to-month','annual':'Annual','weekly':'Weekly','short_term':'Short-term'}.get(listing.rent_terms, listing.rent_terms or '—') }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Pets</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ '🐾 Allowed' if listing.pets_allowed else '🚫 Not allowed' }}</td>
+                </tr>
+                {% if listing.utilities_included %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Utilities</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.utilities_included }}</td>
+                </tr>
+                {% endif %}
+                {% endif %}
+                {% if listing.open_house_dt %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Open House</td>
+                    <td style="padding:7px 0;color:#1a202c;font-weight:600;">{{ listing.open_house_dt.strftime('%b %-d at %-I:%M %p') }}</td>
+                </tr>
+                {% endif %}
+                {% else %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:7px 0;color:#64748b;">Condition</td>
                     <td style="padding:7px 0;color:#1a202c;">{{ listing.condition.replace('_',' ').title() if listing.condition else '—' }}</td>
                 </tr>
                 <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:7px 0;color:#64748b;">Location</td>
-                    <td style="padding:7px 0;color:#1a202c;">{% if listing.city or listing.state %}{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}{% else %}—{% endif %}</td>
-                </tr>
-                <tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:7px 0;color:#64748b;">Delivery</td>
                     <td style="padding:7px 0;color:#1a202c;">{{ listing.delivery_option or '—' }}</td>
+                </tr>
+                {% endif %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Location</td>
+                    <td style="padding:7px 0;color:#1a202c;">
+                        {% if listing.property_address %}{{ listing.property_address }}, {% endif %}
+                        {% if listing.city or listing.state %}{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}{% else %}—{% endif %}
+                        {% if listing.zip_code %} {{ listing.zip_code }}{% endif %}
+                    </td>
                 </tr>
                 <tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:7px 0;color:#64748b;">Views</td>
