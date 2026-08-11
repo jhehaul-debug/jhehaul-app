@@ -440,11 +440,28 @@ def marketplace():
         elif listing_type_filter in ('item', 'property_sale', 'rental'):
             qobj = qobj.filter(Listing.listing_type == listing_type_filter)
 
-        # Twin Cities area filter (MN + metro city list)
+        # Twin Cities area filter — radius-based (40 mi from Minneapolis centre)
         if area_filter == 'twin-cities':
-            qobj = qobj.filter(Listing.state == 'MN').filter(
-                db.func.lower(Listing.city).in_(_TWIN_CITIES_CITIES)
+            _TC_LAT, _TC_LON = 44.9778, -93.2650
+            # Degree offsets: 1° lat ≈ 69 mi; 1° lon ≈ 49 mi at 45 °N
+            _TC_DLAT = 40.0 / 69.0   # ≈ 0.580 °
+            _TC_DLON = 40.0 / 49.0   # ≈ 0.816 °
+            # Primary path: listings with coordinates → bounding-box pre-filter
+            coords_filter = db.and_(
+                Listing.latitude.isnot(None),
+                Listing.longitude.isnot(None),
+                Listing.latitude  >= _TC_LAT - _TC_DLAT,
+                Listing.latitude  <= _TC_LAT + _TC_DLAT,
+                Listing.longitude >= _TC_LON - _TC_DLON,
+                Listing.longitude <= _TC_LON + _TC_DLON,
             )
+            # Fallback: older listings with no lat/lon → city-name list
+            no_coords_filter = db.and_(
+                db.or_(Listing.latitude.is_(None), Listing.longitude.is_(None)),
+                Listing.state == 'MN',
+                db.func.lower(Listing.city).in_(_TWIN_CITIES_CITIES),
+            )
+            qobj = qobj.filter(db.or_(coords_filter, no_coords_filter))
 
         # Property-specific numeric filters
         if min_price is not None:
