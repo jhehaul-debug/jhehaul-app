@@ -3381,6 +3381,12 @@ def hauler_bid_submit(job_id):
 def hauler_dashboard():
     return redirect(url_for('home'))
 
+@app.route("/account")
+@require_login
+def account():
+    return redirect(url_for('profile'))
+
+
 @app.route("/profile")
 @require_login
 def profile():
