@@ -770,13 +770,267 @@ def my_listings():
 
 @app.route("/listing/<int:listing_id>")
 def listing_detail(listing_id):
-    """Placeholder for individual listing pages (Phase 5–6)."""
-    from models import Listing
-    listing = Listing.query.filter_by(
-        id=listing_id, status='active', moderation_status='approved'
-    ).first_or_404()
-    flash(f"Full listing page for \"{listing.title}\" is coming soon.", "success")
-    return redirect(url_for('marketplace'))
+    """Individual listing detail page (Phase 5–6)."""
+    from models import Listing, ListingFavorite
+
+    listing = Listing.query.get_or_404(listing_id)
+
+    # Access control: only active+approved listings are public.
+    # Seller and admin can see any status.
+    is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
+    is_admin = current_user.is_authenticated and current_user.is_admin
+    is_public = (listing.status == 'active' and listing.moderation_status == 'approved')
+    if not (is_public or is_owner or is_admin):
+        abort(404)
+
+    # Increment view_count once per session (deduplicated)
+    viewed_key = 'viewed_listings'
+    viewed = session.get(viewed_key, [])
+    if listing_id not in viewed:
+        try:
+            listing.view_count = (listing.view_count or 0) + 1
+            db.session.commit()
+            viewed.append(listing_id)
+            session[viewed_key] = viewed
+        except Exception:
+            db.session.rollback()
+
+    # Seller stats for sidebar
+    from models import Listing as _L
+    seller_active_count = _L.query.filter_by(
+        seller_id=listing.seller_id, status='active', moderation_status='approved'
+    ).count()
+
+    # Favorite status
+    is_favorited = False
+    if current_user.is_authenticated:
+        is_favorited = ListingFavorite.query.filter_by(
+            user_id=current_user.id, listing_id=listing_id
+        ).first() is not None
+
+    # Ordered photos (primary first)
+    photos = sorted(listing.photos, key=lambda p: (0 if p.is_primary else 1, p.display_order))
+
+    return render_template(
+        'listing_detail.html',
+        listing=listing,
+        photos=photos,
+        is_favorited=is_favorited,
+        is_owner=is_owner,
+        is_admin=is_admin,
+        seller_active_count=seller_active_count,
+    )
+
+
+@app.route("/listing/<int:listing_id>/favorite", methods=["POST"])
+def listing_favorite_toggle(listing_id):
+    """Toggle save/favorite for a listing. Requires login."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('invite', role='customer'))
+    _check_listing_csrf()
+
+    from models import Listing, ListingFavorite
+    listing = Listing.query.get_or_404(listing_id)
+
+    # Enforce the same visibility rule as listing_detail
+    is_public = listing.status == 'active' and listing.moderation_status == 'approved'
+    is_owner  = current_user.id == listing.seller_id
+    if not (is_public or is_owner or current_user.is_admin):
+        abort(404)
+
+    existing = ListingFavorite.query.filter_by(
+        user_id=current_user.id, listing_id=listing_id
+    ).first()
+    if existing:
+        db.session.delete(existing)
+        listing.favorite_count = max(0, (listing.favorite_count or 1) - 1)
+        db.session.commit()
+        favorited = False
+    else:
+        fav = ListingFavorite(user_id=current_user.id, listing_id=listing_id)
+        db.session.add(fav)
+        listing.favorite_count = (listing.favorite_count or 0) + 1
+        db.session.commit()
+        favorited = True
+
+    # AJAX support
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+       request.accept_mimetypes.best == 'application/json':
+        return jsonify(favorited=favorited, count=listing.favorite_count)
+
+    return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+@app.route("/listing/<int:listing_id>/report", methods=["POST"])
+def listing_report(listing_id):
+    """Submit a report for a listing. Requires login."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('invite', role='customer'))
+    _check_listing_csrf()
+
+    from models import Listing, ListingReport
+    listing = Listing.query.get_or_404(listing_id)
+
+    # Enforce the same visibility rule as listing_detail
+    is_public = listing.status == 'active' and listing.moderation_status == 'approved'
+    is_owner  = current_user.id == listing.seller_id
+    if not (is_public or is_owner or current_user.is_admin):
+        abort(404)
+
+    reason = request.form.get('reason', '').strip()[:100]
+    details = request.form.get('details', '').strip()[:1000]
+    if not reason:
+        flash("Please select a reason for the report.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    report = ListingReport(
+        listing_id=listing_id,
+        reporter_id=current_user.id,
+        reason=reason,
+        details=details,
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash("Thank you — your report has been submitted for review.", "success")
+    return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+@app.route("/listing/<int:listing_id>/message", methods=["GET", "POST"])
+@app.route("/listing/<int:listing_id>/message/<int:convo_id>", methods=["GET", "POST"])
+def listing_message(listing_id, convo_id=None):
+    """Start or continue a buyer↔seller conversation thread.
+
+    Buyers:  GET/POST /listing/<id>/message              — create or resume their thread.
+             GET/POST /listing/<id>/message/<convo_id>   — resume a specific thread.
+    Sellers: GET      /listing/<id>/message              — inbox of all buyer threads.
+             GET/POST /listing/<id>/message/<convo_id>   — reply to a specific thread.
+    Admins:  same as sellers.
+
+    Listing access mirrors the detail page (public-or-owner/admin) so sellers can
+    still reach conversations after marking the listing as reserved/sold.
+    New buyer threads are only allowed on active+approved listings.
+    """
+    if not current_user.is_authenticated:
+        session['next_url'] = request.url
+        return redirect(url_for('invite', role='customer'))
+
+    from models import Listing, ListingConversation, ListingMessage
+
+    # Same public-or-owner/admin access as listing_detail
+    listing = Listing.query.get_or_404(listing_id)
+    is_listing_owner = current_user.id == listing.seller_id
+    is_admin = current_user.is_admin
+    is_public = listing.status == 'active' and listing.moderation_status == 'approved'
+    if not (is_public or is_listing_owner or is_admin):
+        abort(404)
+
+    # ── convo_id given: resolve first, then authorize, then branch ────────────
+    if convo_id:
+        convo = ListingConversation.query.filter_by(
+            id=convo_id, listing_id=listing_id
+        ).first_or_404()
+        is_participant = current_user.id in (convo.buyer_id, convo.seller_id)
+        if not (is_admin or is_participant):
+            abort(403)
+
+        # Determine whether the current user is acting as the seller side
+        is_seller_view = is_admin or (current_user.id == convo.seller_id)
+
+        if request.method == "POST":
+            _check_listing_csrf()
+            body = request.form.get('body', '').strip()
+            if body:
+                msg = ListingMessage(
+                    conversation_id=convo.id,
+                    sender_id=current_user.id,
+                    body=body[:2000],
+                )
+                db.session.add(msg)
+                convo.updated_at = datetime.now()
+                db.session.commit()
+                flash("Message sent!", "success")
+            return redirect(url_for('listing_message',
+                                    listing_id=listing_id, convo_id=convo_id))
+
+        # Mark messages from the other party as read
+        try:
+            for m in convo.messages:
+                if m.sender_id != current_user.id and m.read_at is None:
+                    m.read_at = datetime.now()
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        return render_template(
+            'listing_message.html',
+            listing=listing,
+            convo=convo,
+            messages=convo.messages,
+            is_seller=is_seller_view,
+        )
+
+    # ── No convo_id: seller/admin → inbox; buyer → own thread ────────────────
+    if is_listing_owner or is_admin:
+        convos = (ListingConversation.query
+                  .filter_by(listing_id=listing_id)
+                  .order_by(ListingConversation.updated_at.desc())
+                  .all())
+        return render_template(
+            'listing_seller_inbox.html',
+            listing=listing,
+            convos=convos,
+        )
+
+    # Buyer path — only allowed to start new threads on active+approved listing
+    if not is_public:
+        abort(404)
+
+    convo = ListingConversation.query.filter_by(
+        listing_id=listing_id, buyer_id=current_user.id
+    ).first()
+    if not convo:
+        convo = ListingConversation(
+            listing_id=listing_id,
+            buyer_id=current_user.id,
+            seller_id=listing.seller_id,
+        )
+        db.session.add(convo)
+        db.session.flush()
+
+    if request.method == "POST":
+        _check_listing_csrf()
+        body = request.form.get('body', '').strip()
+        if body:
+            msg = ListingMessage(
+                conversation_id=convo.id,
+                sender_id=current_user.id,
+                body=body[:2000],
+            )
+            db.session.add(msg)
+            convo.updated_at = datetime.now()
+        db.session.commit()
+        if body:
+            flash("Message sent!", "success")
+        return redirect(url_for('listing_message', listing_id=listing_id))
+
+    db.session.commit()  # persist new convo if just created
+
+    # Mark seller's messages as read
+    try:
+        for m in convo.messages:
+            if m.sender_id != current_user.id and m.read_at is None:
+                m.read_at = datetime.now()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return render_template(
+        'listing_message.html',
+        listing=listing,
+        convo=convo,
+        messages=convo.messages,
+        is_seller=False,
+    )
 
 
 @app.route("/uploads/listing/db/<int:photo_id>")

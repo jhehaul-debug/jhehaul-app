@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{% if is_seller %}Buyer Message — {% else %}Message Seller — {% endif %}{{ listing.title }} | JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+.msg-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+.msg-back { font-size: 0.88rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; }
+.msg-back:hover { text-decoration: underline; }
+
+.msg-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 18px;
+}
+.msg-listing-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+.msg-listing-info { flex: 1; min-width: 0; }
+.msg-listing-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-listing-price { font-size: 0.88rem; font-weight: 700; color: #276749; }
+.msg-listing-price.free { color: #2b6cb0; }
+
+.msg-thread {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 140px;
+}
+.msg-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #9ca3af;
+  font-size: 0.92rem;
+}
+
+.msg-bubble-wrap { display: flex; flex-direction: column; gap: 3px; }
+.msg-bubble-wrap.mine { align-items: flex-end; }
+.msg-bubble-wrap.theirs { align-items: flex-start; }
+
+.msg-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.msg-bubble-wrap.mine .msg-bubble {
+  background: #2563eb;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.msg-bubble-wrap.theirs .msg-bubble {
+  background: #f3f4f6;
+  color: #1a1a2e;
+  border-bottom-left-radius: 4px;
+}
+.msg-meta {
+  font-size: 0.73rem;
+  color: #9ca3af;
+  padding: 0 4px;
+}
+
+/* Compose box */
+.msg-compose {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 18px;
+}
+.msg-compose textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  color: #1a1a2e;
+}
+.msg-compose textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
+.msg-compose-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+.btn-send {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 10px 28px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-send:hover { background: #1d4ed8; }
+</style>
+
+<div class="msg-wrap">
+  {% if is_seller %}
+  <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="msg-back">← Back to all messages</a>
+  {% else %}
+  <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="msg-back">← Back to listing</a>
+  {% endif %}
+
+  <!-- Listing header -->
+  <div class="msg-header">
+    {% set primary = listing.primary_photo %}
+    {% if primary %}
+    <img class="msg-listing-thumb"
+         src="{% if primary.storage_url %}{{ primary.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=primary.id) }}{% endif %}"
+         alt="{{ listing.title }}">
+    {% else %}
+    <div class="msg-listing-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.8rem;">📦</div>
+    {% endif %}
+    <div class="msg-listing-info">
+      <div class="msg-listing-title">{{ listing.title }}</div>
+      <div class="msg-listing-price {% if listing.price_type == 'free' %}free{% endif %}">
+        {% if listing.price_type == 'free' %}Free
+        {% elif listing.price is not none %}${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}
+        {% else %}Contact for price{% endif %}
+        {% if listing.price_type == 'negotiable' %}<span style="font-size:0.78rem;font-weight:600;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px;margin-left:6px;">Make Offer</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Thread -->
+  <div class="msg-thread" id="msg-thread">
+    {% if not messages %}
+    <div class="msg-empty">No messages yet. Say hello to start the conversation! 👋</div>
+    {% else %}
+    {% for msg in messages %}
+    {% set is_mine = msg.sender_id == current_user.id %}
+    <div class="msg-bubble-wrap {% if is_mine %}mine{% else %}theirs{% endif %}">
+      <div class="msg-bubble">{{ msg.body }}</div>
+      <div class="msg-meta">
+        {{ msg.sender.first_name or 'User' }} · {{ msg.created_at.strftime('%-m/%-d %-I:%M %p') }}
+        {% if is_mine and msg.read_at %}· ✓ Read{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Compose -->
+  <div class="msg-compose">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="body" placeholder="Type your message…" maxlength="2000" required autofocus></textarea>
+      <div class="msg-compose-footer">
+        <button type="submit" class="btn-send">Send Message →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Auto-scroll thread to bottom
+const thread = document.getElementById('msg-thread');
+if (thread) thread.scrollTop = thread.scrollHeight;
+</script>
+{% endblock %}

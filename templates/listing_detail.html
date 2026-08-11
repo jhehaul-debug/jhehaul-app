@@ -1,0 +1,889 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.title }} — JHE Marketplace{% endblock %}
+
+{% block meta_description %}<meta name="description" content="{{ (listing.description or listing.title)[:160] }}">{% endblock %}
+
+{% block og_meta %}
+<meta property="og:title" content="{{ listing.title }}">
+<meta property="og:description" content="{{ (listing.description or '')[:200] }}">
+{% if photos and photos[0].storage_url %}
+<meta property="og:image" content="{{ photos[0].storage_url }}">
+{% elif photos %}
+<meta property="og:image" content="{{ url_for('serve_listing_photo', photo_id=photos[0].id, _external=True) }}">
+{% endif %}
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="JHE Marketplace">
+<meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+
+{% block content %}
+<style>
+/* ── Layout ── */
+.ld-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+}
+.ld-breadcrumb {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ld-breadcrumb a { color: #2563eb; text-decoration: none; }
+.ld-breadcrumb a:hover { text-decoration: underline; }
+.ld-breadcrumb span { color: #9ca3af; }
+
+.ld-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .ld-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Gallery ── */
+.ld-gallery { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
+.ld-main-photo {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: contain;
+  background: #f8fafc;
+  display: block;
+  cursor: zoom-in;
+}
+.ld-main-placeholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #edf2f7, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  color: #cbd5e0;
+}
+.ld-thumbs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.ld-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  transition: border-color 0.15s, opacity 0.15s;
+  background: #f3f4f6;
+}
+.ld-thumb:hover { opacity: 0.85; }
+.ld-thumb.active { border-color: #2563eb; }
+
+/* ── Lightbox ── */
+.ld-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.ld-lightbox.open { display: flex; }
+.ld-lightbox img {
+  max-width: 94vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.ld-lb-close {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  background: none;
+  border: none;
+  opacity: 0.7;
+}
+.ld-lb-close:hover { opacity: 1; }
+.ld-lb-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  font-size: 2.5rem;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  line-height: 1;
+  opacity: 0.7;
+}
+.ld-lb-nav:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+.ld-lb-prev { left: 16px; }
+.ld-lb-next { right: 16px; }
+
+/* ── Info panel (left column) ── */
+.ld-info {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  margin-top: 20px;
+}
+.ld-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.ld-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.s-active   { background: #dcfce7; color: #15803d; }
+.s-sold     { background: #e0e7ff; color: #3730a3; }
+.s-reserved { background: #fce7f3; color: #9d174d; }
+.s-draft    { background: #fef3c7; color: #92400e; }
+.s-removed  { background: #fee2e2; color: #dc2626; }
+
+.ld-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+.ld-price-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ld-price {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #276749;
+}
+.ld-price.free { color: #2b6cb0; }
+.ld-badge-offer {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ld-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.ld-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+.ld-chip .chip-icon { font-size: 0.9rem; }
+.ld-description {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ld-section-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #9ca3af;
+  margin: 22px 0 8px;
+}
+
+/* ── Delivery options strip ── */
+.ld-delivery-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ld-del-chip {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ── Sidebar ── */
+.ld-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+.ld-action-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+.ld-action-card h3 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 14px;
+}
+
+/* Seller card */
+.ld-seller-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.ld-seller-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+.ld-seller-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 2px;
+}
+.ld-seller-since {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.ld-seller-stats {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Action buttons */
+.btn-primary {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 13px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-primary:hover { background: #1d4ed8; color: #fff; text-decoration: none; }
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-secondary:hover { background: #f3f4f6; border-color: #d1d5db; color: #374151; text-decoration: none; }
+
+.btn-fav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-fav:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+.btn-fav.favorited { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+
+.btn-delivery {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #bbf7d0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-delivery:hover { background: #dcfce7; border-color: #86efac; color: #166534; text-decoration: none; }
+
+/* Admin/seller controls */
+.ld-owner-bar {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ld-owner-bar span { font-size: 0.88rem; font-weight: 600; color: #92400e; flex: 1; }
+.btn-edit-sm {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  padding: 6px 14px;
+  border-radius: 7px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-edit-sm:hover { background: #dbeafe; }
+.btn-remove-sm {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #dc2626;
+  background: none;
+  border: 1.5px solid #fca5a5;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-remove-sm:hover { background: #fee2e2; }
+
+/* Share / report strip */
+.ld-bottom-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.82rem;
+}
+.ld-share-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ld-share-btn:hover { text-decoration: underline; }
+.ld-report-link {
+  color: #9ca3af;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ld-report-link:hover { color: #dc2626; text-decoration: underline; }
+.ld-copy-toast {
+  display: none;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Report modal */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 8000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 460px;
+  width: 94%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.modal-box h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 16px; }
+.modal-box select, .modal-box textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  color: #374151;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+.modal-box select:focus, .modal-box textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+.modal-box textarea { min-height: 80px; resize: vertical; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-cancel { background: #f3f4f6; color: #374151; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn-report-submit { background: #dc2626; color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.btn-report-submit:hover { background: #b91c1c; }
+
+@media (max-width: 480px) {
+  .ld-title { font-size: 1.3rem; }
+  .ld-price { font-size: 1.5rem; }
+}
+</style>
+
+<div class="ld-wrap">
+
+  <!-- Breadcrumb -->
+  <div class="ld-breadcrumb">
+    <a href="{{ url_for('marketplace') }}">Marketplace</a>
+    {% if listing.category %}
+    <span>›</span>
+    <a href="{{ url_for('marketplace', category=listing.category.slug) }}">{{ listing.category.name }}</a>
+    {% endif %}
+    <span>›</span>
+    <span>{{ listing.title | truncate(40) }}</span>
+  </div>
+
+  <!-- Owner / Admin bar -->
+  {% if is_owner or is_admin %}
+  <div class="ld-owner-bar">
+    <span>
+      {% if is_admin and not is_owner %}🛡 Admin view —{% endif %}
+      {% if listing.status == 'draft' %}This listing is a draft.
+      {% elif listing.status == 'reserved' %}This listing is marked as reserved.
+      {% elif listing.status == 'sold' %}This listing is marked as sold.
+      {% elif listing.status == 'removed' %}This listing has been removed.
+      {% elif listing.moderation_status == 'flagged' %}⚠️ This listing is flagged for review.
+      {% else %}This is your listing.{% endif %}
+    </span>
+    <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-edit-sm">✏️ Edit</a>
+    <form method="POST" action="{{ url_for('listing_delete', listing_id=listing.id) }}" style="display:inline" onsubmit="return confirm('Delete this listing? This cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-remove-sm">🗑 Remove</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="ld-grid">
+    <!-- LEFT COLUMN -->
+    <div>
+      <!-- Gallery -->
+      <div class="ld-gallery">
+        {% if photos %}
+          <img
+            id="ld-main-img"
+            class="ld-main-photo"
+            src="{% if photos[0].storage_url %}{{ photos[0].storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photos[0].id) }}{% endif %}"
+            alt="{{ listing.title }}"
+            loading="eager"
+            onclick="openLightbox(0)">
+          {% if photos | length > 1 %}
+          <div class="ld-thumbs">
+            {% for photo in photos %}
+            <img
+              class="ld-thumb {% if loop.index0 == 0 %}active{% endif %}"
+              src="{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"
+              alt="Photo {{ loop.index }}"
+              loading="lazy"
+              onclick="selectPhoto({{ loop.index0 }}, '{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}', this)">
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="ld-main-placeholder">📦</div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="ld-info">
+        <div class="ld-status-row">
+          {% if listing.status == 'sold' %}
+            <span class="ld-status-badge s-sold">Sold</span>
+          {% elif listing.status == 'reserved' %}
+            <span class="ld-status-badge s-reserved">Reserved</span>
+          {% elif listing.status == 'draft' %}
+            <span class="ld-status-badge s-draft">Draft</span>
+          {% elif listing.status == 'removed' %}
+            <span class="ld-status-badge s-removed">Removed</span>
+          {% endif %}
+          {% if listing.moderation_status == 'flagged' and (is_owner or is_admin) %}
+            <span class="ld-status-badge s-removed">⚠️ Flagged</span>
+          {% endif %}
+        </div>
+
+        <h1 class="ld-title">{{ listing.title }}</h1>
+
+        <div class="ld-price-row">
+          {% if listing.price_type == 'free' %}
+            <span class="ld-price free">Free</span>
+          {% elif listing.price is not none %}
+            <span class="ld-price">${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}</span>
+            {% if listing.price_type == 'negotiable' %}
+              <span class="ld-badge-offer">Make Offer</span>
+            {% endif %}
+          {% else %}
+            <span class="ld-price">Contact for price</span>
+          {% endif %}
+        </div>
+
+        <div class="ld-meta-chips">
+          {% if listing.condition %}
+          <span class="ld-chip">
+            <span class="chip-icon">
+              {% if listing.condition == 'new' %}✨
+              {% elif listing.condition == 'like_new' %}🌟
+              {% elif listing.condition == 'good' %}👍
+              {% elif listing.condition == 'fair' %}🔧
+              {% elif listing.condition == 'for_parts' %}🔩
+              {% else %}❓{% endif %}
+            </span>
+            {{ listing.condition.replace('_', ' ').title() }}
+          </span>
+          {% endif %}
+          {% if listing.city or listing.state %}
+          <span class="ld-chip">📍 {{ [listing.city, listing.state] | select | join(', ') }}</span>
+          {% endif %}
+          {% if listing.category %}
+          <span class="ld-chip">🏷 {{ listing.category.name }}</span>
+          {% endif %}
+          <span class="ld-chip">📅 {{ listing.created_at.strftime('%-m/%-d/%Y') }}</span>
+          <span class="ld-chip">👁 {{ listing.view_count or 0 }} view{{ '' if (listing.view_count or 0) == 1 else 's' }}</span>
+        </div>
+
+        {% if listing.description %}
+        <div class="ld-section-label">Description</div>
+        <div class="ld-description">{{ listing.description }}</div>
+        {% endif %}
+
+        {% if listing.delivery_options_list %}
+        <div class="ld-section-label">Delivery options</div>
+        <div class="ld-delivery-opts">
+          {% for opt in listing.delivery_options_list %}
+          <span class="ld-del-chip">
+            {% if opt == 'pickup' %}🚗 Local Pickup
+            {% elif opt == 'seller_delivers' %}🚚 Seller Delivers
+            {% elif opt == 'jhe_haul' %}🏠 JHE Haul Delivery
+            {% else %}{{ opt }}{% endif %}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Share / Report -->
+        <div class="ld-bottom-strip">
+          <button class="ld-share-btn" onclick="shareListing()">📤 Share</button>
+          <span class="ld-copy-toast" id="copy-toast">✅ Link copied!</span>
+          {% if current_user.is_authenticated and not is_owner %}
+          <a class="ld-report-link" onclick="openReportModal()">🚩 Report listing</a>
+          {% elif not current_user.is_authenticated %}
+          <a href="{{ url_for('invite', role='customer') }}" class="ld-report-link">🚩 Report listing</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Sidebar -->
+    <div class="ld-sidebar">
+
+      <!-- Seller card -->
+      <div class="ld-action-card">
+        <h3>Seller</h3>
+        <div class="ld-seller-row">
+          {% if listing.seller.profile_image_url %}
+          <img class="ld-seller-avatar" src="{{ listing.seller.profile_image_url }}" alt="{{ listing.seller.first_name }}">
+          {% elif listing.seller.profile_photo_data %}
+          <img class="ld-seller-avatar" src="{{ url_for('serve_profile_photo', user_id=listing.seller.id) }}" alt="{{ listing.seller.first_name }}">
+          {% else %}
+          <div class="ld-seller-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#e5e7eb;">👤</div>
+          {% endif %}
+          <div>
+            <div class="ld-seller-name">
+              {{ listing.seller.first_name or '' }}{% if listing.seller.first_name and listing.seller.last_name %} {{ listing.seller.last_name[0] }}.{% endif %}
+            </div>
+            <div class="ld-seller-since">Member since {{ listing.seller.created_at.strftime('%B %Y') }}</div>
+            <div class="ld-seller-stats">{{ seller_active_count }} active listing{{ '' if seller_active_count == 1 else 's' }}</div>
+          </div>
+        </div>
+
+        <!-- CTAs -->
+        {% if is_owner or is_admin %}
+          <!-- Seller / admin always see messages inbox + edit -->
+          <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 View Messages ({{ listing.conversations | length }})</a>
+          <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-secondary">✏️ Edit Listing</a>
+
+        {% elif listing.status == 'active' and listing.moderation_status == 'approved' %}
+
+          {% if current_user.is_authenticated %}
+            <!-- Logged-in buyer -->
+            <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
+
+            {% if 'jhe_haul' in listing.delivery_options_list %}
+            <a href="{{ url_for('customer_request') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+            {% endif %}
+
+          {% else %}
+            <!-- Logged-out visitor -->
+            <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">💬 Message Seller</a>
+            {% if 'jhe_haul' in listing.delivery_options_list %}
+            <a href="{{ url_for('invite', role='customer') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+            {% endif %}
+          {% endif %}
+
+          <!-- Favorite toggle -->
+          {% if not is_owner %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
+            {% endif %}
+          {% endif %}
+
+        {% elif listing.status == 'sold' %}
+          <div style="text-align:center;padding:16px;color:#6b7280;font-size:0.95rem;">
+            🏷️ This item has been sold.
+          </div>
+        {% elif listing.status == 'reserved' %}
+          <div style="text-align:center;padding:16px;color:#6b7280;font-size:0.95rem;">
+            🔒 This item is currently reserved.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Safety tips card -->
+      <div class="ld-action-card" style="background:#f8fafc;">
+        <h3>Stay Safe</h3>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:#6b7280;line-height:1.8;">
+          <li>Meet in a public place when possible</li>
+          <li>Never wire money or pay via gift cards</li>
+          <li>Verify the item before paying</li>
+          <li>Use JHE Haul for large items requiring delivery</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="ld-lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="ld-lb-close" onclick="closeLightbox()">✕</button>
+  {% if photos | length > 1 %}
+  <button class="ld-lb-nav ld-lb-prev" onclick="lbNav(-1, event)">‹</button>
+  <button class="ld-lb-nav ld-lb-next" onclick="lbNav(1, event)">›</button>
+  {% endif %}
+  <img id="lb-img" src="" alt="{{ listing.title }}">
+</div>
+
+<!-- Report modal -->
+{% if current_user.is_authenticated and not is_owner %}
+<div class="modal-backdrop" id="report-modal" onclick="closeReportModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>🚩 Report this listing</h3>
+    <form method="POST" action="{{ url_for('listing_report', listing_id=listing.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="reason" required>
+        <option value="">Select a reason…</option>
+        <option value="scam">Looks like a scam</option>
+        <option value="prohibited">Prohibited item</option>
+        <option value="duplicate">Duplicate listing</option>
+        <option value="misleading">Misleading or inaccurate</option>
+        <option value="offensive">Offensive content</option>
+        <option value="other">Other</option>
+      </select>
+      <textarea name="details" placeholder="Optional: add any details…" maxlength="1000"></textarea>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeReportModal()">Cancel</button>
+        <button type="submit" class="btn-report-submit">Submit Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+// ── Gallery ──────────────────────────────────────────────────
+const photoUrls = [
+  {% for photo in photos %}
+  "{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+let currentIdx = 0;
+
+function selectPhoto(idx, src, thumbEl) {
+  currentIdx = idx;
+  const mainImg = document.getElementById('ld-main-img');
+  if (mainImg) {
+    mainImg.src = src;
+    mainImg.onclick = () => openLightbox(idx);
+  }
+  document.querySelectorAll('.ld-thumb').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+}
+
+// ── Lightbox ─────────────────────────────────────────────────
+function openLightbox(idx) {
+  currentIdx = idx;
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lb-img');
+  img.src = photoUrls[idx] || '';
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(e) {
+  if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('ld-lb-close')) return;
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function lbNav(dir, e) {
+  e && e.stopPropagation();
+  currentIdx = (currentIdx + dir + photoUrls.length) % photoUrls.length;
+  document.getElementById('lb-img').src = photoUrls[currentIdx];
+  // sync main gallery
+  const src = photoUrls[currentIdx];
+  const thumbs = document.querySelectorAll('.ld-thumb');
+  const mainImg = document.getElementById('ld-main-img');
+  if (mainImg) mainImg.src = src;
+  thumbs.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
+}
+document.addEventListener('keydown', function(e) {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') { lb.classList.remove('open'); document.body.style.overflow = ''; }
+  if (e.key === 'ArrowRight') lbNav(1, null);
+  if (e.key === 'ArrowLeft')  lbNav(-1, null);
+});
+
+// ── Share ─────────────────────────────────────────────────────
+function shareListing() {
+  const url = window.location.href;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      const toast = document.getElementById('copy-toast');
+      toast.style.display = 'inline';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    });
+  } else {
+    prompt('Copy this link:', url);
+  }
+}
+
+// ── Favorite ──────────────────────────────────────────────────
+function toggleFavorite() {
+  const form = document.getElementById('fav-form');
+  const btn  = document.getElementById('fav-btn');
+  const icon = document.getElementById('fav-icon');
+  const label = document.getElementById('fav-label');
+  if (!form) return;
+
+  fetch(form.action, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': form.querySelector('[name=csrf_token]').value,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'csrf_token=' + encodeURIComponent(form.querySelector('[name=csrf_token]').value),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.favorited) {
+      btn.classList.add('favorited');
+      icon.textContent = '❤️';
+      label.textContent = 'Saved';
+    } else {
+      btn.classList.remove('favorited');
+      icon.textContent = '🤍';
+      label.textContent = 'Save Listing';
+    }
+  })
+  .catch(() => { form.submit(); });
+}
+
+// ── Report modal ──────────────────────────────────────────────
+function openReportModal() {
+  const m = document.getElementById('report-modal');
+  if (m) m.classList.add('open');
+}
+function closeReportModal(e) {
+  if (e && e.target !== document.getElementById('report-modal')) return;
+  const m = document.getElementById('report-modal');
+  if (m) m.classList.remove('open');
+}
+</script>
+{% endblock %}

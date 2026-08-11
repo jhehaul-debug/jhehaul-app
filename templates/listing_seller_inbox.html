@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Messages — {{ listing.title }} | JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+.inbox-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+.inbox-back { font-size: 0.88rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; }
+.inbox-back:hover { text-decoration: underline; }
+
+.inbox-header {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 18px;
+}
+.inbox-header h1 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
+.inbox-header p { font-size: 0.85rem; color: #6b7280; margin: 0; }
+
+.convo-list { display: flex; flex-direction: column; gap: 10px; }
+
+.convo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.convo-row:hover { box-shadow: 0 3px 10px rgba(0,0,0,.09); border-color: #c7d2fe; text-decoration: none; color: inherit; }
+.convo-row.unread { border-left: 3px solid #2563eb; }
+
+.convo-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  object-fit: cover; background: #e5e7eb; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+.convo-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+.convo-info { flex: 1; min-width: 0; }
+.convo-name { font-size: 0.95rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.convo-preview {
+  font-size: 0.83rem; color: #6b7280;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.convo-preview.unread { color: #1a1a2e; font-weight: 600; }
+
+.convo-meta { font-size: 0.75rem; color: #9ca3af; text-align: right; flex-shrink: 0; white-space: nowrap; }
+.unread-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: #2563eb;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+
+.inbox-empty {
+  text-align: center;
+  padding: 56px 24px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  color: #9ca3af;
+}
+.inbox-empty .emoji { font-size: 3rem; display: block; margin-bottom: 14px; }
+.inbox-empty p { font-size: 0.95rem; margin: 0; }
+</style>
+
+<div class="inbox-wrap">
+  <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="inbox-back">← Back to listing</a>
+
+  <div class="inbox-header">
+    <h1>💬 Messages for "{{ listing.title | truncate(50) }}"</h1>
+    <p>{{ convos | length }} conversation{{ '' if convos | length == 1 else 's' }}</p>
+  </div>
+
+  {% if not convos %}
+  <div class="inbox-empty">
+    <span class="emoji">📭</span>
+    <p>No one has messaged you about this listing yet.</p>
+  </div>
+  {% else %}
+  <div class="convo-list">
+    {% for convo in convos %}
+    {% set last_msg = convo.messages[-1] if convo.messages else none %}
+    {% set unread_count = convo.messages | selectattr('sender_id', 'ne', current_user.id) | selectattr('read_at', 'none') | list | length %}
+    <a href="{{ url_for('listing_message', listing_id=listing.id, convo_id=convo.id) }}"
+       class="convo-row {% if unread_count %}unread{% endif %}">
+
+      <!-- Buyer avatar -->
+      <div class="convo-avatar">
+        {% if convo.buyer.profile_image_url %}
+        <img src="{{ convo.buyer.profile_image_url }}" alt="{{ convo.buyer.first_name }}">
+        {% elif convo.buyer.profile_photo_data %}
+        <img src="{{ url_for('serve_profile_photo', user_id=convo.buyer.id) }}" alt="{{ convo.buyer.first_name }}">
+        {% else %}
+        👤
+        {% endif %}
+      </div>
+
+      <div class="convo-info">
+        <div class="convo-name">
+          {{ convo.buyer.first_name or 'Buyer' }}
+          {% if convo.buyer.last_name %} {{ convo.buyer.last_name[0] }}.{% endif %}
+        </div>
+        <div class="convo-preview {% if unread_count %}unread{% endif %}">
+          {% if last_msg %}
+            {% if last_msg.sender_id == current_user.id %}You: {% endif %}
+            {{ last_msg.body | truncate(80) }}
+          {% else %}
+            No messages yet
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="convo-meta">
+        {% if last_msg %}
+        {{ last_msg.created_at.strftime('%-m/%-d') }}
+        {% else %}
+        {{ convo.created_at.strftime('%-m/%-d') }}
+        {% endif %}
+        {% if unread_count %}
+        <br><span class="unread-dot"></span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

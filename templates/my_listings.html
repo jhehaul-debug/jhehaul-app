@@ -123,6 +123,9 @@
       {% if listing.status == 'draft' %}
         <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-continue">▶ Continue</a>
       {% else %}
+        <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-edit" title="View buyer messages">
+          💬{% if listing.conversations | length %} {{ listing.conversations | length }}{% endif %}
+        </a>
         <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-edit">✏️ Edit</a>
       {% endif %}
       <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST"
