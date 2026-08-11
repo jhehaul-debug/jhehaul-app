@@ -22,6 +22,7 @@
     <link rel="icon" type="image/png" href="/static/og-image.png">
     <link rel="shortcut icon" type="image/png" href="/static/og-image.png">
     <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
 
@@ -187,6 +188,21 @@
         document.addEventListener('click', function(e) {
             if (!btn.contains(e.target) && !nav.contains(e.target)) {
                 nav.classList.remove('open');
+            }
+        });
+    }
+    // Auto-inject CSRF token into every POST form that doesn't already have one
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfValue = csrfMeta ? csrfMeta.getAttribute('content') : '';
+    if (csrfValue) {
+        document.querySelectorAll('form').forEach(function(form) {
+            if ((form.method || '').toLowerCase() === 'post' &&
+                !form.querySelector('input[name="csrf_token"]')) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'csrf_token';
+                inp.value = csrfValue;
+                form.appendChild(inp);
             }
         });
     }

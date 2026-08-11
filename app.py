@@ -28,6 +28,14 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 from models import db  # noqa: E402
 db.init_app(app)
 
+# CSRF helpers — scoped to listing endpoints only (not app-wide).
+# Global enforcement requires all existing forms to carry tokens first.
+@app.context_processor
+def _csrf_context():
+    """Make csrf_token() callable in all templates without global enforcement."""
+    from flask_wtf.csrf import generate_csrf
+    return dict(csrf_token=generate_csrf)
+
 # ---- Upload folder ----
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

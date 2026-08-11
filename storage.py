@@ -119,3 +119,58 @@ def upload_file(file_obj, ext: str) -> tuple[str, str | None]:
     file_obj.save(save_path)
     logging.info("storage: saved locally → uploads/%s", filename)
     return filename, None
+
+
+def delete_file(filename: str) -> None:
+    """
+    Delete a previously-uploaded file from wherever it was stored.
+
+    Silently ignores errors so that a failed storage delete never blocks a DB
+    delete — log warnings instead of raising.
+
+    Parameters
+    ----------
+    filename : str
+        The UUID-based filename returned by upload_file (e.g. "abc123.jpg").
+        Do NOT pass a full URL or path; just the bare filename.
+    """
+    if not filename:
+        return
+
+    spaces_key    = os.environ.get("SPACES_KEY")
+    spaces_secret = os.environ.get("SPACES_SECRET")
+    spaces_bucket = os.environ.get("SPACES_BUCKET")
+    spaces_region = os.environ.get("SPACES_REGION", "nyc3")
+    spaces_endpoint = os.environ.get(
+        "SPACES_ENDPOINT",
+        f"https://{spaces_region}.digitaloceanspaces.com",
+    )
+
+    if spaces_key and spaces_secret and spaces_bucket:
+        try:
+            import boto3
+            from botocore.client import Config
+
+            client = boto3.session.Session().client(
+                "s3",
+                region_name=spaces_region,
+                endpoint_url=spaces_endpoint,
+                aws_access_key_id=spaces_key,
+                aws_secret_access_key=spaces_secret,
+                config=Config(signature_version="s3v4"),
+            )
+            client.delete_object(Bucket=spaces_bucket, Key=f"uploads/{filename}")
+            logging.info("storage: deleted from Spaces → uploads/%s", filename)
+        except Exception as exc:
+            logging.warning("storage: Spaces delete failed for %s: %s", filename, exc)
+        return
+
+    # Local filesystem fallback
+    try:
+        from app import UPLOAD_FOLDER
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        if os.path.isfile(path):
+            os.remove(path)
+            logging.info("storage: deleted locally → uploads/%s", filename)
+    except Exception as exc:
+        logging.warning("storage: local delete failed for %s: %s", filename, exc)

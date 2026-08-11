@@ -3,7 +3,7 @@ import uuid
 import stripe
 from datetime import datetime
 from functools import wraps
-from flask import session, redirect, url_for, request, send_from_directory, render_template, flash, make_response, g
+from flask import session, redirect, url_for, request, send_from_directory, render_template, flash, make_response, g, abort, jsonify
 from werkzeug.utils import secure_filename
 from flask_login import current_user
 
@@ -365,15 +365,405 @@ def marketplace():
 
 
 @app.route("/sell")
+@require_login
 def sell():
-    """Placeholder for the sell flow (Phase 4)."""
-    if not current_user.is_authenticated:
-        session["next_url"] = url_for('sell')
-        return redirect(url_for('auth.login'))
-    if not current_user.user_type:
+    """Entry point for selling — redirects to the listing creation wizard."""
+    if not current_user.user_type and not current_user.is_admin:
         return redirect(url_for('choose_role'))
-    flash("The sell flow is coming soon! You'll be able to list your items here shortly.", "success")
-    return redirect(url_for('marketplace'))
+    return redirect(url_for('listing_new'))
+
+
+# ── Listing / Sell Flow (Phase 4) ──────────────────────────────────────────────
+
+# Whitelisted enum values — never accept arbitrary strings from form POSTs
+_VALID_PRICE_TYPES   = frozenset({'fixed', 'negotiable', 'free'})
+_VALID_CONDITIONS    = frozenset({'new', 'like_new', 'good', 'fair', 'for_parts'})
+_VALID_DELIVERY_OPTS = frozenset({'pickup', 'seller_delivers', 'jhe_haul'})
+
+
+def _check_listing_csrf():
+    """Validate CSRF token for listing management POST endpoints.
+
+    Checks the form field 'csrf_token' or the 'X-CSRFToken' request header.
+    Aborts 400 on failure.  Not applied app-wide — existing routes are unaffected.
+    """
+    from flask_wtf.csrf import validate_csrf, ValidationError
+    token = request.form.get('csrf_token') or request.headers.get('X-CSRFToken', '')
+    try:
+        validate_csrf(token)
+    except ValidationError:
+        abort(400, description="CSRF validation failed.")
+
+
+def _listing_owner_or_403(listing_id):
+    """Return listing record; abort 403 if requester isn't the seller or admin."""
+    from models import Listing
+    listing = Listing.query.get_or_404(listing_id)
+    if not current_user.is_admin and listing.seller_id != current_user.id:
+        abort(403)
+    return listing
+
+
+def _apply_listing_fields(listing, form):
+    """
+    Set listing fields from a submitted form, enforcing whitelists.
+    Does NOT commit — caller decides when to commit or rollback.
+    """
+    listing.title = form.get('title', '').strip()[:200]
+    listing.description = form.get('description', '').strip()
+
+    cat_id = form.get('category_id', '').strip()
+    listing.category_id = int(cat_id) if cat_id.isdigit() else None
+    sub_id = form.get('subcategory_id', '').strip()
+    raw_sub = int(sub_id) if sub_id.isdigit() else None
+
+    # Validate subcategory belongs to selected category
+    if raw_sub and listing.category_id:
+        from models import Category as _Cat
+        sub_obj = _Cat.query.get(raw_sub)
+        listing.subcategory_id = raw_sub if (sub_obj and sub_obj.parent_id == listing.category_id) else None
+    else:
+        listing.subcategory_id = None
+
+    raw_condition = form.get('condition', '').strip()
+    listing.condition = raw_condition if raw_condition in _VALID_CONDITIONS else None
+
+    price_type = form.get('price_type', 'fixed')
+    listing.price_type = price_type if price_type in _VALID_PRICE_TYPES else 'fixed'
+
+    if listing.price_type == 'free':
+        listing.price = None
+    else:
+        price_str = form.get('price', '').strip()
+        try:
+            p = float(price_str)
+            listing.price = p if p >= 0 else None
+        except (ValueError, TypeError):
+            listing.price = None
+
+    listing.city     = form.get('city',     '').strip()[:100] or None
+    listing.state    = form.get('state',    '').strip()[:50]  or None
+    listing.zip_code = form.get('zip_code', '').strip()[:10]  or None
+    if listing.zip_code:
+        from models import ZipCode as _ZC
+        zc = _ZC.query.get(listing.zip_code)
+        if zc:
+            listing.latitude  = zc.lat
+            listing.longitude = zc.lon
+            if not listing.city:  listing.city  = zc.city
+            if not listing.state: listing.state = zc.state
+
+    raw_opts = form.getlist('delivery_option')
+    valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
+    listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+
+
+def _validate_listing(listing, require_photos=False):
+    """
+    Validate a listing's current field values.
+    Returns list of (human_message, wizard_step) tuples; empty = valid.
+    """
+    errors = []
+    if not listing.title:
+        errors.append(("Title is required.", 2))
+    if listing.price_type not in _VALID_PRICE_TYPES:
+        errors.append(("Invalid price type selected.", 3))
+    elif listing.price_type in ('fixed', 'negotiable'):
+        if listing.price is None or not (isinstance(listing.price, (int, float)) and listing.price >= 0):
+            errors.append(("A valid price is required for fixed and negotiable listings.", 3))
+    if require_photos:
+        from models import ListingPhoto as _LP
+        if not _LP.query.filter_by(listing_id=listing.id).first():
+            errors.append(("At least one photo is required.", 1))
+    return errors
+
+
+@app.route("/listing/new")
+@require_login
+def listing_new():
+    """Create a new draft listing and enter the wizard at step 1."""
+    if not current_user.user_type and not current_user.is_admin:
+        return redirect(url_for('choose_role'))
+    from models import Listing
+    draft = Listing(seller_id=current_user.id, title='', status='draft', moderation_status='approved')
+    db.session.add(draft)
+    db.session.commit()
+    return redirect(url_for('listing_step', listing_id=draft.id, step=1))
+
+
+@app.route("/listing/<int:listing_id>/step/<int:step>", methods=["GET", "POST"])
+@require_login
+def listing_step(listing_id, step):
+    """Multi-step listing creation wizard (steps 1–6)."""
+    from models import Listing, Category
+    listing = _listing_owner_or_403(listing_id)
+
+    TOTAL_STEPS = 6
+    step = max(1, min(step, TOTAL_STEPS))
+    categories = (Category.query
+                  .filter_by(is_active=True, parent_id=None)
+                  .order_by(Category.display_order, Category.name)
+                  .all())
+
+    if request.method == "POST":
+        _check_listing_csrf()
+        if step == 1:
+            # Photos are managed via AJAX; just advance.
+            pass
+
+        elif step == 2:
+            # Apply only the details-step fields using whitelisted helper
+            listing.title = request.form.get('title', '').strip()[:200]
+            listing.description = request.form.get('description', '').strip()
+            cat_id = request.form.get('category_id', '').strip()
+            listing.category_id = int(cat_id) if cat_id.isdigit() else None
+            sub_id = request.form.get('subcategory_id', '').strip()
+            raw_sub = int(sub_id) if sub_id.isdigit() else None
+            if raw_sub and listing.category_id:
+                from models import Category as _Cat2
+                sub_obj = _Cat2.query.get(raw_sub)
+                listing.subcategory_id = raw_sub if (sub_obj and sub_obj.parent_id == listing.category_id) else None
+            else:
+                listing.subcategory_id = None
+            raw_cond = request.form.get('condition', '').strip()
+            listing.condition = raw_cond if raw_cond in _VALID_CONDITIONS else None
+            if not listing.title:
+                flash("A title is required.", "error")
+                return render_template('listing_wizard.html', listing=listing,
+                                       step=step, total_steps=TOTAL_STEPS, categories=categories)
+
+        elif step == 3:
+            price_type = request.form.get('price_type', 'fixed')
+            listing.price_type = price_type if price_type in _VALID_PRICE_TYPES else 'fixed'
+            if listing.price_type == 'free':
+                listing.price = None
+            else:
+                price_str = request.form.get('price', '').strip()
+                try:
+                    p = float(price_str)
+                    listing.price = p if p >= 0 else None
+                except (ValueError, TypeError):
+                    listing.price = None
+                if listing.price is None:
+                    flash("Please enter a valid price (0 or higher).", "error")
+                    return render_template('listing_wizard.html', listing=listing,
+                                           step=step, total_steps=TOTAL_STEPS, categories=categories)
+
+        elif step == 4:
+            listing.city     = request.form.get('city',     '').strip()[:100] or None
+            listing.state    = request.form.get('state',    '').strip()[:50]  or None
+            listing.zip_code = request.form.get('zip_code', '').strip()[:10]  or None
+            if listing.zip_code:
+                from models import ZipCode as _ZC2
+                zc = _ZC2.query.get(listing.zip_code)
+                if zc:
+                    listing.latitude  = zc.lat
+                    listing.longitude = zc.lon
+                    if not listing.city:  listing.city  = zc.city
+                    if not listing.state: listing.state = zc.state
+
+        elif step == 5:
+            raw_opts = request.form.getlist('delivery_option')
+            valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
+            listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+
+        elif step == 6:
+            # Publish — full server-side validation including photos
+            pub_errors = _validate_listing(listing, require_photos=True)
+            if pub_errors:
+                first_step = min(s for _, s in pub_errors)
+                for msg, _ in pub_errors:
+                    flash(msg, "error")
+                return redirect(url_for('listing_step', listing_id=listing_id, step=first_step))
+            listing.status = 'active'
+            db.session.commit()
+            flash("Your listing is now live! 🎉", "success")
+            return redirect(url_for('my_listings'))
+
+        db.session.commit()
+
+        if step < TOTAL_STEPS:
+            return redirect(url_for('listing_step', listing_id=listing_id, step=step + 1))
+        return redirect(url_for('listing_step', listing_id=listing_id, step=6))
+
+    return render_template('listing_wizard.html',
+                           listing=listing,
+                           step=step,
+                           total_steps=TOTAL_STEPS,
+                           categories=categories)
+
+
+@app.route("/listing/<int:listing_id>/photo/upload", methods=["POST"])
+@require_login
+def listing_photo_upload(listing_id):
+    """AJAX: upload a photo to a listing (max 10)."""
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+    listing = _listing_owner_or_403(listing_id)
+
+    current_count = ListingPhoto.query.filter_by(listing_id=listing_id).count()
+    if current_count >= 10:
+        return jsonify(error='Maximum 10 photos allowed.'), 400
+
+    photo = request.files.get('photo')
+    if not photo or not photo.filename:
+        return jsonify(error='No file received.'), 400
+
+    ext = os.path.splitext(photo.filename)[1].lower()
+    allowed = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
+    if ext not in allowed:
+        return jsonify(error='Unsupported file type.'), 400
+
+    data, ct = _read_photo_bytes(photo, ext)
+    if len(data) > 15 * 1024 * 1024:
+        return jsonify(error='Photo must be under 15 MB.'), 400
+
+    from storage import upload_file as _upload_file
+    filename, storage_url = _upload_file(photo, ext)
+
+    is_primary = (current_count == 0)
+    lp = ListingPhoto(
+        listing_id=listing_id,
+        filename=filename,
+        storage_url=storage_url,
+        data=data if not storage_url else None,
+        content_type=ct,
+        display_order=current_count,
+        is_primary=is_primary,
+    )
+    db.session.add(lp)
+    db.session.commit()
+
+    photo_url = storage_url or url_for('serve_listing_photo', photo_id=lp.id)
+    return jsonify(id=lp.id, url=photo_url, is_primary=lp.is_primary), 200
+
+
+@app.route("/listing/<int:listing_id>/photo/<int:photo_id>/delete", methods=["POST"])
+@require_login
+def listing_photo_delete(listing_id, photo_id):
+    """AJAX: remove a photo from a listing (DB row + stored file)."""
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+    _listing_owner_or_403(listing_id)
+    photo = ListingPhoto.query.filter_by(id=photo_id, listing_id=listing_id).first_or_404()
+    was_primary = photo.is_primary
+    filename_to_delete = photo.filename
+    db.session.delete(photo)
+    db.session.flush()
+    if was_primary:
+        remaining = (ListingPhoto.query
+                     .filter_by(listing_id=listing_id)
+                     .order_by(ListingPhoto.display_order)
+                     .first())
+        if remaining:
+            remaining.is_primary = True
+    db.session.commit()
+    # Delete the stored file after DB commit so we don't orphan it on rollback
+    try:
+        from storage import delete_file as _delete_file
+        _delete_file(filename_to_delete)
+    except Exception as exc:
+        app.logger.warning("listing_photo_delete: storage cleanup failed: %s", exc)
+    return jsonify(ok=True), 200
+
+
+@app.route("/listing/<int:listing_id>/photo/<int:photo_id>/primary", methods=["POST"])
+@require_login
+def listing_photo_set_primary(listing_id, photo_id):
+    """AJAX: set a photo as the primary/cover image."""
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+    _listing_owner_or_403(listing_id)
+    ListingPhoto.query.filter_by(listing_id=listing_id).update({'is_primary': False})
+    photo = ListingPhoto.query.filter_by(id=photo_id, listing_id=listing_id).first_or_404()
+    photo.is_primary = True
+    db.session.commit()
+    return jsonify(ok=True), 200
+
+
+@app.route("/listing/<int:listing_id>/photo/reorder", methods=["POST"])
+@require_login
+def listing_photo_reorder(listing_id):
+    """AJAX: update display_order for listing photos."""
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+    _listing_owner_or_403(listing_id)
+    order = (request.get_json() or {}).get('order', [])
+    for i, pid in enumerate(order):
+        ListingPhoto.query.filter_by(id=int(pid), listing_id=listing_id).update({'display_order': i})
+    db.session.commit()
+    return jsonify(ok=True), 200
+
+
+@app.route("/listing/<int:listing_id>/edit", methods=["GET", "POST"])
+@require_login
+def listing_edit(listing_id):
+    """Edit all fields of an existing listing on one page."""
+    from models import Listing, Category
+    listing = _listing_owner_or_403(listing_id)
+    categories = (Category.query
+                  .filter_by(is_active=True, parent_id=None)
+                  .order_by(Category.display_order, Category.name)
+                  .all())
+
+    if request.method == "POST":
+        _check_listing_csrf()
+        # Apply all fields through whitelist helper (not yet committed)
+        _apply_listing_fields(listing, request.form)
+
+        # Validate — re-render the form (not redirect) to retain submitted values
+        edit_errors = _validate_listing(listing, require_photos=False)
+        if edit_errors:
+            for msg, _ in edit_errors:
+                flash(msg, "error")
+            # listing object already has submitted values → template shows user's input
+            db.session.rollback()
+            # Reload with submitted values from form (rollback cleared in-session changes)
+            _apply_listing_fields(listing, request.form)
+            return render_template('listing_edit.html', listing=listing, categories=categories)
+
+        db.session.commit()
+        flash("Listing updated.", "success")
+        return redirect(url_for('my_listings'))
+
+    return render_template('listing_edit.html', listing=listing, categories=categories)
+
+
+@app.route("/listing/<int:listing_id>/delete", methods=["POST"])
+@require_login
+def listing_delete(listing_id):
+    """Delete a listing and all its photos (DB rows + stored files)."""
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+    listing = _listing_owner_or_403(listing_id)
+    # Collect filenames before cascade-delete removes them from the session
+    filenames = [p.filename for p in listing.photos if p.filename]
+    db.session.delete(listing)
+    db.session.commit()
+    # Delete stored files after DB commit
+    try:
+        from storage import delete_file as _delete_file
+        for fname in filenames:
+            try:
+                _delete_file(fname)
+            except Exception as exc:
+                app.logger.warning("listing_delete: storage cleanup failed for %s: %s", fname, exc)
+    except Exception as exc:
+        app.logger.warning("listing_delete: storage import failed: %s", exc)
+    flash("Listing deleted.", "success")
+    return redirect(url_for('my_listings'))
+
+
+@app.route("/my-listings")
+@require_login
+def my_listings():
+    """Seller's dashboard: view and manage their own listings."""
+    from models import Listing
+    listings = (Listing.query
+                .filter_by(seller_id=current_user.id)
+                .order_by(Listing.created_at.desc())
+                .all())
+    return render_template('my_listings.html', listings=listings)
 
 
 @app.route("/listing/<int:listing_id>")

@@ -1,0 +1,584 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Create a Listing' if listing.status == 'draft' else 'Edit Listing' }} — JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+  .wizard-wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px 80px; }
+  .wizard-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0 0 16px; }
+
+  /* Progress bar */
+  .progress-bar { display: flex; align-items: center; gap: 0; margin-bottom: 32px; }
+  .progress-step { flex: 1; text-align: center; position: relative; }
+  .progress-step-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700;
+    background: #e5e7eb; color: #6b7280; position: relative; z-index: 1;
+  }
+  .progress-step.done .progress-step-circle { background: #16a34a; color: #fff; }
+  .progress-step.active .progress-step-circle { background: #2563eb; color: #fff; box-shadow: 0 0 0 4px #dbeafe; }
+  .progress-step-label { font-size: 0.68rem; color: #6b7280; margin-top: 4px; display: block; }
+  .progress-step.active .progress-step-label { color: #2563eb; font-weight: 600; }
+  .progress-step.done .progress-step-label { color: #16a34a; }
+  .progress-connector { flex: 0 0 auto; width: 40px; height: 2px; background: #e5e7eb; margin-bottom: 18px; }
+  .progress-connector.done { background: #16a34a; }
+
+  /* Card */
+  .step-card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 1px 4px rgba(0,0,0,.08); border: 1px solid #f0f0f0; }
+  .step-card h2 { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin: 0 0 6px; }
+  .step-card .hint { color: #6b7280; font-size: 0.88rem; margin: 0 0 20px; }
+
+  /* Form elements */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 0.88rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .form-label .req { color: #ef4444; margin-left: 2px; }
+  .form-control {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+    font-size: 0.95rem; color: #1a1a2e; background: #fff;
+    transition: border-color .15s; box-sizing: border-box;
+  }
+  .form-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
+  textarea.form-control { min-height: 110px; resize: vertical; }
+
+  /* Price type */
+  .price-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .price-option input[type=radio] { display: none; }
+  .price-option label {
+    display: block; text-align: center; padding: 14px 8px;
+    border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer;
+    font-weight: 600; font-size: 0.92rem;
+  }
+  .price-option label .po-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+  .price-option input:checked + label { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+
+  /* Delivery options */
+  .delivery-options { display: flex; flex-direction: column; gap: 10px; }
+  .delivery-opt { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; }
+  .delivery-opt:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+  .delivery-opt input[type=checkbox] { margin-top: 2px; accent-color: #2563eb; width: 18px; height: 18px; flex-shrink: 0; }
+  .delivery-opt-text strong { display: block; font-size: 0.95rem; color: #1a1a2e; }
+  .delivery-opt-text span { font-size: 0.82rem; color: #6b7280; }
+
+  /* Buttons */
+  .wizard-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+  .btn-back { background: none; border: 1.5px solid #d1d5db; color: #374151; padding: 10px 20px; border-radius: 8px; font-size: 0.92rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn-back:hover { background: #f9fafb; }
+  .btn-next { background: #2563eb; color: #fff; border: none; padding: 11px 28px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-next:hover { background: #1d4ed8; }
+  .btn-publish { background: #16a34a; color: #fff; border: none; padding: 11px 28px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-publish:hover { background: #15803d; }
+
+  /* Photo grid */
+  .photo-upload-zone {
+    border: 2px dashed #93c5fd; border-radius: 12px; padding: 32px;
+    text-align: center; background: #f0f7ff; cursor: pointer;
+    transition: border-color .15s, background .15s; margin-bottom: 20px;
+  }
+  .photo-upload-zone:hover, .photo-upload-zone.drag-over { border-color: #2563eb; background: #dbeafe; }
+  .photo-upload-zone input[type=file] { display: none; }
+  .photo-upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .photo-upload-zone p { margin: 0; font-size: 0.9rem; color: #6b7280; }
+  .photo-upload-zone .upload-btn { display: inline-block; margin-top: 10px; background: #2563eb; color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 480px) { .photo-grid { grid-template-columns: repeat(2, 1fr); } }
+  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f3f4f6; border: 2px solid transparent; cursor: grab; }
+  .photo-thumb.is-primary { border-color: #16a34a; }
+  .photo-thumb.drag-over-thumb { border-color: #2563eb; border-style: dashed; opacity: .75; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .photo-thumb-actions { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.55); display: flex; gap: 4px; padding: 5px; }
+  .thumb-btn { flex: 1; background: rgba(255,255,255,.2); border: none; color: #fff; font-size: 0.7rem; padding: 3px 4px; border-radius: 4px; cursor: pointer; font-weight: 600; text-align: center; }
+  .thumb-btn:hover { background: rgba(255,255,255,.4); }
+  .thumb-btn.danger { color: #fca5a5; }
+  .primary-badge { position: absolute; top: 4px; left: 4px; background: #16a34a; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .drag-handle { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.45); color: #fff; font-size: 0.75rem; padding: 2px 5px; border-radius: 4px; cursor: grab; line-height: 1; }
+  .photo-count { font-size: 0.85rem; color: #6b7280; margin-bottom: 8px; }
+  .upload-spinner { display: none; font-size: 0.85rem; color: #2563eb; }
+  .reorder-hint { font-size: 0.8rem; color: #6b7280; margin-bottom: 10px; }
+
+  /* Preview */
+  .preview-listing-card { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+  .preview-photo { width: 100%; aspect-ratio: 4/3; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; }
+  .preview-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-body { padding: 20px; }
+  .preview-price { font-size: 1.4rem; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+  .preview-title { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
+  .preview-meta { font-size: 0.85rem; color: #6b7280; margin-bottom: 12px; }
+  .preview-desc { font-size: 0.9rem; color: #374151; white-space: pre-wrap; margin-bottom: 14px; border-top: 1px solid #f0f0f0; padding-top: 14px; }
+  .preview-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preview-badge { font-size: 0.78rem; background: #f3f4f6; color: #374151; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .incomplete-warning { background: #fef9c3; border: 1.5px solid #fde047; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.88rem; color: #854d0e; }
+  .incomplete-warning strong { display: block; margin-bottom: 4px; }
+
+  .location-row { display: grid; grid-template-columns: 1fr 80px 100px; gap: 10px; }
+  @media (max-width: 480px) { .location-row { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="wizard-wrap">
+  <div class="wizard-header">
+    <h1>{% if listing.status == 'draft' %}Create a Listing{% else %}Edit Listing{% endif %}</h1>
+    <div class="progress-bar">
+      {% set labels = ['Photos', 'Details', 'Price', 'Location', 'Delivery', 'Preview'] %}
+      {% for i in range(1, total_steps + 1) %}
+        {% if i > 1 %}<div class="progress-connector {{ 'done' if i <= step else '' }}"></div>{% endif %}
+        <div class="progress-step {{ 'done' if i < step else ('active' if i == step else '') }}">
+          <div class="progress-step-circle">{% if i < step %}✓{% else %}{{ i }}{% endif %}</div>
+          <span class="progress-step-label">{{ labels[i-1] }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ─── STEP 1: PHOTOS ─── #}
+  {% if step == 1 %}
+  <div class="step-card">
+    <h2>📸 Add Photos</h2>
+    <p class="hint">Upload up to 10 photos. Drag thumbnails to reorder. The starred photo is the cover image.</p>
+
+    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
+    {% if listing.photos|length > 1 %}
+    <div class="reorder-hint">⠿ Drag photos to reorder them</div>
+    {% endif %}
+
+    <div class="photo-grid" id="photoGrid">
+      {% for photo in listing.photos %}
+      <div class="photo-thumb {{ 'is-primary' if photo.is_primary }}" id="thumb-{{ photo.id }}" data-id="{{ photo.id }}" draggable="true">
+        {% if photo.is_primary %}<div class="primary-badge">⭐ Cover</div>{% endif %}
+        <div class="drag-handle">⠿</div>
+        <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="Photo">
+        <div class="photo-thumb-actions">
+          {% if not photo.is_primary %}
+          <button class="thumb-btn" onclick="setPrimary({{ photo.id }})">⭐ Cover</button>
+          {% else %}
+          <span class="thumb-btn" style="opacity:.5;cursor:default">⭐ Cover</span>
+          {% endif %}
+          <button class="thumb-btn danger" onclick="deletePhoto({{ photo.id }})">✕</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if listing.photos|length < 10 %}
+    <div class="photo-upload-zone" id="uploadZone">
+      <input type="file" id="photoInput" accept="image/*" multiple>
+      <div class="upload-icon">🖼️</div>
+      <p>Drag photos here or</p>
+      <span class="upload-btn">Browse Photos</span>
+      <p style="margin-top:8px;font-size:0.78rem">JPG, PNG, WebP — up to 15 MB each</p>
+    </div>
+    {% endif %}
+    <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
+
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="wizard-nav">
+        <a href="{{ url_for('my_listings') }}" class="btn-back">Cancel</a>
+        <button type="submit" class="btn-next">Next: Details →</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+  const LISTING_ID = {{ listing.id }};
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  const photoGrid = document.getElementById('photoGrid');
+  const photoCount = document.getElementById('photoCount');
+  const uploadZone = document.getElementById('uploadZone');
+  const photoInput = document.getElementById('photoInput');
+  const spinner = document.getElementById('uploadSpinner');
+  let currentCount = {{ listing.photos|length }};
+
+  function updateCount() {
+    photoCount.textContent = currentCount + ' / 10 photos';
+    if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : '';
+  }
+
+  /* ─── Drag-to-reorder ─── */
+  let dragSrc = null;
+
+  function addDragListeners(thumb) {
+    thumb.setAttribute('draggable', 'true');
+    thumb.addEventListener('dragstart', e => {
+      dragSrc = thumb;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => thumb.style.opacity = '0.5', 0);
+    });
+    thumb.addEventListener('dragend', () => {
+      thumb.style.opacity = '';
+      document.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('drag-over-thumb'));
+      const ids = Array.from(photoGrid.querySelectorAll('.photo-thumb[data-id]'))
+                       .map(t => parseInt(t.dataset.id));
+      if (ids.length > 1) saveOrder(ids);
+    });
+    thumb.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (thumb !== dragSrc) thumb.classList.add('drag-over-thumb');
+    });
+    thumb.addEventListener('dragleave', () => thumb.classList.remove('drag-over-thumb'));
+    thumb.addEventListener('drop', e => {
+      e.stopPropagation();
+      thumb.classList.remove('drag-over-thumb');
+      if (dragSrc && dragSrc !== thumb) {
+        const kids = Array.from(photoGrid.children);
+        const si = kids.indexOf(dragSrc);
+        const di = kids.indexOf(thumb);
+        if (si < di) photoGrid.insertBefore(dragSrc, thumb.nextSibling);
+        else          photoGrid.insertBefore(dragSrc, thumb);
+      }
+    });
+  }
+
+  async function saveOrder(ids) {
+    try {
+      await fetch(`/listing/${LISTING_ID}/photo/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ order: ids })
+      });
+    } catch(e) { /* non-fatal */ }
+  }
+
+  // Init drag on existing thumbs
+  photoGrid.querySelectorAll('.photo-thumb[data-id]').forEach(addDragListeners);
+
+  /* ─── Upload ─── */
+  function buildThumb(id, url, isPrimary) {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb' + (isPrimary ? ' is-primary' : '');
+    div.id = 'thumb-' + id;
+    div.dataset.id = id;
+    div.innerHTML = `
+      ${isPrimary ? '<div class="primary-badge">⭐ Cover</div>' : ''}
+      <div class="drag-handle">⠿</div>
+      <img src="${url}" alt="Photo">
+      <div class="photo-thumb-actions">
+        <button class="thumb-btn" onclick="setPrimary(${id})">⭐ Cover</button>
+        <button class="thumb-btn danger" onclick="deletePhoto(${id})">✕</button>
+      </div>`;
+    addDragListeners(div);
+    return div;
+  }
+
+  async function uploadFiles(files) {
+    for (const file of files) {
+      if (currentCount >= 10) break;
+      spinner.style.display = 'block';
+      const fd = new FormData();
+      fd.append('photo', file);
+      try {
+        const res = await fetch(`/listing/${LISTING_ID}/photo/upload`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body: fd
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentCount++;
+          photoGrid.appendChild(buildThumb(data.id, data.url, data.is_primary));
+          updateCount();
+        } else { alert(data.error || 'Upload failed.'); }
+      } catch(e) { alert('Upload error: ' + e); }
+    }
+    spinner.style.display = 'none';
+  }
+
+  if (uploadZone) {
+    uploadZone.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', () => uploadFiles(photoInput.files));
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      uploadFiles(e.dataTransfer.files);
+    });
+  }
+
+  async function deletePhoto(id) {
+    if (!confirm('Remove this photo?')) return;
+    const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken }
+    });
+    if (res.ok) {
+      document.getElementById('thumb-' + id)?.remove();
+      currentCount = Math.max(0, currentCount - 1);
+      updateCount();
+    }
+  }
+
+  async function setPrimary(id) {
+    const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken }
+    });
+    if (res.ok) {
+      document.querySelectorAll('.photo-thumb').forEach(t => {
+        t.classList.remove('is-primary');
+        t.querySelector('.primary-badge')?.remove();
+      });
+      const el = document.getElementById('thumb-' + id);
+      if (el) {
+        el.classList.add('is-primary');
+        el.insertAdjacentHTML('afterbegin', '<div class="primary-badge">⭐ Cover</div>');
+      }
+    }
+  }
+  </script>
+
+  {# ─── STEP 2: DETAILS ─── #}
+  {% elif step == 2 %}
+  <div class="step-card">
+    <h2>📝 Item Details</h2>
+    <p class="hint">Give buyers a clear picture of what you're selling.</p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=2) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label">Title <span class="req">*</span></label>
+        <input class="form-control" type="text" name="title" value="{{ listing.title or '' }}" placeholder="e.g. Vintage Oak Dresser" maxlength="200" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" name="description" placeholder="Describe the item — size, material, wear, why you're selling…">{{ listing.description or '' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-control" name="category_id" id="catSelect">
+          <option value="">— Select a category —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {{ 'selected' if listing.category_id == cat.id }}>{{ cat.icon or '' }} {{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" id="subcatGroup" style="display:none">
+        <label class="form-label">Subcategory</label>
+        <select class="form-control" name="subcategory_id" id="subcatSelect">
+          <option value="">— Select subcategory —</option>
+          {% for cat in categories %}{% for sub in cat.subcategories %}{% if sub.is_active %}
+          <option value="{{ sub.id }}" data-parent="{{ cat.id }}" {{ 'selected' if listing.subcategory_id == sub.id }}>{{ sub.name }}</option>
+          {% endif %}{% endfor %}{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Condition</label>
+        <select class="form-control" name="condition">
+          <option value="">— Select condition —</option>
+          <option value="new" {{ 'selected' if listing.condition == 'new' }}>New / Unused</option>
+          <option value="like_new" {{ 'selected' if listing.condition == 'like_new' }}>Like New</option>
+          <option value="good" {{ 'selected' if listing.condition == 'good' }}>Good</option>
+          <option value="fair" {{ 'selected' if listing.condition == 'fair' }}>Fair</option>
+          <option value="for_parts" {{ 'selected' if listing.condition == 'for_parts' }}>For Parts / As-Is</option>
+        </select>
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Price →</button>
+      </div>
+    </form>
+  </div>
+  <script>
+  const catSelect = document.getElementById('catSelect');
+  const subcatGroup = document.getElementById('subcatGroup');
+  const subcatSelect = document.getElementById('subcatSelect');
+  const allSubOptions = Array.from(subcatSelect.options).slice(1);
+  function filterSubcats(pid) {
+    subcatSelect.innerHTML = '<option value="">— Select subcategory —</option>';
+    const m = allSubOptions.filter(o => o.dataset.parent == pid);
+    m.forEach(o => subcatSelect.appendChild(o));
+    subcatGroup.style.display = m.length ? '' : 'none';
+  }
+  catSelect.addEventListener('change', () => filterSubcats(catSelect.value));
+  if (catSelect.value) filterSubcats(catSelect.value);
+  </script>
+
+  {# ─── STEP 3: PRICE ─── #}
+  {% elif step == 3 %}
+  <div class="step-card">
+    <h2>💰 Pricing</h2>
+    <p class="hint">How would you like to price this item?</p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=3) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="price-options">
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_fixed" value="fixed" {{ 'checked' if (listing.price_type or 'fixed') == 'fixed' }}>
+          <label for="pt_fixed"><span class="po-icon">🏷️</span>Fixed Price</label>
+        </div>
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_neg" value="negotiable" {{ 'checked' if listing.price_type == 'negotiable' }}>
+          <label for="pt_neg"><span class="po-icon">🤝</span>Negotiable</label>
+        </div>
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_free" value="free" {{ 'checked' if listing.price_type == 'free' }}>
+          <label for="pt_free"><span class="po-icon">🎁</span>Free</label>
+        </div>
+      </div>
+      <div class="form-group" id="priceGroup" style="{{ 'display:none' if listing.price_type == 'free' }}">
+        <label class="form-label">Amount <span class="req">*</span></label>
+        <div style="position:relative">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-weight:700">$</span>
+          <input class="form-control" style="padding-left:28px" type="number" name="price" id="priceInput"
+            value="{{ '%.2f'|format(listing.price) if listing.price is not none else '' }}"
+            min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=2) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Location →</button>
+      </div>
+    </form>
+  </div>
+  <script>
+  const priceGroup = document.getElementById('priceGroup');
+  const priceInput = document.getElementById('priceInput');
+  document.querySelectorAll('input[name=price_type]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isFree = r.value === 'free';
+      priceGroup.style.display = isFree ? 'none' : '';
+      if (priceInput) priceInput.required = !isFree;
+    });
+  });
+  </script>
+
+  {# ─── STEP 4: LOCATION ─── #}
+  {% elif step == 4 %}
+  <div class="step-card">
+    <h2>📍 Location</h2>
+    <p class="hint">Buyers will see the city and state — no street address is stored or displayed.</p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=4) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="location-row">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input class="form-control" type="text" name="city" value="{{ listing.city or '' }}" placeholder="Springfield" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <select class="form-control" name="state">
+            <option value="">—</option>
+            {% for abbr in ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] %}
+            <option value="{{ abbr }}" {{ 'selected' if listing.state == abbr }}>{{ abbr }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ZIP Code</label>
+          <input class="form-control" type="text" name="zip_code" value="{{ listing.zip_code or '' }}" placeholder="12345" maxlength="10">
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=3) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Next: Delivery →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ─── STEP 5: DELIVERY ─── #}
+  {% elif step == 5 %}
+  <div class="step-card">
+    <h2>🚚 Delivery Options</h2>
+    <p class="hint">Select all that apply.</p>
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=5) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% set current_opts = listing.delivery_options_list %}
+      <div class="delivery-options">
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="pickup" {{ 'checked' if 'pickup' in current_opts }}>
+          <div class="delivery-opt-text">
+            <strong>🏠 Buyer Pickup</strong>
+            <span>Buyer comes to you to pick up the item.</span>
+          </div>
+        </label>
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="seller_delivers" {{ 'checked' if 'seller_delivers' in current_opts }}>
+          <div class="delivery-opt-text">
+            <strong>🚗 Seller Delivers</strong>
+            <span>You can deliver the item to the buyer.</span>
+          </div>
+        </label>
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="jhe_haul" {{ 'checked' if 'jhe_haul' in current_opts }}>
+          <div class="delivery-opt-text">
+            <strong>🚛 JHE Haul Delivery Available</strong>
+            <span>Buyers can request JHE Haul to move this item.</span>
+          </div>
+        </label>
+      </div>
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=4) }}" class="btn-back">← Back</a>
+        <button type="submit" class="btn-next">Preview →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ─── STEP 6: PREVIEW + PUBLISH ─── #}
+  {% elif step == 6 %}
+  <div class="step-card">
+    <h2>👀 Preview Your Listing</h2>
+    <p class="hint">Here's exactly how your listing will appear to buyers. Publish when happy, or go back to make changes.</p>
+
+    {% set missing = [] %}
+    {% if not listing.title %}{% set _ = missing.append('title') %}{% endif %}
+    {% if not listing.photos %}{% set _ = missing.append('at least one photo') %}{% endif %}
+    {% if listing.price_type in ('fixed', 'negotiable') and listing.price is none %}{% set _ = missing.append('price') %}{% endif %}
+
+    {% if missing %}
+    <div class="incomplete-warning">
+      <strong>⚠️ Missing required info:</strong>
+      Please go back and add: {{ missing | join(', ') }}.
+    </div>
+    {% endif %}
+
+    <div class="preview-listing-card" style="margin-bottom:24px">
+      {% set primary = listing.primary_photo %}
+      <div class="preview-photo">
+        {% if primary %}
+          <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="{{ listing.title }}">
+        {% else %}
+          <div style="width:100%;aspect-ratio:4/3;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:3.5rem;">📦</div>
+        {% endif %}
+      </div>
+      <div class="preview-body">
+        {% if listing.price_type == 'free' %}
+          <div class="preview-price" style="color:#16a34a">FREE</div>
+        {% elif listing.price is not none %}
+          <div class="preview-price">${{ '%.2f'|format(listing.price) }}{% if listing.price_type == 'negotiable' %} <span style="font-size:.9rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+        {% else %}
+          <div class="preview-price" style="color:#6b7280">Price not set</div>
+        {% endif %}
+
+        <div class="preview-title">{{ listing.title or '(no title)' }}</div>
+        <div class="preview-meta">
+          {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }}{% endif %}
+          {% if listing.condition %} &nbsp;·&nbsp; {{ {'new':'New','like_new':'Like New','good':'Good','fair':'Fair','for_parts':'For Parts'}.get(listing.condition, listing.condition) }}{% endif %}
+        </div>
+        {% if listing.description %}
+        <div class="preview-desc">{{ listing.description[:300] }}{% if listing.description|length > 300 %}…{% endif %}</div>
+        {% endif %}
+        <div class="preview-badges">
+          {% for opt in listing.delivery_options_list %}
+            {% set dlabels = {'pickup': '🏠 Buyer Pickup', 'seller_delivers': '🚗 Seller Delivers', 'jhe_haul': '🚛 JHE Haul Available'} %}
+            <span class="preview-badge">{{ dlabels.get(opt, opt) }}</span>
+          {% endfor %}
+          {% if listing.photos|length > 1 %}
+          <span class="preview-badge">📸 {{ listing.photos|length }} photos</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=6) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="wizard-nav">
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=5) }}" class="btn-back">← Back</a>
+        {% if not missing %}
+        <button type="submit" class="btn-publish">🚀 Publish Listing</button>
+        {% else %}
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-back" style="background:#f59e0b;border-color:#f59e0b;color:#fff">Fix & Complete</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

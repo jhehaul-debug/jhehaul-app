@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}My Listings — JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+  .my-listings-wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+  .btn-new { display: inline-flex; align-items: center; gap: 6px; background: #2563eb; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; text-decoration: none; }
+  .btn-new:hover { background: #1d4ed8; }
+
+  .listing-card {
+    display: flex; gap: 16px; background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #f0f0f0; margin-bottom: 14px;
+    transition: box-shadow .15s;
+  }
+  .listing-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+
+  .listing-thumb {
+    width: 90px; height: 90px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+    background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+  }
+  .listing-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+
+  .listing-info { flex: 1; min-width: 0; }
+  .listing-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .listing-price { font-size: 0.95rem; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
+  .listing-price.free { color: #16a34a; }
+  .listing-meta { font-size: 0.8rem; color: #6b7280; }
+
+  .listing-status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .status-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-active  { background: #dcfce7; color: #15803d; }
+  .status-draft   { background: #fef3c7; color: #92400e; }
+  .status-sold    { background: #e0e7ff; color: #3730a3; }
+  .status-reserved{ background: #fce7f3; color: #9d174d; }
+  .status-expired { background: #f3f4f6; color: #6b7280; }
+  .status-removed { background: #fee2e2; color: #dc2626; }
+
+  .listing-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+  .btn-edit { font-size: 0.82rem; font-weight: 600; color: #2563eb; border: 1.5px solid #bfdbfe; background: #eff6ff; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
+  .btn-edit:hover { background: #dbeafe; }
+  .btn-delete { font-size: 0.82rem; font-weight: 600; color: #dc2626; border: 1.5px solid #fca5a5; background: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-delete:hover { background: #fee2e2; }
+  .btn-continue { font-size: 0.82rem; font-weight: 600; color: #92400e; border: 1.5px solid #fde68a; background: #fef9c3; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
+  .btn-continue:hover { background: #fef08a; }
+
+  .empty-state { text-align: center; padding: 64px 24px; }
+  .empty-state .emoji { font-size: 3.5rem; display: block; margin-bottom: 16px; }
+  .empty-state h2 { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
+  .empty-state p { color: #6b7280; margin: 0 0 24px; }
+
+  @media (max-width: 480px) {
+    .listing-card { flex-wrap: wrap; }
+    .listing-actions { width: 100%; justify-content: flex-end; }
+  }
+</style>
+
+<div class="my-listings-wrap">
+  <div class="page-header">
+    <h1>My Listings</h1>
+    <a href="{{ url_for('listing_new') }}" class="btn-new">+ New Listing</a>
+  </div>
+
+  {% if not listings %}
+  <div class="empty-state">
+    <span class="emoji">📦</span>
+    <h2>No listings yet</h2>
+    <p>Post your first item and start selling on the JHE Marketplace.</p>
+    <a href="{{ url_for('listing_new') }}" class="btn-new">+ Create Your First Listing</a>
+  </div>
+
+  {% else %}
+  {% for listing in listings %}
+  <div class="listing-card">
+    <!-- Thumbnail -->
+    {% set primary = listing.primary_photo %}
+    <div class="listing-thumb">
+      {% if primary %}
+        <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="">
+      {% else %}
+        📦
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="listing-info">
+      <div class="listing-title" title="{{ listing.title }}">{{ listing.title or '(untitled draft)' }}</div>
+
+      {% if listing.price_type == 'free' %}
+        <div class="listing-price free">Free</div>
+      {% elif listing.price is not none %}
+        <div class="listing-price">${{ '%.2f'|format(listing.price) }}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+      {% else %}
+        <div class="listing-price" style="color:#6b7280;">—</div>
+      {% endif %}
+
+      <div class="listing-meta">
+        {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }} &nbsp;·&nbsp; {% endif %}
+        Listed {{ listing.created_at.strftime('%b %-d, %Y') }}
+        {% if listing.photos|length > 0 %}&nbsp;·&nbsp; {{ listing.photos|length }} photo{{ 's' if listing.photos|length != 1 }}{% endif %}
+      </div>
+
+      <div class="listing-status-row">
+        <span class="status-badge status-{{ listing.status }}">
+          {% if listing.status == 'active' %}● Active
+          {% elif listing.status == 'draft' %}✏️ Draft
+          {% elif listing.status == 'sold' %}✓ Sold
+          {% elif listing.status == 'reserved' %}⏸ Reserved
+          {% elif listing.status == 'expired' %}⏰ Expired
+          {% elif listing.status == 'removed' %}✕ Removed
+          {% else %}{{ listing.status | title }}{% endif %}
+        </span>
+        {% if listing.view_count %}
+        <span style="font-size:.75rem;color:#9ca3af">{{ listing.view_count }} view{{ 's' if listing.view_count != 1 }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="listing-actions">
+      {% if listing.status == 'draft' %}
+        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-continue">▶ Continue</a>
+      {% else %}
+        <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-edit">✏️ Edit</a>
+      {% endif %}
+      <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST"
+            onsubmit="return confirm('Delete \'{{ listing.title | default('this listing') | replace("'", "\\'") }}\'? This cannot be undone.');">
+        <button type="submit" class="btn-delete">🗑</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

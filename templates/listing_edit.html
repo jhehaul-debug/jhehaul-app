@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+{% block title %}Edit: {{ listing.title or 'Listing' }} — JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+  .edit-wrap { max-width: 720px; margin: 0 auto; padding: 28px 16px 80px; }
+  .edit-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .edit-header h1 { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+  .status-badge { font-size: 0.78rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .status-active  { background: #dcfce7; color: #15803d; }
+  .status-draft   { background: #fef3c7; color: #92400e; }
+  .status-sold    { background: #e0e7ff; color: #3730a3; }
+  .status-reserved{ background: #fce7f3; color: #9d174d; }
+
+  .section { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #f0f0f0; margin-bottom: 18px; }
+  .section h2 { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 18px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 0.88rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .form-label .req { color: #ef4444; }
+  .form-control {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+    font-size: 0.95rem; color: #1a1a2e; background: #fff;
+    transition: border-color .15s; box-sizing: border-box;
+  }
+  .form-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
+  textarea.form-control { min-height: 100px; resize: vertical; }
+
+  .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 80px 110px; gap: 12px; }
+  @media (max-width: 500px) { .form-row, .form-row-3 { grid-template-columns: 1fr; } }
+
+  /* Price type */
+  .price-options { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .price-option input { display: none; }
+  .price-option label { padding: 8px 18px; border: 2px solid #d1d5db; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+  .price-option input:checked + label { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+
+  /* Delivery */
+  .delivery-grid { display: flex; flex-direction: column; gap: 8px; }
+  .delivery-opt { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 2px solid #d1d5db; border-radius: 10px; cursor: pointer; }
+  .delivery-opt:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+  .delivery-opt input { margin-top: 2px; accent-color: #2563eb; flex-shrink: 0; }
+  .delivery-opt-text strong { display: block; font-size: 0.9rem; }
+  .delivery-opt-text span { font-size: 0.8rem; color: #6b7280; }
+
+  /* Photos */
+  .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  @media (max-width: 480px) { .photo-grid { grid-template-columns: repeat(3, 1fr); } }
+  .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f3f4f6; border: 2px solid transparent; cursor: grab; }
+  .photo-thumb.is-primary { border-color: #16a34a; }
+  .photo-thumb.drag-over-thumb { border-color: #2563eb; border-style: dashed; opacity: .75; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .photo-thumb-actions { position: absolute; inset: 0; background: rgba(0,0,0,.45); display: none; flex-direction: column; gap: 4px; align-items: center; justify-content: center; }
+  .photo-thumb:hover .photo-thumb-actions { display: flex; }
+  .thumb-btn { background: rgba(255,255,255,.2); border: none; color: #fff; font-size: 0.72rem; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+  .thumb-btn:hover { background: rgba(255,255,255,.4); }
+  .primary-badge { position: absolute; top: 4px; left: 4px; background: #16a34a; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .drag-handle { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.4); color: #fff; font-size: 0.75rem; padding: 2px 5px; border-radius: 4px; }
+  .photo-upload-zone { border: 2px dashed #93c5fd; border-radius: 8px; padding: 20px; text-align: center; background: #f0f7ff; cursor: pointer; }
+  .photo-upload-zone:hover { border-color: #2563eb; }
+  .photo-upload-zone input { display: none; }
+  .photo-count { font-size: 0.82rem; color: #6b7280; margin-bottom: 6px; }
+  .reorder-hint { font-size: 0.78rem; color: #6b7280; margin-bottom: 8px; }
+  .upload-spinner { display: none; font-size: 0.85rem; color: #2563eb; margin-top: 6px; }
+
+  /* Actions */
+  .edit-actions { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; padding-top: 8px; }
+  .btn-save   { background: #2563eb; color: #fff; border: none; padding: 12px 32px; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-save:hover { background: #1d4ed8; }
+  .btn-cancel { background: none; border: 1.5px solid #d1d5db; color: #374151; padding: 11px 20px; border-radius: 8px; font-size: 0.92rem; font-weight: 600; text-decoration: none; }
+  .btn-cancel:hover { background: #f9fafb; }
+  .btn-delete { background: none; border: 1.5px solid #fca5a5; color: #dc2626; padding: 11px 20px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .btn-delete:hover { background: #fee2e2; }
+</style>
+
+<div class="edit-wrap">
+  <div class="edit-header">
+    <h1>Edit Listing</h1>
+    <span class="status-badge status-{{ listing.status }}">
+      {% if listing.status == 'active' %}● Active
+      {% elif listing.status == 'draft' %}✏️ Draft
+      {% elif listing.status == 'sold' %}✓ Sold
+      {% elif listing.status == 'reserved' %}⏸ Reserved
+      {% else %}{{ listing.status | title }}{% endif %}
+    </span>
+  </div>
+
+  {# ── Photos ── #}
+  <div class="section">
+    <h2>📸 Photos</h2>
+    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
+    {% if listing.photos|length > 1 %}
+    <div class="reorder-hint">⠿ Drag thumbnails to reorder</div>
+    {% endif %}
+    <div class="photo-grid" id="photoGrid">
+      {% for photo in listing.photos %}
+      <div class="photo-thumb {{ 'is-primary' if photo.is_primary }}" id="thumb-{{ photo.id }}" data-id="{{ photo.id }}" draggable="true">
+        {% if photo.is_primary %}<div class="primary-badge">⭐ Cover</div>{% endif %}
+        <div class="drag-handle">⠿</div>
+        <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="">
+        <div class="photo-thumb-actions">
+          <button class="thumb-btn" onclick="setPrimary({{ photo.id }})">⭐ Set Cover</button>
+          <button class="thumb-btn" onclick="deletePhoto({{ photo.id }})" style="color:#fca5a5">✕ Remove</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if listing.photos|length < 10 %}
+    <div class="photo-upload-zone" id="uploadZone">
+      <input type="file" id="photoInput" accept="image/*" multiple>
+      <div>📷 <strong>Add Photos</strong></div>
+      <div style="font-size:.8rem;color:#6b7280;margin-top:4px">Click or drag images here</div>
+    </div>
+    {% endif %}
+    <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
+  </div>
+
+  {# ── Save form ── #}
+  <form method="POST" action="{{ url_for('listing_edit', listing_id=listing.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="section">
+      <h2>📝 Details</h2>
+      <div class="form-group">
+        <label class="form-label">Title <span class="req">*</span></label>
+        <input class="form-control" type="text" name="title" value="{{ listing.title or '' }}" maxlength="200" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" name="description">{{ listing.description or '' }}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-control" name="category_id" id="catSelect">
+            <option value="">— None —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {{ 'selected' if listing.category_id == cat.id }}>{{ cat.icon or '' }} {{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" id="subcatGroup">
+          <label class="form-label">Subcategory</label>
+          <select class="form-control" name="subcategory_id" id="subcatSelect">
+            <option value="">— None —</option>
+            {% for cat in categories %}{% for sub in cat.subcategories %}{% if sub.is_active %}
+            <option value="{{ sub.id }}" data-parent="{{ cat.id }}" {{ 'selected' if listing.subcategory_id == sub.id }}>{{ sub.name }}</option>
+            {% endif %}{% endfor %}{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Condition</label>
+        <select class="form-control" name="condition">
+          <option value="">— Not specified —</option>
+          <option value="new" {{ 'selected' if listing.condition == 'new' }}>New / Unused</option>
+          <option value="like_new" {{ 'selected' if listing.condition == 'like_new' }}>Like New</option>
+          <option value="good" {{ 'selected' if listing.condition == 'good' }}>Good</option>
+          <option value="fair" {{ 'selected' if listing.condition == 'fair' }}>Fair</option>
+          <option value="for_parts" {{ 'selected' if listing.condition == 'for_parts' }}>For Parts / As-Is</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>💰 Pricing</h2>
+      <div class="price-options">
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_fixed" value="fixed" {{ 'checked' if (listing.price_type or 'fixed') == 'fixed' }}>
+          <label for="pt_fixed">🏷️ Fixed Price</label>
+        </div>
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_neg" value="negotiable" {{ 'checked' if listing.price_type == 'negotiable' }}>
+          <label for="pt_neg">🤝 Negotiable</label>
+        </div>
+        <div class="price-option">
+          <input type="radio" name="price_type" id="pt_free" value="free" {{ 'checked' if listing.price_type == 'free' }}>
+          <label for="pt_free">🎁 Free</label>
+        </div>
+      </div>
+      <div class="form-group" id="priceGroup" style="{{ 'display:none' if listing.price_type == 'free' }}">
+        <label class="form-label">Amount</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-weight:700">$</span>
+          <input class="form-control" style="padding-left:28px" type="number" name="price" id="priceInput"
+            value="{{ '%.2f'|format(listing.price) if listing.price is not none else '' }}"
+            min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📍 Location</h2>
+      <p style="font-size:.85rem;color:#6b7280;margin:0 0 14px">Only city and state are shown to buyers — no street address.</p>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input class="form-control" type="text" name="city" value="{{ listing.city or '' }}" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <select class="form-control" name="state">
+            <option value="">—</option>
+            {% for abbr in ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] %}
+            <option value="{{ abbr }}" {{ 'selected' if listing.state == abbr }}>{{ abbr }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ZIP</label>
+          <input class="form-control" type="text" name="zip_code" value="{{ listing.zip_code or '' }}" maxlength="10">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🚚 Delivery Options</h2>
+      {% set current_opts = listing.delivery_options_list %}
+      <div class="delivery-grid">
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="pickup" {{ 'checked' if 'pickup' in current_opts }}>
+          <div class="delivery-opt-text"><strong>🏠 Buyer Pickup</strong><span>Buyer comes to you.</span></div>
+        </label>
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="seller_delivers" {{ 'checked' if 'seller_delivers' in current_opts }}>
+          <div class="delivery-opt-text"><strong>🚗 Seller Delivers</strong><span>You bring it to the buyer.</span></div>
+        </label>
+        <label class="delivery-opt">
+          <input type="checkbox" name="delivery_option" value="jhe_haul" {{ 'checked' if 'jhe_haul' in current_opts }}>
+          <div class="delivery-opt-text"><strong>🚛 JHE Haul Delivery Available</strong><span>Buyers can request JHE Haul to move this item.</span></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="edit-actions">
+      <a href="{{ url_for('my_listings') }}" class="btn-cancel">Cancel</a>
+      <button type="submit" class="btn-save">Save Changes</button>
+    </div>
+  </form>
+
+  {# Delete form is a SIBLING of the save form — never nested inside it #}
+  <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST"
+        onsubmit="return confirm('Delete this listing? This cannot be undone.');"
+        style="margin-top:12px;text-align:right">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn-delete">🗑 Delete Listing</button>
+  </form>
+</div>
+
+<script>
+const LISTING_ID = {{ listing.id }};
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+const photoGrid = document.getElementById('photoGrid');
+const photoCount = document.getElementById('photoCount');
+const uploadZone = document.getElementById('uploadZone');
+const photoInput = document.getElementById('photoInput');
+const spinner = document.getElementById('uploadSpinner');
+let currentCount = {{ listing.photos|length }};
+
+function updateCount() {
+  photoCount.textContent = currentCount + ' / 10 photos';
+  if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : '';
+}
+
+/* ─── Drag-to-reorder ─── */
+let dragSrc = null;
+
+function addDragListeners(thumb) {
+  thumb.setAttribute('draggable', 'true');
+  thumb.addEventListener('dragstart', e => {
+    dragSrc = thumb;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => thumb.style.opacity = '0.5', 0);
+  });
+  thumb.addEventListener('dragend', () => {
+    thumb.style.opacity = '';
+    photoGrid.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('drag-over-thumb'));
+    const ids = Array.from(photoGrid.querySelectorAll('.photo-thumb[data-id]')).map(t => parseInt(t.dataset.id));
+    if (ids.length > 1) saveOrder(ids);
+  });
+  thumb.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (thumb !== dragSrc) thumb.classList.add('drag-over-thumb');
+  });
+  thumb.addEventListener('dragleave', () => thumb.classList.remove('drag-over-thumb'));
+  thumb.addEventListener('drop', e => {
+    e.stopPropagation();
+    thumb.classList.remove('drag-over-thumb');
+    if (dragSrc && dragSrc !== thumb) {
+      const kids = Array.from(photoGrid.children);
+      const si = kids.indexOf(dragSrc), di = kids.indexOf(thumb);
+      if (si < di) photoGrid.insertBefore(dragSrc, thumb.nextSibling);
+      else          photoGrid.insertBefore(dragSrc, thumb);
+    }
+  });
+}
+
+async function saveOrder(ids) {
+  try {
+    await fetch(`/listing/${LISTING_ID}/photo/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ order: ids })
+    });
+  } catch(e) { /* non-fatal */ }
+}
+
+photoGrid.querySelectorAll('.photo-thumb[data-id]').forEach(addDragListeners);
+
+/* ─── Upload ─── */
+function buildThumb(id, url, isPrimary) {
+  const div = document.createElement('div');
+  div.className = 'photo-thumb' + (isPrimary ? ' is-primary' : '');
+  div.id = 'thumb-' + id;
+  div.dataset.id = id;
+  div.innerHTML = `
+    ${isPrimary ? '<div class="primary-badge">⭐ Cover</div>' : ''}
+    <div class="drag-handle">⠿</div>
+    <img src="${url}" alt="">
+    <div class="photo-thumb-actions">
+      <button class="thumb-btn" onclick="setPrimary(${id})">⭐ Set Cover</button>
+      <button class="thumb-btn" onclick="deletePhoto(${id})" style="color:#fca5a5">✕ Remove</button>
+    </div>`;
+  addDragListeners(div);
+  return div;
+}
+
+async function uploadFiles(files) {
+  for (const file of files) {
+    if (currentCount >= 10) break;
+    spinner.style.display = 'block';
+    const fd = new FormData();
+    fd.append('photo', file);
+    try {
+      const res = await fetch(`/listing/${LISTING_ID}/photo/upload`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: fd
+      });
+      const data = await res.json();
+      if (res.ok) {
+        currentCount++;
+        photoGrid.appendChild(buildThumb(data.id, data.url, data.is_primary));
+        updateCount();
+      } else { alert(data.error || 'Upload failed.'); }
+    } catch(e) { alert('Upload error.'); }
+  }
+  spinner.style.display = 'none';
+}
+
+if (uploadZone) {
+  uploadZone.addEventListener('click', () => photoInput.click());
+  photoInput.addEventListener('change', () => uploadFiles(photoInput.files));
+  uploadZone.addEventListener('dragover', e => e.preventDefault());
+  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadFiles(e.dataTransfer.files); });
+}
+
+async function deletePhoto(id) {
+  if (!confirm('Remove this photo?')) return;
+  const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken }
+  });
+  if (res.ok) {
+    document.getElementById('thumb-' + id)?.remove();
+    currentCount = Math.max(0, currentCount - 1);
+    updateCount();
+  }
+}
+
+async function setPrimary(id) {
+  const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken }
+  });
+  if (res.ok) {
+    photoGrid.querySelectorAll('.photo-thumb').forEach(t => {
+      t.classList.remove('is-primary');
+      t.querySelector('.primary-badge')?.remove();
+    });
+    const el = document.getElementById('thumb-' + id);
+    if (el) { el.classList.add('is-primary'); el.insertAdjacentHTML('afterbegin', '<div class="primary-badge">⭐ Cover</div>'); }
+  }
+}
+
+/* ─── Price type toggle ─── */
+const priceGroup = document.getElementById('priceGroup');
+const priceInput = document.getElementById('priceInput');
+document.querySelectorAll('input[name=price_type]').forEach(r => {
+  r.addEventListener('change', () => {
+    priceGroup.style.display = r.value === 'free' ? 'none' : '';
+    if (priceInput) priceInput.required = r.value !== 'free';
+  });
+});
+
+/* ─── Subcategory filter ─── */
+const catSelect = document.getElementById('catSelect');
+const subcatSelect = document.getElementById('subcatSelect');
+const allSubOpts = Array.from(subcatSelect.options).slice(1);
+function filterSubcats(pid) {
+  subcatSelect.innerHTML = '<option value="">— None —</option>';
+  allSubOpts.filter(o => o.dataset.parent == pid).forEach(o => subcatSelect.appendChild(o));
+}
+catSelect?.addEventListener('change', () => filterSubcats(catSelect.value));
+if (catSelect?.value) filterSubcats(catSelect.value);
+</script>
+{% endblock %}
