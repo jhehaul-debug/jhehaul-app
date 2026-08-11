@@ -1151,6 +1151,29 @@ def listing_detail(listing_id):
     )
 
 
+@app.route("/saved")
+@require_login
+def saved_items():
+    """Show all listings the current user has saved/favorited."""
+    from models import ListingFavorite, Listing
+    favorites = (ListingFavorite.query
+                 .filter_by(user_id=current_user.id)
+                 .order_by(ListingFavorite.created_at.desc())
+                 .all())
+    items = []
+    for fav in favorites:
+        listing = Listing.query.get(fav.listing_id)
+        if listing is None:
+            continue
+        # Apply the same visibility rule as listing_detail
+        is_public = (listing.status in ('active', 'sold', 'reserved') and
+                     listing.moderation_status == 'approved')
+        is_owner  = current_user.id == listing.seller_id
+        visible   = is_public or is_owner or current_user.is_admin
+        items.append({'listing': listing, 'visible': visible, 'fav': fav})
+    return render_template('saved_items.html', items=items)
+
+
 @app.route("/listing/<int:listing_id>/favorite", methods=["POST"])
 def listing_favorite_toggle(listing_id):
     """Toggle save/favorite for a listing. Requires login."""
@@ -1161,15 +1184,20 @@ def listing_favorite_toggle(listing_id):
     from models import Listing, ListingFavorite
     listing = Listing.query.get_or_404(listing_id)
 
-    # Enforce the same visibility rule as listing_detail
-    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
-    is_owner  = current_user.id == listing.seller_id
-    if not (is_public or is_owner or current_user.is_admin):
-        abort(404)
-
+    # Check if the current user already has this listing favorited
     existing = ListingFavorite.query.filter_by(
         user_id=current_user.id, listing_id=listing_id
     ).first()
+
+    # Always allow a user to remove their own existing favorite, even if the
+    # listing is no longer publicly visible — otherwise stuck entries pile up.
+    # Only enforce visibility when *adding* a new favorite.
+    if not existing:
+        is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
+        is_owner  = current_user.id == listing.seller_id
+        if not (is_public or is_owner or current_user.is_admin):
+            abort(404)
+
     if existing:
         db.session.delete(existing)
         listing.favorite_count = max(0, (listing.favorite_count or 1) - 1)
@@ -1187,6 +1215,10 @@ def listing_favorite_toggle(listing_id):
        request.accept_mimetypes.best == 'application/json':
         return jsonify(favorited=favorited, count=listing.favorite_count)
 
+    # Allow caller to redirect back to a safe local page (e.g. /saved)
+    next_url = request.form.get('next', '').strip()
+    if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+        return redirect(next_url)
     return redirect(url_for('listing_detail', listing_id=listing_id))
 
 

@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Saved Items — JHE Marketplace{% endblock %}
+
+{% block content %}
+<style>
+  .saved-wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0; }
+
+  .saved-card {
+    display: flex; gap: 16px; background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #f0f0f0; margin-bottom: 14px;
+    text-decoration: none; color: inherit; transition: box-shadow .15s;
+    position: relative;
+  }
+  .saved-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.1); text-decoration: none; color: inherit; }
+  .saved-card.unavailable { opacity: 0.65; }
+
+  .saved-thumb {
+    width: 90px; height: 90px; border-radius: 8px; flex-shrink: 0;
+    background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; overflow: hidden;
+  }
+  .saved-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+
+  .saved-info { flex: 1; min-width: 0; }
+  .saved-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .saved-price { font-size: 0.95rem; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
+  .saved-price.free { color: #16a34a; }
+  .saved-meta { font-size: 0.8rem; color: #6b7280; }
+
+  .saved-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .badge { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .badge-active   { background: #dcfce7; color: #15803d; }
+  .badge-sold     { background: #e0e7ff; color: #3730a3; }
+  .badge-reserved { background: #fce7f3; color: #9d174d; }
+  .badge-unavailable { background: #fee2e2; color: #dc2626; }
+
+  .saved-actions { display: flex; align-items: flex-start; padding-top: 2px; flex-shrink: 0; }
+  .btn-unsave {
+    font-size: 0.82rem; font-weight: 600; color: #dc2626;
+    border: 1.5px solid #fca5a5; background: none;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-unsave:hover { background: #fee2e2; }
+
+  .empty-state { text-align: center; padding: 64px 24px; }
+  .empty-state .emoji { font-size: 3.5rem; display: block; margin-bottom: 16px; }
+  .empty-state h2 { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
+  .empty-state p { color: #6b7280; margin: 0 0 24px; }
+  .btn-browse {
+    display: inline-block; background: #2563eb; color: #fff; font-weight: 700;
+    padding: 11px 28px; border-radius: 8px; text-decoration: none; font-size: 0.95rem;
+  }
+  .btn-browse:hover { background: #1d4ed8; color: #fff; }
+
+  @media (max-width: 480px) {
+    .saved-card { flex-wrap: wrap; }
+    .saved-actions { width: 100%; justify-content: flex-end; }
+  }
+</style>
+
+<div class="saved-wrap">
+  <div class="page-header">
+    <h1>❤️ Saved Items</h1>
+    <a href="{{ url_for('marketplace') }}" style="font-size:0.9rem;color:#2563eb;text-decoration:none;">Browse Marketplace →</a>
+  </div>
+
+  {% if not items %}
+  <div class="empty-state">
+    <span class="emoji">🔖</span>
+    <h2>Nothing saved yet</h2>
+    <p>Tap the heart on any listing to save it here for later.</p>
+    <a href="{{ url_for('marketplace') }}" class="btn-browse">Browse Listings</a>
+  </div>
+
+  {% else %}
+  <p style="font-size:0.85rem;color:#6b7280;margin:-10px 0 20px;">{{ items|length }} saved listing{{ 's' if items|length != 1 }}</p>
+
+  {% for item in items %}
+  {% set listing = item.listing %}
+  {% set visible = item.visible %}
+  <div style="position:relative;">
+    {% if visible %}
+    {# ── Publicly visible listing ── #}
+    {% set is_sold     = listing.status == 'sold' %}
+    {% set is_reserved = listing.status == 'reserved' %}
+    <a href="/listing/{{ listing.id }}" class="saved-card{% if is_sold or is_reserved %} unavailable{% endif %}">
+      <div class="saved-thumb">
+        {% set photo = listing.primary_photo %}
+        {% if photo %}
+          <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="{{ listing.title }}" loading="lazy">
+        {% else %}
+          {{ '🏠' if listing.is_property else '📦' }}
+        {% endif %}
+      </div>
+
+      <div class="saved-info">
+        <div class="saved-title">{{ listing.title }}</div>
+        <div>
+          {% if listing.price_type == 'free' %}
+            <span class="saved-price free">FREE</span>
+          {% elif listing.price %}
+            <span class="saved-price">${{ "%.0f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
+          {% else %}
+            <span class="saved-price" style="color:#6b7280;">{{ 'Contact' if listing.is_property else 'Make offer' }}</span>
+          {% endif %}
+        </div>
+        <div class="saved-meta">
+          {{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}
+        </div>
+        <div class="saved-badges">
+          {% if is_sold %}
+            <span class="badge badge-sold">🏷️ Sold</span>
+          {% elif is_reserved %}
+            <span class="badge badge-reserved">🔒 Reserved</span>
+          {% else %}
+            <span class="badge badge-active">Active</span>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% else %}
+    {# ── Listing is no longer publicly visible (removed, flagged, draft, etc.) ── #}
+    <div class="saved-card unavailable" style="cursor:default;">
+      <div class="saved-thumb">📦</div>
+      <div class="saved-info">
+        <div class="saved-title" style="color:#9ca3af;">Listing no longer available</div>
+        <div class="saved-badges">
+          <span class="badge badge-unavailable">No longer available</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Unsave button — sits outside the card anchor to avoid nested links #}
+    <form action="/listing/{{ listing.id }}/favorite" method="post"
+          style="position:absolute;top:16px;right:16px;margin:0;"
+          onsubmit="return confirm('Remove from saved items?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ url_for('saved_items') }}">
+      <button type="submit" class="btn-unsave">✕ Remove</button>
+    </form>
+  </div>
+  {% endfor %}
+
+  {% endif %}
+</div>
+{% endblock %}

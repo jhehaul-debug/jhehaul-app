@@ -134,6 +134,7 @@
                 <h4>Marketplace</h4>
                 <a href="{{ url_for('marketplace') }}">Browse Listings</a>
                 <a href="/sell">Sell Something</a>
+                {% if current_user.is_authenticated %}<a href="{{ url_for('saved_items') }}">Saved Items</a>{% endif %}
                 <a href="{{ url_for('marketplace') }}?listing_type=property_sale">Homes for Sale</a>
                 <a href="{{ url_for('marketplace') }}?listing_type=rental">Homes &amp; Apartments for Rent</a>
             </div>
