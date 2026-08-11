@@ -1509,6 +1509,11 @@ def admin_send_quote(job_id):
     if price <= 0 or deposit <= 0:
         flash("Price and deposit must be greater than zero.", "error")
         return redirect(url_for('admin_request_detail', job_id=job_id))
+    pending_quote = Quote.query.filter_by(job_id=job.id, status='pending').first()
+    if pending_quote and request.form.get("confirm_resend") != "1":
+        flash("A quote is already pending — the customer hasn't responded yet. "
+              "Confirm resend to send another quote.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
     quote = Quote(
         job_id=job.id,
         price=price,
