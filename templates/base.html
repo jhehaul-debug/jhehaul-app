@@ -87,6 +87,11 @@
             <a href="{{ url_for('marketplace_messages') if current_user.is_authenticated else url_for('auth.login') }}">💬 Messages{% if customer_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ customer_unread_count }}</span>{% endif %}</a>
             <a href="{{ url_for('profile') }}">👤 My Account</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
+            {% if current_user.user_type == 'customer' %}
+            <a href="{{ url_for('customer_request') }}">📦 Request Service</a>
+            {% else %}
+            <a href="{{ url_for('invite', role='customer') }}">📦 Request Service</a>
+            {% endif %}
             {% if current_user.is_admin %}
             <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">⚙ Admin{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ admin_unread_count }}</span>{% endif %}</a>
             {% endif %}
@@ -98,6 +103,7 @@
             <a href="{{ url_for('auth.login') }}">💬 Messages</a>
             <a href="{{ url_for('auth.login') }}">👤 My Account</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
+            <a href="{{ url_for('invite', role='customer') }}">📦 Request Service</a>
             <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
         {% endif %}
     </nav>
