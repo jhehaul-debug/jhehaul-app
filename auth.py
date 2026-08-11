@@ -156,7 +156,15 @@ def login():
 def logout():
     logout_user()
     session.clear()
-    return redirect(url_for('home'))
+    return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/switch-account')
+def switch_account():
+    """Sign out the current user and send them straight to the sign-in page."""
+    logout_user()
+    session.clear()
+    return redirect(url_for('auth.login'))
 
 
 @auth_bp.route('/error')

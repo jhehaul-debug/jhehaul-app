@@ -289,6 +289,26 @@
   </div>
 </div>
 
+<!-- ── Sign Out / Switch Account ─────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <h3 style="margin-bottom:6px;">Sign Out</h3>
+  <p style="color:#718096;font-size:.9rem;margin:0 0 18px;">
+    Sign out of your account. You can sign back in anytime with Google or GitHub.
+  </p>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    <a href="{{ url_for('auth.logout') }}"
+       style="display:inline-flex;align-items:center;gap:8px;padding:11px 24px;background:#1a202c;color:#fff;font-weight:700;font-size:.92rem;border-radius:9px;text-decoration:none;border:2px solid #1a202c;"
+       onmouseover="this.style.background='#2d3748'" onmouseout="this.style.background='#1a202c'">
+      🚪 Sign Out
+    </a>
+    <a href="{{ url_for('auth.switch_account') }}"
+       style="display:inline-flex;align-items:center;gap:8px;padding:11px 24px;background:#fff;color:#1a202c;font-weight:700;font-size:.92rem;border-radius:9px;text-decoration:none;border:2px solid #cbd5e0;"
+       onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#cbd5e0'">
+      🔄 Switch Account
+    </a>
+  </div>
+</div>
+
 <!-- ── Delete Account ────────────────────────────────────────────────────── -->
 <div class="card" style="border:1px solid #fce4ec;">
   <h3 style="margin-bottom:8px;color:#c62828;">Delete Account</h3>
