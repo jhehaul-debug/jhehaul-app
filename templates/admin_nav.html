@@ -27,6 +27,11 @@
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_categories' %}#60a5fa{% else %}#94a3b8{% endif %}'">
                 🗂 Categories
             </a>
+            <a href="{{ url_for('admin_gallery') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_gallery' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_gallery' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_gallery' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_gallery' %}#60a5fa{% else %}#94a3b8{% endif %}'">
+                📸 Gallery
+            </a>
             <a href="{{ url_for('admin_sms_settings') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if 'admin_sms' in request.endpoint or 'admin_notification' in request.endpoint %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:500;font-size:0.88rem;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">

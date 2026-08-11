@@ -215,6 +215,9 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users SMS) skipped: %s", _e)
 
+    # gallery_photos table is created portably (SQLite + PostgreSQL) by
+    # db.create_all() above via the GalleryPhoto model in models.py.
+
     try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")

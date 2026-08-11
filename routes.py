@@ -1545,7 +1545,6 @@ def admin_send_quote(job_id):
     return redirect(url_for('admin_request_detail', job_id=job_id))
 
 
-
 # ── ADMIN PORTAL ROUTES ────────────────────────────────────────────────────────
 
 _PORTAL_STATUSES = ['reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress', 'completed', 'cancelled']
@@ -3470,3 +3469,125 @@ def robots_txt():
 def sitemap_xml():
     root = os.path.abspath(os.path.dirname(__file__))
     return send_from_directory(root, "sitemap.xml", mimetype="application/xml")
+
+def _gallery_photos():
+    from models import GalleryPhoto
+    return GalleryPhoto.query.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
+
+@app.route("/admin/gallery/upload", methods=["POST"])
+@require_admin
+def admin_gallery_upload():
+    from models import GalleryPhoto
+    files = request.files.getlist("photos")
+    files = [f for f in files if f and f.filename]
+    if not files:
+        flash("No files selected.", "error")
+        return redirect(url_for('admin_gallery'))
+
+    caption = (request.form.get("caption") or "").strip()[:200] or None
+    allowed = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
+    from sqlalchemy import func as _func
+    max_order = db.session.query(_func.coalesce(_func.max(GalleryPhoto.display_order), 0)).scalar() or 0
+
+    from storage import upload_file as _upload_file
+    added, skipped = 0, 0
+    for f in files:
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in allowed:
+            skipped += 1
+            continue
+        photo_data, photo_ct = _read_photo_bytes(f, ext)
+        if not photo_data or len(photo_data) > 10 * 1024 * 1024:
+            skipped += 1
+            continue
+        filename, storage_url = _upload_file(f, ext)
+        max_order += 1
+        db.session.add(GalleryPhoto(
+            caption=caption,
+            filename=filename or secure_filename(f.filename),
+            storage_url=storage_url,
+            data=photo_data if not storage_url else None,
+            content_type=photo_ct if not storage_url else None,
+            display_order=max_order,
+        ))
+        added += 1
+    db.session.commit()
+
+    if added:
+        flash(f"Uploaded {added} photo{'s' if added != 1 else ''} to the gallery.", "success")
+    if skipped:
+        flash(f"{skipped} file{'s were' if skipped != 1 else ' was'} skipped (unsupported type or over 10 MB).", "error")
+    return redirect(url_for('admin_gallery'))
+
+@app.route("/landing")
+def landing():
+    """Public marketing landing page with the current gallery photo set."""
+    return render_template('landing.html', gallery_photos=_gallery_photos())
+
+@app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
+@require_admin
+def admin_gallery_move(photo_id):
+    """Move a photo up or down in display order."""
+    from models import GalleryPhoto
+    direction = request.form.get("direction")
+    photos = _gallery_photos()
+    # Normalize display_order to a clean sequence first
+    for i, p in enumerate(photos):
+        p.display_order = i + 1
+    idx = next((i for i, p in enumerate(photos) if p.id == photo_id), None)
+    if idx is None:
+        db.session.commit()
+        return redirect(url_for('admin_gallery'))
+    if direction == "up" and idx > 0:
+        photos[idx].display_order, photos[idx - 1].display_order = \
+            photos[idx - 1].display_order, photos[idx].display_order
+    elif direction == "down" and idx < len(photos) - 1:
+        photos[idx].display_order, photos[idx + 1].display_order = \
+            photos[idx + 1].display_order, photos[idx].display_order
+    db.session.commit()
+    return redirect(url_for('admin_gallery'))
+
+@app.route("/uploads/gallery/db/<int:photo_id>")
+def serve_gallery_photo(photo_id):
+    """Serve a gallery photo stored as binary in the database."""
+    from models import GalleryPhoto
+    photo = GalleryPhoto.query.get(photo_id)
+    if not photo or not photo.data:
+        return "", 404
+    from flask import Response
+    r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
+    r.headers["Cache-Control"] = "public, max-age=3600"
+    return r
+
+@app.route("/admin/gallery")
+@require_admin
+def admin_gallery():
+    return render_template('admin_gallery.html', photos=_gallery_photos())
+
+@app.route("/admin/gallery/<int:photo_id>/caption", methods=["POST"])
+@require_admin
+def admin_gallery_caption(photo_id):
+    from models import GalleryPhoto
+    photo = GalleryPhoto.query.get_or_404(photo_id)
+    photo.caption = (request.form.get("caption") or "").strip()[:200] or None
+    db.session.commit()
+    flash("Caption updated.", "success")
+    return redirect(url_for('admin_gallery'))
+
+@app.route("/admin/gallery/<int:photo_id>/delete", methods=["POST"])
+@require_admin
+def admin_gallery_delete(photo_id):
+    from models import GalleryPhoto
+    photo = GalleryPhoto.query.get_or_404(photo_id)
+    filename_to_delete = photo.filename
+    db.session.delete(photo)
+    db.session.commit()
+    # Delete the stored file (Spaces or local) after DB commit so we don't orphan it on rollback
+    if filename_to_delete:
+        try:
+            from storage import delete_file as _delete_file
+            _delete_file(filename_to_delete)
+        except Exception as exc:
+            app.logger.warning("admin_gallery_delete: storage cleanup failed: %s", exc)
+    flash("Photo removed from the gallery.", "success")
+    return redirect(url_for('admin_gallery'))

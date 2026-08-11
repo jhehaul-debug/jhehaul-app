@@ -115,6 +115,26 @@ class Bid(db.Model):
             return f'({digits[:3]}) {digits[3:6]}-{digits[6:]}'
         return self.hauler_phone
 
+class GalleryPhoto(db.Model):
+    """Real job photos uploaded by the admin for the public landing-page gallery."""
+    __tablename__ = 'gallery_photos'
+    id = db.Column(db.Integer, primary_key=True)
+    caption = db.Column(db.String(200), nullable=True)
+    filename = db.Column(db.String, nullable=False)
+    storage_url = db.Column(db.String, nullable=True)       # DO Spaces URL
+    data = db.Column(db.LargeBinary, nullable=True)         # DB fallback
+    content_type = db.Column(db.String(80), nullable=True)
+    display_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    @property
+    def url(self):
+        if self.storage_url:
+            return self.storage_url
+        from flask import url_for
+        return url_for('serve_gallery_photo', photo_id=self.id)
+
+
 class CompletionPhoto(db.Model):
     __tablename__ = 'completion_photos'
     id = db.Column(db.Integer, primary_key=True)

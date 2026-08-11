@@ -131,6 +131,13 @@
     align-items:center; justify-content:center; gap:8px; color:#a0aec0;
 }
 .lp-gallery-item .gi-label { font-size:0.82rem; font-weight:600; text-align:center; padding:0 12px; }
+.lp-gallery-photo { position:relative; border-radius:12px; overflow:hidden; background:#f1f5f9; }
+.lp-gallery-photo img { width:100%; height:200px; object-fit:cover; display:block; }
+.lp-gallery-caption {
+    position:absolute; left:0; right:0; bottom:0;
+    background:linear-gradient(transparent, rgba(0,0,0,.65));
+    color:#fff; font-size:0.8rem; font-weight:600; padding:18px 12px 10px;
+}
 
 /* ── Bottom CTA ── */
 .lp-cta {
@@ -295,6 +302,16 @@
         <h2>Our Work</h2>
         <p>Before and after — see the difference JHE Haul makes.</p>
     </div>
+    {% if gallery_photos %}
+    <div class="lp-gallery">
+        {% for gp in gallery_photos %}
+        <div class="lp-gallery-photo">
+            <img src="{{ gp.url }}" alt="{{ gp.caption or 'JHE Haul job photo' }}" loading="lazy">
+            {% if gp.caption %}<div class="lp-gallery-caption">{{ gp.caption }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
     <div class="lp-gallery">
         <div class="lp-gallery-item">
             <div style="font-size:2rem;">📸</div>
@@ -314,6 +331,7 @@
         </div>
     </div>
     <p style="text-align:center;font-size:0.82rem;color:#a0aec0;margin-top:16px;">Photos coming soon — check back to see our work.</p>
+    {% endif %}
 </div>
 
 {# ── Bottom CTA ── #}

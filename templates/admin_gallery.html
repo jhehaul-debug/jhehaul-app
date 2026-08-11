@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery Photos | Admin | JHE Haul{% endblock %}
+
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="card" style="padding:28px 28px;margin-bottom:20px;">
+    <h2 style="margin:0 0 6px;font-size:1.35rem;">📸 Landing Page Gallery</h2>
+    <p style="color:#718096;font-size:0.9rem;margin:0 0 20px;">
+        Upload real job photos here — they appear in the "Our Work" section of the landing page in the order shown below.
+    </p>
+
+    <form method="POST" action="{{ url_for('admin_gallery_upload') }}" enctype="multipart/form-data"
+          style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+        <div style="flex:1 1 240px;">
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Photos (JPG, PNG, WebP — up to 10 MB each)</label>
+            <input type="file" name="photos" accept="image/*" multiple required style="font-size:0.85rem;">
+        </div>
+        <div style="flex:1 1 220px;">
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Caption (optional, applies to all)</label>
+            <input type="text" name="caption" maxlength="200" placeholder="e.g. Garage Cleanout — Before &amp; After"
+                   style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.85rem;">
+        </div>
+        <button type="submit" style="background:#38a169;color:#fff;font-weight:700;border:none;border-radius:8px;padding:10px 22px;font-size:0.9rem;cursor:pointer;">
+            Upload
+        </button>
+    </form>
+</div>
+
+<div class="card" style="padding:28px 28px;">
+    <h3 style="margin:0 0 16px;font-size:1.05rem;">Current Gallery ({{ photos|length }})</h3>
+
+    {% if photos %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;">
+        {% for p in photos %}
+        <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;">
+            <img src="{{ p.url }}" alt="{{ p.caption or 'Gallery photo' }}"
+                 style="width:100%;height:160px;object-fit:cover;display:block;background:#f1f5f9;">
+            <div style="padding:10px 12px;">
+                <form method="POST" action="{{ url_for('admin_gallery_caption', photo_id=p.id) }}" style="display:flex;gap:6px;margin-bottom:8px;">
+                    <input type="text" name="caption" value="{{ p.caption or '' }}" maxlength="200" placeholder="Caption…"
+                           style="flex:1;min-width:0;padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;">
+                    <button type="submit" title="Save caption" style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:0.78rem;cursor:pointer;">💾</button>
+                </form>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;gap:4px;">
+                        <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" {% if loop.first %}disabled{% endif %} title="Move earlier"
+                                    style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 9px;font-size:0.8rem;cursor:pointer;{% if loop.first %}opacity:.4;cursor:default;{% endif %}">←</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" {% if loop.last %}disabled{% endif %} title="Move later"
+                                    style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 9px;font-size:0.8rem;cursor:pointer;{% if loop.last %}opacity:.4;cursor:default;{% endif %}">→</button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin_gallery_delete', photo_id=p.id) }}"
+                          onsubmit="return confirm('Remove this photo from the gallery?');">
+                        <button type="submit" style="background:#fff5f5;color:#c53030;border:1px solid #feb2b2;border-radius:6px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer;">Remove</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:36px 0;color:#a0aec0;">
+        <div style="font-size:2rem;margin-bottom:10px;">📷</div>
+        <p style="margin:0;font-size:0.9rem;">No gallery photos yet. Upload your first real job photos above.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
