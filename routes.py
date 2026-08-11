@@ -756,6 +756,37 @@ def listing_delete(listing_id):
     return redirect(url_for('my_listings'))
 
 
+@app.route("/listing/<int:listing_id>/status", methods=["POST"])
+@require_login
+def listing_set_status(listing_id):
+    """Allow a seller to mark their listing as sold, reserved, or active."""
+    _check_listing_csrf()
+    from models import Listing
+    import datetime
+    listing = _listing_owner_or_403(listing_id)
+    new_status = request.form.get('status', '').strip()
+    allowed = ('sold', 'reserved', 'active')
+    if new_status not in allowed:
+        flash("Invalid status.", "error")
+        return redirect(url_for('my_listings'))
+    # Only allow transitioning from sensible states
+    if new_status == 'active' and listing.status not in ('sold', 'reserved'):
+        flash("Cannot reactivate a listing that is not sold or reserved.", "error")
+        return redirect(url_for('my_listings'))
+    if new_status in ('sold', 'reserved') and listing.status not in ('active', 'reserved', 'sold'):
+        flash("Only active or sold/reserved listings can be updated.", "error")
+        return redirect(url_for('my_listings'))
+    listing.status = new_status
+    if new_status == 'sold':
+        listing.sold_at = datetime.datetime.utcnow()
+    elif new_status == 'active':
+        listing.sold_at = None
+    db.session.commit()
+    labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
+    flash(labels[new_status], "success")
+    return redirect(url_for('my_listings'))
+
+
 @app.route("/my-listings")
 @require_login
 def my_listings():

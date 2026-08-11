@@ -45,6 +45,12 @@
   .btn-delete:hover { background: #fee2e2; }
   .btn-continue { font-size: 0.82rem; font-weight: 600; color: #92400e; border: 1.5px solid #fde68a; background: #fef9c3; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
   .btn-continue:hover { background: #fef08a; }
+  .btn-sold { font-size: 0.82rem; font-weight: 600; color: #3730a3; border: 1.5px solid #c7d2fe; background: #eef2ff; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-sold:hover { background: #e0e7ff; }
+  .btn-reserved { font-size: 0.82rem; font-weight: 600; color: #9d174d; border: 1.5px solid #fbcfe8; background: #fdf2f8; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-reserved:hover { background: #fce7f3; }
+  .btn-reactivate { font-size: 0.82rem; font-weight: 600; color: #15803d; border: 1.5px solid #86efac; background: #f0fdf4; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+  .btn-reactivate:hover { background: #dcfce7; }
 
   .empty-state { text-align: center; padding: 64px 24px; }
   .empty-state .emoji { font-size: 3.5rem; display: block; margin-bottom: 16px; }
@@ -127,9 +133,28 @@
           💬{% if listing.conversations | length %} {{ listing.conversations | length }}{% endif %}
         </a>
         <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-edit">✏️ Edit</a>
+        {% if listing.status == 'active' %}
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="sold">
+            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
+          </form>
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="reserved">
+            <button type="submit" class="btn-reserved" title="Mark as reserved">⏸ Reserved</button>
+          </form>
+        {% elif listing.status in ('sold', 'reserved') %}
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="active">
+            <button type="submit" class="btn-reactivate" title="Reactivate listing">↺ Reactivate</button>
+          </form>
+        {% endif %}
       {% endif %}
       <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST"
             onsubmit="return confirm('Delete \'{{ listing.title | default('this listing') | replace("'", "\\'") }}\'? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn-delete">🗑</button>
       </form>
     </div>
