@@ -604,6 +604,30 @@ def notify_customer_appointment_confirmed(customer_email, job_id, service_type,
     )
 
 
+def notify_customer_appointment_reminder(customer_email, job_id, service_type,
+                                          scheduled_date, scheduled_time):
+    """Email the customer a day-before reminder about their pickup appointment."""
+    service_label = service_type or 'Service'
+    when = f"{scheduled_date}" + (f" at {scheduled_time}" if scheduled_time else "")
+    body = f"""
+    <p>Just a friendly reminder — your pickup is <strong>tomorrow</strong>!</p>
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Service:</strong> {service_label}</p>
+      <p><strong>Appointment:</strong> <span class="pill pill-green">📅 {when}</span></p>
+    </div>
+    <p>Please make sure your items are ready and accessible. If you need to make any changes, message us as soon as possible through your request page.</p>
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">View Your Request →</a>"""
+    return send_email(
+        customer_email,
+        f"Reminder: Your Pickup Is Tomorrow — {when} ({service_label}, Request #{job_id})",
+        _html("Your Pickup Is Tomorrow! 🚛",
+              "Don't forget — we'll see you tomorrow.",
+              "📅 Pickup Reminder", body),
+        'customer_appointment_reminder'
+    )
+
+
 def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, description):
     """Admin email when a new service request is submitted."""
     body = f"""

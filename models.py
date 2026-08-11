@@ -79,6 +79,7 @@ class Job(db.Model):
     expired_at = db.Column(db.DateTime, nullable=True)
     reminder_24h_sent = db.Column(db.Boolean, default=False)
     reminder_48h_sent = db.Column(db.Boolean, default=False)
+    pickup_reminder_sent = db.Column(db.Boolean, default=False)  # day-before pickup reminder
 
     photos = db.relationship('JobPhoto', backref='job', lazy=True, cascade='all, delete-orphan')
     bids = db.relationship('Bid', backref='job', lazy=True, cascade='all, delete-orphan')

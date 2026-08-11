@@ -28,13 +28,60 @@ def _run_checks(app):
             notify_customer_pending_bids_reminder,
             notify_customer_job_expiring_soon,
             notify_admin_job_expired,
+            notify_customer_appointment_reminder,
         )
+        from sms_service import notify_customer_appointment_reminder_sms
 
         now = datetime.now()
+        today = now.date()
+        tomorrow = (today + timedelta(days=1)).isoformat()
+
         cutoff_24h = now - timedelta(hours=24)
         cutoff_48h = now - timedelta(hours=48)
         cutoff_72h = now - timedelta(hours=72)
 
+        # ── Scheduled pickup reminders (day-before) ──────────────────────────
+        pickup_reminder_count = 0
+        scheduled_jobs = Job.query.filter(
+            Job.status == 'scheduled',
+            Job.scheduled_date == tomorrow,
+            Job.pickup_reminder_sent == False,  # noqa: E712
+        ).all()
+
+        for job in scheduled_jobs:
+            try:
+                job.pickup_reminder_sent = True
+                db.session.commit()
+                pickup_reminder_count += 1
+                log.info("Job #%s — day-before pickup reminder sending", job.id)
+
+                customer = User.query.get(job.customer_id) if job.customer_id else None
+                if customer and customer.email:
+                    try:
+                        notify_customer_appointment_reminder(
+                            customer.email, job.id,
+                            job.service_type, job.scheduled_date, job.scheduled_time
+                        )
+                    except Exception as e:
+                        log.error("Pickup reminder email failed (job #%s): %s", job.id, e)
+
+                if customer and customer.notify_sms and customer.phone:
+                    try:
+                        notify_customer_appointment_reminder_sms(
+                            customer.phone, job.id,
+                            job.service_type, job.scheduled_date, job.scheduled_time
+                        )
+                    except Exception as e:
+                        log.error("Pickup reminder SMS failed (job #%s): %s", job.id, e)
+
+            except Exception as e:
+                log.error("Pickup reminder error for job #%s: %s", job.id, e)
+                db.session.rollback()
+
+        if pickup_reminder_count:
+            log.info("Expiry run: pickup_reminders=%d", pickup_reminder_count)
+
+        # ── Bid inactivity reminders and expiry ───────────────────────────────
         jobs = Job.query.filter(Job.status.in_(['open', 'bidding'])).all()
 
         expired_count = 0

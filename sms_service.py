@@ -319,6 +319,14 @@ def notify_customer_appointment_confirmed_sms(phone, job_id, service_type, sched
     return send_sms(phone, msg, 'customer_appointment_confirmed')
 
 
+def notify_customer_appointment_reminder_sms(phone, job_id, service_type, scheduled_date, scheduled_time):
+    service_label = service_type or 'your service'
+    when = f"{scheduled_date}" + (f" at {scheduled_time}" if scheduled_time else "")
+    msg = (f"JHE Haul: Reminder — your pickup for {service_label} is tomorrow ({when}). "
+           f"Details: {_APP_URL}/customer/request/{job_id}")
+    return send_sms(phone, msg, 'customer_appointment_reminder')
+
+
 def notify_customer_job_completed_sms(phone, job_id):
     if not is_sms_enabled('customer_job_completed'):
         return False

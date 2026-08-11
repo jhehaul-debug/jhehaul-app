@@ -234,6 +234,7 @@ with app.app_context():
         db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS expired_at TIMESTAMP"))
         db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS reminder_24h_sent BOOLEAN DEFAULT FALSE"))
         db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS reminder_48h_sent BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS pickup_reminder_sent BOOLEAN DEFAULT FALSE"))
         db.session.commit()
         logging.info("Column migration: job expiry columns ensured")
     except Exception as _e:
