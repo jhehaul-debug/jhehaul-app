@@ -45,7 +45,7 @@ def _html(header_title, header_sub, tag, body_html):
 <div class="wrap">
   <div class="header">
     <h1>JHE Haul</h1>
-    <p>Junk Hauling Marketplace</p>
+    <p>Local Marketplace</p>
   </div>
   <div class="body">
     <div class="tag">{tag}</div>
@@ -54,7 +54,7 @@ def _html(header_title, header_sub, tag, body_html):
     {body_html}
   </div>
   <div class="footer">
-    JHE Haul · Minneapolis, MN · <a href="{_APP_URL}" style="color:#3498db;">jhehaul.com</a><br>
+    JHE Haul · Local Marketplace · <a href="{_APP_URL}" style="color:#3498db;">jhehaul.com</a><br>
     You received this because you have an account with JHE Haul.
   </div>
 </div></body></html>"""

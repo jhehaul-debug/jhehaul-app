@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}JHE Haul | Marketplace & Junk Removal{% endblock %}</title>
-    {% block meta_description %}<meta name="description" content="JHE Haul — Buy and sell locally, plus professional junk removal, furniture pickup, cleanouts, and hauling. Serving Minnesota and Wisconsin.">{% endblock %}
+    <title>{% block title %}JHE Haul | Local Marketplace{% endblock %}</title>
+    {% block meta_description %}<meta name="description" content="JHE Haul — Buy and sell locally. Browse listings, post items for sale, and connect with buyers in your area.">{% endblock %}
     {% block og_meta %}
-    <meta property="og:title" content="JHE Haul | Marketplace & Junk Removal">
-    <meta property="og:description" content="JHE Haul — Buy and sell locally, plus professional junk removal and hauling. Fast, reliable, affordable.">
+    <meta property="og:title" content="JHE Haul | Local Marketplace">
+    <meta property="og:description" content="JHE Haul — Buy. Sell. Connect Locally. Browse listings or post items for sale in your area.">
     <meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
     <meta property="og:image:width" content="1080">
     <meta property="og:image:height" content="1080">
@@ -15,8 +15,8 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="JHE Haul">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="JHE Haul | Marketplace & Junk Removal">
-    <meta name="twitter:description" content="Buy and sell locally, plus professional junk removal and hauling in Minnesota and Wisconsin.">
+    <meta name="twitter:title" content="JHE Haul | Local Marketplace">
+    <meta name="twitter:description" content="Buy, sell, and connect locally — JHE Haul Marketplace. Browse listings or post items for sale.">
     <meta name="twitter:image" content="https://jhehaul.com/static/jhehaul-share.png">
     {% endblock %}
     <link rel="icon" type="image/png" href="/static/og-image.png">
@@ -84,7 +84,7 @@
             <a href="/sell">💰 Sell Something</a>
             <a href="{{ url_for('customer_messages') if current_user.user_type == 'customer' else url_for('auth.login') }}">💬 Messages{% if customer_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ customer_unread_count }}</span>{% endif %}</a>
             <a href="{{ url_for('profile') }}">👤 My Account</a>
-            <a href="/services">🚛 Request Haul Service</a>
+            <a href="/services">🚛 Haul &amp; Delivery</a>
             {% if current_user.is_admin %}
             <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">⚙ Admin{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ admin_unread_count }}</span>{% endif %}</a>
             {% endif %}
@@ -95,7 +95,7 @@
             <a href="/sell">💰 Sell Something</a>
             <a href="{{ url_for('auth.login') }}">💬 Messages</a>
             <a href="{{ url_for('auth.login') }}">👤 My Account</a>
-            <a href="/services">🚛 Haul Services</a>
+            <a href="/services">🚛 Haul &amp; Delivery</a>
             <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
         {% endif %}
     </nav>
@@ -120,8 +120,7 @@
         <div class="footer-inner">
             <div>
                 <span class="footer-brand">🚛 JHE Haul</span>
-                <p class="footer-desc">Marketplace &amp; Professional Hauling<br><small>Fast • Reliable • Affordable</small></p>
-                <p class="footer-desc" style="font-size:0.8rem;color:#a0aec0;margin-top:6px;">Serving Minnesota &amp; Wisconsin</p>
+                <p class="footer-desc">Local Marketplace<br><small>Buy • Sell • Connect Locally</small></p>
             </div>
             <div class="footer-col">
                 <h4>Marketplace</h4>
@@ -130,9 +129,9 @@
                 <a href="{{ url_for('auth.login') if not current_user.is_authenticated else url_for('profile') }}">My Account</a>
             </div>
             <div class="footer-col">
-                <h4>Haul Services</h4>
-                <a href="/services">All Services</a>
-                <a href="/invite/customer">Request Service</a>
+                <h4>Haul &amp; Delivery</h4>
+                <a href="/services">Haul Services</a>
+                <a href="/invite/customer">Request Pickup</a>
                 <a href="{{ url_for('about') }}">About Us</a>
             </div>
             <div class="footer-col">

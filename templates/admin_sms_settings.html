@@ -82,62 +82,79 @@
         Individual events can be turned off without disabling SMS globally.
         Users also control their own opt-in preference in their profile.
     </p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
+    <p style="font-size:0.82rem;color:#a0aec0;margin-bottom:12px;font-style:italic;">
+        These toggles control marketplace SMS events. Existing user opt-in preferences are preserved individually.
+    </p>
+
+    <p style="font-weight:600;color:#4a5568;font-size:0.88rem;margin:0 0 8px;">Buyer &amp; Seller Notifications</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:18px;">
 
         <label class="check-label">
             <input type="checkbox" name="ev_new_bid" value="1"
                    {% if settings.ev_new_bid %}checked{% endif %}>
-            <span><strong>Customer: New Bid Received</strong><br>
-                <small style="color:#718096;">Customer gets SMS when a hauler bids on their job</small></span>
+            <span><strong>New Marketplace Message</strong><br>
+                <small style="color:#718096;">Buyer or seller gets SMS when a new message arrives in their listing conversation</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_bid_accepted" value="1"
                    {% if settings.ev_bid_accepted %}checked{% endif %}>
-            <span><strong>Hauler: Bid Accepted</strong><br>
-                <small style="color:#718096;">Hauler gets SMS when their bid is accepted</small></span>
+            <span><strong>Offer Received</strong><br>
+                <small style="color:#718096;">Seller gets SMS when a buyer submits an offer on their listing</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_deposit_paid" value="1"
                    {% if settings.ev_deposit_paid %}checked{% endif %}>
-            <span><strong>Hauler: Deposit Paid</strong><br>
-                <small style="color:#718096;">Hauler gets address unlock SMS when deposit is confirmed</small></span>
+            <span><strong>Offer Accepted</strong><br>
+                <small style="color:#718096;">Buyer gets SMS when the seller accepts their offer</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_job_nearby" value="1"
                    {% if settings.ev_job_nearby %}checked{% endif %}>
-            <span><strong>Hauler: New Job Nearby</strong><br>
-                <small style="color:#718096;">Haulers get SMS when new jobs post in their area</small></span>
+            <span><strong>Offer Declined</strong><br>
+                <small style="color:#718096;">Buyer gets SMS when the seller declines their offer</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_job_completed" value="1"
                    {% if settings.ev_job_completed %}checked{% endif %}>
-            <span><strong>Customer: Job Completed</strong><br>
-                <small style="color:#718096;">Customer gets SMS when their job is marked complete</small></span>
+            <span><strong>Item Marked Sold</strong><br>
+                <small style="color:#718096;">Seller and interested buyers get SMS when an item is marked sold</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_job_cancelled" value="1"
                    {% if settings.ev_job_cancelled %}checked{% endif %}>
-            <span><strong>Hauler: Job Cancelled</strong><br>
-                <small style="color:#718096;">Haulers get SMS when a job they bid on is cancelled</small></span>
+            <span><strong>Listing Approved</strong><br>
+                <small style="color:#718096;">Seller gets SMS when their listing is approved and goes live</small></span>
         </label>
 
         <label class="check-label">
             <input type="checkbox" name="ev_bid_rejected" value="1"
                    {% if settings.ev_bid_rejected %}checked{% endif %}>
-            <span><strong>Hauler: Bid Not Selected</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
-                <small style="color:#718096;">Non-selected haulers get SMS when another bid is accepted</small></span>
+            <span><strong>Listing Rejected or Removed</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
+                <small style="color:#718096;">Seller gets SMS if their listing is rejected or removed by admin</small></span>
         </label>
+
+        <label class="check-label">
+            <input type="checkbox" name="ev_quote_received" value="1"
+                   {% if settings.ev_quote_received %}checked{% endif %}>
+            <span><strong>Listing Expiring Soon</strong><br>
+                <small style="color:#718096;">Seller gets SMS reminder before their listing expires</small></span>
+        </label>
+
+    </div>
+
+    <p style="font-weight:600;color:#4a5568;font-size:0.88rem;margin:0 0 8px;">Admin Alerts</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
 
         <label class="check-label">
             <input type="checkbox" name="ev_admin_alert" value="1"
                    {% if settings.ev_admin_alert %}checked{% endif %}>
             <span><strong>Admin Alerts via SMS</strong> <span style="font-size:0.75rem;color:#718096;">(off by default)</span><br>
-                <small style="color:#718096;">Sends to <code>ADMIN_PHONE</code> for: new customer signup, new hauler signup, new job posted, new bid submitted, bid accepted.</small></span>
+                <small style="color:#718096;">Sends to <code>ADMIN_PHONE</code> for: new user signup, new listing posted, listing reported, user reported, moderation issue requiring review.</small></span>
         </label>
 
     </div>

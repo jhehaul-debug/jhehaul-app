@@ -1,0 +1,128 @@
+Now update the remaining JHE Haul SMS settings and leftover hauling language so they match the new local marketplace.
+
+IMPORTANT:
+Do NOT rebuild the app.
+Do NOT undo the admin dashboard changes already completed.
+Do NOT delete historical data.
+Do NOT break Twilio, messaging, authentication, marketplace listings, photo storage, or user accounts.
+
+KEEP:
+
+* Twilio integration
+* SMS logs
+* Sent / Failed / Total / Delivery Rate statistics
+* Global SMS on/off control
+* User SMS opt-in settings
+* Test SMS feature
+* Email-to-SMS fallback
+* Admin SMS capability
+
+REMOVE OR RETIRE FROM THE VISIBLE SMS SETTINGS:
+
+* Customer: New Bid Received
+* Hauler: Bid Accepted
+* Hauler: Deposit Paid
+* Hauler: New Job Nearby
+* Customer: Job Completed
+* Hauler: Job Cancelled
+* Hauler: Bid Not Selected
+* Any other notification type based only on hauling jobs, bids, haulers, deposits, service requests, or job completion
+
+REPLACE WITH MARKETPLACE SMS EVENTS:
+
+BUYER / SELLER NOTIFICATIONS:
+
+* New marketplace message received
+* Offer received
+* Offer accepted
+* Offer declined
+* Item marked sold
+* Listing approved
+* Listing rejected or removed
+* Saved item price/status update, if supported
+* Listing expiring soon, if listing expiration exists
+
+ADMIN SMS ALERTS:
+
+* New user signup
+* New listing posted
+* Listing reported
+* User reported
+* Moderation issue requiring review
+
+Use marketplace terms such as:
+
+* buyer
+* seller
+* listing
+* item
+* offer
+* marketplace
+
+Do not use old terms such as:
+
+* hauler
+* hauling job
+* bid
+* service request
+* deposit paid
+    unless there is still a separate intentionally active hauling section.
+
+Also search the visible website for leftover hauling language from the old version and clean it up where it no longer belongs.
+
+Specifically inspect:
+
+* footer
+* admin pages
+* account pages
+* notification settings
+* SMS settings
+* emails
+* empty states
+* buttons
+* headings
+* alerts
+
+The footer currently still contains old wording such as:
+“Marketplace & Professional Hauling”
+“Fast • Reliable • Affordable”
+“Serving Minnesota & Wisconsin”
+
+Update the footer for the marketplace direction. Use something simple such as:
+
+JHE Haul
+Local Marketplace
+Buy • Sell • Connect Locally
+
+Do not hard-code Minnesota & Wisconsin as the permanent marketplace service area if the app is being built to expand.
+
+LOCAL MARKETPLACE FOUNDATION:
+Preserve ZIP/location information so listings can later support:
+
+* Near Me
+* distance radius
+* city/ZIP filtering
+* local pickup
+* future geographic expansion
+
+TEST:
+
+* SMS settings page
+* save SMS settings
+* test SMS
+* SMS logs
+* marketplace homepage
+* Browse
+* Sell
+* Messages
+* Account
+* Admin dashboard
+* mobile layout
+
+After testing:
+
+1. Commit the changes.
+2. Push to the same GitHub branch connected to DigitalOcean.
+3. Give me the commit hash.
+4. Confirm push succeeded.
+5. Confirm no old hauling SMS events remain visible unless intentionally retained.
