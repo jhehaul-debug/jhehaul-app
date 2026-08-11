@@ -454,6 +454,7 @@
             {% if search_query %}{% set ns.toggle_url = ns.toggle_url ~ 'q=' ~ search_query ~ '&' %}{% endif %}
             {% if listing_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'listing_type=' ~ listing_type_filter ~ '&' %}{% endif %}
             {% if area_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'area=' ~ area_filter ~ '&' %}{% endif %}
+            {% if city_zip_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'city_zip=' ~ city_zip_filter ~ '&' %}{% endif %}
             {% if price_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'price_type=' ~ price_type_filter ~ '&' %}{% endif %}
             {% if featured_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'featured=1&' %}{% endif %}
             {% if min_price is not none %}{% set ns.toggle_url = ns.toggle_url ~ 'min_price=' ~ min_price ~ '&' %}{% endif %}
@@ -477,6 +478,10 @@
     <form method="get" action="/marketplace" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end">
         <input type="hidden" name="listing_type" value="{{ listing_type_filter }}">
         {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+        <div>
+            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">City or ZIP</label>
+            <input type="text" name="city_zip" value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" style="width:140px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem" autocomplete="off">
+        </div>
         <div>
             <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Min Price</label>
             <input type="number" name="min_price" value="{{ request.args.get('min_price','') }}" placeholder="$0" style="width:90px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">

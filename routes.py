@@ -376,6 +376,7 @@ def marketplace():
     featured_filter    = request.args.get('featured',     '').strip()
     listing_type_filter= request.args.get('listing_type', '').strip()
     area_filter        = request.args.get('area',         '').strip()
+    city_zip_filter    = request.args.get('city_zip',     '').strip()
     min_price_raw      = request.args.get('min_price',    '').strip()
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
@@ -390,9 +391,9 @@ def marketplace():
     except ValueError: min_beds = None
 
     is_search = bool(q or category_slug or price_type_filter or featured_filter
-                     or listing_type_filter or area_filter or min_price is not None
-                     or max_price is not None or min_beds is not None or open_house_only
-                     or hide_sold)
+                     or listing_type_filter or area_filter or city_zip_filter
+                     or min_price is not None or max_price is not None
+                     or min_beds is not None or open_house_only or hide_sold)
 
     if is_search:
         if hide_sold:
@@ -474,6 +475,17 @@ def marketplace():
             from datetime import datetime as _now_dt
             qobj = qobj.filter(Listing.open_house_dt >= _now_dt.utcnow())
 
+        # City / ZIP filter — scoped to property listings only
+        if city_zip_filter and listing_type_filter in ('property_sale', 'rental', 'housing'):
+            _czf = city_zip_filter.strip()
+            _is_zip = _czf.isdigit() and len(_czf) == 5
+            if _is_zip:
+                # Exact ZIP match only (buyers expect precise neighborhood results)
+                qobj = qobj.filter(Listing.zip_code == _czf)
+            else:
+                # City name search (case-insensitive partial match)
+                qobj = qobj.filter(Listing.city.ilike(f'%{_czf}%'))
+
         search_results = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(48).all()
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
         return render_template('marketplace.html',
@@ -486,6 +498,7 @@ def marketplace():
                                featured_filter=featured_filter,
                                listing_type_filter=listing_type_filter,
                                area_filter=area_filter,
+                               city_zip_filter=city_zip_filter,
                                min_price=min_price, max_price=max_price,
                                min_beds=min_beds, open_house_only=open_house_only,
                                hide_sold=hide_sold,
@@ -494,7 +507,8 @@ def marketplace():
     else:
         ctx = _marketplace_homepage_ctx()
         return render_template('marketplace.html', categories=categories, is_search=False,
-                               listing_type_filter='', area_filter='', hide_sold='', **ctx)
+                               listing_type_filter='', area_filter='', city_zip_filter='',
+                               hide_sold='', **ctx)
 
 
 @app.route("/sell")
