@@ -289,5 +289,262 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (sms_settings.ev_quote_received) skipped: %s", _e)
 
+    # ── Marketplace Phase 2 migrations ───────────────────────────────────────
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS categories (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                slug VARCHAR(100) NOT NULL UNIQUE,
+                icon VARCHAR(100),
+                display_order INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE,
+                parent_id INTEGER REFERENCES categories(id),
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: categories ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (categories) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listings (
+                id SERIAL PRIMARY KEY,
+                seller_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                category_id INTEGER REFERENCES categories(id),
+                subcategory_id INTEGER REFERENCES categories(id),
+                price FLOAT,
+                price_type VARCHAR(20) DEFAULT 'fixed',
+                condition VARCHAR(20),
+                city VARCHAR(100),
+                state VARCHAR(50),
+                zip_code VARCHAR(10),
+                latitude FLOAT,
+                longitude FLOAT,
+                status VARCHAR(20) DEFAULT 'active',
+                delivery_option VARCHAR(100),
+                view_count INTEGER DEFAULT 0,
+                favorite_count INTEGER DEFAULT 0,
+                featured BOOLEAN DEFAULT FALSE,
+                moderation_status VARCHAR(20) DEFAULT 'approved',
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                sold_at TIMESTAMP,
+                expired_at TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listings ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listings) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_photos (
+                id SERIAL PRIMARY KEY,
+                listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+                filename VARCHAR NOT NULL,
+                storage_url VARCHAR,
+                data BYTEA,
+                content_type VARCHAR(80),
+                display_order INTEGER DEFAULT 0,
+                is_primary BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_photos ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_photos) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_favorites (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(user_id, listing_id)
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_favorites ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_favorites) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_offers (
+                id SERIAL PRIMARY KEY,
+                listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+                buyer_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                seller_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                amount FLOAT NOT NULL,
+                counter_amount FLOAT,
+                message TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                expires_at TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_offers ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_offers) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_conversations (
+                id SERIAL PRIMARY KEY,
+                listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+                buyer_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                seller_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(listing_id, buyer_id)
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_conversations ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_conversations) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_messages (
+                id SERIAL PRIMARY KEY,
+                conversation_id INTEGER NOT NULL REFERENCES listing_conversations(id) ON DELETE CASCADE,
+                sender_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                body TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                read_at TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_messages ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_messages) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS delivery_requests (
+                id SERIAL PRIMARY KEY,
+                listing_id INTEGER REFERENCES listings(id),
+                buyer_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                seller_id VARCHAR REFERENCES users(id),
+                pickup_city VARCHAR(100),
+                pickup_state VARCHAR(50),
+                pickup_zip VARCHAR(10),
+                pickup_stairs BOOLEAN DEFAULT FALSE,
+                delivery_city VARCHAR(100),
+                delivery_state VARCHAR(50),
+                delivery_zip VARCHAR(10),
+                delivery_stairs BOOLEAN DEFAULT FALSE,
+                elevator_available BOOLEAN DEFAULT FALSE,
+                item_description TEXT,
+                approx_dimensions VARCHAR(200),
+                item_count INTEGER DEFAULT 1,
+                preferred_date VARCHAR(50),
+                preferred_time VARCHAR(50),
+                special_instructions TEXT,
+                quote_amount FLOAT,
+                admin_notes TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: delivery_requests ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (delivery_requests) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS listing_reports (
+                id SERIAL PRIMARY KEY,
+                listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+                reporter_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                reason VARCHAR(100) NOT NULL,
+                details TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: listing_reports ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (listing_reports) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE TABLE IF NOT EXISTS user_blocks (
+                id SERIAL PRIMARY KEY,
+                blocker_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                blocked_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(blocker_id, blocked_id)
+            )
+        """))
+        db.session.commit()
+        logging.info("Table migration: user_blocks ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Table migration (user_blocks) skipped: %s", _e)
+
+    # ── Seed default marketplace categories ──────────────────────────────────
+    try:
+        from models import Category
+        if Category.query.count() == 0:
+            default_categories = [
+                ('Furniture', 'furniture', '🛋️', 1),
+                ('Appliances', 'appliances', '🍳', 2),
+                ('Electronics', 'electronics', '📱', 3),
+                ('Vehicles', 'vehicles', '🚗', 4),
+                ('Auto Parts', 'auto-parts', '🔧', 5),
+                ('Tools', 'tools', '🔨', 6),
+                ('Home & Garden', 'home-garden', '🏡', 7),
+                ('Clothing & Accessories', 'clothing', '👗', 8),
+                ('Restaurant Equipment', 'restaurant-equipment', '🍽️', 9),
+                ('Business Equipment', 'business-equipment', '💼', 10),
+                ('Kids & Baby', 'kids-baby', '🧸', 11),
+                ('Sports & Outdoors', 'sports-outdoors', '⚽', 12),
+                ('Collectibles', 'collectibles', '🏆', 13),
+                ('Free Items', 'free-items', '🎁', 14),
+                ('Other', 'other', '📦', 15),
+            ]
+            for name, slug, icon, order in default_categories:
+                db.session.add(Category(name=name, slug=slug, icon=icon, display_order=order))
+            db.session.commit()
+            logging.info("Seeded %d default marketplace categories", len(default_categories))
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Category seed skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)

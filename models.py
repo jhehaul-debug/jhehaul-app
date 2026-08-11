@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from sqlalchemy import UniqueConstraint
 from flask_login import UserMixin
+import json
 
 db = SQLAlchemy()
 class User(UserMixin, db.Model):
@@ -250,3 +251,229 @@ class Message(db.Model):
 
     job = db.relationship('Job', backref=db.backref('messages', lazy=True, cascade='all, delete-orphan'))
     sender = db.relationship('User', foreign_keys=[sender_id])
+
+
+# ─────────────────────────────────────────────────────────────
+#  MARKETPLACE MODELS  (Phase 2 — no existing tables modified)
+# ─────────────────────────────────────────────────────────────
+
+class Category(db.Model):
+    """Admin-configurable marketplace categories (and subcategories via parent_id)."""
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), nullable=False, unique=True)
+    icon = db.Column(db.String(100), nullable=True)          # emoji or icon class
+    display_order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    subcategories = db.relationship('Category', backref=db.backref('parent', remote_side=[id]), lazy=True)
+    listings = db.relationship('Listing', backref='category', lazy=True, foreign_keys='Listing.category_id')
+
+
+class Listing(db.Model):
+    """A marketplace listing posted by a seller."""
+    __tablename__ = 'listings'
+
+    # Status values: draft | pending | active | reserved | sold | expired | removed
+    # price_type values: fixed | negotiable | free
+    # condition values: new | like_new | good | fair | for_parts
+    # moderation_status values: approved | pending | flagged | removed
+    # delivery_option: comma-separated flags, e.g. "pickup,jhe_haul"
+
+    id = db.Column(db.Integer, primary_key=True)
+    seller_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    price = db.Column(db.Float, nullable=True)               # None when price_type='free'
+    price_type = db.Column(db.String(20), default='fixed')
+    condition = db.Column(db.String(20), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(50), nullable=True)
+    zip_code = db.Column(db.String(10), nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    status = db.Column(db.String(20), default='active')
+    delivery_option = db.Column(db.String(100), nullable=True)  # e.g. "pickup,jhe_haul"
+    view_count = db.Column(db.Integer, default=0)
+    favorite_count = db.Column(db.Integer, default=0)
+    featured = db.Column(db.Boolean, default=False)
+    moderation_status = db.Column(db.String(20), default='approved')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    sold_at = db.Column(db.DateTime, nullable=True)
+    expired_at = db.Column(db.DateTime, nullable=True)
+
+    seller = db.relationship('User', backref=db.backref('listings', lazy=True), foreign_keys=[seller_id])
+    photos = db.relationship('ListingPhoto', backref='listing', lazy=True,
+                             cascade='all, delete-orphan', order_by='ListingPhoto.display_order')
+    favorites = db.relationship('ListingFavorite', backref='listing', lazy=True, cascade='all, delete-orphan')
+    offers = db.relationship('ListingOffer', backref='listing', lazy=True, cascade='all, delete-orphan')
+    conversations = db.relationship('ListingConversation', backref='listing', lazy=True, cascade='all, delete-orphan')
+    reports = db.relationship('ListingReport', backref='listing', lazy=True, cascade='all, delete-orphan')
+    delivery_requests = db.relationship('DeliveryRequest', backref='listing', lazy=True)
+
+    @property
+    def primary_photo(self):
+        for p in self.photos:
+            if p.is_primary:
+                return p
+        return self.photos[0] if self.photos else None
+
+    @property
+    def delivery_options_list(self):
+        if not self.delivery_option:
+            return []
+        return [d.strip() for d in self.delivery_option.split(',') if d.strip()]
+
+
+class ListingPhoto(db.Model):
+    """Photos attached to a marketplace listing."""
+    __tablename__ = 'listing_photos'
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    filename = db.Column(db.String, nullable=False)
+    storage_url = db.Column(db.String, nullable=True)       # DO Spaces URL
+    data = db.Column(db.LargeBinary, nullable=True)         # DB fallback
+    content_type = db.Column(db.String(80), nullable=True)
+    display_order = db.Column(db.Integer, default=0)
+    is_primary = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class ListingFavorite(db.Model):
+    """A user saving/favoriting a listing."""
+    __tablename__ = 'listing_favorites'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    __table_args__ = (UniqueConstraint('user_id', 'listing_id'),)
+
+    user = db.relationship('User', backref=db.backref('listing_favorites', lazy=True))
+
+
+class ListingOffer(db.Model):
+    """Buyer-to-seller offer/counter-offer on a listing."""
+    __tablename__ = 'listing_offers'
+    # Status values: pending | countered | accepted | declined | withdrawn | expired
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    buyer_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    counter_amount = db.Column(db.Float, nullable=True)
+    message = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    expires_at = db.Column(db.DateTime, nullable=True)
+
+    buyer = db.relationship('User', foreign_keys=[buyer_id], backref=db.backref('offers_sent', lazy=True))
+    seller = db.relationship('User', foreign_keys=[seller_id], backref=db.backref('offers_received', lazy=True))
+
+
+class ListingConversation(db.Model):
+    """One private message thread per buyer↔listing pair."""
+    __tablename__ = 'listing_conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    buyer_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    __table_args__ = (UniqueConstraint('listing_id', 'buyer_id'),)
+
+    buyer = db.relationship('User', foreign_keys=[buyer_id],
+                            backref=db.backref('marketplace_conversations_as_buyer', lazy=True))
+    seller = db.relationship('User', foreign_keys=[seller_id],
+                             backref=db.backref('marketplace_conversations_as_seller', lazy=True))
+    messages = db.relationship('ListingMessage', backref='conversation', lazy=True,
+                               cascade='all, delete-orphan', order_by='ListingMessage.created_at')
+
+
+class ListingMessage(db.Model):
+    """An individual message within a listing conversation."""
+    __tablename__ = 'listing_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('listing_conversations.id'), nullable=False)
+    sender_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    sender = db.relationship('User', foreign_keys=[sender_id])
+
+
+class DeliveryRequest(db.Model):
+    """Request for JHE Haul to deliver a marketplace item."""
+    __tablename__ = 'delivery_requests'
+    # Status values: pending | quoted | accepted | declined | completed | cancelled
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=True)
+    buyer_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    seller_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=True)
+    # Pickup info
+    pickup_city = db.Column(db.String(100), nullable=True)
+    pickup_state = db.Column(db.String(50), nullable=True)
+    pickup_zip = db.Column(db.String(10), nullable=True)
+    pickup_stairs = db.Column(db.Boolean, default=False)
+    # Delivery info
+    delivery_city = db.Column(db.String(100), nullable=True)
+    delivery_state = db.Column(db.String(50), nullable=True)
+    delivery_zip = db.Column(db.String(10), nullable=True)
+    delivery_stairs = db.Column(db.Boolean, default=False)
+    elevator_available = db.Column(db.Boolean, default=False)
+    # Item info
+    item_description = db.Column(db.Text, nullable=True)
+    approx_dimensions = db.Column(db.String(200), nullable=True)
+    item_count = db.Column(db.Integer, default=1)
+    # Scheduling
+    preferred_date = db.Column(db.String(50), nullable=True)
+    preferred_time = db.Column(db.String(50), nullable=True)
+    special_instructions = db.Column(db.Text, nullable=True)
+    # Admin quote
+    quote_amount = db.Column(db.Float, nullable=True)
+    admin_notes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    buyer = db.relationship('User', foreign_keys=[buyer_id],
+                            backref=db.backref('delivery_requests_as_buyer', lazy=True))
+    seller = db.relationship('User', foreign_keys=[seller_id],
+                             backref=db.backref('delivery_requests_as_seller', lazy=True))
+
+
+class ListingReport(db.Model):
+    """A user reporting a listing for admin review."""
+    __tablename__ = 'listing_reports'
+    # Status values: pending | reviewed | resolved
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    reporter_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    reason = db.Column(db.String(100), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    reporter = db.relationship('User', foreign_keys=[reporter_id])
+
+
+class UserBlock(db.Model):
+    """One user blocking another in the marketplace."""
+    __tablename__ = 'user_blocks'
+    id = db.Column(db.Integer, primary_key=True)
+    blocker_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    blocked_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    __table_args__ = (UniqueConstraint('blocker_id', 'blocked_id'),)
+
+    blocker = db.relationship('User', foreign_keys=[blocker_id],
+                              backref=db.backref('blocks_initiated', lazy=True))
+    blocked = db.relationship('User', foreign_keys=[blocked_id],
+                              backref=db.backref('blocks_received', lazy=True))
