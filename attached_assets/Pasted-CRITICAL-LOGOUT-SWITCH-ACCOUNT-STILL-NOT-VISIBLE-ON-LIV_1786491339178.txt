@@ -1,0 +1,78 @@
+CRITICAL — LOGOUT / SWITCH ACCOUNT STILL NOT VISIBLE ON LIVE JHEHAUL.COM
+
+The live app STILL does not show:
+- Sign Out
+- Switch Account
+
+Do not make another blind UI change.
+
+You must diagnose WHY the live production app is not showing the buttons.
+
+1. CHECK PRODUCTION COMMIT
+- Confirm the exact commit currently running on DigitalOcean for jhehaul.com.
+- Confirm whether it is the newest commit on origin/main.
+- If not, push/deploy the newest completed commit first.
+
+2. TRACE THE LIVE ROUTES
+Identify the exact route and exact template/component currently rendering:
+- /account
+- /admin
+
+Show me the filenames.
+
+3. SEARCH FOR DUPLICATES
+Search the project for every account/admin template or component.
+Determine whether previous changes were made to an unused or legacy file.
+
+4. ADD THE BUTTONS TO THE ACTUAL LIVE TEMPLATES
+
+ACCOUNT PAGE:
+Directly above Delete Account, visibly render:
+
+ACCOUNT ACCESS
+
+[ 🚪 Sign Out ]
+[ 🔄 Switch Account ]
+
+ADMIN:
+In the visible Admin navigation, render:
+
+🚪 Sign Out
+🔄 Switch Account
+
+near “View Marketplace.”
+
+5. VERIFY THE LOGOUT ROUTE
+Confirm the route/function used for logout actually exists and works.
+
+When either button is pressed:
+- end the authenticated session
+- clear login/session state
+- redirect to sign-in
+- prevent /admin access until logging in again
+- do not delete or alter the account
+
+6. VISUAL PROOF
+Do not tell me it is fixed based only on code.
+
+Open the ACTUAL production jhehaul.com:
+- open /account and confirm the buttons are visible
+- open /admin and confirm the buttons are visible
+
+7. PUSH/DEPLOY
+If any change is required:
+- commit it
+- push to origin/main
+- confirm DigitalOcean deploys that exact commit
+- verify production again after deploy
+
+FINAL RESPONSE MUST GIVE ME:
+- production commit hash
+- newest GitHub commit hash
+- account template filename
+- admin template filename
+- logout route/function
+- why the buttons were previously not appearing
+- confirmation they are now visibly present on live jhehaul.com
+
+DO NOT add any new features until this is resolved.
