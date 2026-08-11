@@ -1,0 +1,1076 @@
+JHE HAUL MARKETPLACE — COMPLETE RECONSTRUCTION INSTRUCTIONS
+
+PROJECT GOAL
+
+Reconstruct my EXISTING JHE Haul application into a modern local buy-and-sell marketplace.
+
+IMPORTANT:
+Do NOT rebuild the application from scratch.
+Do NOT change my existing domain.
+Do NOT delete existing databases, users, integrations, authentication, admin systems, payment systems, or other working functionality without first auditing them.
+
+BRAND:
+JHE Haul
+
+MARKETPLACE NAME:
+JHE Haul Marketplace
+
+DOMAIN:
+jhehaul.com
+
+TAGLINE:
+Buy. Sell. Get It Delivered.
+
+The new primary purpose of JHE Haul will be a local marketplace where users can:
+
+- Post items for sale
+- Upload multiple photos
+- Browse local items
+- Search listings
+- Filter listings
+- Message sellers
+- Make offers
+- Counter offers
+- Save/favorite listings
+- Manage their listings
+- Mark listings reserved
+- Mark listings sold
+- Report listings
+- Report/block users
+- Request JHE Haul delivery for items
+
+The major feature that separates JHE Haul from a normal local marketplace is DELIVERY.
+
+The intended customer flow is:
+
+Find Item
+→ Contact Seller
+→ Negotiate/Agree on Price
+→ Need Delivery?
+→ Request JHE Haul Delivery
+→ Receive Delivery Quote
+→ Accept Delivery
+
+==================================================
+PHASE 1 — AUDIT FIRST
+==================================================
+
+BEFORE CHANGING ANY CODE, perform a complete audit of the existing JHE Haul application.
+
+DO NOT MODIFY CODE DURING THIS AUDIT.
+DO NOT PUSH CODE DURING THIS AUDIT.
+DO NOT DELETE ANYTHING.
+
+Inspect and report:
+
+1. Existing technology stack
+2. Frontend architecture
+3. Backend architecture
+4. Database/provider
+5. Existing database tables and relationships
+6. Authentication system
+7. Existing user roles
+8. Customer functionality
+9. Hauler functionality
+10. Admin functionality
+11. Existing pages/routes
+12. Existing APIs/endpoints
+13. Existing job posting system
+14. Existing bidding system
+15. Existing messaging system
+16. Existing notifications
+17. Existing Stripe/payment functionality
+18. Existing email functionality
+19. Existing SMS/Twilio functionality
+20. Existing mapping/location functionality
+21. Existing image/file storage
+22. Existing deployment configuration
+23. Existing GitHub workflow
+24. Environment-variable dependencies
+25. Existing functionality that can be reused
+26. Existing functionality that should be redesigned
+27. Existing functionality that should remain in the database but no longer appear publicly
+28. Proposed database migration
+29. Security concerns
+30. Risks that could break the current application
+
+After completing the audit:
+
+STOP.
+
+Show me the complete audit and recommended reconstruction plan.
+
+DO NOT BEGIN DEVELOPMENT UNTIL I APPROVE THE AUDIT.
+
+==================================================
+MAIN NAVIGATION
+==================================================
+
+After approval, redesign the application around:
+
+HOME
+MARKETPLACE
+SELL
+MESSAGES
+MY ACCOUNT
+
+On mobile, use a modern bottom navigation system.
+
+Make SELL especially prominent.
+
+Also provide easy access to:
+
+NEED DELIVERY?
+
+and
+
+JHE HAUL DELIVERY
+
+==================================================
+HOME PAGE
+==================================================
+
+The homepage should immediately communicate:
+
+JHE HAUL MARKETPLACE
+
+Buy. Sell. Get It Delivered.
+
+Add a large search bar:
+
+"Search furniture, appliances, electronics, tools and more"
+
+Create sections for:
+
+Shop by Category
+Recently Listed
+Near You
+Featured Listings
+Great Deals
+Free Items
+Popular Near You
+
+When sufficient user data exists, also support:
+
+Recently Viewed
+
+Add a prominent:
+
+SELL SOMETHING
+
+button.
+
+Include a JHE Haul Delivery section explaining that buyers can request delivery for marketplace purchases.
+
+The website should look like a modern marketplace, NOT an old hauling job/bidding website.
+
+==================================================
+CATEGORIES
+==================================================
+
+Initial marketplace categories:
+
+Furniture
+Appliances
+Electronics
+Vehicles
+Auto Parts
+Tools
+Home & Garden
+Clothing & Accessories
+Restaurant Equipment
+Business Equipment
+Kids & Baby
+Sports & Outdoors
+Collectibles
+Free Items
+Other
+
+Categories must be configurable through Admin.
+
+Admin should eventually be able to:
+
+Add categories
+Edit categories
+Disable categories
+Reorder categories
+Add category icons/images
+Create subcategories
+
+Do not hard-code the system in a way that prevents future expansion.
+
+==================================================
+SELL / CREATE LISTING
+==================================================
+
+Make selling extremely easy from a phone.
+
+STEP 1 — PHOTOS
+
+Allow at least 10 photos.
+
+Users should be able to:
+
+Take photos
+Choose photos
+Reorder photos
+Delete photos
+Select primary photo
+
+STEP 2 — ITEM INFORMATION
+
+Title
+Description
+Category
+Subcategory if applicable
+Condition
+
+Conditions:
+
+New
+Like New
+Good
+Fair
+For Parts
+
+STEP 3 — PRICE
+
+Price
+
+Allow:
+
+Fixed Price
+Negotiable
+Free
+
+STEP 4 — LOCATION
+
+City
+State
+ZIP Code
+
+DO NOT publicly expose the seller's exact home/street address.
+
+STEP 5 — DELIVERY
+
+Ask:
+
+"How can buyers get this item?"
+
+Options:
+
+Buyer Pickup Only
+Seller Can Deliver
+JHE Haul Delivery Available
+
+Allow multiple applicable options.
+
+STEP 6 — PREVIEW
+
+Show the seller exactly how the listing will appear.
+
+STEP 7 — PUBLISH
+
+Publish the listing.
+
+==================================================
+LISTING DATABASE
+==================================================
+
+Create or safely adapt a marketplace listing model.
+
+Recommended fields:
+
+listing_id
+seller_id
+title
+description
+category_id
+subcategory_id
+price
+price_type
+condition
+city
+state
+zip_code
+latitude
+longitude
+status
+negotiable
+delivery_option
+view_count
+favorite_count
+created_at
+updated_at
+sold_at
+expired_at
+featured
+moderation_status
+
+Statuses:
+
+draft
+pending
+active
+reserved
+sold
+expired
+removed
+
+Do not expose exact street addresses publicly.
+
+Use proper database migrations.
+
+DO NOT DROP EXISTING PRODUCTION TABLES.
+
+==================================================
+LISTING PAGE
+==================================================
+
+Each item page should contain:
+
+Large image gallery
+Title
+Price
+Condition
+General location
+Description
+Category
+Date posted
+Seller profile
+Save/Favorite
+Share
+Message Seller
+Make Offer
+Request JHE Haul Delivery
+
+If negotiable, prominently display:
+
+MAKE OFFER
+
+If delivery is available, display:
+
+NEED IT DELIVERED?
+
+GET A JHE HAUL DELIVERY QUOTE
+
+==================================================
+SEARCH
+==================================================
+
+Users should be able to search/filter by:
+
+Keyword
+Category
+Price
+Condition
+Location
+Distance
+Delivery availability
+Newest
+Lowest price
+Highest price
+
+Prepare for radius searching:
+
+5 miles
+10 miles
+25 miles
+50 miles
+100 miles
+
+Reuse existing location/mapping functionality if appropriate.
+
+==================================================
+OFFERS
+==================================================
+
+Build an offer system.
+
+Buyer selects:
+
+MAKE OFFER
+
+Buyer enters amount.
+
+Seller can:
+
+ACCEPT
+COUNTER
+DECLINE
+
+Buyer can respond to a counteroffer with:
+
+ACCEPT
+COUNTER
+DECLINE
+
+Offer statuses:
+
+pending
+countered
+accepted
+declined
+withdrawn
+expired
+
+Store offer history.
+
+When an offer is accepted, seller can mark the item:
+
+RESERVED
+
+Do NOT automatically collect marketplace payment during Phase 1.
+
+==================================================
+MESSAGING
+==================================================
+
+Create private buyer/seller conversations connected to listings.
+
+Quick-message options:
+
+"Is this available?"
+
+"Would you take $___?"
+
+"Can this be delivered?"
+
+"When can I pick it up?"
+
+Also allow custom messages.
+
+Include:
+
+BLOCK USER
+REPORT USER
+
+Do not publicly expose phone numbers or email addresses.
+
+Prepare messaging architecture for future:
+
+Photo messages
+Read receipts
+Push notifications
+Offer notifications
+Delivery notifications
+
+==================================================
+FAVORITES
+==================================================
+
+Allow users to save listings.
+
+Create:
+
+SAVED ITEMS / FAVORITES
+
+inside My Account.
+
+Prepare for future notifications such as:
+
+Price dropped
+Item sold
+Similar item listed
+
+==================================================
+SELLER PROFILES
+==================================================
+
+Seller profiles should support:
+
+Display name
+Profile picture
+Join date
+General location
+Active listings
+Sold listings if enabled
+Ratings architecture
+Reviews architecture
+Response-rate architecture
+Verification architecture
+
+Prepare for a future:
+
+FOLLOW SELLER
+
+feature.
+
+==================================================
+MY ACCOUNT
+==================================================
+
+Include:
+
+My Listings
+Active Listings
+Drafts
+Reserved
+Sold
+Expired
+Saved Items
+Messages
+Offers Sent
+Offers Received
+Delivery Requests
+Profile Settings
+Account Settings
+
+Users should be able to:
+
+Edit listing
+Remove/archive listing
+Mark sold
+Mark reserved
+Renew expired listing
+View listing activity
+
+==================================================
+JHE HAUL DELIVERY
+==================================================
+
+THIS IS A CORE FEATURE.
+
+Reuse useful portions of the existing JHE Haul hauling system.
+
+Marketplace listings should provide:
+
+"Need it delivered?"
+
+and
+
+"Request JHE Haul Delivery"
+
+Delivery request should collect:
+
+Marketplace item/listing
+Pickup location
+Delivery location
+Item description
+Photos
+Approximate dimensions
+Number of items
+Pickup stairs
+Delivery stairs
+Elevator availability
+Preferred date
+Preferred time
+Special instructions
+
+Create or safely adapt:
+
+delivery_requests
+
+Link requests to the:
+
+Buyer
+Seller where appropriate
+Listing
+User account
+
+Admin receives the delivery request.
+
+Admin manually enters a delivery quote.
+
+Customer sees:
+
+YOUR JHE HAUL DELIVERY QUOTE: $___
+
+Customer can:
+
+ACCEPT DELIVERY
+DECLINE DELIVERY
+REQUEST CLARIFICATION
+
+Do NOT create automatic delivery pricing in Phase 1 unless existing functionality already safely supports it.
+
+==================================================
+ADMIN DASHBOARD
+==================================================
+
+Preserve the existing admin system and expand it.
+
+Dashboard should include:
+
+Total Users
+New Users
+Active Listings
+Pending Listings
+Reported Listings
+Sold Listings
+Expired Listings
+Featured Listings
+Delivery Requests
+Pending Delivery Quotes
+Accepted Deliveries
+Completed Deliveries
+Marketplace Activity
+
+Admin should be able to:
+
+Search listings
+View listings
+Edit listings
+Remove listings
+Approve listings when needed
+Feature listings
+Unfeature listings
+Suspend users
+Unsuspend users
+Review reports
+Manage categories
+Manage delivery requests
+Enter delivery quotes
+Manage prohibited listings
+
+Maintain appropriate audit logs for important administrative actions.
+
+==================================================
+SAFETY
+==================================================
+
+Include:
+
+Report Listing
+Report User
+Block User
+Prohibited Item Flag
+Admin Moderation Queue
+
+Create configurable prohibited-item rules.
+
+Do not knowingly facilitate illegal transactions.
+
+==================================================
+PRIVACY
+==================================================
+
+Never publicly expose:
+
+Exact home address
+Private email
+Private phone number
+Internal account identifiers
+Payment information
+Authentication credentials
+
+Public listings should show only general location information.
+
+==================================================
+PAYMENTS — PHASE 1
+==================================================
+
+DO NOT initially process buyer-to-seller marketplace payments.
+
+DO NOT create escrow.
+
+DO NOT create seller payouts.
+
+DO NOT create marketplace wallets.
+
+Initially, buyer and seller handle payment directly.
+
+PRESERVE EXISTING STRIPE FUNCTIONALITY.
+
+Do not delete or unnecessarily change the existing Stripe integration.
+
+Existing payment functionality can continue being used for JHE Haul delivery/services where appropriate.
+
+Design the architecture so marketplace checkout can be added later.
+
+==================================================
+MONETIZATION
+==================================================
+
+Initially:
+
+REGULAR MARKETPLACE LISTINGS ARE FREE.
+
+The first goal is marketplace growth.
+
+Primary initial revenue opportunity:
+
+JHE HAUL DELIVERY
+
+Prepare, but DO NOT activate without approval:
+
+Featured Listing fee
+Boost Listing fee
+Urgent Sale placement
+Business Seller subscriptions
+Dealer accounts
+Seller storefronts
+Transaction fees
+Marketplace checkout
+Seller payouts
+Shipping
+Promoted listings
+Sponsored listings
+Advertising
+
+==================================================
+MOBILE DESIGN
+==================================================
+
+Build MOBILE FIRST.
+
+Prioritize:
+
+Large product photos
+Fast loading
+Clean listing cards
+Easy scrolling
+Simple search
+Category chips
+Prominent Sell button
+Bottom mobile navigation
+Easy messaging
+Clear prices
+Large touch targets
+Simple offers
+Easy delivery requests
+
+The app should feel:
+
+Modern
+Simple
+Local
+Professional
+Trustworthy
+Fast
+
+==================================================
+DESKTOP
+==================================================
+
+Desktop must also be fully responsive.
+
+Use:
+
+Marketplace grids
+Expanded filters
+Larger photo galleries
+Seller information panels
+Messaging/offer controls
+Delivery CTAs
+
+Do not simply stretch the mobile interface.
+
+==================================================
+BRANDING
+==================================================
+
+KEEP:
+
+JHE Haul
+
+KEEP DOMAIN:
+
+jhehaul.com
+
+MARKETPLACE:
+
+JHE Haul Marketplace
+
+TAGLINE:
+
+Buy. Sell. Get It Delivered.
+
+Do NOT rename the company or change the domain.
+
+Preserve existing logo assets unless specifically instructed otherwise.
+
+==================================================
+INITIAL INVENTORY
+==================================================
+
+Admin/owner must be able to create normal marketplace listings.
+
+This will allow the marketplace to initially be populated with legitimate items belonging to:
+
+Owner
+Family
+Friends
+Early sellers
+
+DO NOT create:
+
+Fake sellers
+Fake sales
+Fake reviews
+Fake ratings
+Fake activity
+
+==================================================
+FUTURE FEATURES
+==================================================
+
+Prepare the architecture for future:
+
+Marketplace checkout
+Seller payouts
+Shipping
+Delivery tracking
+Automatic delivery pricing
+Seller verification
+Buyer verification
+Ratings
+Reviews
+Follow Seller
+Business storefronts
+Dealer storefronts
+Promoted listings
+Push notifications
+Saved searches
+Price-drop notifications
+Recommended listings
+AI-assisted listing descriptions
+AI photo enhancement
+AI categorization
+AI price suggestions
+Barcode scanning
+VIN lookup
+Map browsing
+
+DO NOT activate these features unless instructed.
+
+==================================================
+DATABASE SAFETY
+==================================================
+
+CRITICAL:
+
+Inspect the complete database before modifying anything.
+
+Preserve ALL existing data.
+
+Use proper migrations.
+
+DO NOT DROP tables containing:
+
+Users
+Jobs
+Bids
+Payments
+Messages
+Addresses
+Transactions
+Admin information
+Other production records
+
+Reuse existing authentication/users whenever practical.
+
+Old hauling/job functionality that is no longer publicly needed should remain safely stored until migration is verified.
+
+==================================================
+SECURITY
+==================================================
+
+NEVER expose or commit:
+
+API keys
+Database credentials
+Stripe secrets
+SendGrid credentials
+Twilio credentials
+Session secrets
+Authentication secrets
+.env files
+Tokens
+
+Review marketplace endpoints for:
+
+Authentication
+Authorization
+Ownership validation
+Input validation
+Upload security
+SQL injection
+XSS
+CSRF where applicable
+Rate limiting where appropriate
+
+A user must NEVER be able to edit another user's listing.
+
+Non-admin users must NEVER receive admin permissions.
+
+==================================================
+PERFORMANCE
+==================================================
+
+Use:
+
+Image optimization
+Lazy loading
+Pagination/infinite scrolling
+Efficient queries
+Database indexes
+Caching where appropriate
+
+Design for growth.
+
+==================================================
+DEVELOPMENT ORDER
+==================================================
+
+PHASE 1:
+AUDIT ONLY.
+
+STOP FOR APPROVAL.
+
+After approval:
+
+PHASE 2:
+Database migration.
+
+PHASE 3:
+Marketplace shell/navigation.
+
+PHASE 4:
+Listings and Sell flow.
+
+PHASE 5:
+Search/categories/filters.
+
+PHASE 6:
+Listing pages, favorites and seller profiles.
+
+PHASE 7:
+Messaging and offers.
+
+PHASE 8:
+JHE Haul delivery integration.
+
+PHASE 9:
+Admin marketplace controls and moderation.
+
+PHASE 10:
+Mobile/desktop refinement.
+
+PHASE 11:
+Security review.
+
+PHASE 12:
+Regression testing and production readiness.
+
+==================================================
+TESTING
+==================================================
+
+After each development phase:
+
+Run available automated tests.
+Run build checks.
+Check compiler/TypeScript errors where applicable.
+Check database migrations.
+Test authentication.
+Test registration.
+Test login/logout.
+Test admin access.
+Test permissions.
+Test marketplace functionality completed in that phase.
+Test mobile.
+Test desktop.
+
+Fix critical errors BEFORE pushing.
+
+==================================================
+GITHUB / PUSH INSTRUCTIONS
+==================================================
+
+Preserve the EXISTING GitHub repository.
+
+DO NOT create another repository unless specifically instructed.
+
+DO NOT disconnect existing deployment infrastructure.
+
+AFTER EACH APPROVED DEVELOPMENT PHASE:
+
+1. Finish the phase.
+2. Review changed files.
+3. Run tests.
+4. Run production build.
+5. Confirm build succeeds.
+6. Check database migrations.
+7. Verify authentication.
+8. Verify admin access.
+9. Verify existing critical functionality.
+10. Confirm no secrets are included.
+11. Commit the completed changes.
+12. Use a descriptive Git commit message.
+13. PUSH TO THE EXISTING GITHUB REPOSITORY.
+14. Verify the push succeeded.
+15. If GitHub triggers deployment, verify deployment.
+16. If deployment fails, investigate before continuing.
+
+DO NOT knowingly push broken code.
+
+DO NOT force-push over production history.
+
+DO NOT delete Git history.
+
+DO NOT commit secrets or .env values.
+
+After each push, report:
+
+WHAT WAS CHANGED
+
+FILES CHANGED
+
+DATABASE MIGRATIONS
+
+TESTS RUN
+
+TEST RESULTS
+
+BUILD STATUS
+
+GIT COMMIT ID
+
+GITHUB PUSH STATUS
+
+DEPLOYMENT STATUS
+
+WARNINGS/ISSUES
+
+NEXT DEVELOPMENT PHASE
+
+==================================================
+CRITICAL FIRST INSTRUCTION
+==================================================
+
+BEGIN WITH THE AUDIT ONLY.
+
+DO NOT MODIFY CODE.
+
+DO NOT MODIFY THE DATABASE.
+
+DO NOT PUSH ANYTHING.
+
+DO NOT DEPLOY ANYTHING.
+
+Inspect the existing JHE Haul application and return the complete audit and proposed reconstruction plan.
+
+Then STOP and wait for my approval.
+
+Once I approve the audit, development can begin one phase at a time.
+
+After each completed and successfully tested development phase:
+
+COMMIT THE CHANGES.
+
+PUSH THEM TO THE EXISTING GITHUB REPOSITORY.
+
+VERIFY DEPLOYMENT.
+
+Then report the results before proceeding.
+
+FINAL OBJECTIVE:
+
+JHE HAUL MARKETPLACE
+
+Buy. Sell. Get It Delivered.
+
+A local marketplace where people can list real items, buyers can discover and negotiate with sellers, and JHE Haul can provide delivery.
+
+START WITH THE AUDIT ONLY.
