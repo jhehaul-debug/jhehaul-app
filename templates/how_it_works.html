@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}How It Works — JHE Haul Marketplace{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2 class="page-title">How JHE Haul Marketplace Works</h2>
+    <p style="color:#718096;margin:0;">Buy and sell locally — simple, fast, and free to list.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;">
+
+    <div class="card" style="padding:28px;">
+        <div style="font-size:2.5rem;margin-bottom:14px;">📦</div>
+        <h3 style="margin-bottom:10px;">Selling is Free</h3>
+        <ol style="color:#4a5568;font-size:0.95rem;line-height:1.8;padding-left:18px;margin:0;">
+            <li>Create a free account with Google or GitHub.</li>
+            <li>Click <strong>+ Sell</strong> and fill out your listing — title, category, price, condition, and photos.</li>
+            <li>Your listing goes live and local buyers can find it immediately.</li>
+            <li>Buyers message you or make an offer directly on your listing page.</li>
+            <li>Agree on a price, arrange local pickup or request JHE Haul delivery.</li>
+            <li>Mark your item sold when the deal is done.</li>
+        </ol>
+    </div>
+
+    <div class="card" style="padding:28px;">
+        <div style="font-size:2.5rem;margin-bottom:14px;">🛍️</div>
+        <h3 style="margin-bottom:10px;">Buying is Easy</h3>
+        <ol style="color:#4a5568;font-size:0.95rem;line-height:1.8;padding-left:18px;margin:0;">
+            <li>Browse the marketplace or search by keyword, category, or price.</li>
+            <li>Find something you like — view photos, read the description, and check the condition.</li>
+            <li>Message the seller directly or make an offer if the listing accepts offers.</li>
+            <li>Coordinate pickup with the seller at a time that works for both of you.</li>
+            <li>Need it delivered? Ask the seller about JHE Haul delivery options.</li>
+        </ol>
+    </div>
+
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:24px;">
+    <h3 style="margin-bottom:18px;">🚛 JHE Haul Delivery — Our Differentiator</h3>
+    <p style="color:#4a5568;line-height:1.7;margin-bottom:14px;">
+        Unlike other local marketplaces, JHE Haul can arrange pickup and delivery for large or heavy items.
+        No truck? No problem. Sellers can offer delivery as part of a deal, and buyers can request
+        a JHE Haul pickup directly from the listing page.
+    </p>
+    <p style="color:#4a5568;line-height:1.7;margin:0;">
+        This makes JHE Haul Marketplace ideal for furniture, appliances, equipment, and anything
+        too big to fit in a car — without the hassle of coordinating your own transportation.
+    </p>
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:24px;">
+    <h3 style="margin-bottom:18px;">💬 Messaging</h3>
+    <p style="color:#4a5568;line-height:1.7;margin:0;">
+        All communication happens through JHE Haul's built-in messaging system. You can ask questions
+        about an item, negotiate price, and confirm pickup details — all in one place, without
+        sharing personal contact information until you're ready.
+    </p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px;">
+    <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">🆓</div>
+        <strong>Free to List</strong>
+        <p style="color:#718096;font-size:0.88rem;margin:6px 0 0;">No fees to post an item</p>
+    </div>
+    <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">📍</div>
+        <strong>Local First</strong>
+        <p style="color:#718096;font-size:0.88rem;margin:6px 0 0;">Connect with nearby buyers and sellers</p>
+    </div>
+    <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+        <strong>Safe Messaging</strong>
+        <p style="color:#718096;font-size:0.88rem;margin:6px 0 0;">Keep conversations inside the platform</p>
+    </div>
+    <div class="card" style="padding:20px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">🚛</div>
+        <strong>Delivery Available</strong>
+        <p style="color:#718096;font-size:0.88rem;margin:6px 0 0;">JHE Haul can move it for you</p>
+    </div>
+</div>
+
+<div style="text-align:center;">
+    <a href="{{ url_for('marketplace') }}" class="btn btn-primary btn-lg" style="margin-right:12px;">Browse Listings</a>
+    <a href="/sell" class="btn btn-success btn-lg">+ Sell Something</a>
+</div>
+
+{% endblock %}

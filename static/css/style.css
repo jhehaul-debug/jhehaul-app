@@ -506,8 +506,8 @@ footer {
 }
 .footer-inner {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 32px;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 28px;
   margin-bottom: 28px;
 }
 .footer-brand { font-size: 1.2rem; font-weight: 800; color: white; margin-bottom: 8px; display: block; }
@@ -630,6 +630,8 @@ footer {
   .btn-lg { padding: 12px 20px; font-size: 1rem; }
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-inner > div:first-child { grid-column: 1 / -1; }
+  /* reduce top gap on mobile — main.container already has bottom padding */
+  footer { margin-top: 16px; }
   /* footer bottom padding so content isn't hidden by bottom nav */
   footer { margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 }

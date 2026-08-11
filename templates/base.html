@@ -118,7 +118,7 @@
 <footer>
     <div class="container">
         <div class="footer-inner">
-            <div>
+            <div class="footer-brand-col">
                 <span class="footer-brand">🚛 JHE Haul</span>
                 <p class="footer-desc">Local Marketplace<br><small>Buy • Sell • Connect Locally</small></p>
             </div>
@@ -126,27 +126,26 @@
                 <h4>Marketplace</h4>
                 <a href="{{ url_for('marketplace') }}">Browse Listings</a>
                 <a href="/sell">Sell Something</a>
-                <a href="{{ url_for('auth.login') if not current_user.is_authenticated else url_for('profile') }}">My Account</a>
+                <a href="{{ url_for('marketplace') }}">Categories</a>
+                <a href="{{ url_for('customer_messages') if current_user.is_authenticated and current_user.user_type == 'customer' else url_for('auth.login') }}">Messages</a>
             </div>
             <div class="footer-col">
-                <h4>Haul &amp; Delivery</h4>
-                <a href="/services">Haul Services</a>
-                <a href="{{ url_for('customer_request') if current_user.is_authenticated and current_user.user_type == 'customer' else '/invite/customer' }}">Request Service</a>
-                <a href="{{ url_for('about') }}">About Us</a>
+                <h4>Help &amp; Safety</h4>
+                <a href="{{ url_for('how_it_works') }}">How It Works</a>
+                <a href="{{ url_for('safety') }}">Buying &amp; Selling Safely</a>
+                <a href="{{ url_for('guidelines') }}">Community Guidelines</a>
+                <a href="mailto:jhehaul@gmail.com">Report a Problem</a>
             </div>
             <div class="footer-col">
-                <h4>Contact</h4>
-                <a href="mailto:jhehaul@gmail.com">jhehaul@gmail.com</a>
+                <h4>Company</h4>
+                <a href="{{ url_for('about') }}">About JHE Haul</a>
+                <a href="mailto:jhehaul@gmail.com">Contact</a>
                 <a href="{{ url_for('customer_terms') }}">Terms of Service</a>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('auth.logout') }}">Sign Out</a>
-                {% else %}
-                <a href="{{ url_for('auth.login') }}">Sign In</a>
-                {% endif %}
+                <a href="{{ url_for('privacy') }}">Privacy Policy</a>
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; 2026 JHE Haul. All rights reserved. &nbsp;|&nbsp; UI Version: Lions 2026
+            &copy; 2026 JHE Haul. All rights reserved.
         </div>
     </div>
 </footer>

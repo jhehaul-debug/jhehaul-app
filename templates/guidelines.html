@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Community Guidelines — JHE Haul Marketplace{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2 class="page-title">Community Guidelines</h2>
+    <p style="color:#718096;margin:0;">Rules that keep JHE Haul Marketplace safe, fair, and useful for everyone.</p>
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:20px;">
+    <h3 style="margin-bottom:16px;">📋 What You Can Sell</h3>
+    <p style="color:#4a5568;line-height:1.7;margin-bottom:14px;">JHE Haul Marketplace is for legal, physical goods that can be picked up locally. Good examples include:</p>
+    <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0 0 14px;">
+        <li>Furniture and home goods</li>
+        <li>Appliances and electronics</li>
+        <li>Tools, equipment, and machinery</li>
+        <li>Clothing, accessories, and collectibles</li>
+        <li>Vehicles, trailers, and auto parts</li>
+        <li>Free items and giveaways</li>
+    </ul>
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:20px;border-left:4px solid #e53e3e;">
+    <h3 style="color:#c53030;margin-bottom:16px;">🚫 Prohibited Items &amp; Behavior</h3>
+    <p style="color:#4a5568;line-height:1.7;margin-bottom:12px;">The following are never allowed on JHE Haul Marketplace:</p>
+    <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0;">
+        <li>Illegal items of any kind</li>
+        <li>Weapons, firearms, or ammunition</li>
+        <li>Drugs, controlled substances, or drug paraphernalia</li>
+        <li>Stolen goods</li>
+        <li>Counterfeit or fraudulent items</li>
+        <li>Hazardous materials</li>
+        <li>Adult or explicit content</li>
+        <li>Services (this is a physical goods marketplace)</li>
+        <li>Spam, duplicate listings, or fake listings</li>
+        <li>Harassment, hate speech, or abusive communication</li>
+    </ul>
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:20px;">
+    <h3 style="margin-bottom:16px;">🤝 Be Honest and Respectful</h3>
+    <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0;">
+        <li><strong>Accurate descriptions.</strong> List items with honest descriptions including known defects or issues.</li>
+        <li><strong>Real photos.</strong> Use your own photos that accurately represent the item.</li>
+        <li><strong>Respectful communication.</strong> Treat everyone on the platform with courtesy.</li>
+        <li><strong>Honor commitments.</strong> If you agree to a sale, follow through. Don't ghost buyers or sellers.</li>
+        <li><strong>No price gouging.</strong> Don't drastically inflate prices on essential goods.</li>
+    </ul>
+</div>
+
+<div class="card" style="padding:28px;margin-bottom:20px;">
+    <h3 style="margin-bottom:16px;">⚠️ Enforcement</h3>
+    <p style="color:#4a5568;line-height:1.7;margin-bottom:12px;">
+        JHE Haul moderators review reported listings and accounts. Violations may result in:
+    </p>
+    <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0 0 14px;">
+        <li>Removal of the offending listing</li>
+        <li>A warning to the account holder</li>
+        <li>Temporary suspension of posting privileges</li>
+        <li>Permanent account suspension for serious or repeated violations</li>
+    </ul>
+    <p style="color:#4a5568;line-height:1.7;margin:0;">
+        We reserve the right to remove any listing or account at our discretion to protect the
+        community. These guidelines may be updated over time — continued use of the platform
+        means acceptance of the current guidelines.
+    </p>
+</div>
+
+<div class="card" style="padding:24px;background:#f7fafc;">
+    <h3 style="margin-bottom:12px;">📧 Questions or Reports</h3>
+    <p style="color:#4a5568;line-height:1.7;margin-bottom:14px;">
+        See something that violates these guidelines? Use the Report button on any listing,
+        or contact us directly at <a href="mailto:jhehaul@gmail.com" style="color:#3182ce;">jhehaul@gmail.com</a>.
+    </p>
+    <a href="{{ url_for('marketplace') }}" class="btn btn-primary" style="margin-right:10px;">Browse Marketplace</a>
+    <a href="/sell" class="btn btn-outline">Sell Something</a>
+</div>
+
+{% endblock %}

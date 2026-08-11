@@ -1154,6 +1154,22 @@ def hauler_setup_save():
 def about():
     return render_template('about.html')
 
+@app.route("/how-it-works")
+def how_it_works():
+    return render_template('how_it_works.html')
+
+@app.route("/safety")
+def safety():
+    return render_template('safety.html')
+
+@app.route("/guidelines")
+def guidelines():
+    return render_template('guidelines.html')
+
+@app.route("/privacy")
+def privacy():
+    return render_template('privacy.html')
+
 @app.route("/hauler-agreement")
 def hauler_agreement():
     return redirect(url_for('home'))
