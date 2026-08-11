@@ -1,0 +1,123 @@
+Update the JHE Haul Account/Profile page to fully match the new local marketplace.
+
+IMPORTANT:
+Do not rebuild the application.
+Do not undo the Housing & Real Estate work.
+Do not delete existing users or historical data.
+Do not break Google/GitHub authentication, profile photos, SMS, messaging, listings, or admin access.
+
+REMOVE OLD HAULING UI FROM ACCOUNT PAGE:
+
+Remove:
+
+* “Customer Invite Link”
+* “Hauler Invite Link”
+* “looking for hauling help”
+* Any visible Customer vs Hauler role language
+* Any other hauling/job/service-request terminology
+
+Do NOT delete historical role/database fields if other legacy data still depends on them. Simply stop exposing obsolete roles in the current marketplace interface.
+
+MARKETPLACE ACCOUNT MODEL:
+
+A normal JHE Haul user should be able to use ONE account to:
+
+* Buy items
+* Sell items
+* Make/receive offers
+* Message other users
+* Save listings
+* List a rental
+* List property for sale
+
+Do not require users to choose Customer or Hauler.
+
+Replace “Account type: Customer” with a marketplace-appropriate account display. For a normal user, either show:
+
+“JHE Haul Member”
+
+or remove Account Type entirely if it serves no useful purpose.
+
+Keep Admin designation internally for authorized admin accounts.
+
+INVITE SECTION:
+
+Replace the existing invitation section with:
+
+“Invite Friends to JHE Haul”
+
+Description:
+“Invite friends, family, and neighbors to join your local marketplace.”
+
+Create ONE general marketplace invite link.
+
+Button options:
+
+* Copy Link
+* Share
+
+Anyone using that link should create a standard JHE Haul marketplace account.
+
+PROFILE:
+
+Keep:
+
+* Profile picture
+* First name
+* Last name
+* Email
+* Phone
+* SMS notification preference
+
+Add marketplace profile information where appropriate:
+
+* City
+* ZIP code
+
+Use the existing Twin Cities service-area validation.
+
+Do NOT publicly expose the user’s exact address.
+
+ACCOUNT SECTIONS:
+
+Organize the account page so users can easily access:
+
+* My Listings
+* Saved Items
+* My Offers
+* Messages
+* Housing & Real Estate Listings
+* Notification Settings
+* Profile Settings
+
+Only show options that are actually supported. Do not create broken links.
+
+DELETE ACCOUNT:
+
+Keep Delete Account, but require a clear confirmation before permanent deletion.
+
+Make sure account deletion safely handles related marketplace data and does not cause database errors.
+
+FOOTER:
+
+Confirm there are no remaining Hauler/Customer/junk-removal/hauling links or wording in the Account page footer.
+
+TEST:
+
+* Existing user login
+* Google/GitHub authentication
+* Profile editing
+* Profile photo
+* Phone number
+* SMS preference
+* General marketplace invite link
+* My Listings
+* Saved Items
+* Messages
+* Housing & Real Estate listings
+* Admin account
+* Mobile layout
+
+Do not duplicate features already built.
+
+After testing successfully, commit and push the changes to the same GitHub branch connected to DigitalOcean. Give me the commit hash and confirm the push succeeded.

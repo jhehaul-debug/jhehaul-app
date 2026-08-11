@@ -2353,43 +2353,14 @@ def hauler_dashboard():
 @app.route("/profile")
 @require_login
 def profile():
-    reviews = []
-    avg_rating = 0.0
-    review_count = 0
-    completed_count = 0
-    badges = []
-
-    if current_user.user_type == 'hauler':
-        all_reviews = Review.query.filter_by(hauler_id=current_user.id).order_by(Review.created_at.desc()).all()
-        review_count = len(all_reviews)
-        avg_rating = sum(r.rating for r in all_reviews) / review_count if review_count else 0.0
-        reviews = all_reviews[:5]
-        completed_count = Job.query.filter_by(accepted_hauler_id=current_user.id, status='completed').count()
-        badges = get_badges(current_user, all_reviews, completed_count)
-    elif current_user.user_type == 'customer':
-        completed_count = Job.query.filter_by(customer_id=current_user.id, status='completed').count()
-        badges = get_badges(current_user, [], completed_count)
-
-    service_zips = []
-    if current_user.user_type == 'hauler':
-        from models import ZipCode as _ZC
-        raw = HaulerServiceZip.query.filter_by(hauler_id=current_user.id).order_by(HaulerServiceZip.zip_code).all()
-        service_zips = []
-        for sz in raw:
-            zc = _ZC.query.get(sz.zip_code)
-            service_zips.append({
-                'zip': sz.zip_code,
-                'city': zc.city if zc else '',
-                'state': zc.state if zc else '',
-            })
-
+    from models import Listing as _Listing
+    listing_count = _Listing.query.filter_by(
+        seller_id=current_user.id
+    ).filter(_Listing.status != 'draft').count()
+    invite_url = request.host_url.rstrip('/') + '/invite'
     return render_template('profile.html',
-                           reviews=reviews,
-                           avg_rating=avg_rating,
-                           review_count=review_count,
-                           completed_count=completed_count,
-                           badges=badges,
-                           service_zips=service_zips)
+                           listing_count=listing_count,
+                           invite_url=invite_url)
 
 @app.route("/hauler/service-zips/add", methods=["POST"])
 def hauler_service_zip_add():
@@ -2404,40 +2375,36 @@ def hauler_service_zip_remove():
 @app.route("/profile/update", methods=["POST"])
 @require_login
 def profile_update():
+    import re as _re
     first_name = request.form.get("first_name", "").strip()
-    last_name = request.form.get("last_name", "").strip()
-    phone = strip_phone(request.form.get("phone", ""))
-    
-    current_user.first_name = first_name
-    current_user.last_name = last_name
-    current_user.phone = phone if phone else None
-    
-    if current_user.user_type == 'customer':
-        notify_sms = request.form.get("notify_sms") == "1"
-        current_user.notify_sms = notify_sms
-    
-    if current_user.user_type == 'hauler':
-        import re
-        home_zip = request.form.get("home_zip", "").strip()
-        max_travel_miles = request.form.get("max_travel_miles", "").strip()
-        notify_new_jobs = request.form.get("notify_new_jobs") == "1"
-        notify_sms = request.form.get("notify_sms") == "1"
-        
-        if home_zip:
-            if not re.match(r'^\d{5}$', home_zip):
-                flash("Please enter a valid 5-digit ZIP code.", "error")
-                return redirect(url_for('profile'))
-            from models import ZipCode
-            if not ZipCode.query.get(home_zip):
-                flash("That ZIP code is not supported yet. We currently cover Minnesota and Wisconsin.", "error")
-                return redirect(url_for('profile'))
-        
-        current_user.home_zip = home_zip if home_zip else None
-        current_user.max_travel_miles = int(max_travel_miles) if max_travel_miles else None
-        current_user.notify_new_jobs = notify_new_jobs
-        current_user.notify_sms = notify_sms
+    last_name  = request.form.get("last_name",  "").strip()
+    phone      = strip_phone(request.form.get("phone", ""))
+    city_raw   = request.form.get("city", "").strip()[:100] or None
+    zip_raw    = request.form.get("zip_code", "").strip()
 
-    # SMS consent handling (both user types)
+    current_user.first_name = first_name
+    current_user.last_name  = last_name
+    current_user.phone      = phone or None
+    current_user.city       = city_raw
+
+    # ZIP validation — uses existing ZipCode service-area table
+    if zip_raw:
+        if not _re.match(r'^\d{5}$', zip_raw):
+            flash("Please enter a valid 5-digit ZIP code.", "error")
+            return redirect(url_for('profile'))
+        from models import ZipCode as _ZC
+        if not _ZC.query.get(zip_raw):
+            flash("That ZIP code isn't in our service area yet (MN & WI only).", "error")
+            return redirect(url_for('profile'))
+        current_user.zip_code = zip_raw
+    else:
+        current_user.zip_code = None
+
+    # SMS notifications — available to all users
+    notify_sms = request.form.get("notify_sms") == "1"
+    current_user.notify_sms = notify_sms
+
+    # SMS consent
     from datetime import datetime as _dt
     sms_consent_form = request.form.get("sms_consent") == "1"
     if sms_consent_form and not current_user.sms_consent:
@@ -2458,10 +2425,19 @@ def profile_update():
 @app.route("/account/delete", methods=["POST"])
 @require_login
 def delete_account():
-    from models import OAuth, Bid, Review, CompletionPhoto
-    user_id = current_user.id
+    from models import (OAuth, Bid, Review, CompletionPhoto,
+                        Listing, ListingFavorite, ListingConversation,
+                        ListingMessage, ListingOffer, DeliveryRequest,
+                        UserBlock, ListingReport)
+    user_id   = current_user.id
     user_type = current_user.user_type
-    
+
+    # Confirm typed "DELETE" from the form
+    if request.form.get("confirm_delete", "").strip().upper() != "DELETE":
+        flash("Type DELETE in the confirmation box to delete your account.", "error")
+        return redirect(url_for('profile'))
+
+    # ── Legacy hauling data cleanup ──────────────────────────────────────────
     if user_type == 'customer':
         jobs = Job.query.filter_by(customer_id=user_id).all()
         active_jobs = [j for j in jobs if j.status in [
@@ -2469,34 +2445,53 @@ def delete_account():
             'reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress'
         ]]
         if active_jobs:
-            return "Cannot delete account with active jobs. Please complete or cancel all jobs first.", 400
+            flash("You have active jobs. Please complete or cancel them before deleting your account.", "error")
+            return redirect(url_for('profile'))
         for job in jobs:
             JobPhoto.query.filter_by(job_id=job.id).delete()
             Bid.query.filter_by(job_id=job.id).delete()
             Review.query.filter_by(job_id=job.id).delete()
             CompletionPhoto.query.filter_by(job_id=job.id).delete()
             db.session.delete(job)
-    
+
     if user_type == 'hauler':
         active_bids = Bid.query.filter_by(hauler_id=user_id, status='accepted').all()
         for bid in active_bids:
             job = Job.query.get(bid.job_id)
             if job and job.status in ['accepted', 'deposit_paid']:
-                return "Cannot delete account with active accepted jobs. Please complete all jobs first.", 400
+                flash("You have active accepted jobs. Please complete them before deleting your account.", "error")
+                return redirect(url_for('profile'))
         Bid.query.filter_by(hauler_id=user_id).delete()
         Review.query.filter_by(hauler_id=user_id).delete()
         CompletionPhoto.query.filter_by(hauler_id=user_id).delete()
-    
-    _del_name = (((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip()
-                 or current_user.email or 'Unknown')
+
+    # ── Marketplace data cleanup ─────────────────────────────────────────────
+    # Seller listings (cascade: photos, favorites, offers, conversations, reports)
+    for listing in Listing.query.filter_by(seller_id=user_id).all():
+        db.session.delete(listing)
+    db.session.flush()  # run cascades before buyer-side deletes
+
+    # Buyer-side records on other sellers' listings
+    ListingFavorite.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
+    ListingOffer.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
+    ListingConversation.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
+    DeliveryRequest.query.filter_by(requester_id=user_id).delete(synchronize_session=False)
+    ListingReport.query.filter_by(reporter_id=user_id).delete(synchronize_session=False)
+    ListingMessage.query.filter_by(sender_id=user_id).delete(synchronize_session=False)
+    UserBlock.query.filter(
+        (UserBlock.blocker_id == user_id) | (UserBlock.blocked_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # ── Core account removal ─────────────────────────────────────────────────
+    _del_name  = (((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip()
+                  or current_user.email or 'Unknown')
     _del_email = current_user.email or ''
-    _del_type = user_type or ''
     OAuth.query.filter_by(user_id=user_id).delete()
     db.session.delete(current_user)
     db.session.commit()
 
     try:
-        notify_admin_user_deleted(_del_name, _del_email, _del_type)
+        notify_admin_user_deleted(_del_name, _del_email, user_type or '')
     except Exception as e:
         app.logger.error("Admin notify failed (user deleted %s): %s", _del_email, e)
 

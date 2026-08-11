@@ -1,449 +1,365 @@
 {% extends "base.html" %}
-{% block title %}My Profile - JHE Haul{% endblock %}
+{% block title %}My Account - JHE Haul{% endblock %}
 {% block content %}
 
-<!-- Profile Picture -->
-<div class="card" style="max-width:600px;margin:0 auto 18px;">
-    <h3 style="margin-bottom:16px;">Profile Picture</h3>
+<div style="max-width:640px;margin:0 auto;padding:0 0 48px;">
 
-    <!-- Current / preview avatar -->
-    <div style="display:flex;justify-content:center;margin-bottom:18px;">
-        <div style="position:relative;display:inline-block;">
-            {% if current_user.profile_image_url %}
-            <img src="{{ current_user.profile_image_url }}" alt="Profile picture" id="pp-current"
-                 style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0;"
-                 onerror="this.style.display='none';document.getElementById('pp-init').style.display='flex';">
-            <div id="pp-init" style="display:none;width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;align-items:center;justify-content:center;">
-                {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
-            </div>
-            {% else %}
-            <div id="pp-init" style="width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
-                {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
-            </div>
-            {% endif %}
-            <!-- Live preview replaces avatar after file is picked -->
-            <img id="pp-preview" src="" alt="Preview"
-                 style="display:none;width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #2563eb;position:absolute;top:0;left:0;">
-        </div>
+<!-- ── Account Header ───────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;border:none;">
+  <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+    <!-- Avatar -->
+    <div style="flex-shrink:0;">
+      {% if current_user.profile_image_url %}
+      <img src="{{ current_user.profile_image_url }}" alt="Profile"
+           style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.25);"
+           onerror="this.style.display='none';document.getElementById('hdr-init').style.display='flex';">
+      <div id="hdr-init" style="display:none;width:72px;height:72px;border-radius:50%;background:#2563eb;font-size:1.8rem;font-weight:700;align-items:center;justify-content:center;">
+        {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+      </div>
+      {% else %}
+      <div style="width:72px;height:72px;border-radius:50%;background:#2563eb;font-size:1.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
+        {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+      </div>
+      {% endif %}
     </div>
-
-    <!-- Upload form -->
-    <form id="pp-form" method="POST" action="{{ url_for('profile_photo_upload') }}" enctype="multipart/form-data">
-        <!-- Hidden file input — triggered by the button below -->
-        <input type="file" id="pp-input" name="profile_photo"
-               accept="image/*"
-               style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px;"
-               onchange="ppFileChosen(this)">
-
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;">
-            <!-- Trigger button — calls click() on the hidden input -->
-            <button type="button" id="pp-choose-btn"
-                    onclick="document.getElementById('pp-input').click()"
-                    class="btn btn-primary">
-                📷 {{ 'Change Photo' if current_user.profile_image_url else 'Upload Photo' }}
-            </button>
-            <!-- Save button — only shown after a file is chosen -->
-            <button type="submit" id="pp-save-btn"
-                    class="btn btn-success"
-                    style="display:none;">
-                ✓ Save Photo
-            </button>
-        </div>
-        <p id="pp-chosen-name" style="text-align:center;color:#4a5568;font-size:0.85rem;margin-bottom:6px;display:none;"></p>
-    </form>
-
-    <!-- Remove button -->
-    {% if current_user.profile_image_url %}
-    <div style="text-align:center;margin-top:4px;">
-        <form method="POST" action="{{ url_for('profile_photo_remove') }}"
-              onsubmit="return confirm('Remove your profile picture?');">
-            <button type="submit" class="btn btn-danger btn-sm">Remove Photo</button>
-        </form>
+    <!-- Name & badge -->
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:1.3rem;font-weight:800;line-height:1.2;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ current_user.first_name or '' }} {{ current_user.last_name or '' }}
+        {% if not (current_user.first_name or current_user.last_name) %}
+          <span style="color:rgba(255,255,255,.5);font-style:italic;font-weight:400;">Add your name below</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        {% if current_user.is_admin %}
+        <span style="background:#fbbf24;color:#1a202c;font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.4px;">🛡️ ADMIN</span>
+        {% endif %}
+        <span style="background:rgba(255,255,255,.15);color:#e2e8f0;font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:20px;">🏪 JHE Haul Member</span>
+        {% if current_user.city or current_user.zip_code %}
+        <span style="color:rgba(255,255,255,.6);font-size:.82rem;">📍 {{ [current_user.city, current_user.zip_code]|select|join(' ') }}</span>
+        {% endif %}
+      </div>
+      <div style="color:rgba(255,255,255,.45);font-size:.77rem;margin-top:6px;">
+        Member since {{ current_user.created_at.strftime('%B %Y') if current_user.created_at else '—' }}
+      </div>
     </div>
-    {% endif %}
-
-    <p style="text-align:center;color:#a0aec0;font-size:0.78rem;margin-top:10px;margin-bottom:0;">
-        JPG, PNG, GIF, WebP · Max 5 MB · Works on iPhone &amp; Android
-    </p>
+  </div>
 </div>
+
+<!-- ── Quick Links ───────────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <h3 style="margin-bottom:14px;">My Account</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+    <a href="{{ url_for('my_listings') }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a202c;font-weight:600;font-size:.85rem;text-align:center;transition:border-color .15s;">
+      <span style="font-size:1.6rem;">📦</span>
+      My Listings
+      {% if listing_count > 0 %}
+      <span style="background:#2563eb;color:#fff;font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:10px;">{{ listing_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('marketplace') }}?listing_type=property_sale" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a202c;font-weight:600;font-size:.85rem;text-align:center;">
+      <span style="font-size:1.6rem;">🏠</span>
+      For Sale
+    </a>
+    <a href="{{ url_for('marketplace') }}?listing_type=rental" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a202c;font-weight:600;font-size:.85rem;text-align:center;">
+      <span style="font-size:1.6rem;">🔑</span>
+      Rentals
+    </a>
+    <a href="{{ url_for('marketplace') }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a202c;font-weight:600;font-size:.85rem;text-align:center;">
+      <span style="font-size:1.6rem;">🛍️</span>
+      Marketplace
+    </a>
+    <a href="{{ url_for('sell') }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;text-decoration:none;color:#15803d;font-weight:700;font-size:.85rem;text-align:center;">
+      <span style="font-size:1.6rem;">➕</span>
+      List Something
+    </a>
+    <a href="#profile-settings" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;text-decoration:none;color:#1a202c;font-weight:600;font-size:.85rem;text-align:center;">
+      <span style="font-size:1.6rem;">⚙️</span>
+      Settings
+    </a>
+  </div>
+</div>
+
+<!-- ── Profile Picture ───────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <h3 style="margin-bottom:16px;">Profile Picture</h3>
+
+  <div style="display:flex;justify-content:center;margin-bottom:18px;">
+    <div style="position:relative;display:inline-block;">
+      {% if current_user.profile_image_url %}
+      <img src="{{ current_user.profile_image_url }}" alt="Profile picture" id="pp-current"
+           style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0;"
+           onerror="this.style.display='none';document.getElementById('pp-init').style.display='flex';">
+      <div id="pp-init" style="display:none;width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;align-items:center;justify-content:center;">
+        {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+      </div>
+      {% else %}
+      <div id="pp-init" style="width:96px;height:96px;border-radius:50%;background:#2563eb;color:#fff;font-size:2.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
+        {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
+      </div>
+      {% endif %}
+      <img id="pp-preview" src="" alt="Preview"
+           style="display:none;width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #2563eb;position:absolute;top:0;left:0;">
+    </div>
+  </div>
+
+  <form id="pp-form" method="POST" action="{{ url_for('profile_photo_upload') }}" enctype="multipart/form-data">
+    <input type="file" id="pp-input" name="profile_photo" accept="image/*"
+           style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px;"
+           onchange="ppFileChosen(this)">
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;">
+      <button type="button" id="pp-choose-btn" onclick="document.getElementById('pp-input').click()" class="btn btn-primary">
+        📷 {{ 'Change Photo' if current_user.profile_image_url else 'Upload Photo' }}
+      </button>
+      <button type="submit" id="pp-save-btn" class="btn btn-success" style="display:none;">✓ Save Photo</button>
+    </div>
+    <p id="pp-chosen-name" style="text-align:center;color:#4a5568;font-size:.85rem;margin-bottom:6px;display:none;"></p>
+  </form>
+
+  {% if current_user.profile_image_url %}
+  <div style="text-align:center;margin-top:4px;">
+    <form method="POST" action="{{ url_for('profile_photo_remove') }}"
+          onsubmit="return confirm('Remove your profile picture?');">
+      <button type="submit" class="btn btn-danger btn-sm">Remove Photo</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <p style="text-align:center;color:#a0aec0;font-size:.78rem;margin-top:10px;margin-bottom:0;">
+    JPG, PNG, GIF, WebP · Max 5 MB
+  </p>
+</div>
+
+<!-- ── Profile Settings ──────────────────────────────────────────────────── -->
+<div class="card" id="profile-settings" style="margin-bottom:16px;">
+  <h3 style="margin-bottom:4px;">Profile Settings</h3>
+  <p style="color:#718096;font-size:.88rem;margin-bottom:18px;">Your information is never shared publicly without your consent.</p>
+  <hr style="margin-bottom:18px;">
+
+  <form method="POST" action="{{ url_for('profile_update') }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="form-group">
+        <label>First Name</label>
+        <input name="first_name" value="{{ current_user.first_name or '' }}" placeholder="First name">
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input name="last_name" value="{{ current_user.last_name or '' }}" placeholder="Last name">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input value="{{ current_user.email or '' }}" disabled>
+      <small>Email is managed by your Google or GitHub account and cannot be changed here.</small>
+    </div>
+
+    <div class="form-group">
+      <label>Phone</label>
+      <input name="phone" type="tel"
+             value="{{ current_user.phone_formatted if current_user.phone else '' }}"
+             placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="form-group">
+        <label>City</label>
+        <input name="city" value="{{ current_user.city or '' }}" placeholder="Minneapolis">
+      </div>
+      <div class="form-group">
+        <label>ZIP Code</label>
+        <input name="zip_code" value="{{ current_user.zip_code or '' }}"
+               placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric"
+               oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
+        <small>Minnesota &amp; Wisconsin only</small>
+      </div>
+    </div>
+
+    <hr style="margin:18px 0 14px;">
+    <h4 style="margin-bottom:14px;">📱 SMS Notifications</h4>
+    <div class="form-group">
+      <label class="check-label">
+        <input type="checkbox" name="notify_sms" value="1" id="notify_sms_chk"
+               {% if current_user.notify_sms %}checked{% endif %}
+               onchange="toggleSmsConsent(this.checked)">
+        <span>Enable SMS text notifications</span>
+      </label>
+      <small style="color:#718096;">Requires a verified phone number. Message and data rates may apply.</small>
+    </div>
+    <div id="sms-consent-row" style="display:{% if current_user.notify_sms %}block{% else %}none{% endif %};">
+      <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;">
+        <label class="check-label" style="align-items:flex-start;">
+          <input type="checkbox" name="sms_consent" value="1"
+                 {% if current_user.sms_consent %}checked{% endif %}>
+          <span style="font-size:.87rem;color:#2d3748;line-height:1.5;">
+            I agree to receive SMS notifications related to JHE Haul activity.
+            Message and data rates may apply. Uncheck to opt out at any time.
+            {% if current_user.sms_consent_at %}
+            <br><small style="color:#a0aec0;">Consented {{ current_user.sms_consent_at | ct }}</small>
+            {% endif %}
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success" style="margin-top:18px;">Save Changes</button>
+  </form>
+</div>
+
+<!-- ── Phone Verification ────────────────────────────────────────────────── -->
+{% if current_user.phone %}
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+    <div>
+      <h3 style="margin:0 0 3px;">Phone Verification</h3>
+      <p style="color:#718096;margin:0;font-size:.87rem;">Verify your number to activate SMS notifications.</p>
+    </div>
+    {% if current_user.phone_verified %}
+    <span style="background:#dcfce7;color:#15803d;font-weight:700;font-size:.85rem;padding:5px 14px;border-radius:20px;">✓ Verified</span>
+    {% else %}
+    <span style="background:#fef9c3;color:#92400e;font-weight:700;font-size:.85rem;padding:5px 14px;border-radius:20px;">Not Verified</span>
+    {% endif %}
+  </div>
+
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+    <div style="font-weight:600;font-size:.9rem;color:#1a202c;">{{ current_user.phone_formatted }}</div>
+    {% if current_user.phone_verified %}
+    <div style="font-size:.83rem;color:#15803d;margin-top:4px;">Verified — SMS notifications are active.</div>
+    {% else %}
+    <div style="font-size:.83rem;color:#718096;margin-top:4px;">Verify this number to receive SMS notifications.</div>
+    {% endif %}
+  </div>
+
+  {% if not current_user.phone_verified %}
+  <form method="POST" action="{{ url_for('send_phone_verify') }}"
+        style="margin-bottom:{% if current_user.phone_verify_code %}12px{% else %}0{% endif %};">
+    <button type="submit" class="btn btn-outline btn-sm">📱 Send Verification Code</button>
+  </form>
+  {% if current_user.phone_verify_code %}
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-top:10px;">
+    <p style="font-size:.88rem;color:#92400e;margin:0 0 12px;font-weight:600;">
+      Code sent! Enter the 6-digit code from your text message:
+    </p>
+    <form method="POST" action="{{ url_for('verify_phone') }}"
+          style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input name="verify_code" type="text" inputmode="numeric"
+             maxlength="6" pattern="\d{6}" placeholder="000000"
+             autocomplete="one-time-code"
+             style="width:140px;font-size:1.2rem;letter-spacing:6px;text-align:center;font-weight:700;margin:0;">
+      <button type="submit" class="btn btn-success btn-sm">✓ Verify</button>
+    </form>
+    <p style="font-size:.77rem;color:#a0aec0;margin:8px 0 0;">
+      Expires in 10 minutes. Didn't receive it? Click "Send Verification Code" to resend.
+    </p>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Invite Friends ────────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:16px;">
+  <h3 style="margin-bottom:4px;">Invite Friends to JHE Haul</h3>
+  <p style="color:#718096;margin-bottom:18px;font-size:.92rem;">
+    Invite friends, family, and neighbors to join your local marketplace.
+  </p>
+  <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:10px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <input id="invite-link" value="{{ invite_url }}" readonly
+             style="flex:1;min-width:180px;background:#fff;border:1px solid #bee3f8;border-radius:6px;padding:7px 10px;font-size:.85rem;color:#2d3748;">
+      <button onclick="copyInviteLink(this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
+      <button onclick="shareInviteLink()" class="btn btn-primary btn-sm" style="white-space:nowrap;">🔗 Share</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Account ────────────────────────────────────────────────────── -->
+<div class="card" style="border:1px solid #fce4ec;">
+  <h3 style="margin-bottom:8px;color:#c62828;">Delete Account</h3>
+  <p style="color:#718096;margin-bottom:16px;font-size:.91rem;">
+    This permanently deletes your account, all your listings, and all associated data.
+    <strong>This cannot be undone.</strong>
+  </p>
+  <div id="delete-confirm-area" style="display:none;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:14px 16px;margin-bottom:14px;">
+    <p style="font-size:.88rem;color:#7f1d1d;font-weight:600;margin:0 0 10px;">
+      Type <strong>DELETE</strong> to confirm permanent account deletion:
+    </p>
+    <form method="POST" action="{{ url_for('delete_account') }}" id="delete-form">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" name="confirm_delete" id="delete-input"
+               placeholder="Type DELETE"
+               style="flex:1;min-width:150px;font-size:.95rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;border:1.5px solid #f87171;border-radius:6px;margin:0;"
+               oninput="updateDeleteBtn(this.value)">
+        <button type="submit" id="delete-submit-btn" class="btn btn-danger btn-sm" disabled>
+          🗑️ Delete Forever
+        </button>
+      </div>
+    </form>
+  </div>
+  <button type="button" onclick="document.getElementById('delete-confirm-area').style.display='block';this.style.display='none';"
+          class="btn btn-danger btn-sm" id="delete-show-btn">
+    Delete My Account
+  </button>
+</div>
+
+</div><!-- /max-width wrapper -->
 
 <script>
 function ppFileChosen(input) {
-    var file = input.files && input.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-        alert('That image is over 5 MB. Please choose a smaller photo.');
-        input.value = '';
-        return;
-    }
-
-    document.getElementById('pp-chosen-name').textContent = file.name;
-    document.getElementById('pp-chosen-name').style.display = 'block';
-    document.getElementById('pp-save-btn').style.display = 'inline-block';
-    document.getElementById('pp-choose-btn').textContent = '📷 Change Selection';
-
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var preview = document.getElementById('pp-preview');
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-        var init = document.getElementById('pp-init');
-        var curr = document.getElementById('pp-current');
-        if (init) init.style.display = 'none';
-        if (curr) curr.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('That image is over 5 MB. Please choose a smaller photo.');
+    input.value = ''; return;
+  }
+  document.getElementById('pp-chosen-name').textContent = file.name;
+  document.getElementById('pp-chosen-name').style.display = 'block';
+  document.getElementById('pp-save-btn').style.display = 'inline-block';
+  document.getElementById('pp-choose-btn').textContent = '📷 Change Selection';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('pp-preview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    var init = document.getElementById('pp-init');
+    var curr = document.getElementById('pp-current');
+    if (init) init.style.display = 'none';
+    if (curr) curr.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
 }
-</script>
-
-<div class="card" style="max-width:600px;margin:0 auto;">
-    <h2 style="margin-bottom:4px;">My Profile</h2>
-    <p style="color:#718096;margin-bottom:20px;font-size:0.92rem;">
-        Account type: <strong>{{ current_user.user_type.title() if current_user.user_type else 'Not set' }}</strong>
-    </p>
-    <hr>
-
-    <form method="POST" action="{{ url_for('profile_update') }}">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="form-group">
-                <label>First Name</label>
-                <input name="first_name" value="{{ current_user.first_name or '' }}" placeholder="First name">
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input name="last_name" value="{{ current_user.last_name or '' }}" placeholder="Last name">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Email</label>
-            <input value="{{ current_user.email or '' }}" disabled>
-            <small>Email is managed by your Google or GitHub account</small>
-        </div>
-
-        <div class="form-group">
-            <label>Phone</label>
-            <input name="phone" type="tel"
-                   value="{{ current_user.phone_formatted if current_user.phone else '' }}"
-                   placeholder="(555) 555-5555" maxlength="14" oninput="maskPhone(this)">
-        </div>
-
-        {% if current_user.user_type == 'customer' %}
-        <hr>
-        <h3 style="margin-bottom:14px;">SMS Notifications</h3>
-        <div class="form-group">
-            <label class="check-label">
-                <input type="checkbox" name="notify_sms" value="1" id="notify_sms_chk"
-                       {% if current_user.notify_sms %}checked{% endif %}
-                       onchange="toggleSmsConsent(this.checked)">
-                <span>Enable SMS text notifications</span>
-            </label>
-            <small style="color:#718096;">Requires a phone number above and verification below.</small>
-        </div>
-        <div id="sms-consent-row" style="display:{% if current_user.notify_sms %}block{% else %}none{% endif %};">
-            <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;">
-                <label class="check-label" style="align-items:flex-start;">
-                    <input type="checkbox" name="sms_consent" value="1"
-                           {% if current_user.sms_consent %}checked{% endif %}>
-                    <span style="font-size:0.87rem;color:#2d3748;line-height:1.5;">
-                        I agree to receive SMS notifications related to JHE Haul activity.
-                        Message and data rates may apply. Uncheck to opt out at any time.
-                        {% if current_user.sms_consent_at %}
-                        <br><small style="color:#a0aec0;">Consented {{ current_user.sms_consent_at | ct }}</small>
-                        {% endif %}
-                    </span>
-                </label>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if current_user.user_type == 'hauler' %}
-        <hr>
-        <h3 style="margin-bottom:14px;">Travel Preferences</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="form-group">
-                <label>Home ZIP Code</label>
-                <input name="home_zip" value="{{ current_user.home_zip or '' }}"
-                       placeholder="55401" maxlength="5" pattern="\d{5}" inputmode="numeric"
-                       oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)">
-            </div>
-            <div class="form-group">
-                <label>Max Travel Distance (miles)</label>
-                <input name="max_travel_miles" type="number" min="1" max="500"
-                       value="{{ current_user.max_travel_miles or '' }}" placeholder="e.g. 25">
-                <small>Jobs beyond this distance won't appear</small>
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="check-label">
-                <input type="checkbox" name="notify_new_jobs" value="1"
-                       {% if current_user.notify_new_jobs != False %}checked{% endif %}>
-                <span>Email me when new jobs are posted in my area</span>
-            </label>
-        </div>
-        <div class="form-group">
-            <label class="check-label">
-                <input type="checkbox" name="notify_sms" value="1" id="notify_sms_chk"
-                       {% if current_user.notify_sms %}checked{% endif %}
-                       onchange="toggleSmsConsent(this.checked)">
-                <span>Also send me SMS notifications</span>
-            </label>
-        </div>
-        <div id="sms-consent-row" style="display:{% if current_user.notify_sms %}block{% else %}none{% endif %};">
-            <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;margin-top:2px;">
-                <label class="check-label" style="align-items:flex-start;">
-                    <input type="checkbox" name="sms_consent" value="1"
-                           {% if current_user.sms_consent %}checked{% endif %}>
-                    <span style="font-size:0.87rem;color:#2d3748;line-height:1.5;">
-                        I agree to receive SMS notifications related to JHE Haul activity.
-                        Message and data rates may apply. Uncheck to opt out at any time.
-                        {% if current_user.sms_consent_at %}
-                        <br><small style="color:#a0aec0;">Consented {{ current_user.sms_consent_at | ct }}</small>
-                        {% endif %}
-                    </span>
-                </label>
-            </div>
-        </div>
-        {% endif %}
-
-        <button type="submit" class="btn btn-success">Save Changes</button>
-    </form>
-</div>
-
-<!-- Phone Verification -->
-{% if current_user.phone %}
-<div class="card" style="max-width:600px;margin:18px auto 0;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-        <div>
-            <h3 style="margin:0 0 3px;">Phone Verification</h3>
-            <p style="color:#718096;margin:0;font-size:0.87rem;">Verify your number to activate SMS notifications.</p>
-        </div>
-        {% if current_user.phone_verified %}
-        <span style="background:#dcfce7;color:#15803d;font-weight:700;font-size:0.85rem;padding:5px 14px;border-radius:20px;flex-shrink:0;">✓ Verified</span>
-        {% else %}
-        <span style="background:#fef9c3;color:#92400e;font-weight:700;font-size:0.85rem;padding:5px 14px;border-radius:20px;flex-shrink:0;">Not Verified</span>
-        {% endif %}
-    </div>
-
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-weight:600;font-size:0.9rem;color:#1a202c;">{{ current_user.phone_formatted }}</div>
-        {% if current_user.phone_verified %}
-        <div style="font-size:0.83rem;color:#15803d;margin-top:4px;">Verified — SMS notifications are active.</div>
-        {% else %}
-        <div style="font-size:0.83rem;color:#718096;margin-top:4px;">Verify this number to receive SMS notifications.</div>
-        {% endif %}
-    </div>
-
-    {% if not current_user.phone_verified %}
-    <form method="POST" action="{{ url_for('send_phone_verify') }}" style="margin-bottom:{% if current_user.phone_verify_code %}12px{% else %}0{% endif %};">
-        <button type="submit" class="btn btn-outline btn-sm">📱 Send Verification Code</button>
-    </form>
-    {% if current_user.phone_verify_code %}
-    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-top:10px;">
-        <p style="font-size:0.88rem;color:#92400e;margin:0 0 12px;font-weight:600;">
-            Code sent! Enter the 6-digit code from your text message:
-        </p>
-        <form method="POST" action="{{ url_for('verify_phone') }}"
-              style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input name="verify_code" type="text" inputmode="numeric"
-                   maxlength="6" pattern="\d{6}" placeholder="000000"
-                   autocomplete="one-time-code"
-                   style="width:140px;font-size:1.2rem;letter-spacing:6px;text-align:center;font-weight:700;margin:0;">
-            <button type="submit" class="btn btn-success btn-sm">✓ Verify</button>
-        </form>
-        <p style="font-size:0.77rem;color:#a0aec0;margin:8px 0 0;">
-            Expires in 10 minutes. Didn't get it? Click "Send Verification Code" again to resend.
-        </p>
-    </div>
-    {% endif %}
-    {% endif %}
-</div>
-{% endif %}
-
-<!-- Service ZIP Management (haulers only) -->
-{% if current_user.user_type == 'hauler' %}
-<div class="card" style="max-width:600px;margin:18px auto 0;">
-    <h3 style="margin-bottom:4px;">📍 Additional Service ZIPs</h3>
-    <p style="color:#718096;margin-bottom:6px;font-size:0.88rem;">
-        Your radius filter already covers jobs near your home ZIP. Use this list to add
-        <strong>specific ZIP codes</strong> outside your radius that you're willing to service —
-        you'll see those jobs and receive alerts for them too.
-    </p>
-
-    {% if service_zips %}
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;margin-top:10px;">
-        {% for sz in service_zips %}
-        <div style="display:inline-flex;align-items:center;gap:6px;background:#ebf8ff;border:1px solid #90cdf4;border-radius:20px;padding:4px 10px 4px 12px;font-size:0.85rem;font-weight:600;color:#2b6cb0;">
-            {{ sz.zip }}{% if sz.city %} <span style="font-weight:400;color:#4a90d9;">{{ sz.city }}</span>{% endif %}
-            <form method="POST" action="{{ url_for('hauler_service_zip_remove') }}" style="display:inline;margin:0;">
-                <input type="hidden" name="zip_code" value="{{ sz.zip }}">
-                <button type="submit" title="Remove {{ sz.zip }}"
-                        style="background:none;border:none;cursor:pointer;color:#c53030;font-size:1rem;line-height:1;padding:0 0 0 2px;"
-                        onclick="return confirm('Remove {{ sz.zip }} from your service area?');">×</button>
-            </form>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p style="color:#a0aec0;font-size:0.86rem;margin:10px 0 14px;font-style:italic;">No specific ZIPs added yet. Your radius from home ZIP {{ current_user.home_zip or '—' }} still applies.</p>
-    {% endif %}
-
-    <form method="POST" action="{{ url_for('hauler_service_zip_add') }}"
-          style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-        <div class="form-group" style="margin:0;flex:1;min-width:120px;">
-            <label style="font-size:0.85rem;margin-bottom:4px;display:block;">Add a ZIP code</label>
-            <input name="zip_code" placeholder="55401" maxlength="5" inputmode="numeric"
-                   pattern="\d{5}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,5)"
-                   style="margin:0;">
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm" style="margin-bottom:1px;">+ Add ZIP</button>
-    </form>
-    <p style="color:#a0aec0;font-size:0.78rem;margin-top:6px;">Up to 25 specific ZIPs · Minnesota &amp; Wisconsin only</p>
-</div>
-{% endif %}
-
-<!-- Ratings, Badges & Reviews -->
-{% if completed_count > 0 or badges or (current_user.user_type == 'hauler' and review_count > 0) %}
-<div class="card" style="max-width:600px;margin:18px auto 0;">
-
-    {% if badges %}
-    <h3 style="margin-bottom:10px;">Badges</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-        {% for b in badges %}
-        <div title="{{ b.desc }}" style="display:inline-flex;align-items:center;gap:6px;background:{{ b.color }}18;border:1.5px solid {{ b.color }};border-radius:20px;padding:5px 14px;font-size:0.88rem;font-weight:600;color:{{ b.color }};">
-            {{ b.icon }} {{ b.label }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if current_user.user_type == 'hauler' %}
-    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:{% if reviews %}18{% else %}0{% endif %}px;">
-        <div style="text-align:center;">
-            <div style="font-size:2rem;font-weight:800;color:#1a202c;line-height:1;">
-                {% if review_count > 0 %}{{ "%.1f"|format(avg_rating) }}{% else %}—{% endif %}
-            </div>
-            <div style="color:#f6c90e;font-size:1.3rem;letter-spacing:2px;">
-                {% if review_count > 0 %}
-                {% set full = avg_rating|int %}
-                {% for i in range(full) %}★{% endfor %}{% if avg_rating - full >= 0.5 %}★{% endif %}{% for i in range(5 - full - (1 if avg_rating - full >= 0.5 else 0)) %}☆{% endfor %}
-                {% else %}☆☆☆☆☆{% endif %}
-            </div>
-            <div style="font-size:0.82rem;color:#718096;">{{ review_count }} review{% if review_count != 1 %}s{% endif %}</div>
-        </div>
-        <div style="border-left:2px solid #e2e8f0;height:54px;"></div>
-        <div style="text-align:center;">
-            <div style="font-size:2rem;font-weight:800;color:#1a202c;line-height:1;">{{ completed_count }}</div>
-            <div style="font-size:0.82rem;color:#718096;">job{% if completed_count != 1 %}s{% endif %} completed</div>
-        </div>
-    </div>
-
-    {% if reviews %}
-    <hr style="margin:0 0 16px;">
-    <h4 style="margin-bottom:12px;">Recent Reviews</h4>
-    {% for r in reviews %}
-    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fafafa;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <span style="color:#f6c90e;font-size:1.1rem;">
-                {% for i in range(r.rating) %}★{% endfor %}{% for i in range(5 - r.rating) %}☆{% endfor %}
-            </span>
-            <span style="font-size:0.78rem;color:#a0aec0;">{{ r.created_at | ct }}</span>
-        </div>
-        {% if r.comment %}
-        <p style="margin:0;color:#4a5568;font-size:0.9rem;font-style:italic;">"{{ r.comment }}"</p>
-        {% endif %}
-    </div>
-    {% endfor %}
-    <a href="{{ url_for('hauler_earnings') }}" style="font-size:0.88rem;color:#2563eb;">View all reviews →</a>
-    {% endif %}
-
-    {% elif current_user.user_type == 'customer' %}
-    <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:1.8rem;font-weight:800;color:#1a202c;">{{ completed_count }}</span>
-        <span style="color:#718096;font-size:0.92rem;">job{% if completed_count != 1 %}s{% endif %} completed</span>
-    </div>
-    {% endif %}
-
-</div>
-{% endif %}
-
-<!-- Invite Links -->
-<div class="card" style="max-width:600px;margin:18px auto 0;">
-    <h3 style="margin-bottom:4px;">Invite Others to JHE Haul</h3>
-    <p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Share these links with friends, neighbors, or anyone looking for hauling help.</p>
-
-    <!-- Customer Invite -->
-    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-        <div style="font-weight:600;margin-bottom:6px;">👤 Customer Invite Link</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input id="link-customer" value="https://jhehaul.com/invite/customer" readonly
-                   style="flex:1;min-width:180px;background:#fff;border:1px solid #bee3f8;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
-            <button onclick="copyLink('link-customer', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
-            <button onclick="shareLink('customer')" class="btn btn-primary btn-sm" style="white-space:nowrap;">🔗 Share</button>
-        </div>
-    </div>
-
-    <!-- Hauler Invite -->
-    <div style="background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;padding:14px 16px;">
-        <div style="font-weight:600;margin-bottom:6px;">🚛 Hauler Invite Link</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input id="link-hauler" value="https://jhehaul.com/invite/hauler" readonly
-                   style="flex:1;min-width:180px;background:#fff;border:1px solid #9ae6b4;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
-            <button onclick="copyLink('link-hauler', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
-            <button onclick="shareLink('hauler')" class="btn btn-success btn-sm" style="white-space:nowrap;">🔗 Share</button>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Account -->
-<div class="card" style="max-width:600px;margin:18px auto 0;border:1px solid #fce4ec;">
-    <h3 style="margin-bottom:8px;color:#c62828;">Delete Account</h3>
-    <p style="color:#718096;margin-bottom:16px;font-size:0.91rem;">
-        This permanently deletes your account and all associated data. This cannot be undone.
-    </p>
-    <form method="POST" action="{{ url_for('delete_account') }}"
-          onsubmit="return confirm('Are you sure you want to delete your account? This cannot be undone.');">
-        <button type="submit" class="btn btn-danger btn-sm">Delete My Account</button>
-    </form>
-</div>
-
-<script>
 function toggleSmsConsent(checked) {
-    var row = document.getElementById('sms-consent-row');
-    if (row) row.style.display = checked ? 'block' : 'none';
+  var row = document.getElementById('sms-consent-row');
+  if (row) row.style.display = checked ? 'block' : 'none';
 }
 function maskPhone(input) {
-    var x = input.value.replace(/\D/g, '').slice(0, 10);
-    if (x.length === 0) { input.value = ''; return; }
-    if (x.length <= 3) { input.value = '(' + x; }
-    else if (x.length <= 6) { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3); }
-    else { input.value = '(' + x.slice(0,3) + ') ' + x.slice(3,6) + '-' + x.slice(6); }
+  var x = input.value.replace(/\D/g,'').slice(0,10);
+  if (!x.length) { input.value=''; return; }
+  if (x.length<=3) input.value='('+x;
+  else if (x.length<=6) input.value='('+x.slice(0,3)+') '+x.slice(3);
+  else input.value='('+x.slice(0,3)+') '+x.slice(3,6)+'-'+x.slice(6);
 }
-function copyLink(inputId, btn) {
-    var input = document.getElementById(inputId);
-    input.select(); input.setSelectionRange(0, 99999);
-    try { navigator.clipboard.writeText(input.value); } catch(e) { document.execCommand('copy'); }
-    var orig = btn.textContent;
-    btn.textContent = '✅ Copied!';
-    setTimeout(function(){ btn.textContent = orig; }, 2000);
+function copyInviteLink(btn) {
+  var input = document.getElementById('invite-link');
+  input.select(); input.setSelectionRange(0,99999);
+  try { navigator.clipboard.writeText(input.value); } catch(e) { document.execCommand('copy'); }
+  var orig = btn.textContent;
+  btn.textContent = '✅ Copied!';
+  setTimeout(function(){ btn.textContent = orig; }, 2000);
 }
-function shareLink(type) {
-    var url, title, text;
-    if (type === 'customer') {
-        url = 'https://jhehaul.com/invite/customer';
-        title = 'Post a Junk Removal Job - JHE Haul';
-        text = 'Post your junk hauling job on JHE Haul and get bids from local haulers!';
-    } else {
-        url = 'https://jhehaul.com/invite/hauler';
-        title = 'Become a Local Hauler - JHE Haul';
-        text = 'Find junk hauling jobs in your area, submit bids, and earn with JHE Haul!';
-    }
-    if (navigator.share) {
-        navigator.share({ title: title, text: text, url: url });
-    } else {
-        window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
-    }
+function shareInviteLink() {
+  var url   = document.getElementById('invite-link').value;
+  var title = 'Join JHE Haul – Local Marketplace';
+  var text  = 'Buy, sell, and rent locally on JHE Haul — your neighborhood marketplace.';
+  if (navigator.share) {
+    navigator.share({ title: title, text: text, url: url });
+  } else {
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(title)
+      + '&body=' + encodeURIComponent(text + '\n\n' + url);
+  }
+}
+function updateDeleteBtn(val) {
+  document.getElementById('delete-submit-btn').disabled = (val.trim().toUpperCase() !== 'DELETE');
 }
 </script>
 {% endblock %}

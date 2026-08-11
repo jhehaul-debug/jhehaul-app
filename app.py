@@ -218,6 +218,16 @@ with app.app_context():
     # gallery_photos table is created portably (SQLite + PostgreSQL) by
     # db.create_all() above via the GalleryPhoto model in models.py.
 
+    # city / zip_code must be migrated before any User query below
+    try:
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100)"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS zip_code VARCHAR(10)"))
+        db.session.commit()
+        logging.info("Column migration: users.city / users.zip_code ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.city/zip_code) skipped: %s", _e)
+
     try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")

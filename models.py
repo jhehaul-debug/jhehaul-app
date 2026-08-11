@@ -35,6 +35,8 @@ class User(UserMixin, db.Model):
     profile_photo_data = db.Column(db.LargeBinary, nullable=True)
     profile_photo_content_type = db.Column(db.String(80), nullable=True)
     is_suspended = db.Column(db.Boolean, default=False)
+    city = db.Column(db.String(100), nullable=True)
+    zip_code = db.Column(db.String(10), nullable=True)
 
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
