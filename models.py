@@ -333,6 +333,7 @@ class Listing(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     sold_at = db.Column(db.DateTime, nullable=True)
     expired_at = db.Column(db.DateTime, nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=True)   # seller-set expiry date
 
     # ── Housing & Real Estate fields ──────────────────────────────────────────
     # listing_type: 'item' | 'property_sale' | 'rental'

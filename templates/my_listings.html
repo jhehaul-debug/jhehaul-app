@@ -123,6 +123,9 @@
         {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }} &nbsp;·&nbsp; {% endif %}
         Listed {{ listing.created_at.strftime('%b %-d, %Y') }}
         {% if listing.photos|length > 0 %}&nbsp;·&nbsp; {{ listing.photos|length }} photo{{ 's' if listing.photos|length != 1 }}{% endif %}
+        {% if listing.expires_at and listing.status == 'active' %}
+          &nbsp;·&nbsp; <span title="This listing expires on {{ listing.expires_at.strftime('%b %-d, %Y') }}" style="color:#d97706">⏰ Expires {{ listing.expires_at.strftime('%b %-d') }}</span>
+        {% endif %}
       </div>
 
       <div class="listing-status-row">
@@ -166,6 +169,12 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="active">
             <button type="submit" class="btn-reactivate" title="Reactivate listing">↺ Reactivate</button>
+          </form>
+        {% elif listing.status == 'expired' %}
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="active">
+            <button type="submit" class="btn-reactivate" title="Renew this listing for 30 more days" style="background:#f59e0b;border-color:#f59e0b;color:#fff">🔄 Renew</button>
           </form>
         {% endif %}
       {% endif %}

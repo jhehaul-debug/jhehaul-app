@@ -23,7 +23,7 @@ CHECK_INTERVAL = 30 * 60  # 30 minutes between checks
 def _run_checks(app):
     """Run one full expiry check cycle inside an app context."""
     with app.app_context():
-        from models import db, Job, Bid, User
+        from models import db, Job, Bid, User, Listing
         from email_service import (
             notify_customer_pending_bids_reminder,
             notify_customer_job_expiring_soon,
@@ -33,6 +33,28 @@ def _run_checks(app):
         from sms_service import notify_customer_appointment_reminder_sms
 
         now = datetime.now()
+
+        # ── Listing auto-expiry ───────────────────────────────────────────────
+        expired_listings = Listing.query.filter(
+            Listing.status.in_(['active', 'reserved']),
+            Listing.expires_at != None,   # noqa: E711
+            Listing.expires_at <= now,
+        ).all()
+
+        listing_expired_count = 0
+        for lst in expired_listings:
+            try:
+                lst.status = 'expired'
+                lst.expired_at = now
+                db.session.commit()
+                listing_expired_count += 1
+                log.info("Listing #%s auto-expired (expires_at: %s)", lst.id, lst.expires_at)
+            except Exception as e:
+                log.error("Listing expiry error for listing #%s: %s", lst.id, e)
+                db.session.rollback()
+
+        if listing_expired_count:
+            log.info("Listing expiry run: expired=%d", listing_expired_count)
         today = now.date()
         tomorrow = (today + timedelta(days=1)).isoformat()
 

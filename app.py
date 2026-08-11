@@ -605,6 +605,17 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (listings property fields) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text(
+            "ALTER TABLE listings ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP"
+        ))
+        db.session.commit()
+        logging.info("Column migration: listings.expires_at ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listings.expires_at) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

@@ -358,6 +358,19 @@
     </div>
     {% endif %}
 
+    <div class="section">
+      <h2>⏰ Listing Expiry</h2>
+      <div class="form-group">
+        <label class="form-label">Expires On <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(max 365 days out)</span></label>
+        <input class="form-control" type="date" name="expires_at"
+          value="{{ listing.expires_at.strftime('%Y-%m-%d') if listing.expires_at else '' }}"
+          style="max-width:220px">
+        <p style="font-size:.78rem;color:#6b7280;margin:6px 0 0">
+          Your listing moves to 'Expired' on this date. Leave blank to use the default (30 days from today). You can renew it anytime from My Listings.
+        </p>
+      </div>
+    </div>
+
     <div class="edit-actions">
       <a href="{{ url_for('my_listings') }}" class="btn-cancel">Cancel</a>
       <button type="submit" class="btn-save">Save Changes</button>

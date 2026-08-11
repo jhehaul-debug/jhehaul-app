@@ -558,6 +558,28 @@ def _apply_listing_fields(listing, form):
             if not listing.city:  listing.city  = zc.city
             if not listing.state: listing.state = zc.state
 
+    # Optional seller-set expiry date
+    # Active/reserved listings must always have a future expiry to prevent perpetual listings.
+    _exp = form.get('expires_at', '').strip()
+    from datetime import datetime as _dt_exp, timedelta as _td_exp
+    _now_exp = _dt_exp.now()
+    if _exp:
+        try:
+            _parsed_exp = _dt_exp.strptime(_exp, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            # Accept dates in the future and at most 365 days out
+            if _now_exp < _parsed_exp <= _now_exp + _td_exp(days=365):
+                listing.expires_at = _parsed_exp
+            # Out-of-range: fall back to 30-day default rather than clearing
+            elif listing.expires_at is None or listing.expires_at <= _now_exp:
+                listing.expires_at = _now_exp + _td_exp(days=30)
+        except ValueError:
+            if listing.expires_at is None or listing.expires_at <= _now_exp:
+                listing.expires_at = _now_exp + _td_exp(days=30)
+    else:
+        # Blank — enforce a 30-day default so active listings are never perpetual
+        if listing.expires_at is None or listing.expires_at <= _now_exp:
+            listing.expires_at = _now_exp + _td_exp(days=30)
+
     if listing.is_property:
         # Property-specific fields
         listing.property_type   = form.get('property_type',   '').strip() or None
@@ -771,6 +793,21 @@ def listing_step(listing_id, step):
                 raw_opts = request.form.getlist('delivery_option')
                 valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
                 listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+            # Parse optional seller-set expiry date (shared by both item and property flows)
+            _exp5 = request.form.get('expires_at', '').strip()
+            if _exp5:
+                try:
+                    from datetime import datetime as _dt5, timedelta as _td5
+                    _parsed5 = _dt5.strptime(_exp5, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                    # Must be in the future and no more than 365 days out
+                    _now5 = _dt5.now()
+                    if _now5 < _parsed5 <= _now5 + _td5(days=365):
+                        listing.expires_at = _parsed5
+                    # else silently ignore out-of-range values
+                except ValueError:
+                    pass  # ignore malformed date
+            else:
+                listing.expires_at = None
 
         elif step == 6:
             # Publish — full server-side validation including photos
@@ -781,6 +818,10 @@ def listing_step(listing_id, step):
                     flash(msg, "error")
                 return redirect(url_for('listing_step', listing_id=listing_id, step=first_step))
             listing.status = 'active'
+            # Set a default 30-day expiry if the seller didn't choose one
+            if not listing.expires_at:
+                from datetime import datetime as _dt_pub, timedelta as _td_pub
+                listing.expires_at = _dt_pub.now() + _td_pub(days=30)
             db.session.commit()
             flash("Your listing is now live! 🎉", "success")
             return redirect(url_for('my_listings'))
@@ -792,11 +833,13 @@ def listing_step(listing_id, step):
         return redirect(url_for('listing_step', listing_id=listing_id, step=6))
 
     _tpl = 'property_wizard.html' if listing.is_property else 'listing_wizard.html'
+    from datetime import datetime as _dt_now
     return render_template(_tpl,
                            listing=listing,
                            step=step,
                            total_steps=TOTAL_STEPS,
-                           categories=categories)
+                           categories=categories,
+                           now=_dt_now.now())
 
 
 @app.route("/listing/<int:listing_id>/photo/upload", methods=["POST"])
@@ -974,17 +1017,25 @@ def listing_set_status(listing_id):
         flash("Invalid status.", "error")
         return redirect(url_for('my_listings'))
     # Only allow transitioning from sensible states
-    if new_status == 'active' and listing.status not in ('sold', 'reserved'):
-        flash("Cannot reactivate a listing that is not sold or reserved.", "error")
+    if new_status == 'active' and listing.status not in ('sold', 'reserved', 'expired'):
+        flash("Cannot reactivate a listing that is not sold, reserved, or expired.", "error")
         return redirect(url_for('my_listings'))
     if new_status in ('sold', 'reserved') and listing.status not in ('active', 'reserved', 'sold'):
         flash("Only active or sold/reserved listings can be updated.", "error")
         return redirect(url_for('my_listings'))
+    prior_status = listing.status   # capture before overwriting
     listing.status = new_status
     if new_status == 'sold':
         listing.sold_at = datetime.datetime.utcnow()
     elif new_status == 'active':
         listing.sold_at = None
+        if prior_status == 'expired':
+            # Renewing from expired: always give a fresh 30-day window
+            listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
+            listing.expired_at = None
+        elif not listing.expires_at or listing.expires_at <= datetime.datetime.now():
+            # Reactivating from sold/reserved with no valid future expiry — reset to 30 days
+            listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
     db.session.commit()
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
     flash(labels[new_status], "success")

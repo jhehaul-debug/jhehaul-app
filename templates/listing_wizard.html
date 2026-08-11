@@ -504,6 +504,16 @@
           </div>
         </label>
       </div>
+      <div class="form-group" style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0">
+        <label class="form-label" style="font-size:.87rem;font-weight:600;color:#374151;display:block;margin-bottom:5px">
+          ⏰ Listing Expires On <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(max 365 days out)</span>
+        </label>
+        <input class="form-control" type="date" name="expires_at"
+          value="{{ listing.expires_at.strftime('%Y-%m-%d') if listing.expires_at else '' }}"
+          min="{{ now.strftime('%Y-%m-%d') }}"
+          style="max-width:220px">
+        <p style="font-size:.78rem;color:#9ca3af;margin:4px 0 0">Your listing moves to 'Expired' on this date. Leave blank to use the default (30 days). You can renew anytime from My Listings.</p>
+      </div>
       <div class="wizard-nav">
         <a href="{{ url_for('listing_step', listing_id=listing.id, step=4) }}" class="btn-back">← Back</a>
         <button type="submit" class="btn-next">Preview →</button>
