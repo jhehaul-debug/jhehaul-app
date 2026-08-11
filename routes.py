@@ -1129,6 +1129,12 @@ def listing_edit(listing_id):
             _apply_listing_fields(listing, request.form)
             return render_template('listing_edit.html', listing=listing, categories=categories)
 
+        # If the seller extended the expiry date beyond the 3-day reminder window,
+        # reset the flag so they will receive the reminder again for the new deadline.
+        from datetime import datetime as _dt_now, timedelta as _td_now
+        if (listing.expires_at and
+                listing.expires_at > _dt_now.now() + _td_now(days=3)):
+            listing.expiry_reminder_sent = False
         db.session.commit()
         flash("Listing updated.", "success")
         return redirect(url_for('my_listings'))
@@ -1192,9 +1198,11 @@ def listing_set_status(listing_id):
             # Renewing from expired: always give a fresh 30-day window
             listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
             listing.expired_at = None
+            listing.expiry_reminder_sent = False  # new expiry cycle — reset reminder
         elif not listing.expires_at or listing.expires_at <= datetime.datetime.now():
             # Reactivating from sold/reserved with no valid future expiry — reset to 30 days
             listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
+            listing.expiry_reminder_sent = False  # new expiry cycle — reset reminder
     # Expire any open offers when the listing is no longer available
     if new_status in ('sold', 'reserved'):
         expire_pending_offers(listing_id)

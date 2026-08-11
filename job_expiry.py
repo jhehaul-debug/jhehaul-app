@@ -30,6 +30,7 @@ def _run_checks(app):
             notify_admin_job_expired,
             notify_customer_appointment_reminder,
             notify_seller_listing_expired,
+            notify_seller_listing_expiring_soon,
         )
         from sms_service import (
             notify_customer_appointment_reminder_sms,
@@ -74,6 +75,58 @@ def _run_checks(app):
 
         if listing_expired_count:
             log.info("Listing expiry run: expired=%d", listing_expired_count)
+
+        # ── Listing 3-day expiry reminder ─────────────────────────────────────
+        reminder_window_start = now + timedelta(days=3)
+        expiring_soon = Listing.query.filter(
+            Listing.status.in_(['active', 'reserved']),
+            Listing.expires_at != None,          # noqa: E711
+            Listing.expires_at > now,
+            Listing.expires_at <= reminder_window_start,
+            Listing.expiry_reminder_sent == False,  # noqa: E712
+        ).all()
+
+        listing_reminder_count = 0
+        for lst in expiring_soon:
+            try:
+                seller = User.query.get(lst.seller_id) if lst.seller_id else None
+                email_ok = False
+                if seller and seller.email:
+                    try:
+                        email_ok = notify_seller_listing_expiring_soon(
+                            seller.email, lst.id, lst.title, lst.expires_at
+                        )
+                    except Exception as e:
+                        log.error(
+                            "Listing expiry reminder email failed (listing #%s): %s",
+                            lst.id, e,
+                        )
+                else:
+                    # No email address — nothing to send; still mark sent so we
+                    # don't retry on every check cycle for a seller with no email.
+                    email_ok = True
+
+                if email_ok:
+                    lst.expiry_reminder_sent = True
+                    db.session.commit()
+                    listing_reminder_count += 1
+                    log.info(
+                        "Listing #%s — 3-day expiry reminder sent (expires_at: %s)",
+                        lst.id, lst.expires_at,
+                    )
+                else:
+                    log.warning(
+                        "Listing #%s — 3-day expiry reminder email failed; "
+                        "will retry on next cycle",
+                        lst.id,
+                    )
+            except Exception as e:
+                log.error("Listing expiry reminder error for listing #%s: %s", lst.id, e)
+                db.session.rollback()
+
+        if listing_reminder_count:
+            log.info("Listing expiry run: 3day_reminders=%d", listing_reminder_count)
+
         today = now.date()
         tomorrow = (today + timedelta(days=1)).isoformat()
 

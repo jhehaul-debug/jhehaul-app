@@ -617,6 +617,20 @@ with app.app_context():
         logging.info("Column migration (listings.expires_at) skipped: %s", _e)
 
     try:
+        from sqlalchemy import inspect as _inspect, text as _text
+        _insp = _inspect(db.engine)
+        _cols = [c['name'] for c in _insp.get_columns('listings')]
+        if 'expiry_reminder_sent' not in _cols:
+            db.session.execute(_text(
+                "ALTER TABLE listings ADD COLUMN expiry_reminder_sent BOOLEAN DEFAULT FALSE"
+            ))
+            db.session.commit()
+        logging.info("Column migration: listings.expiry_reminder_sent ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listings.expiry_reminder_sent) skipped: %s", _e)
+
+    try:
         from sqlalchemy import text as _text
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS item_type VARCHAR(20) DEFAULT 'custom'"))
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS listing_id INTEGER REFERENCES listings(id)"))

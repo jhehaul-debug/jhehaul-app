@@ -493,6 +493,39 @@ def notify_seller_listing_expired(seller_email, listing_id, title):
     )
 
 
+def notify_seller_listing_expiring_soon(seller_email, listing_id, title, expires_at):
+    """Notify the seller that their listing expires in ~3 days so they can extend it."""
+    import datetime as _dt
+    safe_title = title or f"Listing #{listing_id}"
+    if isinstance(expires_at, _dt.datetime):
+        expires_str = expires_at.strftime("%B %-d, %Y")
+    else:
+        expires_str = str(expires_at)
+    edit_url = f"{_APP_URL}/listing/{listing_id}/edit"
+    body = f"""
+    <p>Your listing <strong>{safe_title}</strong> is set to expire on
+       <strong>{expires_str}</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Expires:</strong> {expires_str}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Expiring Soon</span></p>
+    </div>
+    <p>Head to your listing's edit page to push the expiry date out — it only takes a
+       few seconds.</p>
+    <a href="{edit_url}" class="btn">Extend My Listing →</a>"""
+    return send_email(
+        seller_email,
+        f"Your listing \"{safe_title}\" expires on {expires_str} — extend it now",
+        _html(
+            "Your Listing Is Expiring Soon",
+            "Extend the expiry date so buyers can still find your item.",
+            "⏳ Expiring Soon",
+            body,
+        ),
+        'seller_listing_expiring_soon',
+    )
+
+
 def notify_customer_pending_bids_reminder(customer_email, job_id, bid_count):
     """24-hour inactivity reminder — bids waiting for review."""
     body = f"""
