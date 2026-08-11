@@ -290,43 +290,64 @@
     </div>
 </div>
 
-{# ── Before/After Gallery ── #}
+{# ── Featured Listings ── #}
+{% if gallery_photos %}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">
-        <h2>JHE Haul in Action</h2>
-        <p>Deliveries, pickups, and moves — see what JHE Haul delivery can do for your marketplace purchase.</p>
+        <h2>⭐ Featured Listings</h2>
+        <p>Handpicked deals and highlights from the JHE Haul marketplace.</p>
     </div>
-    {% if gallery_photos %}
-    <div class="lp-gallery">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;">
         {% for gp in gallery_photos %}
-        <div class="lp-gallery-photo">
-            <img src="{{ gp.url }}" alt="{{ gp.caption or 'JHE Haul job photo' }}" loading="lazy">
-            {% if gp.caption %}<div class="lp-gallery-caption">{{ gp.caption }}</div>{% endif %}
-        </div>
+            {% if gp.item_type == 'listing' and gp.listing_rel and gp.listing_rel.status == 'active' %}
+            {# Pinned listing card #}
+            {% set fp = gp.listing_rel.photos|sort(attribute='display_order')|first if gp.listing_rel.photos else None %}
+            <a href="{{ url_for('listing_detail', listing_id=gp.listing_rel.id) }}"
+               style="display:block;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s;"
+               onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.10)';this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.boxShadow='';this.style.transform=''">
+                {% if fp %}
+                <img src="{{ fp.storage_url or url_for('serve_listing_photo', photo_id=fp.id) }}"
+                     alt="{{ gp.listing_rel.title }}" loading="lazy"
+                     style="width:100%;height:180px;object-fit:cover;display:block;">
+                {% else %}
+                <div style="width:100%;height:180px;background:linear-gradient(135deg,#e2e8f0,#cbd5e0);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🏷️</div>
+                {% endif %}
+                <div style="padding:14px 16px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">⭐ Featured</div>
+                    <div style="font-weight:700;font-size:0.92rem;color:#1a202c;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ gp.listing_rel.title }}</div>
+                    <div style="font-size:0.88rem;font-weight:700;color:#2563eb;">
+                        {% if gp.listing_rel.price_type == 'free' %}Free
+                        {% elif gp.listing_rel.price %}${{ '{:,.0f}'.format(gp.listing_rel.price) }}{% if gp.listing_rel.listing_type == 'rental' %}/mo{% endif %}
+                        {% else %}Contact for price
+                        {% endif %}
+                    </div>
+                    {% if gp.listing_rel.city %}<div style="font-size:0.77rem;color:#a0aec0;margin-top:4px;">📍 {{ gp.listing_rel.city }}</div>{% endif %}
+                </div>
+            </a>
+
+            {% elif gp.item_type == 'custom' and (gp.headline or gp.caption) %}
+            {# Custom promotional banner card #}
+            {% if gp.button_link %}<a href="{{ gp.button_link }}"{% else %}<div{% endif %}
+               style="display:block;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s;"
+               {% if gp.button_link %}onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.10)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''"{% endif %}>
+                {% if gp.url %}
+                <img src="{{ gp.url }}" alt="{{ gp.headline or gp.caption }}" loading="lazy"
+                     style="width:100%;height:180px;object-fit:cover;display:block;">
+                {% else %}
+                <div style="width:100%;height:180px;background:linear-gradient(135deg,#1a202c,#2d3748);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">⭐</div>
+                {% endif %}
+                <div style="padding:14px 16px;">
+                    <div style="font-weight:700;font-size:0.92rem;color:#1a202c;margin-bottom:4px;">{{ gp.headline or gp.caption }}</div>
+                    {% if gp.description %}<div style="font-size:0.82rem;color:#6b7280;margin-bottom:8px;line-height:1.4;">{{ gp.description }}</div>{% endif %}
+                    {% if gp.button_text %}<span style="display:inline-block;background:#2563eb;color:#fff;font-size:0.78rem;font-weight:700;padding:5px 14px;border-radius:8px;">{{ gp.button_text }}</span>{% endif %}
+                </div>
+            {% if gp.button_link %}</a>{% else %}</div>{% endif %}
+            {% endif %}
         {% endfor %}
     </div>
-    {% else %}
-    <div class="lp-gallery">
-        <div class="lp-gallery-item">
-            <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Furniture Delivery</div>
-        </div>
-        <div class="lp-gallery-item">
-            <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Large Item Transport</div>
-        </div>
-        <div class="lp-gallery-item">
-            <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Appliance Delivery</div>
-        </div>
-        <div class="lp-gallery-item">
-            <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Local Pickup &amp; Drop-off</div>
-        </div>
-    </div>
-    <p style="text-align:center;font-size:0.82rem;color:#a0aec0;margin-top:16px;">Photos coming soon — check back to see our work.</p>
-    {% endif %}
 </div>
+{% endif %}
 
 {# ── Bottom CTA ── #}
 <div class="lp-cta" style="margin-bottom:20px;">

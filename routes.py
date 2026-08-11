@@ -5093,9 +5093,12 @@ def sitemap_xml():
     root = os.path.abspath(os.path.dirname(__file__))
     return send_from_directory(root, "sitemap.xml", mimetype="application/xml")
 
-def _gallery_photos():
+def _gallery_photos(active_only=False):
     from models import GalleryPhoto
-    return GalleryPhoto.query.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
+    q = GalleryPhoto.query
+    if active_only:
+        q = q.filter(GalleryPhoto.is_active == True)
+    return q.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
 
 
 _GALLERY_MAX_PX    = 1600              # longest-edge cap in pixels
@@ -5166,6 +5169,10 @@ def admin_gallery_upload():
         return redirect(url_for('admin_gallery'))
 
     caption = (request.form.get("caption") or "").strip()[:200] or None
+    headline = (request.form.get("headline") or "").strip()[:200] or None
+    description = (request.form.get("description") or "").strip()[:500] or None
+    button_text = (request.form.get("button_text") or "").strip()[:100] or None
+    button_link = (request.form.get("button_link") or "").strip()[:500] or None
     allowed = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
     from sqlalchemy import func as _func
     max_order = db.session.query(_func.coalesce(_func.max(GalleryPhoto.display_order), 0)).scalar() or 0
@@ -5195,7 +5202,13 @@ def admin_gallery_upload():
         filename, storage_url = _upload_bytes(compressed_data, out_ext)
         max_order += 1
         db.session.add(GalleryPhoto(
+            item_type='custom',
             caption=caption,
+            headline=headline or caption,
+            description=description,
+            button_text=button_text,
+            button_link=button_link,
+            is_active=True,
             filename=filename,
             storage_url=storage_url,
             data=compressed_data if not storage_url else None,
@@ -5213,8 +5226,8 @@ def admin_gallery_upload():
 
 @app.route("/landing")
 def landing():
-    """Public marketing landing page with the current gallery photo set."""
-    return render_template('landing.html', gallery_photos=_gallery_photos())
+    """Public marketing landing page — featured listings for the homepage."""
+    return render_template('landing.html', gallery_photos=_gallery_photos(active_only=True))
 
 @app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
 @require_admin
@@ -5254,7 +5267,93 @@ def serve_gallery_photo(photo_id):
 @app.route("/admin/gallery")
 @require_admin
 def admin_gallery():
-    return render_template('admin_gallery.html', photos=_gallery_photos())
+    return render_template('admin_gallery.html', photos=_gallery_photos(active_only=False))
+
+@app.route("/admin/gallery/listing-search")
+@require_admin
+def admin_gallery_listing_search():
+    """JSON search of active listings for the feature-a-listing UI."""
+    from models import Listing, ListingPhoto
+    from flask import jsonify
+    q = request.args.get("q", "").strip()
+    results = []
+    if q:
+        listings = (Listing.query
+                    .filter(Listing.status == 'active', Listing.title.ilike(f"%{q}%"))
+                    .order_by(Listing.created_at.desc())
+                    .limit(10).all())
+        for lst in listings:
+            first_photo = (ListingPhoto.query
+                           .filter_by(listing_id=lst.id)
+                           .order_by(ListingPhoto.is_primary.desc(), ListingPhoto.display_order)
+                           .first())
+            if first_photo:
+                thumb = first_photo.storage_url or url_for('serve_listing_photo', photo_id=first_photo.id)
+            else:
+                thumb = None
+            results.append({
+                "id": lst.id,
+                "title": lst.title,
+                "price": lst.price,
+                "price_type": lst.price_type,
+                "city": lst.city or "",
+                "thumb": thumb,
+            })
+    return jsonify(results)
+
+@app.route("/admin/gallery/feature-listing", methods=["POST"])
+@require_admin
+def admin_gallery_feature_listing():
+    """Pin an existing active listing to the homepage featured section."""
+    from models import GalleryPhoto, Listing
+    from sqlalchemy import func as _func
+    listing_id = request.form.get("listing_id", type=int)
+    if not listing_id:
+        flash("No listing selected.", "error")
+        return redirect(url_for('admin_gallery'))
+    listing = Listing.query.get(listing_id)
+    if not listing or listing.status != 'active':
+        flash("Listing not found or not active.", "error")
+        return redirect(url_for('admin_gallery'))
+    max_order = db.session.query(_func.coalesce(_func.max(GalleryPhoto.display_order), 0)).scalar() or 0
+    gp = GalleryPhoto(
+        item_type='listing',
+        listing_id=listing_id,
+        headline=listing.title,
+        filename='',
+        display_order=max_order + 1,
+        is_active=True,
+    )
+    db.session.add(gp)
+    db.session.commit()
+    flash(f"\u201c{listing.title}\u201d added to featured content.", "success")
+    return redirect(url_for('admin_gallery'))
+
+@app.route("/admin/gallery/<int:photo_id>/toggle", methods=["POST"])
+@require_admin
+def admin_gallery_toggle(photo_id):
+    """Activate or deactivate a featured item without removing it."""
+    from models import GalleryPhoto
+    photo = GalleryPhoto.query.get_or_404(photo_id)
+    photo.is_active = not photo.is_active
+    db.session.commit()
+    flash(f"Item {'activated' if photo.is_active else 'deactivated'}.", "success")
+    return redirect(url_for('admin_gallery'))
+
+@app.route("/admin/gallery/<int:photo_id>/edit", methods=["POST"])
+@require_admin
+def admin_gallery_edit(photo_id):
+    """Update the headline, description, and button for a custom banner."""
+    from models import GalleryPhoto
+    photo = GalleryPhoto.query.get_or_404(photo_id)
+    photo.headline = (request.form.get("headline") or "").strip()[:200] or None
+    photo.caption = photo.headline  # keep legacy field in sync
+    photo.description = (request.form.get("description") or "").strip()[:500] or None
+    photo.button_text = (request.form.get("button_text") or "").strip()[:100] or None
+    photo.button_link = (request.form.get("button_link") or "").strip()[:500] or None
+    db.session.commit()
+    flash("Featured item updated.", "success")
+    return redirect(url_for('admin_gallery'))
 
 @app.route("/admin/gallery/<int:photo_id>/caption", methods=["POST"])
 @require_admin

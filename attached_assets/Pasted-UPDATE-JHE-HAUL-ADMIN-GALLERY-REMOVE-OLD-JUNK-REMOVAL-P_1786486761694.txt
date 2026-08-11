@@ -1,0 +1,109 @@
+UPDATE JHE HAUL ADMIN GALLERY — REMOVE OLD JUNK REMOVAL PURPOSE
+
+The current Admin “Landing Page Gallery” is leftover from the old junk-removal-focused version of JHE Haul.
+
+REMOVE all old junk-removal wording and behavior, including:
+
+- “Landing Page Gallery”
+- “Upload real job photos”
+- “Our Work”
+- “real job photos”
+- “Garage Cleanout — Before & After”
+- Any wording suggesting this gallery is for completed hauling/junk-removal jobs.
+
+DO NOT delete the existing image upload system if it can be reused.
+
+REPURPOSE THIS PAGE AS:
+
+⭐ HOMEPAGE FEATURED CONTENT
+
+Purpose:
+Allow Admin to control promotional images/listings displayed on the JHE Haul marketplace homepage.
+
+Admin should be able to feature:
+
+- Marketplace items
+- Vehicles
+- Housing & Real Estate
+- Homes for Sale
+- Apartments/Homes for Rent
+- Haul & Delivery promotions
+- Other approved marketplace categories
+
+Add two ways to create featured content:
+
+OPTION 1 — FEATURE AN EXISTING LISTING
+
+Admin can search/select an active marketplace listing and feature it.
+
+Automatically use:
+- Listing photo
+- Listing title
+- Price
+- City/ZIP
+- Category
+
+Clicking the featured card should open that listing.
+
+OPTION 2 — CUSTOM PROMOTIONAL BANNER
+
+Admin can upload:
+- Image
+- Headline
+- Short description
+- Optional button text
+- Optional destination link
+- Display order
+
+Examples:
+
+“Shop Local Deals”
+“Vehicles for Sale”
+“Homes for Sale”
+“Find a Rental”
+“Need It Delivered?”
+
+ADMIN CONTROLS
+
+Allow Admin to:
+
+- Add
+- Edit
+- Remove
+- Activate/deactivate
+- Reorder featured content
+- Preview before publishing
+
+Rename:
+
+“Current Gallery”
+
+to:
+
+“Current Featured Content”
+
+HOMEPAGE
+
+Create a clean section such as:
+
+⭐ Featured Near You
+
+or
+
+⭐ Featured Listings
+
+This should fit the new LOCAL MARKETPLACE design.
+
+IMPORTANT:
+
+JHE Haul is now marketplace-first.
+
+Do NOT recreate junk-removal galleries, before/after galleries, completed-job galleries, or old junk-removal marketing content.
+
+Haul & Delivery remains a marketplace service, but it should NOT control the main identity of the website.
+
+Preserve existing marketplace, housing, delivery, messaging, user, admin, SMS and authentication functionality.
+
+After completing this, tell me exactly what was changed.
+
+DO NOT PUSH OR DEPLOY until I review the changes.

@@ -616,6 +616,22 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (listings.expires_at) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS item_type VARCHAR(20) DEFAULT 'custom'"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS listing_id INTEGER REFERENCES listings(id)"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS headline VARCHAR(200)"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS description VARCHAR(500)"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS button_text VARCHAR(100)"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS button_link VARCHAR(500)"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
+        db.session.execute(_text("UPDATE gallery_photos SET item_type='custom', is_active=TRUE WHERE item_type IS NULL"))
+        db.session.commit()
+        logging.info("Column migration: gallery_photos featured content fields ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (gallery_photos featured content) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

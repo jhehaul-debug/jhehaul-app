@@ -119,23 +119,35 @@ class Bid(db.Model):
         return self.hauler_phone
 
 class GalleryPhoto(db.Model):
-    """Real job photos uploaded by the admin for the public landing-page gallery."""
+    """Featured content displayed on the JHE Haul homepage — either a featured listing or a custom promotional banner."""
     __tablename__ = 'gallery_photos'
     id = db.Column(db.Integer, primary_key=True)
-    caption = db.Column(db.String(200), nullable=True)
-    filename = db.Column(db.String, nullable=False)
+    # 'custom' = uploaded banner; 'listing' = pinned marketplace listing
+    item_type = db.Column(db.String(20), default='custom')
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=True)
+    caption = db.Column(db.String(200), nullable=True)      # legacy field, kept for compat
+    headline = db.Column(db.String(200), nullable=True)     # display headline / banner title
+    description = db.Column(db.String(500), nullable=True)
+    button_text = db.Column(db.String(100), nullable=True)
+    button_link = db.Column(db.String(500), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    filename = db.Column(db.String, nullable=False, default='')
     storage_url = db.Column(db.String, nullable=True)       # DO Spaces URL
     data = db.Column(db.LargeBinary, nullable=True)         # DB fallback
     content_type = db.Column(db.String(80), nullable=True)
     display_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
+    listing_rel = db.relationship('Listing', foreign_keys='GalleryPhoto.listing_id', lazy='select')
+
     @property
     def url(self):
         if self.storage_url:
             return self.storage_url
-        from flask import url_for
-        return url_for('serve_gallery_photo', photo_id=self.id)
+        if self.data:
+            from flask import url_for
+            return url_for('serve_gallery_photo', photo_id=self.id)
+        return None
 
 
 class CompletionPhoto(db.Model):

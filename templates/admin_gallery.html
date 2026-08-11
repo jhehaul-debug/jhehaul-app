@@ -1,75 +1,255 @@
 {% extends "base.html" %}
 
-{% block title %}Gallery Photos | Admin | JHE Haul{% endblock %}
+{% block title %}Featured Content | Admin | JHE Haul{% endblock %}
 
 {% block content %}
 {% include "admin_nav.html" %}
 
-<div class="card" style="padding:28px 28px;margin-bottom:20px;">
-    <h2 style="margin:0 0 6px;font-size:1.35rem;">📸 Landing Page Gallery</h2>
-    <p style="color:#718096;font-size:0.9rem;margin:0 0 20px;">
-        Upload real job photos here — they appear in the "Our Work" section of the landing page in the order shown below.
+<div class="card" style="padding:28px 28px 20px;margin-bottom:20px;">
+    <h2 style="margin:0 0 4px;font-size:1.35rem;">⭐ Featured Content</h2>
+    <p style="color:#718096;font-size:0.9rem;margin:0;">
+        Control what appears in the <strong>Featured Listings</strong> section on the JHE Haul homepage.
+        Feature active marketplace listings or upload custom promotional banners.
     </p>
-
-    <form method="POST" action="{{ url_for('admin_gallery_upload') }}" enctype="multipart/form-data"
-          style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-        <div style="flex:1 1 240px;">
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Photos (JPG, PNG, WebP — up to 10 MB each)</label>
-            <input type="file" name="photos" accept="image/*" multiple required style="font-size:0.85rem;">
-        </div>
-        <div style="flex:1 1 220px;">
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Caption (optional, applies to all)</label>
-            <input type="text" name="caption" maxlength="200" placeholder="e.g. Garage Cleanout — Before &amp; After"
-                   style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.85rem;">
-        </div>
-        <button type="submit" style="background:#38a169;color:#fff;font-weight:700;border:none;border-radius:8px;padding:10px 22px;font-size:0.9rem;cursor:pointer;">
-            Upload
-        </button>
-    </form>
 </div>
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+
+    {# ── Option 1: Feature an Existing Listing ── #}
+    <div class="card" style="padding:24px;">
+        <h3 style="margin:0 0 4px;font-size:1.05rem;">🔍 Feature an Existing Listing</h3>
+        <p style="color:#718096;font-size:0.85rem;margin:0 0 14px;">Search for an active listing to pin on the homepage. Uses the listing's own photo, price, and location automatically.</p>
+        <input type="text" id="listing-search-input" placeholder="Type a listing title to search…"
+               style="width:100%;padding:9px 12px;border:1px solid #cbd5e0;border-radius:8px;font-size:0.88rem;box-sizing:border-box;margin-bottom:8px;"
+               oninput="searchListings(this.value)" autocomplete="off">
+        <div id="listing-search-results"
+             style="max-height:320px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;background:#fff;display:none;box-shadow:0 4px 12px rgba(0,0,0,.08);"></div>
+        <form id="feature-listing-form" method="POST" action="{{ url_for('admin_gallery_feature_listing') }}" style="display:none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="listing_id" id="feature-listing-id">
+        </form>
+    </div>
+
+    {# ── Option 2: Custom Promotional Banner ── #}
+    <div class="card" style="padding:24px;">
+        <h3 style="margin:0 0 4px;font-size:1.05rem;">🖼 Custom Promotional Banner</h3>
+        <p style="color:#718096;font-size:0.85rem;margin:0 0 14px;">Upload an image with a headline, description, and optional call-to-action button. Great for category promos like "Homes for Sale" or "Need It Delivered?".</p>
+        <form method="POST" action="{{ url_for('admin_gallery_upload') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="margin-bottom:10px;">
+                <label style="display:block;font-size:0.78rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Image <span style="font-weight:400;color:#a0aec0;">(JPG, PNG, WebP — up to 10 MB)</span></label>
+                <input type="file" name="photos" accept="image/*" required style="font-size:0.82rem;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="display:block;font-size:0.78rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Headline <span style="color:#e53e3e;">*</span></label>
+                <input type="text" name="headline" maxlength="200" placeholder="e.g. Homes for Sale" required
+                       style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:7px;font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="display:block;font-size:0.78rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Description <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+                <input type="text" name="description" maxlength="500" placeholder="Short tagline or description"
+                       style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:7px;font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                <div>
+                    <label style="display:block;font-size:0.78rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Button Text</label>
+                    <input type="text" name="button_text" maxlength="100" placeholder="e.g. Browse Now"
+                           style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:7px;font-size:0.85rem;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.78rem;font-weight:700;color:#4a5568;margin-bottom:4px;">Button Link</label>
+                    <input type="url" name="button_link" placeholder="https://…"
+                           style="width:100%;padding:8px 10px;border:1px solid #cbd5e0;border-radius:7px;font-size:0.85rem;box-sizing:border-box;">
+                </div>
+            </div>
+            <button type="submit" style="width:100%;background:#2563eb;color:#fff;font-weight:700;border:none;border-radius:8px;padding:10px 22px;font-size:0.9rem;cursor:pointer;">
+                Upload Banner
+            </button>
+        </form>
+    </div>
+</div>
+
+{# ── Current Featured Content ── #}
 <div class="card" style="padding:28px 28px;">
-    <h3 style="margin:0 0 16px;font-size:1.05rem;">Current Gallery ({{ photos|length }})</h3>
+    <h3 style="margin:0 0 4px;font-size:1.05rem;">
+        Current Featured Content
+        <span style="font-weight:400;color:#718096;font-size:0.88rem;">
+            — {{ photos|selectattr('is_active')|list|length }} active / {{ photos|length }} total
+        </span>
+    </h3>
+    <p style="color:#a0aec0;font-size:0.82rem;margin:0 0 18px;">Items display in order on the homepage. Use ← → to reorder. Deactivated items are hidden from visitors but not deleted.</p>
 
     {% if photos %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
         {% for p in photos %}
-        <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;">
-            <img src="{{ p.url }}" alt="{{ p.caption or 'Gallery photo' }}"
-                 style="width:100%;height:160px;object-fit:cover;display:block;background:#f1f5f9;">
-            <div style="padding:10px 12px;">
-                <form method="POST" action="{{ url_for('admin_gallery_caption', photo_id=p.id) }}" style="display:flex;gap:6px;margin-bottom:8px;">
-                    <input type="text" name="caption" value="{{ p.caption or '' }}" maxlength="200" placeholder="Caption…"
-                           style="flex:1;min-width:0;padding:5px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;">
-                    <button type="submit" title="Save caption" style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:0.78rem;cursor:pointer;">💾</button>
-                </form>
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div style="display:flex;gap:4px;">
-                        <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}">
-                            <input type="hidden" name="direction" value="up">
-                            <button type="submit" {% if loop.first %}disabled{% endif %} title="Move earlier"
-                                    style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 9px;font-size:0.8rem;cursor:pointer;{% if loop.first %}opacity:.4;cursor:default;{% endif %}">←</button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}">
-                            <input type="hidden" name="direction" value="down">
-                            <button type="submit" {% if loop.last %}disabled{% endif %} title="Move later"
-                                    style="background:#edf2f7;border:1px solid #cbd5e0;border-radius:6px;padding:4px 9px;font-size:0.8rem;cursor:pointer;{% if loop.last %}opacity:.4;cursor:default;{% endif %}">→</button>
-                        </form>
-                    </div>
-                    <form method="POST" action="{{ url_for('admin_gallery_delete', photo_id=p.id) }}"
-                          onsubmit="return confirm('Remove this photo from the gallery?');">
-                        <button type="submit" style="background:#fff5f5;color:#c53030;border:1px solid #feb2b2;border-radius:6px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer;">Remove</button>
+        <div style="border:2px solid {% if p.is_active %}#86efac{% else %}#e2e8f0{% endif %};border-radius:12px;overflow:hidden;background:#fff;opacity:{% if p.is_active %}1{% else %}.6{% endif %};">
+
+            {# Thumbnail #}
+            {% if p.item_type == 'listing' and p.listing_rel %}
+              {% set fp = p.listing_rel.photos|sort(attribute='display_order')|first if p.listing_rel.photos else None %}
+              {% if fp %}
+                <img src="{{ fp.storage_url or url_for('serve_listing_photo', photo_id=fp.id) }}"
+                     alt="{{ p.listing_rel.title }}"
+                     style="width:100%;height:150px;object-fit:cover;display:block;background:#f1f5f9;">
+              {% else %}
+                <div style="width:100%;height:150px;background:linear-gradient(135deg,#e2e8f0,#cbd5e0);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:2.5rem;">🏷️</div>
+              {% endif %}
+            {% elif p.url %}
+              <img src="{{ p.url }}" alt="{{ p.headline or p.caption or 'Banner' }}"
+                   style="width:100%;height:150px;object-fit:cover;display:block;background:#f1f5f9;">
+            {% else %}
+              <div style="width:100%;height:150px;background:linear-gradient(135deg,#1a202c,#2d3748);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:2.5rem;">⭐</div>
+            {% endif %}
+
+            <div style="padding:12px 14px;">
+                {# Type + status badges #}
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:4px;">
+                    <span style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;background:{% if p.item_type == 'listing' %}#dbeafe{% else %}#f3e8ff{% endif %};color:{% if p.item_type == 'listing' %}#1d4ed8{% else %}#7c3aed{% endif %};">
+                        {% if p.item_type == 'listing' %}📦 Listing{% else %}🖼 Custom{% endif %}
+                    </span>
+                    <span style="font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;background:{% if p.is_active %}#dcfce7{% else %}#f3f4f6{% endif %};color:{% if p.is_active %}#16a34a{% else %}#6b7280{% endif %};">
+                        {{ '● Active' if p.is_active else '○ Inactive' }}
+                    </span>
+                </div>
+
+                {# Title / headline #}
+                <div style="font-weight:700;font-size:0.9rem;color:#1a202c;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    {{ p.headline or p.caption or (p.listing_rel.title if p.listing_rel else 'Untitled') }}
+                </div>
+
+                {# Subtitle line #}
+                {% if p.item_type == 'listing' and p.listing_rel %}
+                <div style="font-size:0.78rem;color:#6b7280;margin-bottom:8px;">
+                    {% if p.listing_rel.price_type == 'free' %}Free
+                    {% elif p.listing_rel.price %}${{ '{:,.0f}'.format(p.listing_rel.price) }}{% if p.listing_rel.listing_type == 'rental' %}/mo{% endif %}
+                    {% endif %}
+                    {% if p.listing_rel.city %} · 📍 {{ p.listing_rel.city }}{% endif %}
+                </div>
+                {% elif p.description %}
+                <div style="font-size:0.78rem;color:#6b7280;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.description }}</div>
+                {% else %}
+                <div style="margin-bottom:8px;"></div>
+                {% endif %}
+
+                {# Reorder / Activate / Remove controls #}
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+                    <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="direction" value="up">
+                        <button type="submit" {% if loop.first %}disabled{% endif %} title="Move earlier"
+                                style="background:#f1f5f9;border:1px solid #cbd5e0;border-radius:6px;padding:3px 9px;font-size:0.75rem;cursor:pointer;{% if loop.first %}opacity:.4;cursor:default;{% endif %}">←</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_gallery_move', photo_id=p.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="direction" value="down">
+                        <button type="submit" {% if loop.last %}disabled{% endif %} title="Move later"
+                                style="background:#f1f5f9;border:1px solid #cbd5e0;border-radius:6px;padding:3px 9px;font-size:0.75rem;cursor:pointer;{% if loop.last %}opacity:.4;cursor:default;{% endif %}">→</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_gallery_toggle', photo_id=p.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                                style="background:{% if p.is_active %}#fef9c3{% else %}#dcfce7{% endif %};border:1px solid {% if p.is_active %}#fde047{% else %}#86efac{% endif %};border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:700;cursor:pointer;color:{% if p.is_active %}#854d0e{% else %}#15803d{% endif %};">
+                            {{ '⏸ Deactivate' if p.is_active else '▶ Activate' }}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_gallery_delete', photo_id=p.id) }}" style="display:inline;"
+                          onsubmit="return confirm('Remove this featured item permanently?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" style="background:#fff5f5;color:#c53030;border:1px solid #feb2b2;border-radius:6px;padding:3px 9px;font-size:0.72rem;font-weight:700;cursor:pointer;">Remove</button>
                     </form>
                 </div>
+
+                {# Edit section #}
+                {% if p.item_type == 'custom' %}
+                <details style="border-top:1px solid #e2e8f0;padding-top:10px;">
+                    <summary style="font-size:0.78rem;font-weight:600;color:#4a5568;cursor:pointer;user-select:none;">✏ Edit Content</summary>
+                    <form method="POST" action="{{ url_for('admin_gallery_edit', photo_id=p.id) }}" style="margin-top:10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="headline" value="{{ p.headline or p.caption or '' }}" maxlength="200" placeholder="Headline"
+                               style="width:100%;padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;margin-bottom:5px;box-sizing:border-box;">
+                        <input type="text" name="description" value="{{ p.description or '' }}" maxlength="500" placeholder="Description"
+                               style="width:100%;padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;margin-bottom:5px;box-sizing:border-box;">
+                        <input type="text" name="button_text" value="{{ p.button_text or '' }}" maxlength="100" placeholder="Button text (optional)"
+                               style="width:100%;padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;margin-bottom:5px;box-sizing:border-box;">
+                        <input type="url" name="button_link" value="{{ p.button_link or '' }}" placeholder="Button URL (optional)"
+                               style="width:100%;padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:0.78rem;margin-bottom:8px;box-sizing:border-box;">
+                        <button type="submit" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;">Save Changes</button>
+                    </form>
+                </details>
+                {% elif p.item_type == 'listing' and p.listing_rel %}
+                <div style="border-top:1px solid #e2e8f0;padding-top:8px;">
+                    <a href="{{ url_for('listing_detail', listing_id=p.listing_rel.id) }}" target="_blank"
+                       style="font-size:0.78rem;color:#2563eb;text-decoration:none;font-weight:600;">View Listing →</a>
+                    {% if p.listing_rel.status != 'active' %}
+                    <span style="margin-left:8px;font-size:0.72rem;color:#dc2626;font-weight:700;">⚠ Listing is {{ p.listing_rel.status }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
+
     {% else %}
-    <div style="text-align:center;padding:36px 0;color:#a0aec0;">
-        <div style="font-size:2rem;margin-bottom:10px;">📷</div>
-        <p style="margin:0;font-size:0.9rem;">No gallery photos yet. Upload your first real job photos above.</p>
+    <div style="text-align:center;padding:48px 0;color:#a0aec0;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">⭐</div>
+        <p style="margin:0 0 4px;font-size:0.95rem;font-weight:600;color:#718096;">No featured content yet</p>
+        <p style="margin:0;font-size:0.85rem;">Feature a listing or upload a custom banner above to get started.</p>
     </div>
     {% endif %}
 </div>
+
+<script>
+let searchTimeout;
+
+function searchListings(q) {
+    clearTimeout(searchTimeout);
+    const resultsDiv = document.getElementById('listing-search-results');
+    if (!q.trim()) { resultsDiv.style.display = 'none'; return; }
+    searchTimeout = setTimeout(async () => {
+        try {
+            const res = await fetch(`/admin/gallery/listing-search?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if (!data.length) {
+                resultsDiv.innerHTML = '<div style="padding:14px 16px;color:#a0aec0;font-size:0.85rem;">No active listings found.</div>';
+            } else {
+                resultsDiv.innerHTML = data.map(l => {
+                    const price = l.price_type === 'free' ? 'Free'
+                                : l.price ? '$' + Number(l.price).toLocaleString()
+                                : '';
+                    const loc = l.city ? ' · ' + l.city : '';
+                    const thumb = l.thumb
+                        ? `<img src="${l.thumb}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">`
+                        : `<div style="width:44px;height:44px;background:#f1f5f9;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#a0aec0;">🏷️</div>`;
+                    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;"
+                                 onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''"
+                                 onclick="featureListing(${l.id}, ${JSON.stringify(l.title)})">
+                        ${thumb}
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.title}</div>
+                            <div style="font-size:0.75rem;color:#6b7280;">${price}${loc}</div>
+                        </div>
+                        <span style="color:#2563eb;font-size:0.75rem;font-weight:700;flex-shrink:0;white-space:nowrap;">⭐ Feature</span>
+                    </div>`;
+                }).join('');
+            }
+            resultsDiv.style.display = 'block';
+        } catch(e) {
+            resultsDiv.style.display = 'none';
+        }
+    }, 300);
+}
+
+function featureListing(id, title) {
+    if (!confirm(`Feature "${title}" on the homepage?`)) return;
+    document.getElementById('feature-listing-id').value = id;
+    document.getElementById('feature-listing-form').submit();
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('#listing-search-input') && !e.target.closest('#listing-search-results')) {
+        document.getElementById('listing-search-results').style.display = 'none';
+    }
+});
+</script>
 {% endblock %}

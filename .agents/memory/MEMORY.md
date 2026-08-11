@@ -3,3 +3,4 @@
 - [DB migration portability](db-migrations.md) — new tables via db.create_all(), not Postgres-only raw DDL; deletes must clean up stored files.
 - [Housing feature architecture](housing-feature.md) — listing_type column drives property vs item branching throughout; property wizard is a separate template; category tree is max 2 levels.
 - [Trust & transaction flow](trust-transaction-flow.md) — seller profile, offer respond, my offers, report user, admin user detail all added; User.id is String (UUID); offer statuses: pending/countered/accepted/declined/withdrawn.
+- [Admin gallery / featured content](gallery-featured-content.md) — gallery_photos repurposed from junk-removal to homepage featured content; two item_types: custom (banner) and listing (pinned listing); logged-in users bypass /landing entirely.
