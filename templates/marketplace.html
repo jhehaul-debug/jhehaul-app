@@ -294,6 +294,32 @@
 .mp-prop-badge.sale { background: #dcfce7; color: #15803d; }
 .mp-prop-badge.rent { background: #dbeafe; color: #1e40af; }
 .mp-prop-badge.oh   { background: #fef9c3; color: #713f12; }
+/* Sold / Reserved card overlays */
+.mp-card.mp-card--sold,
+.mp-card.mp-card--reserved { opacity: .78; }
+.mp-card.mp-card--sold:hover,
+.mp-card.mp-card--reserved:hover { opacity: 1; }
+.mp-status-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 14px; pointer-events: none; z-index: 2;
+}
+.mp-status-banner {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 6px 10px; font-size: .78rem; font-weight: 800;
+    letter-spacing: .04em; text-align: center; border-radius: 14px 14px 0 0;
+}
+.mp-status-banner.sold     { background: rgba(127,29,29,.85); color: #fff; }
+.mp-status-banner.reserved { background: rgba(109,40,217,.85); color: #fff; }
+/* Hide-sold toggle button */
+.mp-hide-sold-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; font-size: .82rem; font-weight: 600;
+    border: 1.5px solid #d1d5db; background: #fff; color: #374151;
+    cursor: pointer; text-decoration: none; white-space: nowrap;
+    transition: background .15s, border-color .15s;
+}
+.mp-hide-sold-btn.active { background: #eff6ff; border-color: #2563eb; color: #1d4ed8; }
+.mp-hide-sold-btn:hover   { background: #f3f4f6; text-decoration: none; }
 /* Active chip highlight */
 .mp-cat-chip.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
 
@@ -356,20 +382,34 @@
 
 {# ── Reusable listing card macro ── #}
 {% macro listing_card(listing, placeholder='📦') %}
-<a href="/listing/{{ listing.id }}" class="mp-card">
+{% set is_sold     = listing.status == 'sold' %}
+{% set is_reserved = listing.status == 'reserved' %}
+<a href="/listing/{{ listing.id }}" class="mp-card{% if is_sold %} mp-card--sold{% elif is_reserved %} mp-card--reserved{% endif %}">
     {% set photo = listing.primary_photo %}
     {% if photo %}
         <img class="mp-card-img" src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="{{ listing.title }}" loading="lazy">
     {% else %}
         <div class="mp-card-img-placeholder">{{ '🏠' if listing.is_property else placeholder }}</div>
     {% endif %}
+    {# Sold / Reserved overlay banner #}
+    {% if is_sold %}
+        <div class="mp-status-overlay">
+            <div class="mp-status-banner sold">🏷️ SOLD</div>
+        </div>
+    {% elif is_reserved %}
+        <div class="mp-status-overlay">
+            <div class="mp-status-banner reserved">🔒 RESERVED</div>
+        </div>
+    {% endif %}
     {% if listing.is_property %}
-        {# Property type badge overlay #}
+        {# Property type badge overlay (only shown when not sold/reserved to avoid clutter) #}
+        {% if not is_sold and not is_reserved %}
         <div style="position:absolute;top:8px;left:8px">
             {% if listing.listing_type == 'property_sale' %}<span class="mp-prop-badge sale">For Sale</span>
             {% else %}<span class="mp-prop-badge rent">For Rent</span>{% endif %}
         </div>
         {% if listing.open_house_dt %}<div style="position:absolute;top:8px;right:8px"><span class="mp-prop-badge oh">Open House</span></div>{% endif %}
+        {% endif %}
     {% endif %}
     <div class="mp-card-body">
         <div class="mp-card-title">{{ listing.title }}</div>
@@ -408,7 +448,28 @@
             {% elif area_filter == 'twin-cities' %}📍 Twin Cities Area
             {% else %}All Listings{% endif %}
         </h2>
-        <a href="/marketplace">← Back to home</a>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            {# Build toggle URL: flip hide_sold param while keeping all other filters #}
+            {% set ns = namespace(toggle_url='/marketplace?') %}
+            {% if search_query %}{% set ns.toggle_url = ns.toggle_url ~ 'q=' ~ search_query ~ '&' %}{% endif %}
+            {% if listing_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'listing_type=' ~ listing_type_filter ~ '&' %}{% endif %}
+            {% if area_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'area=' ~ area_filter ~ '&' %}{% endif %}
+            {% if price_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'price_type=' ~ price_type_filter ~ '&' %}{% endif %}
+            {% if featured_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'featured=1&' %}{% endif %}
+            {% if min_price is not none %}{% set ns.toggle_url = ns.toggle_url ~ 'min_price=' ~ min_price ~ '&' %}{% endif %}
+            {% if max_price is not none %}{% set ns.toggle_url = ns.toggle_url ~ 'max_price=' ~ max_price ~ '&' %}{% endif %}
+            {% if min_beds is not none %}{% set ns.toggle_url = ns.toggle_url ~ 'min_beds=' ~ min_beds ~ '&' %}{% endif %}
+            {% if open_house_only %}{% set ns.toggle_url = ns.toggle_url ~ 'open_house=1&' %}{% endif %}
+            {% if active_category %}{% set ns.toggle_url = ns.toggle_url ~ 'category=' ~ active_category.slug ~ '&' %}{% endif %}
+            {% if hide_sold %}
+                {# currently hiding → link removes hide_sold #}
+                <a href="{{ ns.toggle_url.rstrip('&?') }}" class="mp-hide-sold-btn active">✅ Hiding sold &amp; reserved</a>
+            {% else %}
+                {# currently showing → link adds hide_sold=1 #}
+                <a href="{{ ns.toggle_url }}hide_sold=1" class="mp-hide-sold-btn">👁 Show active only</a>
+            {% endif %}
+            <a href="/marketplace">← Back to home</a>
+        </div>
     </div>
 
     {# Property-specific filter bar #}

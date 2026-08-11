@@ -309,13 +309,17 @@ def _marketplace_categories():
 def _marketplace_homepage_ctx():
     """Build context dict for the marketplace homepage (no active filters)."""
     from models import Listing
-    _base = Listing.query.filter_by(status='active', moderation_status='approved')
+    _base = Listing.query.filter(
+        Listing.status.in_(['active', 'sold', 'reserved']),
+        Listing.moderation_status == 'approved'
+    )
+    _active = Listing.query.filter_by(status='active', moderation_status='approved')
     recent = (_base.filter(Listing.listing_type == 'item')
               .order_by(Listing.created_at.desc()).limit(8).all())
-    free_items = (_base.filter_by(price_type='free')
+    free_items = (_active.filter_by(price_type='free')
                   .filter(Listing.listing_type == 'item')
                   .order_by(Listing.created_at.desc()).limit(8).all())
-    featured = (_base.filter_by(featured=True)
+    featured = (_active.filter_by(featured=True)
                 .order_by(Listing.created_at.desc()).limit(8).all())
     for_sale = (_base.filter(Listing.listing_type == 'property_sale')
                 .order_by(Listing.created_at.desc()).limit(6).all())
@@ -376,6 +380,7 @@ def marketplace():
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
     open_house_only    = request.args.get('open_house',   '').strip()
+    hide_sold          = request.args.get('hide_sold',    '').strip()
 
     try: min_price = float(min_price_raw) if min_price_raw else None
     except ValueError: min_price = None
@@ -386,10 +391,17 @@ def marketplace():
 
     is_search = bool(q or category_slug or price_type_filter or featured_filter
                      or listing_type_filter or area_filter or min_price is not None
-                     or max_price is not None or min_beds is not None or open_house_only)
+                     or max_price is not None or min_beds is not None or open_house_only
+                     or hide_sold)
 
     if is_search:
-        qobj = Listing.query.filter_by(status='active', moderation_status='approved')
+        if hide_sold:
+            qobj = Listing.query.filter_by(status='active', moderation_status='approved')
+        else:
+            qobj = Listing.query.filter(
+                Listing.status.in_(['active', 'sold', 'reserved']),
+                Listing.moderation_status == 'approved'
+            )
 
         if q:
             qobj = qobj.filter(
@@ -451,12 +463,13 @@ def marketplace():
                                area_filter=area_filter,
                                min_price=min_price, max_price=max_price,
                                min_beds=min_beds, open_house_only=open_house_only,
+                               hide_sold=hide_sold,
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
         ctx = _marketplace_homepage_ctx()
         return render_template('marketplace.html', categories=categories, is_search=False,
-                               listing_type_filter='', area_filter='', **ctx)
+                               listing_type_filter='', area_filter='', hide_sold='', **ctx)
 
 
 @app.route("/sell")
@@ -1015,11 +1028,11 @@ def listing_detail(listing_id):
 
     listing = Listing.query.get_or_404(listing_id)
 
-    # Access control: only active+approved listings are public.
+    # Access control: active/sold/reserved + approved listings are public.
     # Seller and admin can see any status.
     is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
     is_admin = current_user.is_authenticated and current_user.is_admin
-    is_public = (listing.status == 'active' and listing.moderation_status == 'approved')
+    is_public = (listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved')
     if not (is_public or is_owner or is_admin):
         abort(404)
 
@@ -1083,7 +1096,7 @@ def listing_favorite_toggle(listing_id):
     listing = Listing.query.get_or_404(listing_id)
 
     # Enforce the same visibility rule as listing_detail
-    is_public = listing.status == 'active' and listing.moderation_status == 'approved'
+    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
     is_owner  = current_user.id == listing.seller_id
     if not (is_public or is_owner or current_user.is_admin):
         abort(404)
@@ -1122,7 +1135,7 @@ def listing_report(listing_id):
     listing = Listing.query.get_or_404(listing_id)
 
     # Enforce the same visibility rule as listing_detail
-    is_public = listing.status == 'active' and listing.moderation_status == 'approved'
+    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
     is_owner  = current_user.id == listing.seller_id
     if not (is_public or is_owner or current_user.is_admin):
         abort(404)
@@ -1428,7 +1441,7 @@ def serve_listing_photo(photo_id):
     if not listing:
         return "", 404
 
-    is_public = (listing.status == 'active' and listing.moderation_status == 'approved')
+    is_public = (listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved')
     is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
     is_admin = current_user.is_authenticated and current_user.is_admin
     if not (is_public or is_owner or is_admin):
