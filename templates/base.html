@@ -131,7 +131,7 @@
             <div class="footer-col">
                 <h4>Haul &amp; Delivery</h4>
                 <a href="/services">Haul Services</a>
-                <a href="/invite/customer">Request Pickup</a>
+                <a href="{{ url_for('customer_request') if current_user.is_authenticated and current_user.user_type == 'customer' else '/invite/customer' }}">Request Service</a>
                 <a href="{{ url_for('about') }}">About Us</a>
             </div>
             <div class="footer-col">
