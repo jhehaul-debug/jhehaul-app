@@ -51,6 +51,9 @@ services:
       - key: PAY_LINK_300_500
         scope: RUN_TIME
         type: SECRET
+      - key: PAY_LINK_OVER_500
+        scope: RUN_TIME
+        type: SECRET
       - key: SENDGRID_API_KEY
         scope: RUN_TIME
         type: SECRET
@@ -63,6 +66,9 @@ services:
       - key: TWILIO_AUTH_TOKEN
         scope: RUN_TIME
         type: SECRET
-      - key: TWILIO_FROM_NUMBER
+      - key: TWILIO_PHONE_NUMBER
+        scope: RUN_TIME
+        type: SECRET
+      - key: ADMIN_PHONE
         scope: RUN_TIME
         type: SECRET
