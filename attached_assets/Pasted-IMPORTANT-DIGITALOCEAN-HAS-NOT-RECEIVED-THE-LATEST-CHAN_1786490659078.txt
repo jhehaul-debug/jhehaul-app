@@ -1,0 +1,123 @@
+IMPORTANT — DIGITALOCEAN HAS NOT RECEIVED THE LATEST CHANGES
+
+I checked DigitalOcean manually.
+
+The CURRENT LIVE production deployment for jhehaul.com is still:
+
+Commit: 4e90725
+Branch: main
+Repository: jhehaul-debug/jhehaul-app
+
+DigitalOcean shows this deployment from about 4:12 PM.
+
+It is now after 6:20 PM, so the later changes we made have NOT been pushed/deployed to production.
+
+DO NOT make any new feature changes right now.
+
+I need you to fix the GitHub/DigitalOcean deployment gap first.
+
+STEP 1 — CHECK LOCAL GIT STATE
+
+Run:
+- git status
+- git branch --show-current
+- git log --oneline -10
+- git remote -v
+
+Identify:
+- all uncommitted changes
+- all committed but unpushed changes
+- the newest local commit hash
+- whether the current branch is main
+- whether origin points to jhehaul-debug/jhehaul-app
+
+STEP 2 — COMPARE TO PRODUCTION
+
+Production is currently running commit:
+
+4e90725
+
+Identify every commit/change made AFTER 4e90725 that has not reached production.
+
+Make sure the recent work is included, especially:
+- marketplace cleanup
+- housing / real estate work
+- footer updates
+- account updates
+- admin updates
+- logout
+- switch account
+- marketplace terminology
+- analytics updates
+- delivery/hauler integration work
+- social preview updates
+- any other completed changes made after 4e90725
+
+STEP 3 — COMMIT EVERYTHING COMPLETED
+
+If there are uncommitted changes:
+
+- review them
+- do not discard them
+- do not reset them
+- commit all completed approved work
+
+Do NOT force push.
+Do NOT rewrite production history.
+Do NOT delete existing data.
+
+STEP 4 — PUSH TO THE ACTUAL PRODUCTION BRANCH
+
+Push ALL completed changes to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Confirm the push succeeds.
+
+STEP 5 — VERIFY GITHUB
+
+After push, provide:
+- newest GitHub commit hash
+- commit message
+- confirmation that origin/main contains that commit
+
+STEP 6 — VERIFY DIGITALOCEAN
+
+DigitalOcean is connected to main.
+
+Confirm a NEW DigitalOcean deployment starts after the push.
+
+Do not tell me it is deployed merely because GitHub accepted the push.
+
+Verify DigitalOcean production moves OFF commit 4e90725 and is running the NEW commit.
+
+STEP 7 — VERIFY LIVE SITE
+
+After DigitalOcean finishes deploying:
+
+Open the actual live production site:
+https://jhehaul.com
+
+Verify:
+- site loads
+- Account page has visible Sign Out
+- Account page has visible Switch Account
+- Admin navigation has visible Sign Out / Switch Account
+- marketplace changes are present
+- no deployment error occurred
+
+FINAL RESPONSE MUST INCLUDE:
+
+1. Previous production commit: 4e90725
+2. New pushed commit hash
+3. Branch: main
+4. Confirmation GitHub push succeeded
+5. Confirmation DigitalOcean deployed the new commit
+6. Exact commit currently running on production
+7. Any errors encountered
+
+DO NOT make more feature changes until this deployment problem is resolved.
