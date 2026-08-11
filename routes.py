@@ -4048,6 +4048,64 @@ def _gallery_photos():
     from models import GalleryPhoto
     return GalleryPhoto.query.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
 
+
+_GALLERY_MAX_PX    = 1600              # longest-edge cap in pixels
+_GALLERY_QUALITY   = 80               # JPEG compression quality (0–95)
+_GALLERY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB input limit
+
+
+def _compress_gallery_image(raw_bytes: bytes, ext: str):
+    """
+    Resize and compress an uploaded gallery image with Pillow.
+
+    - HEIC / HEIF files are rejected — browsers cannot render them natively.
+    - All other formats are converted to JPEG, capped at _GALLERY_MAX_PX on
+      the longest edge, and saved at _GALLERY_QUALITY.
+    - Returns (compressed_bytes, out_ext, content_type) or raises ValueError
+      with a user-friendly message on unsupported input.
+    """
+    ext_clean = ext.lstrip('.').lower()
+    if ext_clean in ('heic', 'heif'):
+        raise ValueError(
+            "HEIC/HEIF photos cannot be uploaded — please convert to JPG or PNG first "
+            "(on iPhone: Settings → Camera → Formats → Most Compatible)."
+        )
+
+    import io as _io
+    from PIL import Image, ExifTags
+
+    img = Image.open(_io.BytesIO(raw_bytes))
+
+    # Auto-rotate using EXIF orientation so portrait shots aren't sideways
+    try:
+        exif = img._getexif()
+        if exif:
+            orient_key = next(
+                (k for k, v in ExifTags.TAGS.items() if v == 'Orientation'), None
+            )
+            if orient_key and orient_key in exif:
+                orient = exif[orient_key]
+                _ROTATIONS = {3: 180, 6: 270, 8: 90}
+                if orient in _ROTATIONS:
+                    img = img.rotate(_ROTATIONS[orient], expand=True)
+    except Exception:
+        pass  # EXIF failures are non-fatal
+
+    # Ensure mode is compatible with JPEG output
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+
+    # Shrink so the longest edge ≤ _GALLERY_MAX_PX; never enlarge
+    w, h = img.size
+    if max(w, h) > _GALLERY_MAX_PX:
+        scale = _GALLERY_MAX_PX / max(w, h)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+
+    buf = _io.BytesIO()
+    img.save(buf, format='JPEG', quality=_GALLERY_QUALITY, optimize=True)
+    return buf.getvalue(), '.jpg', 'image/jpeg'
+
+
 @app.route("/admin/gallery/upload", methods=["POST"])
 @require_admin
 def admin_gallery_upload():
@@ -4063,25 +4121,36 @@ def admin_gallery_upload():
     from sqlalchemy import func as _func
     max_order = db.session.query(_func.coalesce(_func.max(GalleryPhoto.display_order), 0)).scalar() or 0
 
-    from storage import upload_file as _upload_file
+    from storage import upload_bytes as _upload_bytes
     added, skipped = 0, 0
     for f in files:
         ext = os.path.splitext(f.filename)[1].lower()
         if ext not in allowed:
             skipped += 1
             continue
-        photo_data, photo_ct = _read_photo_bytes(f, ext)
-        if not photo_data or len(photo_data) > 10 * 1024 * 1024:
+        f.stream.seek(0)
+        raw_data = f.stream.read()
+        if not raw_data or len(raw_data) > _GALLERY_MAX_BYTES:
             skipped += 1
             continue
-        filename, storage_url = _upload_file(f, ext)
+        try:
+            compressed_data, out_ext, out_ct = _compress_gallery_image(raw_data, ext)
+        except ValueError as ve:
+            flash(str(ve), "error")
+            skipped += 1
+            continue
+        except Exception as exc:
+            app.logger.warning("admin_gallery_upload: compression failed for %s: %s", f.filename, exc)
+            skipped += 1
+            continue
+        filename, storage_url = _upload_bytes(compressed_data, out_ext)
         max_order += 1
         db.session.add(GalleryPhoto(
             caption=caption,
-            filename=filename or secure_filename(f.filename),
+            filename=filename,
             storage_url=storage_url,
-            data=photo_data if not storage_url else None,
-            content_type=photo_ct if not storage_url else None,
+            data=compressed_data if not storage_url else None,
+            content_type=out_ct if not storage_url else None,
             display_order=max_order,
         ))
         added += 1
@@ -4090,7 +4159,7 @@ def admin_gallery_upload():
     if added:
         flash(f"Uploaded {added} photo{'s' if added != 1 else ''} to the gallery.", "success")
     if skipped:
-        flash(f"{skipped} file{'s were' if skipped != 1 else ' was'} skipped (unsupported type or over 10 MB).", "error")
+        flash(f"{skipped} file{'s were' if skipped != 1 else ' was'} skipped (unsupported type, over 10 MB, or conversion error).", "error")
     return redirect(url_for('admin_gallery'))
 
 @app.route("/landing")

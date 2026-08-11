@@ -121,6 +121,80 @@ def upload_file(file_obj, ext: str) -> tuple[str, str | None]:
     return filename, None
 
 
+def upload_bytes(data: bytes, ext: str) -> tuple[str, str | None]:
+    """
+    Persist raw image bytes (e.g. already-compressed by Pillow).
+
+    Identical contract to upload_file() but accepts a bytes object instead of
+    a FileStorage.  ext should include the dot, e.g. ".jpg".
+
+    Returns
+    -------
+    (filename, storage_url)
+        filename     — UUID-based name used as the DB key.
+        storage_url  — Full public URL when saved to Spaces; None when saved locally.
+    """
+    filename = f"{uuid.uuid4().hex}{ext.lower()}"
+
+    spaces_key      = os.environ.get("SPACES_KEY")
+    spaces_secret   = os.environ.get("SPACES_SECRET")
+    spaces_bucket   = os.environ.get("SPACES_BUCKET")
+    spaces_region   = os.environ.get("SPACES_REGION", "nyc3")
+    spaces_endpoint = os.environ.get(
+        "SPACES_ENDPOINT",
+        f"https://{spaces_region}.digitaloceanspaces.com",
+    )
+
+    if spaces_key and spaces_secret and spaces_bucket:
+        try:
+            import boto3
+            from botocore.client import Config
+
+            client = boto3.session.Session().client(
+                "s3",
+                region_name=spaces_region,
+                endpoint_url=spaces_endpoint,
+                aws_access_key_id=spaces_key,
+                aws_secret_access_key=spaces_secret,
+                config=Config(signature_version="s3v4"),
+            )
+            client.upload_fileobj(
+                io.BytesIO(data),
+                spaces_bucket,
+                f"uploads/{filename}",
+                ExtraArgs={
+                    "ACL": "public-read",
+                    "ContentType": _content_type(ext),
+                },
+            )
+
+            cdn = os.environ.get("SPACES_CDN_URL", "").rstrip("/")
+            if cdn:
+                storage_url = f"{cdn}/uploads/{filename}"
+            else:
+                storage_url = (
+                    f"{spaces_endpoint.rstrip('/')}/{spaces_bucket}/uploads/{filename}"
+                )
+
+            logging.info("storage: uploaded bytes to Spaces → %s", storage_url)
+            return filename, storage_url
+
+        except Exception as exc:
+            logging.error(
+                "storage: Spaces upload_bytes failed (%s) — falling back to local filesystem",
+                exc,
+            )
+
+    # ── Local filesystem fallback ──
+    from app import UPLOAD_FOLDER
+
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    with open(save_path, "wb") as fh:
+        fh.write(data)
+    logging.info("storage: saved bytes locally → uploads/%s", filename)
+    return filename, None
+
+
 def delete_file(filename: str) -> None:
     """
     Delete a previously-uploaded file from wherever it was stored.
