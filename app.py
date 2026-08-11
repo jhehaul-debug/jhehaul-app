@@ -656,3 +656,6 @@ with app.app_context():
 
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
+
+from draft_cleanup import start_draft_cleanup_thread
+start_draft_cleanup_thread(app)

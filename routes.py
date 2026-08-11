@@ -967,11 +967,29 @@ def listing_set_status(listing_id):
 def my_listings():
     """Seller's dashboard: view and manage their own listings."""
     from models import Listing
-    listings = (Listing.query
-                .filter_by(seller_id=current_user.id)
-                .order_by(Listing.created_at.desc())
-                .all())
-    return render_template('my_listings.html', listings=listings)
+
+    DRAFT_DISPLAY_CAP = 10  # show at most this many draft entries
+
+    # Non-draft listings: show all
+    non_drafts = (Listing.query
+                  .filter(Listing.seller_id == current_user.id,
+                          Listing.status != 'draft')
+                  .order_by(Listing.created_at.desc())
+                  .all())
+
+    # Drafts: cap to the most recent N, track how many are hidden
+    all_drafts = (Listing.query
+                  .filter_by(seller_id=current_user.id, status='draft')
+                  .order_by(Listing.created_at.desc())
+                  .all())
+    hidden_draft_count = max(0, len(all_drafts) - DRAFT_DISPLAY_CAP)
+    visible_drafts = all_drafts[:DRAFT_DISPLAY_CAP]
+
+    # Interleave: drafts first (most recent work-in-progress), then the rest
+    listings = visible_drafts + non_drafts
+
+    return render_template('my_listings.html', listings=listings,
+                           hidden_draft_count=hidden_draft_count)
 
 
 @app.route("/listing/<int:listing_id>")
@@ -3139,6 +3157,20 @@ def admin_listing_restore(listing_id):
     listing.status = 'active'
     db.session.commit()
     flash(f'Listing "{listing.title}" restored to active.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/cleanup-drafts", methods=["POST"])
+@require_admin
+def admin_cleanup_drafts():
+    """Manually trigger purge of abandoned draft listings older than 48 h with no title/photos."""
+    from draft_cleanup import purge_abandoned_drafts
+    try:
+        deleted = purge_abandoned_drafts(app)
+        flash(f"Draft cleanup complete — {deleted} abandoned draft(s) removed.", "success")
+    except Exception as exc:
+        app.logger.error("admin_cleanup_drafts error: %s", exc)
+        flash("Draft cleanup failed — check server logs.", "error")
     return redirect(request.referrer or url_for('admin_listings'))
 
 

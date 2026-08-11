@@ -8,6 +8,13 @@
         <h2 class="page-title" style="margin:0;">📋 Manage Listings</h2>
         <span style="background:#dbeafe;color:#1d4ed8;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ total }} total</span>
     </div>
+    <form method="POST" action="{{ url_for('admin_cleanup_drafts') }}" style="margin-left:auto;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline" style="font-size:0.82rem;padding:7px 14px;color:#92400e;border-color:#fde68a;background:#fef9c3;"
+                onclick="return confirm('Delete all abandoned drafts older than 48h with no title or photos?');">
+            🗑 Purge Abandoned Drafts
+        </button>
+    </form>
 </div>
 
 <!-- Search & Filter -->
