@@ -72,6 +72,8 @@ class Job(db.Model):
     deposit_paid = db.Column(db.Boolean, default=False)
     preferred_date = db.Column(db.String, nullable=True)
     preferred_time = db.Column(db.String, nullable=True)
+    scheduled_date = db.Column(db.String, nullable=True)   # confirmed appointment date (YYYY-MM-DD)
+    scheduled_time = db.Column(db.String, nullable=True)   # confirmed appointment time (HH:MM)
     completed_at = db.Column(db.DateTime, nullable=True)
     cancelled_at = db.Column(db.DateTime, nullable=True)
     expired_at = db.Column(db.DateTime, nullable=True)

@@ -311,6 +311,14 @@ def notify_customer_deposit_confirmed_sms(phone, job_id, service_type):
     return send_sms(phone, msg, 'customer_deposit_confirmed')
 
 
+def notify_customer_appointment_confirmed_sms(phone, job_id, service_type, scheduled_date, scheduled_time):
+    service_label = service_type or 'your service'
+    when = f"{scheduled_date}" + (f" at {scheduled_time}" if scheduled_time else "")
+    msg = (f"JHE Haul: Your appointment for {service_label} is confirmed for {when}. "
+           f"Details: {_APP_URL}/customer/request/{job_id}")
+    return send_sms(phone, msg, 'customer_appointment_confirmed')
+
+
 def notify_customer_job_completed_sms(phone, job_id):
     if not is_sms_enabled('customer_job_completed'):
         return False

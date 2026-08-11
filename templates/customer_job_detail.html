@@ -138,12 +138,31 @@
     &#128179; <strong>Deposit required</strong> — You've accepted the quote. Pay the deposit below to confirm your booking and we'll get to work scheduling your pickup.
 </div>
 {% elif job.status in ('scheduled', 'deposit_paid') %}
-<div class="alert-box alert-success" style="margin-bottom:20px;">
-    &#10003; <strong>You're all set!</strong> Your service is scheduled. We'll reach out to coordinate the exact time. Message us below with any questions.
-</div>
+    {% if job.scheduled_date %}
+    <div class="alert-box alert-success" style="margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border:2px solid #86efac;">
+        <div style="font-size:2rem;">&#128197;</div>
+        <div>
+            <div style="font-weight:800;font-size:1.05rem;margin-bottom:2px;">Your appointment is confirmed!</div>
+            <div style="font-size:1rem;">
+                <strong>{{ scheduled_date_nice or job.scheduled_date }}</strong>
+                {% if scheduled_time_nice or job.scheduled_time %} at <strong>{{ scheduled_time_nice or job.scheduled_time }}</strong>{% endif %}
+            </div>
+            <div style="font-size:0.83rem;color:#166534;margin-top:2px;">Need to make a change? Message us below.</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert-box alert-success" style="margin-bottom:20px;">
+        &#10003; <strong>You're all set!</strong> Your service is scheduled. We'll reach out to coordinate the exact time. Message us below with any questions.
+    </div>
+    {% endif %}
 {% elif job.status == 'in_progress' %}
 <div class="alert-box alert-info" style="margin-bottom:20px;">
     &#9889; <strong>In progress</strong> — Your service is currently being worked on.
+    {% if job.scheduled_date %}
+    <div style="margin-top:6px;font-size:0.92rem;">
+        &#128197; Appointment: <strong>{{ scheduled_date_nice or job.scheduled_date }}</strong>{% if scheduled_time_nice or job.scheduled_time %} at <strong>{{ scheduled_time_nice or job.scheduled_time }}</strong>{% endif %}
+    </div>
+    {% endif %}
 </div>
 {% elif job.status == 'completed' %}
 <div class="alert-box alert-success" style="margin-bottom:20px;">
@@ -226,6 +245,11 @@
             <div class="info-row"><strong>Service Address:</strong> <span>{{ job.pickup_address }}, {{ job.pickup_zip }}</span></div>
             {% if job.preferred_date %}
             <div class="info-row"><strong>Preferred Date:</strong> <span>{{ job.preferred_date }}{% if job.preferred_time %} — {{ job.preferred_time }}{% endif %}</span></div>
+            {% endif %}
+            {% if job.scheduled_date %}
+            <div class="info-row"><strong>Confirmed Appointment:</strong>
+                <span style="color:#15803d;font-weight:700;">{{ scheduled_date_nice or job.scheduled_date }}{% if scheduled_time_nice or job.scheduled_time %} at {{ scheduled_time_nice or job.scheduled_time }}{% endif %}</span>
+            </div>
             {% endif %}
         </div>
 

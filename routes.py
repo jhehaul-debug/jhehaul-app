@@ -24,6 +24,7 @@ from email_service import (
     notify_admin_job_completed, notify_admin_job_cancelled,
     notify_admin_user_deleted,
     notify_customer_quote_received, notify_customer_deposit_confirmed,
+    notify_customer_appointment_confirmed,
     notify_admin_new_request,
 )
 from sms_service import (
@@ -32,6 +33,7 @@ from sms_service import (
     notify_hauler_job_cancelled_sms,
     notify_customer_new_bid_sms, notify_customer_job_completed_sms,
     notify_customer_quote_received_sms, notify_customer_deposit_confirmed_sms,
+    notify_customer_appointment_confirmed_sms,
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
@@ -1048,7 +1050,22 @@ def customer_job_detail(job_id):
             h = User.query.get(bid.hauler_id)
             if h:
                 hauler_map[bid.hauler_id] = h
+    scheduled_date_nice = None
+    scheduled_time_nice = None
+    if job.scheduled_date:
+        try:
+            scheduled_date_nice = _dt.strptime(job.scheduled_date, '%Y-%m-%d').strftime('%A, %B %d, %Y')
+        except ValueError:
+            scheduled_date_nice = job.scheduled_date
+        if job.scheduled_time:
+            try:
+                scheduled_time_nice = _dt.strptime(job.scheduled_time, '%H:%M').strftime('%I:%M %p').lstrip('0')
+            except ValueError:
+                scheduled_time_nice = job.scheduled_time
+
     return render_template('customer_job_detail.html', job=job, bids=bids,
+                           scheduled_date_nice=scheduled_date_nice,
+                           scheduled_time_nice=scheduled_time_nice,
                            pay_link=pay_link,
                            checkout_over500_url=checkout_over500_url,
                            pay_link_missing=pay_link_missing,
@@ -1646,6 +1663,66 @@ def admin_request_status(job_id):
         job.cancelled_at = datetime.now()
     db.session.commit()
     flash(f"Status updated: {old_status.replace('_',' ')} → {new_status.replace('_',' ')}.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job_id))
+
+
+@app.route("/admin/request/<int:job_id>/schedule", methods=["POST"])
+@require_admin
+def admin_schedule_appointment(job_id):
+    job = Job.query.get_or_404(job_id)
+    scheduled_date = request.form.get("scheduled_date", "").strip()
+    scheduled_time = request.form.get("scheduled_time", "").strip()
+    if not scheduled_date or not scheduled_time:
+        flash("Please choose both an appointment date and time.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    try:
+        datetime.strptime(scheduled_date, '%Y-%m-%d')
+        datetime.strptime(scheduled_time, '%H:%M')
+    except ValueError:
+        flash("Invalid date or time format.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    # Only jobs that could legitimately be (or stay) scheduled may get an appointment
+    if job.status not in ('quoted', 'waiting_for_payment', 'accepted', 'deposit_paid',
+                          'scheduled', 'in_progress'):
+        flash(f"Cannot schedule an appointment for a request in '{job.status.replace('_',' ')}' status.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job_id))
+    # Same business rule as the status route: quote accepted + deposit paid first
+    if job.status not in ('scheduled', 'in_progress'):
+        accepted_quote = Quote.query.filter_by(job_id=job_id, status='accepted').first()
+        if not accepted_quote or not job.deposit_paid:
+            flash("Cannot schedule: customer must accept the quote and pay the deposit first.", "error")
+            return redirect(url_for('admin_request_detail', job_id=job_id))
+    job.scheduled_date = scheduled_date
+    job.scheduled_time = scheduled_time
+    if job.status != 'in_progress':
+        job.status = 'scheduled'
+    db.session.commit()
+
+    # Human-friendly date/time for notifications
+    try:
+        nice_date = datetime.strptime(scheduled_date, '%Y-%m-%d').strftime('%A, %B %d, %Y')
+    except ValueError:
+        nice_date = scheduled_date
+    nice_time = datetime.strptime(scheduled_time, '%H:%M').strftime('%I:%M %p').lstrip('0')
+
+    customer = User.query.get(job.customer_id) if job.customer_id else None
+    if customer:
+        try:
+            if customer.email:
+                notify_customer_appointment_confirmed(
+                    customer.email, job.id, job.service_type or 'Service Request',
+                    nice_date, nice_time)
+        except Exception as e:
+            app.logger.error("notify_customer_appointment_confirmed failed (job #%s): %s", job.id, e)
+        try:
+            if customer.notify_sms and customer.phone:
+                notify_customer_appointment_confirmed_sms(
+                    customer.phone, job.id, job.service_type or 'your service',
+                    nice_date, nice_time)
+        except Exception as e:
+            app.logger.error("notify_customer_appointment_confirmed_sms failed (job #%s): %s", job.id, e)
+
+    flash(f"Appointment confirmed for {nice_date} at {nice_time}. Customer notified.", "success")
     return redirect(url_for('admin_request_detail', job_id=job_id))
 
 

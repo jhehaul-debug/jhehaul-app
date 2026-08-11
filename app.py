@@ -184,6 +184,16 @@ with app.app_context():
 
     try:
         from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS scheduled_date VARCHAR"))
+        db.session.execute(_text("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS scheduled_time VARCHAR"))
+        db.session.commit()
+        logging.info("Column migration: scheduled_date/scheduled_time ensured on jobs table")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (scheduled appointment) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
         db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_data BYTEA"))
         db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_content_type VARCHAR(80)"))
         db.session.commit()

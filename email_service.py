@@ -580,6 +580,30 @@ def notify_customer_quote_received(customer_email, job_id, service_type, price, 
     )
 
 
+def notify_customer_appointment_confirmed(customer_email, job_id, service_type,
+                                           scheduled_date, scheduled_time):
+    """Email the customer their confirmed pickup appointment date/time."""
+    service_label = service_type or 'Service'
+    when = f"{scheduled_date}" + (f" at {scheduled_time}" if scheduled_time else "")
+    body = f"""
+    <p>Your appointment is confirmed! We'll see you then.</p>
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Service:</strong> {service_label}</p>
+      <p><strong>Appointment:</strong> <span class="pill pill-green">📅 {when}</span></p>
+    </div>
+    <p>If you need to make changes, message us anytime through your request page.</p>
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">View Your Request →</a>"""
+    return send_email(
+        customer_email,
+        f"Appointment Confirmed — {when} ({service_label}, Request #{job_id})",
+        _html("Your Appointment Is Confirmed! 📅",
+              "Your pickup date and time are locked in.",
+              "📅 Appointment Set", body),
+        'customer_appointment_confirmed'
+    )
+
+
 def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, description):
     """Admin email when a new service request is submitted."""
     body = f"""

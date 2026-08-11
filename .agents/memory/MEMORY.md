@@ -1,1 +1,2 @@
 - [SMS system architecture](sms-system.md) — Twilio SMS alongside SendGrid; migration ordering critical in app.py
+- [Flask test bootstrap](flask-test-bootstrap.md) — tests must `import routes` after `app` or all endpoints 404; patch flask_login for auth.

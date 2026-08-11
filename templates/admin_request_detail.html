@@ -62,6 +62,37 @@
             </form>
         </div>
 
+        {% if job.status in ('quoted', 'waiting_for_payment', 'accepted', 'deposit_paid', 'scheduled', 'in_progress') %}
+        <div class="card" style="border-left:4px solid #2b6cb0;">
+            <h3 style="margin-bottom:6px;">📅 Confirm Appointment</h3>
+            {% if job.scheduled_date %}
+            <p style="font-size:0.88rem;color:#15803d;font-weight:600;margin-bottom:10px;">
+                Currently scheduled: {{ job.scheduled_date }}{% if job.scheduled_time %} at {{ job.scheduled_time }}{% endif %}
+            </p>
+            {% else %}
+            <p style="font-size:0.85rem;color:#718096;margin-bottom:10px;">
+                Set the confirmed pickup date &amp; time. The customer will be notified by email and SMS.
+            </p>
+            {% endif %}
+            <form method="POST" action="{{ url_for('admin_schedule_appointment', job_id=job.id) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:1;min-width:140px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:#718096;display:block;margin-bottom:4px;">Date</label>
+                    <input type="date" name="scheduled_date" required value="{{ job.scheduled_date or '' }}"
+                           style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                </div>
+                <div style="flex:1;min-width:120px;">
+                    <label style="font-size:0.82rem;font-weight:600;color:#718096;display:block;margin-bottom:4px;">Time</label>
+                    <input type="time" name="scheduled_time" required value="{{ job.scheduled_time or '' }}"
+                           style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+                </div>
+                <button type="submit" class="btn btn-primary"
+                        onclick="return confirm('Confirm this appointment and notify the customer?');">
+                    {{ 'Update' if job.scheduled_date else 'Confirm' }} 📅
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
         {% if job.status == 'in_progress' or job.status == 'scheduled' %}
         <div class="card" style="border-left:4px solid #16a34a;">
             <h3 style="margin-bottom:12px;">✅ Mark Complete</h3>
