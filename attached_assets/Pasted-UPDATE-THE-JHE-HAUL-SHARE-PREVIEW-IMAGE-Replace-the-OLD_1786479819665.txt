@@ -1,0 +1,58 @@
+UPDATE THE JHE HAUL SHARE/PREVIEW IMAGE
+
+Replace the OLD JHE Haul social sharing/link preview image that says:
+“Request Junk Removal Service”
+and/or
+“The Local Junk Hauling Marketplace”
+
+with the NEW JHE Haul Local Marketplace image I am providing.
+
+IMPORTANT:
+JHE Haul is now primarily a LOCAL MARKETPLACE, not a junk-removal app.
+
+The new image should become the DEFAULT link-preview/social-sharing image everywhere on the site, including when jhehaul.com is shared through:
+- iMessage
+- Facebook
+- Messenger
+- X/Twitter
+- LinkedIn
+- WhatsApp
+- other apps that generate link previews
+
+Update the site metadata so it uses the new image.
+
+Update:
+1. og:image
+2. twitter:image
+3. Open Graph title
+4. Open Graph description
+5. Twitter title
+6. Twitter description
+7. Any existing social/share preview image references
+8. Any old junk-removal-specific metadata still being used for jhehaul.com
+
+Use this messaging:
+
+TITLE:
+JHE Haul | Local Marketplace
+
+DESCRIPTION:
+Buy, sell, rent, and find homes locally in the Twin Cities. Connect with people throughout Minneapolis, St. Paul, and surrounding Minnesota communities.
+
+The NEW uploaded JHE Haul Local Marketplace graphic must be the primary social preview image.
+
+REMOVE old phrases from the main website/social metadata such as:
+- Request Junk Removal Service
+- Local Junk Hauling Marketplace
+- Post Jobs • Get Bids • Hire Haulers
+
+Do NOT remove the hauling/delivery feature from the application. Hauling can remain available as a marketplace service, but it should NOT be the primary identity of JHE Haul.
+
+After making the changes:
+- Verify the new image is publicly accessible
+- Verify og:image points to the new image
+- Verify twitter:image points to the new image
+- Verify the production jhehaul.com metadata, not just the Replit development URL
+- Do not change or break marketplace listings, housing, rentals, messaging, accounts, admin, database, or existing functionality
+
+Then show me exactly which files were changed and confirm the old junk-removal preview image is no longer the default.
