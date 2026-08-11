@@ -1051,6 +1051,15 @@ def listing_detail(listing_id):
     # Ordered photos (primary first)
     photos = sorted(listing.photos, key=lambda p: (0 if p.is_primary else 1, p.display_order))
 
+    # Buyer's existing offer on this listing (most recent)
+    buyer_offer = None
+    if current_user.is_authenticated and not is_owner and not is_admin:
+        from models import ListingOffer
+        buyer_offer = (ListingOffer.query
+                       .filter_by(listing_id=listing_id, buyer_id=current_user.id)
+                       .order_by(ListingOffer.created_at.desc())
+                       .first())
+
     return render_template(
         'listing_detail.html',
         listing=listing,
@@ -1059,6 +1068,7 @@ def listing_detail(listing_id):
         is_owner=is_owner,
         is_admin=is_admin,
         seller_active_count=seller_active_count,
+        buyer_offer=buyer_offer,
     )
 
 
@@ -1132,6 +1142,81 @@ def listing_report(listing_id):
     db.session.add(report)
     db.session.commit()
     flash("Thank you — your report has been submitted for review.", "success")
+    return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+@app.route("/listing/<int:listing_id>/offer", methods=["POST"])
+@require_login
+def listing_make_offer(listing_id):
+    """Submit or update a buyer offer on a negotiable listing."""
+    _check_listing_csrf()
+
+    from models import Listing, ListingOffer
+    listing = Listing.query.get_or_404(listing_id)
+
+    # Only active, approved, negotiable listings accept offers
+    if listing.status != 'active' or listing.moderation_status != 'approved':
+        abort(404)
+    if listing.price_type != 'negotiable':
+        flash("This listing does not accept offers.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    # Sellers cannot offer on their own listing
+    if current_user.id == listing.seller_id:
+        flash("You cannot make an offer on your own listing.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    # Parse amount — reject non-numeric, non-finite, and non-positive values
+    import math as _math
+    try:
+        amount = float(request.form.get('amount', '').strip())
+        if not _math.isfinite(amount) or amount <= 0 or amount > 999_999_999:
+            raise ValueError
+    except (ValueError, AttributeError):
+        flash("Please enter a valid offer amount.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    message = (request.form.get('message', '') or '').strip()[:1000]
+
+    # Upsert: one pending offer per buyer per listing (update if already pending)
+    existing = (ListingOffer.query
+                .filter_by(listing_id=listing_id, buyer_id=current_user.id, status='pending')
+                .first())
+    if existing:
+        existing.amount = amount
+        existing.message = message or existing.message
+        existing.updated_at = datetime.now()
+        offer = existing
+    else:
+        offer = ListingOffer(
+            listing_id=listing_id,
+            buyer_id=current_user.id,
+            seller_id=listing.seller_id,
+            amount=amount,
+            message=message or None,
+            status='pending',
+        )
+        db.session.add(offer)
+
+    db.session.commit()
+
+    # Notify seller via SMS if they have SMS enabled
+    # Uses the 'customer_new_bid' event toggle (ev_new_bid) — closest semantic match
+    seller = listing.seller
+    try:
+        from sms_service import send_sms, is_sms_enabled
+        if (is_sms_enabled('customer_new_bid') and seller.notify_sms
+                and seller.sms_consent and seller.phone):
+            buyer_name = current_user.first_name or 'A buyer'
+            sms_body = (
+                f"{buyer_name} made a ${amount:,.0f} offer on your listing "
+                f'"{listing.title[:40]}". Log in to respond.'
+            )
+            send_sms(seller.phone, sms_body, 'customer_new_bid')
+    except Exception:
+        pass
+
+    flash("Your offer has been sent to the seller!", "success")
     return redirect(url_for('listing_detail', listing_id=listing_id))
 
 

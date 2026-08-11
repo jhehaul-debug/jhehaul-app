@@ -498,6 +498,94 @@
   .ld-title { font-size: 1.3rem; }
   .ld-price { font-size: 1.5rem; }
 }
+
+/* ── Make Offer button ── */
+.btn-make-offer {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 13px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-make-offer:hover { background: linear-gradient(135deg, #d97706, #b45309); }
+
+/* ── Offer status boxes ── */
+.offer-status-box {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.offer-status-label { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+.offer-status-amount { font-size: 1.5rem; font-weight: 800; margin: 4px 0; }
+.offer-status-sub { font-size: 0.8rem; opacity: 0.8; }
+.offer-update-link {
+  display: inline-block;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.offer-pending  { background: #fef3c7; color: #92400e; }
+.offer-pending .offer-update-link { color: #92400e; }
+.offer-accepted { background: #dcfce7; color: #15803d; }
+.offer-declined { background: #fee2e2; color: #dc2626; }
+.offer-declined .offer-update-link { color: #dc2626; }
+
+/* ── Offer modal ── */
+#offer-modal .modal-box { max-width: 420px; }
+.offer-modal-price-hint { font-size: 0.82rem; color: #6b7280; margin-bottom: 12px; }
+.offer-amount-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.offer-amount-wrap .currency-sym {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+}
+.offer-amount-wrap input[type=number] {
+  width: 100%;
+  padding: 11px 12px 11px 28px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  box-sizing: border-box;
+}
+.offer-amount-wrap input[type=number]:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+}
+.btn-offer-submit {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-offer-submit:hover { background: linear-gradient(135deg, #d97706, #b45309); }
 </style>
 
 <div class="ld-wrap">
@@ -778,7 +866,7 @@
         {% elif listing.status == 'active' and listing.moderation_status == 'approved' %}
 
           {% if current_user.is_authenticated %}
-            <!-- Logged-in buyer -->
+            <!-- Logged-in buyer: primary CTA -->
             {% if listing.is_property %}
               {% if listing.listing_type == 'rental' %}
                 <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🔑 Contact Landlord</a>
@@ -792,8 +880,35 @@
               {% endif %}
             {% endif %}
 
+            {# ── Offer controls: shown for all negotiable listings ── #}
+            {% if listing.price_type == 'negotiable' %}
+              {% if buyer_offer and buyer_offer.status == 'pending' %}
+                <div class="offer-status-box offer-pending">
+                  <div class="offer-status-label">⏳ Offer Pending</div>
+                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-sub">Sent {{ buyer_offer.created_at.strftime('%-m/%-d/%Y') }} · Waiting for seller</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Update offer</button>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'accepted' %}
+                <div class="offer-status-box offer-accepted">
+                  <div class="offer-status-label">✅ Offer Accepted!</div>
+                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-sub">Contact the seller to complete your purchase.</div>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'declined' %}
+                <div class="offer-status-box offer-declined">
+                  <div class="offer-status-label">❌ Offer Declined</div>
+                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-sub">The seller passed on this offer.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
+              {% else %}
+                <button type="button" class="btn-make-offer" onclick="openOfferModal()">💰 Make an Offer</button>
+              {% endif %}
+            {% endif %}
+
           {% else %}
-            <!-- Logged-out visitor -->
+            <!-- Logged-out visitor: primary CTA -->
             {% if listing.is_property %}
               {% if listing.listing_type == 'rental' %}
                 <a href="{{ url_for('auth.login') }}" class="btn-primary">🔑 Contact Landlord</a>
@@ -805,6 +920,10 @@
               {% if 'jhe_haul' in listing.delivery_options_list %}
               <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
               {% endif %}
+            {% endif %}
+            {# Offer CTA for all negotiable listings (logged-out) #}
+            {% if listing.price_type == 'negotiable' %}
+            <a href="{{ url_for('auth.login') }}" class="btn-make-offer">💰 Make an Offer</a>
             {% endif %}
           {% endif %}
 
@@ -884,6 +1003,34 @@
   {% endif %}
   <img id="lb-img" src="" alt="{{ listing.title }}">
 </div>
+
+<!-- Make Offer modal -->
+{% if current_user.is_authenticated and not is_owner and listing.price_type == 'negotiable' and listing.status == 'active' %}
+<div class="modal-backdrop" id="offer-modal" onclick="closeOfferModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>💰 Make an Offer</h3>
+    {% if listing.price is not none %}
+    <div class="offer-modal-price-hint">Listed price: <strong>${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}</strong></div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('listing_make_offer', listing_id=listing.id) }}" id="offer-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px">Your Offer Amount</label>
+      <div class="offer-amount-wrap">
+        <span class="currency-sym">$</span>
+        <input type="number" name="amount" id="offer-amount" min="1" step="1"
+               value="{{ buyer_offer.amount|int if buyer_offer else '' }}"
+               placeholder="Enter your offer" required autofocus>
+      </div>
+      <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px">Message to Seller <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+      <textarea name="message" placeholder="Add a note — why you're interested, questions, pickup availability…" maxlength="1000" style="min-height:80px;resize:vertical;">{{ buyer_offer.message or '' if buyer_offer else '' }}</textarea>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeOfferModal()">Cancel</button>
+        <button type="submit" class="btn-offer-submit">Send Offer</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 
 <!-- Report modal -->
 {% if current_user.is_authenticated and not is_owner %}
@@ -1010,6 +1157,25 @@ function toggleFavorite() {
   })
   .catch(() => { form.submit(); });
 }
+
+// ── Offer modal ───────────────────────────────────────────────
+function openOfferModal() {
+  const m = document.getElementById('offer-modal');
+  if (m) {
+    m.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    const inp = document.getElementById('offer-amount');
+    if (inp) setTimeout(() => inp.focus(), 50);
+  }
+}
+function closeOfferModal(e) {
+  if (e && e.target !== document.getElementById('offer-modal')) return;
+  const m = document.getElementById('offer-modal');
+  if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeOfferModal();
+});
 
 // ── Report modal ──────────────────────────────────────────────
 function openReportModal() {
