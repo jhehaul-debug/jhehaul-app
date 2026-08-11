@@ -115,10 +115,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Digital Ocean Deployment
 - **Dockerfile** - Multi-stage build with python:3.11-slim, runs gunicorn on port 8080
+  - Runs `pip install -r requirements.txt && pip check` at build time so conflicting or missing packages fail the build before any code ships
 - **`.do/app.yaml`** - App Platform spec (update `github.repo` to your repo path)
+  - `health_check.http_path: /health` — App Platform polls `GET /health` and restarts the container on repeated 5xx responses
 - **`docker-compose.yml`** - Local dev with PostgreSQL container
 - **`Procfile`** - `gunicorn -w 2 --timeout 60 -b 0.0.0.0:${PORT:-8080} wsgi:application`
 - **`wsgi.py`** - WSGI entry point that imports both `auth` and `routes` modules
+
+#### Health-check endpoint (`GET /health`)
+Returns `{"status": "ok"}` (HTTP 200) when the app is healthy, or `{"status": "error", "errors": [...]}` (HTTP 503) when any of the following fail:
+- Any critical Python package (`Flask`, `SQLAlchemy`, `stripe`, `sendgrid`, `twilio`, `boto3`, `psycopg2`, `pgeocode`, `Pillow`, `Flask-WTF`) cannot be imported
+- The database does not respond to a `SELECT 1` query
+
+This endpoint is unauthenticated and lightweight — safe to poll frequently. DigitalOcean App Platform uses it automatically; you can also curl it manually after a deploy: `curl https://jhehaul.com/health`
 
 ### Email Service
 - **SendGrid** via direct `SENDGRID_API_KEY` env var (no Replit Connectors dependency)

@@ -5192,7 +5192,43 @@ def admin_sms_resend(log_id):
 
 @app.route("/health")
 def health():
-    return "ok", 200
+    """
+    Health-check endpoint used by DigitalOcean App Platform (see .do/app.yaml).
+    Returns 200 when critical imports and the DB are reachable; 503 otherwise.
+    Lightweight and unauthenticated — safe to poll frequently.
+    """
+    errors = []
+
+    # 1. Verify critical third-party packages are importable
+    critical_modules = {
+        "flask": "Flask",
+        "flask_sqlalchemy": "Flask-SQLAlchemy",
+        "flask_login": "Flask-Login",
+        "stripe": "stripe",
+        "sendgrid": "sendgrid",
+        "twilio": "twilio",
+        "boto3": "boto3",
+        "psycopg2": "psycopg2-binary",
+        "pgeocode": "pgeocode",
+        "PIL": "Pillow",
+        "flask_wtf": "Flask-WTF",
+    }
+    for module, pkg in critical_modules.items():
+        try:
+            __import__(module)
+        except ImportError as exc:
+            errors.append(f"missing package {pkg}: {exc}")
+
+    # 2. Verify database is reachable with a cheap query
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("SELECT 1"))
+    except Exception as exc:
+        errors.append(f"database unreachable: {exc}")
+
+    if errors:
+        return jsonify({"status": "error", "errors": errors}), 503
+    return jsonify({"status": "ok"}), 200
 
 
 @app.route("/robots.txt")
