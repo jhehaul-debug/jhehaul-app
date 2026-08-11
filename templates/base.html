@@ -122,29 +122,29 @@
         <div class="footer-inner">
             <div class="footer-brand-col">
                 <span class="footer-brand">🚛 JHE Haul</span>
-                <p class="footer-desc">Local Marketplace<br><small>Buy • Sell • Connect Locally</small></p>
+                <p class="footer-desc">Local Marketplace<br><small>Buy • Sell • Rent • Find Homes • Connect Locally</small></p>
             </div>
             <div class="footer-col">
                 <h4>Marketplace</h4>
                 <a href="{{ url_for('marketplace') }}">Browse Listings</a>
                 <a href="/sell">Sell Something</a>
-                <a href="{{ url_for('marketplace') }}">Categories</a>
-                <a href="{{ url_for('marketplace_messages') if current_user.is_authenticated else url_for('auth.login') }}">Messages</a>
+                <a href="{{ url_for('marketplace') }}?listing_type=property_sale">Homes for Sale</a>
+                <a href="{{ url_for('marketplace') }}?listing_type=rental">Homes &amp; Apartments for Rent</a>
             </div>
             <div class="footer-col">
-                <h4>Help &amp; Safety</h4>
-                <a href="{{ url_for('how_it_works') }}">How It Works</a>
-                <a href="{{ url_for('safety') }}">Buying &amp; Selling Safely</a>
-                <a href="{{ url_for('guidelines') }}">Community Guidelines</a>
-                <a href="mailto:jhehaul@gmail.com">Report a Problem</a>
-            </div>
-            <div class="footer-col">
-                <h4>Company</h4>
-                <a href="{{ url_for('landing') }}">Our Work</a>
+                <h4>Services</h4>
+                <a href="/services">Haul &amp; Delivery</a>
                 <a href="{{ url_for('about') }}">About JHE Haul</a>
-                <a href="mailto:jhehaul@gmail.com">Contact</a>
+                <a href="{{ url_for('how_it_works') }}">How It Works</a>
+                <a href="{{ url_for('landing') }}">Our Work</a>
+            </div>
+            <div class="footer-col">
+                <h4>Support</h4>
+                <a href="mailto:jhehaul@gmail.com">Contact Us</a>
                 <a href="{{ url_for('customer_terms') }}">Terms of Service</a>
                 <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+                <a href="{{ url_for('safety') }}">Safety</a>
+                <a href="{{ url_for('guidelines') }}">Community Guidelines</a>
             </div>
         </div>
         <div class="footer-bottom">

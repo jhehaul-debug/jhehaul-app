@@ -1373,7 +1373,7 @@ def choose_role():
         return redirect(url_for("admin_dashboard"))
     if current_user.user_type == "customer":
         session.pop("invited_role", None)
-        return redirect(url_for("customer_dashboard"))
+        return redirect(url_for("marketplace"))
     session.pop("invited_role", None)
     current_user.user_type = 'customer'
     db.session.commit()
@@ -1383,7 +1383,7 @@ def choose_role():
         notify_admin_new_customer_sms(_name, current_user.email)
     except Exception as e:
         app.logger.error("Admin notify failed (new customer): %s", e)
-    return redirect(url_for("customer_dashboard"))
+    return redirect(url_for("marketplace"))
 
 @app.route("/set-role", methods=["POST"])
 @require_login
@@ -1398,7 +1398,7 @@ def set_role():
         notify_admin_new_customer_sms(_name, current_user.email)
     except Exception as e:
         app.logger.error("Admin notify failed (new customer): %s", e)
-    return redirect(url_for('customer_dashboard'))
+    return redirect(url_for('marketplace'))
 
 @app.route("/hauler/setup")
 @app.route("/hauler/setup", methods=["POST"])
@@ -2739,6 +2739,9 @@ def admin_dashboard():
     sold_items = Listing.query.filter_by(status='sold').count()
     reported_listings = ListingReport.query.filter_by(status='pending').count()
     total_listings = Listing.query.count()
+    homes_for_sale = Listing.query.filter_by(listing_type='property_sale').count()
+    rental_listings = Listing.query.filter_by(listing_type='rental').count()
+    housing_listings = homes_for_sale + rental_listings
 
     # Recent activity
     recent_listings = Listing.query.order_by(Listing.created_at.desc()).limit(8).all()
@@ -2763,6 +2766,9 @@ def admin_dashboard():
                            sold_items=sold_items,
                            reported_listings=reported_listings,
                            total_listings=total_listings,
+                           homes_for_sale=homes_for_sale,
+                           rental_listings=rental_listings,
+                           housing_listings=housing_listings,
                            recent_listings=recent_listings,
                            recent_users=recent_users,
                            recent_sold=recent_sold,

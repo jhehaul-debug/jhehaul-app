@@ -67,8 +67,22 @@
             <div class="stat-label">Reports</div>
         </div>
     </a>
+    <a href="{{ url_for('admin_listings') }}?listing_type=property_sale" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-left:4px solid #9333ea;cursor:pointer;">
+            <div class="stat-icon">🏠</div>
+            <div class="stat-value" style="color:#7e22ce;">{{ homes_for_sale }}</div>
+            <div class="stat-label">Homes for Sale</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_listings') }}?listing_type=rental" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;cursor:pointer;">
+            <div class="stat-icon">🔑</div>
+            <div class="stat-value" style="color:#ea580c;">{{ rental_listings }}</div>
+            <div class="stat-label">Rental Listings</div>
+        </div>
+    </a>
     <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #14b8a6;">
-        <div class="stat-icon">💰</div>
+        <div class="stat-icon">📋</div>
         <div class="stat-value" style="color:#0f766e;">{{ total_listings }}</div>
         <div class="stat-label">Total Listings</div>
     </div>

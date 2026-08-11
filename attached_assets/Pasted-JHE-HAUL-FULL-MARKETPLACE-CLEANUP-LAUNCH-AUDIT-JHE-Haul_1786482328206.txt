@@ -1,0 +1,327 @@
+JHE HAUL — FULL MARKETPLACE CLEANUP & LAUNCH AUDIT
+
+JHE Haul has been converted from primarily a junk-removal/hauling app into a LOCAL MARKETPLACE for the Twin Cities.
+
+Before adding more features, perform a complete audit of the EXISTING application and clean up any leftover legacy hauling workflow that conflicts with the new marketplace.
+
+IMPORTANT:
+Do NOT rebuild the application.
+Do NOT delete working marketplace, housing, account, messaging, admin, database, authentication, SMS, or other existing functionality.
+Do NOT remove Haul & Delivery completely. It should remain an OPTIONAL marketplace service, not the main purpose of the app.
+
+--------------------------------
+1. REMOVE LEGACY LANGUAGE
+--------------------------------
+
+Search the entire application, including:
+- templates
+- routes
+- database-driven labels
+- admin pages
+- account pages
+- notifications
+- emails
+- SMS
+- buttons
+- forms
+- navigation
+- footer
+- metadata
+- error messages
+- empty-state messages
+
+Find outdated terminology such as:
+
+Junk Removal
+Request Junk Removal
+Request Pickup
+Service Request
+Post Job
+Jobs
+Get Bids
+Bid
+Quotes
+Quote
+Hauler
+Customer
+Accepted Quote
+Awaiting Quote
+Deposit Paid
+Hire Haulers
+Local Junk Hauling Marketplace
+
+Do NOT blindly delete these terms.
+
+If they belong specifically to the optional Haul & Delivery service, they may remain INSIDE that service.
+
+They should NOT appear as the general terminology for the marketplace.
+
+--------------------------------
+2. MARKETPLACE TERMINOLOGY
+--------------------------------
+
+For normal marketplace activity, use:
+
+Listing
+Seller
+Buyer
+Marketplace
+Sell
+Buy
+Message Seller
+Make Offer
+Active
+Pending
+Sold
+
+The primary JHE Haul identity should be:
+
+JHE Haul
+Local Marketplace
+
+Tagline:
+Buy • Sell • Rent • Find Homes • Connect Locally
+
+Service area:
+Twin Cities, Minnesota
+Minneapolis • St. Paul • Surrounding Areas
+
+--------------------------------
+3. CHECK MAIN NAVIGATION
+--------------------------------
+
+Keep the primary mobile navigation simple:
+
+Home
+Browse
+Sell
+Messages
+Account
+
+Do NOT add Hauling as another permanent bottom navigation button.
+
+Haul & Delivery can be accessed from the appropriate marketplace/service area.
+
+--------------------------------
+4. CHECK SELL FLOW
+--------------------------------
+
+When someone presses SELL, make sure they can clearly choose what they are posting.
+
+The choices should include:
+
+Sell an Item
+Property for Rent
+Home/Property for Sale
+
+Keep the existing housing functionality that has already been built.
+
+Do not rebuild it if it already exists.
+
+--------------------------------
+5. TWIN CITIES LOCATION RULES
+--------------------------------
+
+Keep JHE Haul LOCAL-FIRST.
+
+Marketplace and housing listings should be limited to the approved Twin Cities/Minnesota service area.
+
+Validate ZIP codes against the allowed Minnesota/Twin Cities ZIP-code system already implemented.
+
+Do not allow obviously out-of-area ZIP codes to bypass validation.
+
+Display:
+City, MN
+
+Do NOT publicly expose a seller's exact street address on normal marketplace listings.
+
+--------------------------------
+6. MARKETPLACE LISTING STATUS
+--------------------------------
+
+Normal marketplace listings should support:
+
+Active
+Pending
+Sold
+
+Sellers should be able to mark their own listing:
+Pending
+Sold
+
+Admin should also be able to manage listing status.
+
+Do not confuse marketplace listing status with the old hauling job-status workflow.
+
+--------------------------------
+7. MARKETPLACE SAFETY
+--------------------------------
+
+Verify that users can:
+
+Message sellers without publicly displaying personal contact information.
+
+If reporting functionality already exists, verify it works.
+
+If it does NOT exist, add:
+
+Report Listing
+Report User
+
+Include report reasons such as:
+Spam
+Scam/Fraud
+Prohibited Item
+Misleading Listing
+Harassment
+Other
+
+Reports should be visible to Admin.
+
+--------------------------------
+8. ADMIN DASHBOARD CLEANUP
+--------------------------------
+
+The Admin Dashboard should now prioritize marketplace information.
+
+Primary statistics should include:
+
+Total Users
+Active Listings
+Pending Listings
+Sold Listings
+Housing Listings
+Rental Listings
+Homes for Sale
+Reports
+Messages/Activity
+
+Haul & Delivery statistics can remain in a separate section.
+
+Do NOT make:
+Quotes
+Bids
+Jobs
+Deposits
+Haulers
+
+the primary dashboard statistics for the entire platform.
+
+Those belong to the optional Haul & Delivery service.
+
+--------------------------------
+9. ACCOUNT PAGE
+--------------------------------
+
+Remove the old assumption that every account must be either:
+
+Customer
+or
+Hauler
+
+Normal marketplace users should simply have a JHE Haul account.
+
+If special Haul & Delivery provider permissions are needed, keep those separately without forcing normal marketplace users to select a hauling role.
+
+Keep:
+Profile picture
+Name
+Email
+Phone
+SMS preferences
+My Listings
+My Messages
+Saved/Favorite Listings if already implemented
+Delete Account
+
+--------------------------------
+10. FOOTER
+--------------------------------
+
+Make sure the footer reflects the marketplace.
+
+Use:
+
+JHE Haul
+Local Marketplace
+
+Buy • Sell • Rent • Find Homes • Connect Locally
+
+MARKETPLACE
+Browse Listings
+Sell Something
+Homes for Sale
+Homes & Apartments for Rent
+
+SERVICES
+Haul & Delivery
+About Us
+
+SUPPORT
+Contact
+Terms of Service
+Privacy Policy
+Safety
+
+Remove any footer language that makes junk removal appear to be the primary business.
+
+--------------------------------
+11. DO NOT BREAK EXISTING SYSTEMS
+--------------------------------
+
+Preserve:
+
+Authentication
+Google/GitHub login
+Database
+Photo uploads
+Messaging
+SMS/Twilio
+Email notifications
+Housing
+Real estate listings
+Marketplace listings
+Admin access
+Mobile layout
+Existing production data
+
+Make database migrations safely if a change is required.
+
+DO NOT erase existing users, listings, messages, photos, or production data.
+
+--------------------------------
+12. FINAL AUDIT
+--------------------------------
+
+After completing the changes:
+
+Run the application and test:
+
+Home
+Browse
+Sell
+Item listing
+Rental listing
+Home-for-sale listing
+Listing detail
+Messages
+Account
+Admin
+Haul & Delivery
+
+Check mobile responsiveness.
+
+Search the codebase again for leftover legacy junk-removal terminology.
+
+Do NOT remove legitimate Haul & Delivery terminology from the dedicated hauling service.
+
+Finally give me a report showing:
+
+1. What was changed
+2. Which files were changed
+3. What old hauling terminology remains and WHY
+4. Any features that still need work
+5. Any errors found
+6. Confirmation that existing production data was preserved
+
+DO NOT deploy/push changes until the work has been completed and tested and I have reviewed the result.

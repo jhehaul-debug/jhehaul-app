@@ -740,7 +740,7 @@
           {% if current_user.is_authenticated and not is_owner %}
           <a class="ld-report-link" onclick="openReportModal()">🚩 Report listing</a>
           {% elif not current_user.is_authenticated %}
-          <a href="{{ url_for('invite', role='customer') }}" class="ld-report-link">🚩 Report listing</a>
+          <a href="{{ url_for('auth.login') }}" class="ld-report-link">🚩 Report listing</a>
           {% endif %}
         </div>
       </div>
@@ -796,14 +796,14 @@
             <!-- Logged-out visitor -->
             {% if listing.is_property %}
               {% if listing.listing_type == 'rental' %}
-                <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">🔑 Contact Landlord</a>
+                <a href="{{ url_for('auth.login') }}" class="btn-primary">🔑 Contact Landlord</a>
               {% else %}
-                <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
+                <a href="{{ url_for('auth.login') }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
               {% endif %}
             {% else %}
-              <a href="{{ url_for('invite', role='customer') }}" class="btn-primary">💬 Message Seller</a>
+              <a href="{{ url_for('auth.login') }}" class="btn-primary">💬 Message Seller</a>
               {% if 'jhe_haul' in listing.delivery_options_list %}
-              <a href="{{ url_for('invite', role='customer') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
+              <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
               {% endif %}
             {% endif %}
           {% endif %}
@@ -819,7 +819,7 @@
               </button>
             </form>
             {% else %}
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
+            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
             {% endif %}
           {% endif %}
 

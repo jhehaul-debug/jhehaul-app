@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 {% block title %}
-{% if role == 'customer' %}Request Junk Removal Service - JHE Haul
-{% elif role == 'hauler' %}Join the JHE Haul Team - JHE Haul
-{% else %}Join JHE Haul | Professional Junk Removal &amp; Hauling{% endif %}
+{% if role == 'hauler' %}Join the JHE Haul Delivery Team - JHE Haul
+{% else %}Join JHE Haul | Local Marketplace - Twin Cities, MN{% endif %}
 {% endblock %}
 {% block meta_description %}
-{% if role == 'customer' %}<meta name="description" content="Request a haul or pickup with JHE Haul. Upload photos, get a quote, and schedule fast pickup.">
-{% elif role == 'hauler' %}<meta name="description" content="Join the JHE Haul team. Pick up jobs in your area and earn on your own schedule. No subscription fees.">
-{% else %}<meta name="description" content="JHE Haul — local marketplace and haul services. Buy, sell, and get it delivered locally.">
+{% if role == 'hauler' %}<meta name="description" content="Join the JHE Haul delivery team. Pick up delivery and haul jobs in your area and earn on your own schedule. No subscription fees.">
+{% else %}<meta name="description" content="Buy, sell, rent, and find homes locally in the Twin Cities. Connect with people throughout Minneapolis, St. Paul, and surrounding Minnesota communities.">
 {% endif %}
 {% endblock %}
 {% block og_meta %}
-<meta property="og:title" content="{% if role == 'customer' %}Request Junk Removal Service - JHE Haul{% elif role == 'hauler' %}Join the JHE Haul Team{% else %}JHE Haul | Professional Junk Removal &amp; Hauling{% endif %}">
-<meta property="og:description" content="{% if role == 'customer' %}Upload photos, get a quote, and schedule pickup. Fast, reliable, and affordable.{% elif role == 'hauler' %}Pick up jobs in your area and earn on your schedule. No subscription fees.{% else %}JHE Haul — local marketplace. Buy, sell, and get it delivered.{% endif %}">
+<meta property="og:title" content="{% if role == 'hauler' %}Join the JHE Haul Delivery Team{% else %}JHE Haul | Local Marketplace{% endif %}">
+<meta property="og:description" content="{% if role == 'hauler' %}Pick up delivery and haul jobs in your area and earn on your schedule. No subscription fees.{% else %}Buy, sell, rent, and find homes locally in the Twin Cities. Connect with people throughout Minneapolis, St. Paul, and surrounding Minnesota communities.{% endif %}">
 <meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
 <meta property="og:image:width" content="1080">
 <meta property="og:image:height" content="1080">
@@ -20,8 +18,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JHE Haul">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{% if role == 'customer' %}Request Junk Removal - JHE Haul{% elif role == 'hauler' %}Join the JHE Haul Team{% else %}JHE Haul{% endif %}">
-<meta name="twitter:description" content="{% if role == 'customer' %}Upload photos, get a quote, and schedule pickup. Fast and affordable.{% elif role == 'hauler' %}Pick up jobs near you and earn on your schedule.{% else %}JHE Haul — buy, sell, and connect locally.{% endif %}">
+<meta name="twitter:title" content="{% if role == 'hauler' %}Join the JHE Haul Delivery Team{% else %}JHE Haul | Local Marketplace{% endif %}">
+<meta name="twitter:description" content="{% if role == 'hauler' %}Pick up delivery jobs near you and earn on your schedule.{% else %}Buy, sell, rent, and find homes locally — Twin Cities, MN.{% endif %}">
 <meta name="twitter:image" content="https://jhehaul.com/static/jhehaul-share.png">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://jhehaul.com{% if role %}/invite/{{ role }}{% else %}/invite{% endif %}">
@@ -31,8 +29,8 @@
 {% if role == 'hauler' %}
 <div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
     <div style="font-size:3rem;margin-bottom:16px;">🚛</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">Join the JHE Haul Team</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Pick up junk removal jobs near you and earn on your own schedule.</p>
+    <h1 style="font-size:2rem;margin-bottom:12px;">Join the JHE Haul Delivery Team</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Pick up delivery and haul jobs near you and earn on your own schedule.</p>
     <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.4;text-align:left;display:inline-block;">
         <li>✅ Set your travel radius — only see jobs near you</li>
         <li>✅ Pick up jobs that fit your truck and schedule</li>
@@ -49,37 +47,22 @@
     </p>
 </div>
 
-{% elif role == 'customer' %}
-<div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
-    <div style="font-size:3rem;margin-bottom:16px;">📦</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">Request Junk Removal Service</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Describe what you need removed, upload a few photos, and we'll send you a quote within 24 hours.</p>
-    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.4;text-align:left;display:inline-block;">
-        <li>✅ Submit photos and a description — takes about 2 minutes</li>
-        <li>✅ Get a clear, upfront quote from the JHE Haul team</li>
-        <li>✅ Pay a small secure deposit to confirm your pickup</li>
-        <li>✅ Same-day and next-day pickup options available</li>
-        <li>✅ Your address stays private until after deposit</li>
-    </ul>
-    <a href="{{ url_for('auth.login') }}?next=/choose-role" class="btn btn-primary" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
-        Create Customer Account
-    </a>
-    <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
-        Sign in with Google — no password needed.<br>
-        Already have an account? Tap the button above to log in.
-    </p>
-</div>
-
 {% else %}
 <div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
-    <div style="font-size:3rem;margin-bottom:16px;">👋</div>
-    <h1 style="font-size:2rem;margin-bottom:12px;">Welcome to JHE Haul</h1>
-    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:8px;">Local marketplace — buy, sell, and connect nearby.</p>
-    <p style="color:#718096;font-size:0.92rem;margin-bottom:32px;">Submit a service request online and get a quote within 24 hours. Serving Minnesota &amp; Wisconsin.</p>
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
-        <a href="{{ url_for('invite', role='customer') }}" class="btn btn-primary" style="font-size:1rem;padding:14px 32px;">📦 Request Service</a>
-    </div>
-    <p style="margin-top:8px;color:#a0aec0;font-size:0.85rem;">
+    <div style="font-size:3rem;margin-bottom:16px;">🛍️</div>
+    <h1 style="font-size:2rem;margin-bottom:12px;">Join JHE Haul Marketplace</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:10px;">Your local marketplace for buying, selling, and renting across the Twin Cities.</p>
+    <ul style="list-style:none;padding:0;color:#4a5568;font-size:0.92rem;margin-bottom:32px;line-height:2.4;text-align:left;display:inline-block;">
+        <li>✅ Browse listings from local sellers near you</li>
+        <li>✅ Message sellers and make offers — all in-platform</li>
+        <li>✅ List items, rentals, and homes for sale — free</li>
+        <li>✅ Request JHE Haul delivery on eligible listings</li>
+        <li>✅ Minneapolis • St. Paul • Surrounding Areas</li>
+    </ul>
+    <a href="{{ url_for('auth.login') }}?next=/marketplace" class="btn btn-primary" style="font-size:1.15rem;padding:16px 48px;display:inline-block;">
+        Sign In to Get Started
+    </a>
+    <p style="margin-top:20px;color:#a0aec0;font-size:0.85rem;">
         Sign in with Google — no password needed.<br>
         Already have an account? Tap the button above to log in.
     </p>
@@ -88,13 +71,13 @@
 
 <div style="max-width:560px;margin:0 auto;">
     <div class="card" style="padding:20px 24px;">
-        <p style="font-size:0.85rem;color:#718096;margin-bottom:12px;font-weight:600;">LEARN MORE</p>
+        <p style="font-size:0.85rem;color:#718096;margin-bottom:12px;font-weight:600;">EXPLORE</p>
         <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            <a href="{{ url_for('home') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">🏠 How It Works</a>
+            <a href="{{ url_for('marketplace') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">🛍️ Browse Marketplace</a>
             <span style="color:#e2e8f0;">|</span>
             <a href="{{ url_for('about') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">ℹ About JHE Haul</a>
             <span style="color:#e2e8f0;">|</span>
-            <a href="/services" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">🚛 Our Services</a>
+            <a href="/services" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">🚛 Haul &amp; Delivery</a>
             <span style="color:#e2e8f0;">|</span>
             <a href="{{ url_for('customer_terms') }}" style="font-size:0.88rem;color:#3182ce;text-decoration:none;">📋 Terms of Service</a>
         </div>
