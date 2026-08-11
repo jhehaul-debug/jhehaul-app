@@ -414,12 +414,20 @@ def marketplace():
                 # Match category OR any of its subcategory children
                 child_ids = [c.id for c in cat.subcategories]
                 if child_ids:
+                    cat_filter = db.or_(Listing.category_id == cat.id,
+                                        Listing.category_id.in_(child_ids))
+                else:
+                    cat_filter = (Listing.category_id == cat.id)
+                # Housing chip: also capture property listings by listing_type so
+                # existing listings created before category_id was auto-assigned
+                # still appear when buyers click the chip.
+                if category_slug == 'housing':
                     qobj = qobj.filter(
-                        db.or_(Listing.category_id == cat.id,
-                               Listing.category_id.in_(child_ids))
+                        db.or_(cat_filter,
+                               Listing.listing_type.in_(['property_sale', 'rental']))
                     )
                 else:
-                    qobj = qobj.filter(Listing.category_id == cat.id)
+                    qobj = qobj.filter(cat_filter)
 
         if price_type_filter in ('free', 'fixed', 'negotiable'):
             qobj = qobj.filter(Listing.price_type == price_type_filter)
@@ -678,6 +686,12 @@ def listing_new():
         # sellers who visit /listing/new and abandon immediately leave no trace.
         draft = Listing(seller_id=current_user.id, title='', status='draft',
                         moderation_status='approved', listing_type=listing_lt)
+        # Auto-assign the Housing & Real Estate category for property listings so
+        # the category chip filter on the marketplace returns them correctly.
+        if listing_lt in ('property_sale', 'rental'):
+            _housing_cat = Category.query.filter_by(slug='housing', is_active=True).first()
+            if _housing_cat:
+                draft.category_id = _housing_cat.id
         db.session.add(draft)
         db.session.commit()
         return redirect(url_for('listing_step', listing_id=draft.id, step=2))
@@ -719,6 +733,11 @@ def listing_step(listing_id, step):
             listing.description = request.form.get('description', '').strip()
 
             if listing.is_property:
+                # Auto-assign the Housing & Real Estate category so the marketplace
+                # category chip filter returns this listing correctly.
+                _housing_cat2 = Category.query.filter_by(slug='housing', is_active=True).first()
+                if _housing_cat2:
+                    listing.category_id = _housing_cat2.id
                 # Property-specific details
                 listing.property_type = request.form.get('property_type', '').strip() or None
                 _lb = request.form.get('listed_by', 'owner').strip()
