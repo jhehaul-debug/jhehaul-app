@@ -2711,13 +2711,17 @@ def admin_dashboard():
 @app.route("/admin/customers")
 @require_admin
 def admin_customers():
-    customers = User.query.filter_by(user_type='customer').order_by(User.created_at.desc()).all()
-    total = len(customers)
+    from models import Listing as _Listing
+    members = User.query.filter(User.is_admin == False).order_by(User.created_at.desc()).all()
+    total = len(members)
     jobs_map = {}
-    for c in customers:
-        jobs_map[c.id] = Job.query.filter_by(customer_id=c.id).count()
+    for m in members:
+        jobs_map[m.id] = _Listing.query.filter(
+            _Listing.seller_id == m.id,
+            _Listing.status != 'draft'
+        ).count()
     return render_template('admin_customers.html',
-                           customers=customers,
+                           members=members,
                            total=total,
                            jobs_map=jobs_map)
 

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}JHE Haul | Professional Junk Removal & Hauling | Minnesota & Wisconsin{% endblock %}
+{% block title %}JHE Haul | Local Marketplace — Buy. Sell. Get It Delivered. | MN & WI{% endblock %}
 
-{% block meta_description %}<meta name="description" content="JHE Haul — Professional junk removal, furniture pickup, appliance removal, cleanouts, and hauling. Fast, reliable, and affordable service in Minnesota and Wisconsin.">{% endblock %}
+{% block meta_description %}<meta name="description" content="JHE Haul is your local buy/sell marketplace in Minnesota and Wisconsin. Browse listings, sell items, find rentals and homes for sale — with JHE Haul delivery available.">{% endblock %}
 
 {% block og_meta %}
-<meta property="og:title" content="JHE Haul | Professional Junk Removal & Hauling">
-<meta property="og:description" content="JHE Haul — Professional junk removal, furniture pickup, cleanouts, and hauling services. Fast, reliable, and affordable. Serving Minnesota and Wisconsin.">
+<meta property="og:title" content="JHE Haul — Local Marketplace | Buy. Sell. Get It Delivered.">
+<meta property="og:description" content="JHE Haul is your local marketplace for buying, selling, and renting across Minnesota and Wisconsin — with JHE Haul delivery available.">
 <meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
 <meta property="og:image:width" content="1080">
 <meta property="og:image:height" content="1080">
@@ -14,8 +14,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JHE Haul">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JHE Haul | Professional Junk Removal & Hauling">
-<meta name="twitter:description" content="Professional junk removal, furniture pickup, cleanouts, and hauling. Fast, reliable, and affordable.">
+<meta name="twitter:title" content="JHE Haul — Local Marketplace">
+<meta name="twitter:description" content="Buy, sell, and rent locally across MN & WI — with JHE Haul delivery available on listings.">
 <meta name="twitter:image" content="https://jhehaul.com/static/jhehaul-share.png">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://jhehaul.com/">
@@ -25,7 +25,7 @@
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": "JHE Haul",
-  "description": "JHE Haul is a professional junk removal and hauling service providing furniture removal, appliance pickup, property cleanouts, debris hauling, and same-day junk pickup.",
+  "description": "JHE Haul is a local marketplace for buying, selling, and renting across Minnesota and Wisconsin, with JHE Haul delivery available for marketplace purchases.",
   "url": "https://jhehaul.com",
   "logo": "https://jhehaul.com/static/jhehaul-share.png",
   "email": "jhehaul@gmail.com",
@@ -33,18 +33,17 @@
     {"@type": "State", "name": "Minnesota"},
     {"@type": "State", "name": "Wisconsin"}
   ],
-  "knowsAbout": ["Junk Removal", "Furniture Removal", "Appliance Removal", "Property Cleanout", "Debris Hauling", "Same-Day Junk Pickup"],
+  "knowsAbout": ["Local Marketplace", "Buy and Sell Locally", "Furniture Delivery", "Large Item Transport", "Housing Listings", "Rental Listings"],
   "hasOfferCatalog": {
     "@type": "OfferCatalog",
-    "name": "Junk Removal & Hauling Services",
+    "name": "JHE Haul Marketplace & Delivery Services",
     "itemListElement": [
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Junk Removal"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Furniture Removal"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Appliance Removal"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Property Cleanout"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Construction Debris Hauling"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Garage Clean Out"}},
-      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Yard Waste Removal"}}
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Buy & Sell Items"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "JHE Haul Delivery"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Furniture Delivery"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "For Sale Property Listings"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Rental Listings"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Large Item Transport"}}
     ]
   }
 }
@@ -165,23 +164,18 @@
 
 {# ── Hero ── #}
 <div class="lp-hero">
-    <h1>JHE Haul — Professional<br>Junk Removal &amp; Hauling</h1>
-    <div class="sub1">Fast &nbsp;•&nbsp; Reliable &nbsp;•&nbsp; Affordable</div>
-    <p class="sub2">Serving Minnesota &amp; Wisconsin. Submit a request in minutes — we review it and send you a quote within 24 hours.</p>
+    <h1>JHE Haul<br>Local Marketplace</h1>
+    <div class="sub1">Buy &nbsp;•&nbsp; Sell &nbsp;•&nbsp; Get It Delivered</div>
+    <p class="sub2">Your neighborhood marketplace across Minnesota &amp; Wisconsin — with JHE Haul delivery available right on listings.</p>
 
     <div class="lp-hero-btns">
-        {% if current_user.is_authenticated and current_user.user_type == 'customer' %}
-            <a href="{{ url_for('customer_request') }}" class="btn-hero-primary">Request Service</a>
-            <a href="/services" class="btn-hero-secondary">View Services</a>
-        {% else %}
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-hero-primary">Request Service</a>
-            <a href="/services" class="btn-hero-secondary">View Services</a>
-        {% endif %}
+        <a href="{{ url_for('marketplace') }}" class="btn-hero-primary">Browse Marketplace</a>
+        <a href="{{ url_for('sell') }}" class="btn-hero-secondary">+ List Something</a>
     </div>
 
     <div class="lp-trust-row">
-        <span>&#10003; <strong>No subscription fees</strong></span>
-        <span>&#128274; <strong>Secure payments via Stripe</strong></span>
+        <span>&#10003; <strong>Free to list</strong></span>
+        <span>&#10003; <strong>Delivery available</strong></span>
         <span>&#128205; <strong>Minnesota &amp; Wisconsin</strong></span>
     </div>
 </div>
@@ -189,68 +183,68 @@
 {# ── Services ── #}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">
-        <h2>What We Haul</h2>
-        <p>We handle all kinds of removal and hauling jobs. Just ask — if we can haul it, we will.</p>
+        <h2>Browse the Marketplace</h2>
+        <p>Thousands of local listings — items, homes, and rentals — all in one place.</p>
     </div>
     <div class="lp-services-grid">
-        <a href="/services" class="lp-service-card">
-            <div class="si">🗑️</div>
-            <div class="sn">Junk Removal</div>
-            <div class="sd">Furniture, appliances, clutter — we haul it all away fast.</div>
-        </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">🛋️</div>
-            <div class="sn">Furniture Removal</div>
-            <div class="sd">Sofas, mattresses, bed frames, dressers, tables and more.</div>
-        </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">🍽️</div>
-            <div class="sn">Appliance Removal</div>
-            <div class="sd">Fridges, washers, dryers, dishwashers, stoves — properly disposed.</div>
-        </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">🌿</div>
-            <div class="sn">Yard Waste</div>
-            <div class="sd">Branches, brush, leaves, grass clippings, and yard debris.</div>
-        </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">🏗️</div>
-            <div class="sn">Construction Debris</div>
-            <div class="sd">Drywall, lumber, tiles, concrete — post-project cleanups.</div>
-        </a>
-        <a href="/services" class="lp-service-card">
+        <a href="{{ url_for('marketplace') }}" class="lp-service-card">
             <div class="si">📦</div>
-            <div class="sn">Clean Outs</div>
-            <div class="sd">Estate, rental, storage unit, and hoarder property cleanouts.</div>
+            <div class="sn">Buy &amp; Sell Items</div>
+            <div class="sd">Furniture, appliances, electronics, tools, clothing, and more.</div>
         </a>
-        <a href="/services" class="lp-service-card">
+        <a href="{{ url_for('marketplace') }}?listing_type=property_sale" class="lp-service-card">
             <div class="si">🏠</div>
-            <div class="sn">Garage Clean Out</div>
-            <div class="sd">Clear years of garage clutter in one visit. Broom-clean finish.</div>
+            <div class="sn">Homes For Sale</div>
+            <div class="sd">Browse local For Sale listings — houses, condos, land, and more.</div>
         </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">✂️</div>
-            <div class="sn">Property Clean Up</div>
-            <div class="sd">General property cleanup — mixed junk, outdoor debris, more.</div>
+        <a href="{{ url_for('marketplace') }}?listing_type=rental" class="lp-service-card">
+            <div class="si">🔑</div>
+            <div class="sn">Rentals</div>
+            <div class="sd">Apartments, houses, and rooms for rent — direct from owners.</div>
         </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">💪</div>
-            <div class="sn">Moving Labor</div>
-            <div class="sd">Need help loading or unloading? We provide the muscle.</div>
+        <a href="{{ url_for('marketplace') }}?listing_type=item" class="lp-service-card">
+            <div class="si">🛋️</div>
+            <div class="sn">Furniture</div>
+            <div class="sd">Sofas, beds, tables, and more — local pickup or JHE Haul delivery.</div>
         </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">🚚</div>
-            <div class="sn">Furniture Delivery</div>
-            <div class="sd">Large item delivery and setup — couches, appliances, and more.</div>
+        <a href="{{ url_for('marketplace') }}?q=appliance" class="lp-service-card">
+            <div class="si">🍽️</div>
+            <div class="sn">Appliances</div>
+            <div class="sd">Fridges, washers, dryers — heavy items delivered by JHE Haul.</div>
         </a>
-        <a href="/services" class="lp-service-card">
-            <div class="si">⭐</div>
-            <div class="sn">Special Request</div>
-            <div class="sd">Something unique? Describe what you need and we'll figure it out.</div>
+        <a href="{{ url_for('marketplace') }}?listing_type=item" class="lp-service-card">
+            <div class="si">🌿</div>
+            <div class="sn">Outdoor &amp; Garden</div>
+            <div class="sd">Patio sets, grills, lawn equipment, and garden tools.</div>
+        </a>
+        <a href="{{ url_for('marketplace') }}?q=tools" class="lp-service-card">
+            <div class="si">🔧</div>
+            <div class="sn">Tools &amp; Equipment</div>
+            <div class="sd">Power tools, hand tools, and business equipment.</div>
+        </a>
+        <a href="{{ url_for('marketplace') }}?q=electronics" class="lp-service-card">
+            <div class="si">📱</div>
+            <div class="sn">Electronics</div>
+            <div class="sd">TVs, phones, computers, audio gear, and more.</div>
+        </a>
+        <a href="{{ url_for('marketplace') }}?price_type=free" class="lp-service-card">
+            <div class="si">🆓</div>
+            <div class="sn">Free Items</div>
+            <div class="sd">Giving something away? Free listings from local neighbors.</div>
+        </a>
+        <a href="{{ url_for('marketplace') }}?area=twin-cities" class="lp-service-card">
+            <div class="si">📍</div>
+            <div class="sn">Twin Cities</div>
+            <div class="sd">Filter to the Twin Cities metro area — local buyers and sellers.</div>
+        </a>
+        <a href="{{ url_for('sell') }}" class="lp-service-card" style="background:#f0fff4;border-color:#86efac;">
+            <div class="si">➕</div>
+            <div class="sn" style="color:#15803d;">List Something</div>
+            <div class="sd">Post an item, property, or rental in minutes — it's free.</div>
         </a>
     </div>
     <div style="text-align:center;margin-top:24px;">
-        <a href="/services" style="font-size:0.9rem;color:#3182ce;font-weight:600;text-decoration:none;">View all services with descriptions →</a>
+        <a href="{{ url_for('marketplace') }}" style="font-size:0.9rem;color:#3182ce;font-weight:600;text-decoration:none;">See all listings →</a>
     </div>
 </div>
 
@@ -258,28 +252,28 @@
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">
         <h2>How It Works</h2>
-        <p>Four simple steps to get your junk removed.</p>
+        <p>Buy, sell, or rent locally in four simple steps.</p>
     </div>
     <div class="lp-steps">
         <div class="lp-step">
-            <div class="lp-step-num">📋</div>
-            <h3>Request Service</h3>
-            <p>Describe what you need done and upload a few photos. Takes about 2 minutes.</p>
+            <div class="lp-step-num">📦</div>
+            <h3>List or Browse</h3>
+            <p>Post something for sale in minutes, or browse local listings near you.</p>
         </div>
         <div class="lp-step">
             <div class="lp-step-num">💬</div>
-            <h3>Get a Quote</h3>
-            <p>We review your request and send you a clear, upfront price — usually within 24 hours.</p>
+            <h3>Connect &amp; Offer</h3>
+            <p>Message the seller, ask questions, and make an offer — all through the platform.</p>
         </div>
         <div class="lp-step">
-            <div class="lp-step-num">📅</div>
-            <h3>Schedule Pickup</h3>
-            <p>Accept the quote and pay a small deposit. We'll schedule your pickup at your convenience.</p>
+            <div class="lp-step-num">🤝</div>
+            <h3>Agree &amp; Arrange</h3>
+            <p>Agree on a price and arrange pickup, meetup, or JHE Haul delivery.</p>
         </div>
         <div class="lp-step">
             <div class="lp-step-num">✅</div>
             <h3>Done</h3>
-            <p>We show up, haul it away, and leave the space clean. Fast, professional, and hassle-free.</p>
+            <p>Item changes hands — buyer is happy, seller is paid, space is clear.</p>
         </div>
     </div>
 </div>
@@ -287,20 +281,20 @@
 {# ── Testimonials ── #}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">
-        <h2>What Our Customers Say</h2>
-        <p>Customer reviews coming soon.</p>
+        <h2>What Members Say</h2>
+        <p>Feedback from buyers and sellers in our local marketplace.</p>
     </div>
     <div style="text-align:center;padding:32px 0;color:#a0aec0;font-size:0.95rem;">
         <div style="font-size:2rem;margin-bottom:12px;">💬</div>
-        <p style="margin:0;max-width:400px;margin:0 auto;line-height:1.6;">We're collecting reviews from our customers. Check back soon!</p>
+        <p style="margin:0;max-width:400px;margin:0 auto;line-height:1.6;">Member reviews coming soon — check back to see what your neighbors are saying!</p>
     </div>
 </div>
 
 {# ── Before/After Gallery ── #}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">
-        <h2>Our Work</h2>
-        <p>Before and after — see the difference JHE Haul makes.</p>
+        <h2>JHE Haul in Action</h2>
+        <p>Deliveries, pickups, and moves — see what JHE Haul delivery can do for your marketplace purchase.</p>
     </div>
     {% if gallery_photos %}
     <div class="lp-gallery">
@@ -315,19 +309,19 @@
     <div class="lp-gallery">
         <div class="lp-gallery-item">
             <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Garage Cleanout — Before &amp; After</div>
+            <div class="gi-label">Furniture Delivery</div>
         </div>
         <div class="lp-gallery-item">
             <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Basement Junk Removal</div>
+            <div class="gi-label">Large Item Transport</div>
         </div>
         <div class="lp-gallery-item">
             <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Estate Cleanout</div>
+            <div class="gi-label">Appliance Delivery</div>
         </div>
         <div class="lp-gallery-item">
             <div style="font-size:2rem;">📸</div>
-            <div class="gi-label">Construction Debris Haul</div>
+            <div class="gi-label">Local Pickup &amp; Drop-off</div>
         </div>
     </div>
     <p style="text-align:center;font-size:0.82rem;color:#a0aec0;margin-top:16px;">Photos coming soon — check back to see our work.</p>
@@ -336,14 +330,13 @@
 
 {# ── Bottom CTA ── #}
 <div class="lp-cta" style="margin-bottom:20px;">
-    <h2>Ready to get started?</h2>
-    <p>Submit a request in minutes. We'll review it, send you a quote, and schedule pickup at your convenience.</p>
-    {% if current_user.is_authenticated and current_user.user_type == 'customer' %}
-    <a href="{{ url_for('customer_request') }}" class="btn-hero-primary" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:#38a169;color:#fff;font-weight:700;text-decoration:none;border:2px solid #38a169;">Request a Quote</a>
-    {% else %}
-    <a href="{{ url_for('invite', role='customer') }}" class="btn-hero-primary" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:#38a169;color:#fff;font-weight:700;text-decoration:none;border:2px solid #38a169;">Request a Quote</a>
-    {% endif %}
-    <p style="margin-top:16px;font-size:0.85rem;color:#718096;">No hidden fees. No commitment until you accept the quote.</p>
+    <h2>Start buying or selling today</h2>
+    <p>Browse local listings or post your own — free to list, no commissions, and JHE Haul delivery available.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('marketplace') }}" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:#38a169;color:#fff;font-weight:700;text-decoration:none;border:2px solid #38a169;">Browse Marketplace</a>
+        <a href="{{ url_for('sell') }}" style="display:inline-block;font-size:1.1rem;padding:16px 44px;border-radius:10px;background:transparent;color:#e2e8f0;font-weight:600;text-decoration:none;border:2px solid #4a5568;">+ List Something</a>
+    </div>
+    <p style="margin-top:16px;font-size:0.85rem;color:#718096;">Free to list. No fees. Totally local.</p>
 </div>
 
 {# ── Contact ── #}
@@ -397,15 +390,11 @@
             </div>
         </div>
         <div class="lp-contact-item">
-            <div class="lp-contact-icon">💬</div>
+            <div class="lp-contact-icon">🛍️</div>
             <div>
-                <h4>Quick Quote</h4>
-                {% if current_user.is_authenticated and current_user.user_type == 'customer' %}
-                <p><a href="{{ url_for('customer_request') }}" style="color:#3182ce;font-weight:600;text-decoration:none;">Request online →</a></p>
-                {% else %}
-                <p><a href="{{ url_for('invite', role='customer') }}" style="color:#3182ce;font-weight:600;text-decoration:none;">Request online →</a></p>
-                {% endif %}
-                <small>Get a quote within 24 hours</small>
+                <h4>Marketplace</h4>
+                <p><a href="{{ url_for('marketplace') }}" style="color:#3182ce;font-weight:600;text-decoration:none;">Browse listings →</a></p>
+                <small>Buy, sell, and rent locally</small>
             </div>
         </div>
     </div>

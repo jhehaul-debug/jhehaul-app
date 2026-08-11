@@ -1,11 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Our Services - JHE Haul{% endblock %}
+{% block title %}Marketplace &amp; Delivery Services - JHE Haul{% endblock %}
 {% block content %}
-{% if current_user.is_authenticated and current_user.user_type == 'customer' %}
-    {% set cta_url = url_for('customer_request') %}
-{% else %}
-    {% set cta_url = url_for('invite', role='customer') %}
-{% endif %}
 
 <style>
 .services-header { text-align:center; margin-bottom:40px; }
@@ -23,83 +18,86 @@
 </style>
 
 <div class="services-header">
-    <h1>Our Services</h1>
-    <p>Professional junk removal and hauling across the Twin Cities. Submit a request and we'll give you a quote — usually within 24 hours.</p>
+    <h1>Marketplace &amp; Delivery</h1>
+    <p>JHE Haul is a local marketplace where anyone can buy, sell, and rent — and get large purchases delivered by JHE Haul.</p>
 </div>
 
 <div class="services-grid">
     <div class="service-card">
-        <div class="service-icon">🗑️</div>
-        <div class="service-name">Junk Removal</div>
-        <div class="service-desc">Furniture, appliances, old electronics, miscellaneous clutter — we haul it all away fast.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
-        <div class="service-icon">🛋️</div>
-        <div class="service-name">Furniture Removal</div>
-        <div class="service-desc">Sofas, mattresses, bed frames, dressers, tables — big or bulky, no problem.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
-        <div class="service-icon">🍽️</div>
-        <div class="service-name">Appliance Removal</div>
-        <div class="service-desc">Fridges, washers, dryers, dishwashers, stoves — properly hauled and disposed of.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
-        <div class="service-icon">🌿</div>
-        <div class="service-name">Yard Waste</div>
-        <div class="service-desc">Branches, brush, leaves, grass clippings, and general yard debris cleanups.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
-        <div class="service-icon">🏗️</div>
-        <div class="service-name">Construction Debris</div>
-        <div class="service-desc">Drywall, lumber, tiles, concrete pieces, roofing materials — post-project cleanups.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
         <div class="service-icon">📦</div>
-        <div class="service-name">Clean Outs</div>
-        <div class="service-desc">Full property clean outs — estates, rentals, hoarder situations, storage units.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
+        <div class="service-name">Buy &amp; Sell Items</div>
+        <div class="service-desc">List furniture, appliances, electronics, clothing, tools, and more. Free to post — no commissions.</div>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Listings →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🚛</div>
+        <div class="service-name">JHE Haul Delivery</div>
+        <div class="service-desc">Sellers can enable JHE Haul delivery on their listing. Buyers request pickup and delivery — no truck rental needed.</div>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Shop with Delivery →</a>
     </div>
     <div class="service-card">
         <div class="service-icon">🏠</div>
-        <div class="service-name">Garage Clean Out</div>
-        <div class="service-desc">Clear out years of garage clutter in one visit. We sort, haul, and leave it broom-clean.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
+        <div class="service-name">For Sale Properties</div>
+        <div class="service-desc">Browse homes and properties for sale across the Twin Cities metro and greater MN &amp; WI.</div>
+        <a href="{{ url_for('marketplace') }}?listing_type=property_sale" class="btn btn-sm" style="margin-top:14px;display:inline-block;">View For Sale →</a>
     </div>
     <div class="service-card">
-        <div class="service-icon">✂️</div>
-        <div class="service-name">Property Clean Up</div>
-        <div class="service-desc">General property cleanup — mixed junk, outdoor items, miscellaneous debris.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
+        <div class="service-icon">🔑</div>
+        <div class="service-name">Rental Listings</div>
+        <div class="service-desc">Find apartments, houses, and rooms for rent directly from owners and landlords. No agent required.</div>
+        <a href="{{ url_for('marketplace') }}?listing_type=rental" class="btn btn-sm" style="margin-top:14px;display:inline-block;">View Rentals →</a>
     </div>
     <div class="service-card">
-        <div class="service-icon">💪</div>
-        <div class="service-name">Moving Labor</div>
-        <div class="service-desc">Need help loading or unloading? We provide the muscle — you provide the truck.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
-    </div>
-    <div class="service-card">
-        <div class="service-icon">🚚</div>
+        <div class="service-icon">🛋️</div>
         <div class="service-name">Furniture Delivery</div>
-        <div class="service-desc">Large item delivery and setup — couches, appliances, and more.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
+        <div class="service-desc">Bought a sofa or dining set on the marketplace? JHE Haul can deliver it to your door — same area, same day when available.</div>
+        <a href="{{ url_for('marketplace') }}?q=furniture" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Furniture →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🍽️</div>
+        <div class="service-name">Appliance Transport</div>
+        <div class="service-desc">Fridges, washers, dryers — heavy appliances sold locally that need a real truck. JHE Haul handles it.</div>
+        <a href="{{ url_for('marketplace') }}?q=appliance" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Appliances →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🏗️</div>
+        <div class="service-name">Large Item Pickup</div>
+        <div class="service-desc">Equipment, patio furniture, gym gear — if it's big and local, JHE Haul can move it from seller to buyer.</div>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Large Items →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🆓</div>
+        <div class="service-name">Free Items</div>
+        <div class="service-desc">Giving something away? List it as free. Pickup or delivery — your call.</div>
+        <a href="{{ url_for('marketplace') }}?price_type=free" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Free Items →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">💼</div>
+        <div class="service-name">Business Equipment</div>
+        <div class="service-desc">Restaurant equipment, office furniture, and commercial goods — buy and sell locally with delivery available.</div>
+        <a href="{{ url_for('marketplace') }}?q=equipment" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Equipment →</a>
+    </div>
+    <div class="service-card">
+        <div class="service-icon">🌿</div>
+        <div class="service-name">Outdoor &amp; Garden</div>
+        <div class="service-desc">Patio sets, grills, lawn equipment, and garden tools — local pickup or JHE Haul delivery.</div>
+        <a href="{{ url_for('marketplace') }}?q=outdoor" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Browse Outdoor →</a>
     </div>
     <div class="service-card">
         <div class="service-icon">⭐</div>
-        <div class="service-name">Special Request</div>
-        <div class="service-desc">Something unique? Describe what you need and we'll figure out the best approach.</div>
-        <a href="{{ cta_url }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">Request This Service →</a>
+        <div class="service-name">Sell Something New</div>
+        <div class="service-desc">Have something to sell? Create a listing in minutes. Add photos, set a price, and choose delivery options.</div>
+        <a href="{{ url_for('sell') }}" class="btn btn-sm" style="margin-top:14px;display:inline-block;">List Something →</a>
     </div>
 </div>
 
 <div class="cta-bar">
-    <h2>Ready to get started?</h2>
-    <p>Submit a request in minutes. We review it, send you a quote, and schedule pickup at your convenience.</p>
-    <a href="{{ cta_url }}" class="btn btn-success btn-lg">{% if current_user.is_authenticated and current_user.user_type == 'customer' %}Request Service Now{% else %}Get a Free Quote{% endif %}</a>
+    <h2>Ready to buy or sell?</h2>
+    <p>Browse thousands of local listings or post your own — it's free and takes less than two minutes.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('marketplace') }}" class="btn btn-success btn-lg">Browse Marketplace</a>
+        <a href="{{ url_for('sell') }}" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.4);">+ List Something</a>
+    </div>
 </div>
 
 {% endblock %}

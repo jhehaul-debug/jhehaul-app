@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Customers — Admin - JHE Haul{% endblock %}
+{% block title %}Members — Admin - JHE Haul{% endblock %}
 {% block content %}
 
 <div class="page-header" style="flex-wrap:wrap;gap:10px;">
     <div style="display:flex;align-items:center;gap:12px;">
         <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
-        <h2 class="page-title" style="margin:0;">👤 Customers</h2>
+        <h2 class="page-title" style="margin:0;">👤 Members</h2>
     </div>
     <span style="background:#dbeafe;color:#1d4ed8;font-size:0.88rem;font-weight:700;padding:4px 14px;border-radius:20px;">{{ total }} total</span>
 </div>
@@ -14,8 +14,8 @@
 <div class="card">
     <div class="empty-state">
         <div class="empty-icon">👤</div>
-        <p>No customers yet. Share an invite link to get started.</p>
-        <button onclick="shareInvite('customer')" class="btn btn-primary">Invite a Customer</button>
+        <p>No members yet. Share an invite link to get started.</p>
+        <button onclick="shareInvite('general')" class="btn btn-primary">Invite a Member</button>
     </div>
 </div>
 {% else %}
@@ -27,14 +27,14 @@
                 <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Name</th>
                 <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;">Email</th>
                 <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Phone</th>
-                <th style="text-align:center;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Jobs</th>
+                <th style="text-align:center;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Activity</th>
                 <th style="text-align:left;padding:12px 16px;color:#64748b;font-weight:600;white-space:nowrap;">Joined</th>
                 <th style="text-align:center;padding:12px 16px;color:#64748b;font-weight:600;">Status</th>
                 <th style="padding:12px 16px;"></th>
             </tr>
         </thead>
         <tbody>
-        {% for u in customers %}
+        {% for u in members %}
         <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
             <td style="padding:11px 16px;font-weight:600;white-space:nowrap;">
                 <div style="display:flex;align-items:center;gap:8px;">
@@ -93,9 +93,9 @@ function confirmDelete(form) {
     return confirm('Permanently delete ' + name + ' and all their data?');
 }
 function shareInvite(type) {
-    var url = window.location.origin + '/invite/' + type;
+    var url = window.location.origin + (type === 'general' ? '/invite' : '/invite/' + type);
     if (navigator.share) {
-        navigator.share({ title: 'Join JHE Haul', url: url });
+        navigator.share({ title: 'Join JHE Haul Marketplace', url: url });
     } else {
         navigator.clipboard.writeText(url).then(function() { alert('Invite link copied!'); });
     }
