@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Deliveries — JHE Haul Admin{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+    <h2 class="page-title" style="margin:0;">🚚 Haul &amp; Delivery</h2>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+  <div class="stat-card blue">
+    <div class="stat-icon">📋</div>
+    <div class="stat-value" style="color:#3498db;">{{ stats.total }}</div>
+    <div class="stat-label">Total Deliveries</div>
+  </div>
+  <div class="stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:4px solid #3b82f6;">
+    <div class="stat-icon">🔵</div>
+    <div class="stat-value" style="color:#1d4ed8;">{{ stats.requested }}</div>
+    <div class="stat-label">Requested</div>
+    <div class="stat-sub">{{ stats.offers_received }} with offers</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon">✅</div>
+    <div class="stat-value" style="color:#27ae60;">{{ stats.hauler_selected + stats.scheduled }}</div>
+    <div class="stat-label">Scheduled</div>
+    <div class="stat-sub">{{ stats.hauler_selected }} selected · {{ stats.scheduled }} confirmed</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon">🚛</div>
+    <div class="stat-value" style="color:#e67e22;">{{ stats.picked_up + stats.in_transit }}</div>
+    <div class="stat-label">In Progress</div>
+    <div class="stat-sub">{{ stats.picked_up }} picked up · {{ stats.in_transit }} in transit</div>
+  </div>
+  <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+    <div class="stat-icon">🏁</div>
+    <div class="stat-value" style="color:#059669;">{{ stats.delivered }}</div>
+    <div class="stat-label">Delivered</div>
+  </div>
+  <div class="stat-card" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border-left:4px solid #ef4444;">
+    <div class="stat-icon">❌</div>
+    <div class="stat-value" style="color:#dc2626;">{{ stats.cancelled }}</div>
+    <div class="stat-label">Cancelled</div>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+  <span style="font-size:0.8rem;font-weight:600;color:#718096;">Filter:</span>
+  <a href="{{ url_for('admin_deliveries') }}"
+     style="padding:5px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;text-decoration:none;
+            {% if not status_filter %}background:#1a365d;color:#fff;{% else %}background:#edf2f7;color:#4a5568;{% endif %}">All</a>
+  {% for s, (icon, label, color) in status_meta.items() %}
+  <a href="{{ url_for('admin_deliveries', status=s) }}"
+     style="padding:5px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;text-decoration:none;
+            {% if status_filter == s %}background:#1a365d;color:#fff;{% else %}background:#edf2f7;color:#4a5568;{% endif %}">
+    {{ icon }} {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Table -->
+{% if deliveries %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
+    <thead>
+      <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+        <th style="text-align:left;padding:10px 12px;color:#718096;font-weight:700;">#</th>
+        <th style="text-align:left;padding:10px 12px;color:#718096;font-weight:700;">Item</th>
+        <th style="text-align:left;padding:10px 12px;color:#718096;font-weight:700;">Buyer</th>
+        <th style="text-align:left;padding:10px 12px;color:#718096;font-weight:700;">Route</th>
+        <th style="text-align:left;padding:10px 12px;color:#718096;font-weight:700;">Date</th>
+        <th style="text-align:center;padding:10px 12px;color:#718096;font-weight:700;">Status</th>
+        <th style="text-align:right;padding:10px 12px;color:#718096;font-weight:700;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for dr in deliveries %}
+    {% set icon, label, color = status_meta.get(dr.status, ('⚪', dr.status, '#6b7280')) %}
+    <tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:10px 12px;font-weight:700;color:#4a5568;">#{{ dr.id }}</td>
+      <td style="padding:10px 12px;max-width:180px;">
+        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ dr.item_description or '—' }}</div>
+        {% if dr.listing %}<div style="font-size:0.76rem;color:#a0aec0;">Listing #{{ dr.listing_id }}</div>{% endif %}
+      </td>
+      <td style="padding:10px 12px;">
+        <div>{{ dr.buyer.first_name or '' }} {{ dr.buyer.last_name or '' }}</div>
+        <div style="font-size:0.76rem;color:#a0aec0;">{{ dr.buyer.email }}</div>
+      </td>
+      <td style="padding:10px 12px;">
+        <div style="font-size:0.84rem;">📍 {{ dr.pickup_city or dr.pickup_zip or '—' }}</div>
+        <div style="font-size:0.84rem;">🏁 {{ dr.delivery_city or dr.delivery_zip or '—' }}</div>
+      </td>
+      <td style="padding:10px 12px;">
+        <div style="font-size:0.84rem;">{{ dr.preferred_date or '—' }}</div>
+        <div style="font-size:0.76rem;color:#a0aec0;">{{ dr.created_at.strftime('%b %-d') }}</div>
+      </td>
+      <td style="padding:10px 12px;text-align:center;">
+        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.76rem;font-weight:700;background:#f1f5f9;color:{{ color }};">
+          {{ icon }} {{ label }}
+        </span>
+      </td>
+      <td style="padding:10px 12px;text-align:right;">
+        <a href="{{ url_for('delivery_detail', dr_id=dr.id) }}" class="btn btn-outline btn-sm">View</a>
+        {% if dr.job_id %}
+        <a href="{{ url_for('admin_request_detail', job_id=dr.job_id) }}" class="btn btn-sm btn-outline" style="margin-left:4px;">Job #{{ dr.job_id }}</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="padding:40px;text-align:center;">
+  <div style="font-size:2.5rem;margin-bottom:12px;">📭</div>
+  <h3 style="margin:0 0 8px;color:#1a202c;">No deliveries
+    {% if status_filter %}with status "{{ status_filter.replace('_',' ') }}"{% endif %}
+  </h3>
+  {% if status_filter %}<a href="{{ url_for('admin_deliveries') }}" style="color:#3498db;">Show all deliveries</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

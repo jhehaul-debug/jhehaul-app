@@ -499,6 +499,14 @@ class DeliveryRequest(db.Model):
     delivery_zip = db.Column(db.String(10), nullable=True)
     delivery_stairs = db.Column(db.Boolean, default=False)
     elevator_available = db.Column(db.Boolean, default=False)
+    # Full addresses — hidden from haulers until selected
+    pickup_address = db.Column(db.Text, nullable=True)
+    delivery_address = db.Column(db.Text, nullable=True)
+    # Loading help
+    need_loading = db.Column(db.Boolean, default=False)
+    need_unloading = db.Column(db.Boolean, default=False)
+    # Linked job for bid/quote infrastructure
+    job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=True)
     # Item info
     item_description = db.Column(db.Text, nullable=True)
     approx_dimensions = db.Column(db.String(200), nullable=True)

@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -2527,6 +2527,415 @@ def admin_messages():
 # ── END ADMIN PORTAL ROUTES ────────────────────────────────────────────────────
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MARKETPLACE DELIVERY SCHEDULING
+# ══════════════════════════════════════════════════════════════════════════════
+
+_DELIVERY_STATUS_META = {
+    'requested':       ('🔵', 'Requested',       '#3b82f6'),
+    'offers_received': ('📬', 'Offers Received',  '#8b5cf6'),
+    'hauler_selected': ('✅', 'Hauler Selected',  '#059669'),
+    'scheduled':       ('📅', 'Scheduled',        '#2563eb'),
+    'picked_up':       ('📦', 'Picked Up',        '#d97706'),
+    'in_transit':      ('🚛', 'In Transit',       '#ea580c'),
+    'delivered':       ('🏁', 'Delivered',        '#16a34a'),
+    'cancelled':       ('❌', 'Cancelled',        '#dc2626'),
+}
+
+
+def _delivery_status_meta(status):
+    return _DELIVERY_STATUS_META.get(status, ('⚪', status.replace('_', ' ').title(), '#6b7280'))
+
+
+@app.route("/listing/<int:listing_id>/request-delivery", methods=["GET", "POST"])
+@require_login
+def listing_request_delivery(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.is_property:
+        abort(404)
+    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
+    if not is_public:
+        abort(404)
+    if current_user.id == listing.seller_id:
+        flash("You can't request delivery for your own listing.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
+    photos = sorted(listing.photos, key=lambda p: (0 if p.is_primary else 1, p.display_order))
+
+    if request.method == 'GET':
+        return render_template('delivery_request_form.html', listing=listing, photos=photos)
+
+    # ── POST: create delivery request ───────────────────────────────────────
+    pickup_address  = request.form.get('pickup_address', '').strip()
+    pickup_city     = request.form.get('pickup_city', '').strip()
+    pickup_state    = request.form.get('pickup_state', 'MN').strip()
+    pickup_zip      = request.form.get('pickup_zip', '').strip()
+    delivery_address = request.form.get('delivery_address', '').strip()
+    delivery_city   = request.form.get('delivery_city', '').strip()
+    delivery_state  = request.form.get('delivery_state', 'MN').strip()
+    delivery_zip    = request.form.get('delivery_zip', '').strip()
+    preferred_date  = request.form.get('preferred_date', '').strip() or None
+    preferred_time  = request.form.get('preferred_time', '').strip() or None
+    item_count      = max(1, int(request.form.get('item_count', 1) or 1))
+    approx_dimensions = request.form.get('approx_dimensions', '').strip() or None
+    pickup_stairs   = request.form.get('pickup_stairs') == '1'
+    delivery_stairs = request.form.get('delivery_stairs') == '1'
+    need_loading    = request.form.get('need_loading') == '1'
+    need_unloading  = request.form.get('need_unloading') == '1'
+    special_instructions = request.form.get('special_instructions', '').strip() or None
+
+    if not pickup_zip or not delivery_zip:
+        flash("Pickup and delivery ZIP codes are required.", "error")
+        return render_template('delivery_request_form.html', listing=listing, photos=photos)
+
+    # Build public job description (no street addresses)
+    extras = []
+    if approx_dimensions: extras.append(f"Size: {approx_dimensions}")
+    extras.append(f"{item_count} item(s)")
+    if pickup_stairs:   extras.append("stairs at pickup")
+    if delivery_stairs: extras.append("stairs at delivery")
+    if need_loading:    extras.append("loading help needed")
+    if need_unloading:  extras.append("unloading help needed")
+    job_desc = f"Marketplace delivery: {listing.title}" + (" | " + " | ".join(extras) if extras else "")
+    if special_instructions:
+        job_desc += f"\nNotes: {special_instructions}"
+
+    buyer_name = ((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip() or current_user.email
+
+    # Create Job so haulers can bid through existing infrastructure
+    job = Job(
+        customer_id=current_user.id,
+        customer_name=buyer_name,
+        customer_phone=current_user.phone or '',
+        pickup_address=f"{pickup_city}, {pickup_state} {pickup_zip}".strip(', '),
+        pickup_zip=pickup_zip,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        job_description=job_desc,
+        service_type='marketplace_delivery',
+        status='open',
+    )
+    db.session.add(job)
+    db.session.flush()
+
+    dr = DeliveryRequest(
+        listing_id=listing_id,
+        buyer_id=current_user.id,
+        seller_id=listing.seller_id,
+        pickup_address=pickup_address,
+        pickup_city=pickup_city,
+        pickup_state=pickup_state,
+        pickup_zip=pickup_zip,
+        pickup_stairs=pickup_stairs,
+        delivery_address=delivery_address,
+        delivery_city=delivery_city,
+        delivery_state=delivery_state,
+        delivery_zip=delivery_zip,
+        delivery_stairs=delivery_stairs,
+        item_description=listing.title,
+        approx_dimensions=approx_dimensions,
+        item_count=item_count,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        special_instructions=special_instructions,
+        need_loading=need_loading,
+        need_unloading=need_unloading,
+        job_id=job.id,
+        status='requested',
+    )
+    db.session.add(dr)
+    db.session.commit()
+
+    # Notify haulers via SMS
+    try:
+        haulers = User.query.filter_by(user_type='hauler', notify_sms=True).filter(User.phone.isnot(None)).limit(30).all()
+        for h in haulers:
+            try:
+                notify_hauler_new_job_sms(h.phone, job.id, 0)
+            except Exception:
+                pass
+    except Exception as _e:
+        app.logger.error("Delivery hauler notify failed: %s", _e)
+
+    try:
+        notify_admin_new_request_sms(job.id, buyer_name, 'marketplace_delivery', pickup_zip)
+    except Exception as _e:
+        app.logger.error("Delivery admin notify failed: %s", _e)
+
+    flash("Delivery request submitted! Registered haulers will be notified.", "success")
+    return redirect(url_for('delivery_detail', dr_id=dr.id))
+
+
+@app.route("/delivery/<int:dr_id>")
+@require_login
+def delivery_detail(dr_id):
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+
+    is_buyer  = current_user.id == dr.buyer_id
+    is_seller = current_user.id == dr.seller_id
+    is_admin  = current_user.is_admin
+
+    # Gather bids on the linked job
+    hauler_bids = []
+    selected_bid = None
+    hauler_own_bid = None
+
+    if dr.job_id:
+        hauler_bids = Bid.query.filter_by(job_id=dr.job_id).order_by(Bid.created_at.asc()).all()
+        selected_bid = next((b for b in hauler_bids if b.status == 'accepted'), None)
+        hauler_own_bid = next((b for b in hauler_bids if b.hauler_id == current_user.id), None)
+
+    is_selected_hauler = bool(selected_bid and selected_bid.hauler_id == current_user.id)
+
+    # Access control
+    if not (is_buyer or is_seller or is_admin or hauler_own_bid or current_user.user_type == 'hauler'):
+        abort(403)
+
+    # Haulers browsing available deliveries can see the masked view
+    if current_user.user_type == 'hauler' and not (is_buyer or is_seller or is_admin):
+        if dr.status in ('cancelled', 'delivered'):
+            abort(403)
+
+    reveal_addresses = is_buyer or is_seller or is_admin or is_selected_hauler
+
+    # Listing photo
+    listing_photo = None
+    if dr.listing:
+        lp = sorted(dr.listing.photos, key=lambda p: (0 if p.is_primary else 1, p.display_order))
+        listing_photo = lp[0] if lp else None
+
+    icon, label, color = _delivery_status_meta(dr.status)
+    return render_template('delivery_detail.html',
+        dr=dr, is_buyer=is_buyer, is_seller=is_seller,
+        is_admin=is_admin, is_selected_hauler=is_selected_hauler,
+        reveal_addresses=reveal_addresses,
+        hauler_bids=hauler_bids, selected_bid=selected_bid,
+        hauler_own_bid=hauler_own_bid,
+        listing_photo=listing_photo,
+        status_icon=icon, status_label=label, status_color=color,
+    )
+
+
+@app.route("/delivery/<int:dr_id>/offer", methods=["POST"])
+@require_login
+def delivery_offer(dr_id):
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if current_user.user_type != 'hauler':
+        flash("Only registered haulers can submit delivery offers.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+    if dr.status in ('delivered', 'cancelled', 'hauler_selected'):
+        flash("This delivery request is no longer accepting offers.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+    if not dr.job_id:
+        flash("Unable to submit offer — delivery request configuration error.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+    existing = Bid.query.filter_by(job_id=dr.job_id, hauler_id=current_user.id).first()
+    if existing:
+        flash("You already submitted an offer. Contact the buyer through the listing if you need to update it.", "info")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+    try:
+        quote_amount = float(request.form.get('quote_amount', '').strip())
+    except (ValueError, TypeError):
+        flash("Please enter a valid delivery price.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+    message      = request.form.get('message', '').strip()
+    availability = request.form.get('availability', '').strip()
+    full_message = (f"Available: {availability}\n" if availability else '') + message
+
+    hauler_name = ((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip() or current_user.email
+    bid = Bid(
+        job_id=dr.job_id,
+        hauler_id=current_user.id,
+        hauler_name=hauler_name,
+        hauler_phone=current_user.phone or '',
+        quote_amount=quote_amount,
+        message=full_message,
+        status='active',
+    )
+    db.session.add(bid)
+    if dr.status == 'requested':
+        dr.status = 'offers_received'
+    db.session.commit()
+
+    try:
+        buyer = User.query.get(dr.buyer_id)
+        if buyer and buyer.phone and buyer.notify_sms:
+            send_sms(buyer.phone,
+                f"JHE Haul: {hauler_name} offered ${quote_amount:.0f} to deliver your item. "
+                f"View offers: {request.host_url}delivery/{dr.id}",
+                event_type='delivery_offer')
+    except Exception as _e:
+        app.logger.error("Delivery offer SMS: %s", _e)
+
+    flash("Delivery offer submitted! The buyer will be notified.", "success")
+    return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+
+@app.route("/delivery/<int:dr_id>/select/<int:bid_id>", methods=["POST"])
+@require_login
+def delivery_select_hauler(dr_id, bid_id):
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if current_user.id != dr.buyer_id and not current_user.is_admin:
+        abort(403)
+    if dr.status in ('delivered', 'cancelled'):
+        flash("This delivery cannot be modified.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+    selected = Bid.query.get_or_404(bid_id)
+    if selected.job_id != dr.job_id:
+        abort(400)
+
+    # Reject all other bids
+    if dr.job_id:
+        Bid.query.filter_by(job_id=dr.job_id).filter(Bid.id != bid_id).update({'status': 'not_selected'})
+
+    selected.status = 'accepted'
+    dr.status = 'hauler_selected'
+    db.session.commit()
+
+    try:
+        hauler = User.query.get(selected.hauler_id)
+        if hauler and hauler.phone and hauler.notify_sms:
+            send_sms(hauler.phone,
+                f"JHE Haul: Your delivery offer was selected! Full pickup/drop-off details are now visible. "
+                f"View: {request.host_url}delivery/{dr.id}",
+                event_type='delivery_selected')
+    except Exception as _e:
+        app.logger.error("Delivery select SMS: %s", _e)
+
+    flash("Hauler selected! They'll be notified and can now see the full addresses.", "success")
+    return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+
+@app.route("/delivery/<int:dr_id>/update-status", methods=["POST"])
+@require_login
+def delivery_update_status(dr_id):
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    is_admin = current_user.is_admin
+    is_buyer = current_user.id == dr.buyer_id
+
+    selected_bid = None
+    if dr.job_id:
+        selected_bid = Bid.query.filter_by(job_id=dr.job_id, status='accepted').first()
+    is_selected_hauler = bool(selected_bid and selected_bid.hauler_id == current_user.id)
+
+    if not (is_admin or is_selected_hauler or is_buyer):
+        abort(403)
+
+    new_status = request.form.get('status', '').strip()
+    valid = list(_DELIVERY_STATUS_META.keys())
+    if new_status not in valid:
+        flash("Invalid status.", "error")
+        return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+    if is_selected_hauler and not is_admin:
+        if new_status not in ('scheduled', 'picked_up', 'in_transit', 'delivered', 'cancelled'):
+            abort(403)
+    if is_buyer and not is_admin:
+        if new_status not in ('cancelled',):
+            abort(403)
+
+    dr.status = new_status
+    db.session.commit()
+
+    _buyer_msgs = {
+        'scheduled':  "Your delivery is scheduled.",
+        'picked_up':  "Your item has been picked up and is on its way!",
+        'in_transit': "Your item is in transit.",
+        'delivered':  "Your item has been delivered! Please confirm receipt.",
+        'cancelled':  "Your delivery request has been cancelled.",
+    }
+    try:
+        if new_status in _buyer_msgs:
+            buyer = User.query.get(dr.buyer_id)
+            if buyer and buyer.phone and buyer.notify_sms:
+                send_sms(buyer.phone,
+                    f"JHE Haul Delivery: {_buyer_msgs[new_status]} "
+                    f"Details: {request.host_url}delivery/{dr.id}",
+                    event_type='delivery_status')
+    except Exception as _e:
+        app.logger.error("Delivery status SMS: %s", _e)
+
+    flash(f"Status updated to: {new_status.replace('_', ' ').title()}", "success")
+    return redirect(url_for('delivery_detail', dr_id=dr_id))
+
+
+@app.route("/my-deliveries")
+@require_login
+def my_deliveries():
+    deliveries = (DeliveryRequest.query
+                  .filter_by(buyer_id=current_user.id)
+                  .order_by(DeliveryRequest.created_at.desc())
+                  .all())
+    return render_template('my_deliveries.html', deliveries=deliveries,
+                           status_meta=_DELIVERY_STATUS_META)
+
+
+@app.route("/hauler/deliveries")
+@require_login
+def hauler_deliveries_page():
+    if current_user.user_type != 'hauler':
+        flash("This page is for registered haulers only.", "error")
+        return redirect(url_for('home'))
+
+    open_statuses = ('requested', 'offers_received')
+    available_drs = (DeliveryRequest.query
+                     .filter(DeliveryRequest.status.in_(open_statuses))
+                     .order_by(DeliveryRequest.created_at.desc())
+                     .all())
+
+    # Map job_id → my bid for quick lookup
+    all_job_ids = [dr.job_id for dr in available_drs if dr.job_id]
+    my_bids_map = {}
+    if all_job_ids:
+        my_bids = Bid.query.filter(Bid.job_id.in_(all_job_ids),
+                                   Bid.hauler_id == current_user.id).all()
+        my_bids_map = {b.job_id: b for b in my_bids}
+
+    # Active deliveries this hauler was selected for
+    my_active_bids = Bid.query.filter_by(hauler_id=current_user.id, status='accepted').all()
+    my_active_drs = []
+    if my_active_bids:
+        act_job_ids = [b.job_id for b in my_active_bids]
+        my_active_drs = (DeliveryRequest.query
+                         .filter(DeliveryRequest.job_id.in_(act_job_ids),
+                                 DeliveryRequest.status.notin_(['delivered', 'cancelled']))
+                         .all())
+
+    return render_template('hauler_deliveries.html',
+        available_drs=available_drs,
+        my_bids_map=my_bids_map,
+        my_active_drs=my_active_drs,
+        status_meta=_DELIVERY_STATUS_META,
+    )
+
+
+@app.route("/admin/deliveries")
+@require_admin
+def admin_deliveries():
+    status_filter = request.args.get('status', '')
+    q = DeliveryRequest.query
+    if status_filter:
+        q = q.filter_by(status=status_filter)
+    deliveries = q.order_by(DeliveryRequest.created_at.desc()).all()
+
+    stats = {}
+    for s in _DELIVERY_STATUS_META:
+        stats[s] = DeliveryRequest.query.filter_by(status=s).count()
+    stats['total'] = DeliveryRequest.query.count()
+
+    return render_template('admin_deliveries.html',
+        deliveries=deliveries, stats=stats,
+        status_filter=status_filter,
+        status_meta=_DELIVERY_STATUS_META,
+    )
+
+
+# ── end MARKETPLACE DELIVERY ──────────────────────────────────────────────────
+
 @app.route("/hauler/jobs")
 def hauler_jobs():
     return redirect(url_for('home'))
@@ -2667,7 +3076,7 @@ def delete_account():
     ListingFavorite.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
     ListingOffer.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
     ListingConversation.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
-    DeliveryRequest.query.filter_by(requester_id=user_id).delete(synchronize_session=False)
+    DeliveryRequest.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
     ListingReport.query.filter_by(reporter_id=user_id).delete(synchronize_session=False)
     ListingMessage.query.filter_by(sender_id=user_id).delete(synchronize_session=False)
     UserBlock.query.filter(

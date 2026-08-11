@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Delivery #{{ dr.id }} — JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+  <div>
+    {% if is_buyer %}
+      <a href="{{ url_for('my_deliveries') }}" style="color:#718096;font-size:0.9rem;">← My Deliveries</a>
+    {% elif is_admin %}
+      <a href="{{ url_for('admin_deliveries') }}" style="color:#718096;font-size:0.9rem;">← Admin Deliveries</a>
+    {% elif current_user.user_type == 'hauler' %}
+      <a href="{{ url_for('hauler_deliveries_page') }}" style="color:#718096;font-size:0.9rem;">← Available Deliveries</a>
+    {% endif %}
+    <h2 class="page-title" style="margin:6px 0 0;">🚚 Delivery Request #{{ dr.id }}</h2>
+  </div>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:700;background:#f1f5f9;color:{{ status_color }};">
+    {{ status_icon }} {{ status_label }}
+  </span>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}" style="margin-bottom:12px;">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:4px;">
+
+  <!-- LEFT: Main info -->
+  <div>
+
+    <!-- Item card -->
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      <h3 style="margin:0 0 14px;font-size:1rem;">📦 Item</h3>
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        {% if listing_photo %}
+          {% if listing_photo.storage_url %}
+            <img src="{{ listing_photo.storage_url }}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+          {% elif listing_photo.data %}
+            <img src="{{ url_for('listing_photo_serve', photo_id=listing_photo.id) }}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+          {% endif %}
+        {% endif %}
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:1rem;">{{ dr.item_description or '—' }}</div>
+          {% if dr.listing %}
+          <a href="{{ url_for('listing_detail', listing_id=dr.listing.id) }}" style="font-size:0.84rem;color:#3498db;">View listing →</a>
+          {% endif %}
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;font-size:0.82rem;">
+            {% if dr.item_count %}<span style="background:#f1f5f9;padding:2px 8px;border-radius:10px;">{{ dr.item_count }} item(s)</span>{% endif %}
+            {% if dr.approx_dimensions %}<span style="background:#f1f5f9;padding:2px 8px;border-radius:10px;">📐 {{ dr.approx_dimensions }}</span>{% endif %}
+            {% if dr.pickup_stairs %}<span style="background:#fef9c3;padding:2px 8px;border-radius:10px;">⚠️ Stairs at pickup</span>{% endif %}
+            {% if dr.delivery_stairs %}<span style="background:#fef9c3;padding:2px 8px;border-radius:10px;">⚠️ Stairs at delivery</span>{% endif %}
+            {% if dr.need_loading %}<span style="background:#ede9fe;padding:2px 8px;border-radius:10px;">🏋️ Loading help needed</span>{% endif %}
+            {% if dr.need_unloading %}<span style="background:#ede9fe;padding:2px 8px;border-radius:10px;">🏋️ Unloading help needed</span>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Route card -->
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      <h3 style="margin:0 0 14px;font-size:1rem;">📍 Route</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:#718096;margin-bottom:4px;">Pickup</div>
+          {% if reveal_addresses and dr.pickup_address %}
+          <div style="font-weight:600;">{{ dr.pickup_address }}</div>
+          {% endif %}
+          <div>{{ dr.pickup_city or '' }}{% if dr.pickup_state %}, {{ dr.pickup_state }}{% endif %} {{ dr.pickup_zip or '' }}</div>
+          {% if not reveal_addresses %}
+          <div style="font-size:0.78rem;color:#a0aec0;margin-top:2px;">Full address revealed after selection</div>
+          {% endif %}
+        </div>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:#718096;margin-bottom:4px;">Delivery</div>
+          {% if reveal_addresses and dr.delivery_address %}
+          <div style="font-weight:600;">{{ dr.delivery_address }}</div>
+          {% endif %}
+          <div>{{ dr.delivery_city or '' }}{% if dr.delivery_state %}, {{ dr.delivery_state }}{% endif %} {{ dr.delivery_zip or '' }}</div>
+          {% if not reveal_addresses %}
+          <div style="font-size:0.78rem;color:#a0aec0;margin-top:2px;">Full address revealed after selection</div>
+          {% endif %}
+        </div>
+      </div>
+      {% if dr.preferred_date or dr.preferred_time %}
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:#718096;margin-bottom:4px;">Preferred Schedule</div>
+        <div>{{ dr.preferred_date or '' }}{% if dr.preferred_date and dr.preferred_time %} · {% endif %}{{ dr.preferred_time or '' }}</div>
+      </div>
+      {% endif %}
+      {% if dr.special_instructions %}
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:#718096;margin-bottom:4px;">Notes</div>
+        <div style="font-size:0.9rem;">{{ dr.special_instructions }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Delivery Offers section -->
+    {% if is_buyer or is_admin %}
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      <h3 style="margin:0 0 14px;font-size:1rem;">📬 Delivery Offers ({{ hauler_bids|length }})</h3>
+      {% if hauler_bids %}
+        {% for bid in hauler_bids %}
+        <div style="border:1px solid {% if bid.status == 'accepted' %}#10b981{% elif bid.status == 'not_selected' %}#e5e7eb{% else %}#e5e7eb{% endif %};border-radius:10px;padding:14px;margin-bottom:10px;background:{% if bid.status == 'accepted' %}#f0fdf4{% elif bid.status == 'not_selected' %}#fafafa{% else %}#fff{% endif %};">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:1rem;">{{ bid.hauler_name }}</div>
+              {% if bid.message %}
+              <div style="font-size:0.88rem;color:#4a5568;margin-top:4px;white-space:pre-line;">{{ bid.message }}</div>
+              {% endif %}
+              <div style="font-size:0.78rem;color:#a0aec0;margin-top:6px;">Submitted {{ bid.created_at.strftime('%b %-d, %Y') }}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:1.4rem;font-weight:800;color:#059669;">${{ "%.0f"|format(bid.quote_amount) }}</div>
+              {% if bid.status == 'accepted' %}
+                <span style="font-size:0.78rem;background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:10px;font-weight:700;">✅ Selected</span>
+              {% elif bid.status == 'not_selected' %}
+                <span style="font-size:0.78rem;color:#a0aec0;">Not selected</span>
+              {% elif dr.status not in ('hauler_selected', 'scheduled', 'picked_up', 'in_transit', 'delivered', 'cancelled') %}
+                {% if is_buyer %}
+                <form method="POST" action="{{ url_for('delivery_select_hauler', dr_id=dr.id, bid_id=bid.id) }}" style="margin-top:6px;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-primary btn-sm">Select This Hauler</button>
+                </form>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:#a0aec0;text-align:center;padding:20px 0;font-size:0.9rem;">No delivery offers yet. Registered haulers will be notified shortly.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Hauler: submit offer -->
+    {% if current_user.user_type == 'hauler' and not is_buyer and not is_admin %}
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      {% if hauler_own_bid %}
+      <h3 style="margin:0 0 8px;font-size:1rem;">✅ Your Delivery Offer</h3>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;">
+        <div style="font-size:1.3rem;font-weight:800;color:#059669;">${{ "%.0f"|format(hauler_own_bid.quote_amount) }}</div>
+        {% if hauler_own_bid.message %}<div style="font-size:0.88rem;color:#4a5568;margin-top:4px;white-space:pre-line;">{{ hauler_own_bid.message }}</div>{% endif %}
+        <div style="font-size:0.78rem;color:#a0aec0;margin-top:4px;">
+          Status: <strong>{{ hauler_own_bid.status.replace('_',' ').title() }}</strong>
+        </div>
+      </div>
+      {% elif is_selected_hauler %}
+      <div style="background:#f0fdf4;border-radius:8px;padding:16px;text-align:center;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">✅</div>
+        <strong>You've been selected for this delivery!</strong>
+        <p style="color:#718096;font-size:0.88rem;margin:6px 0 0;">Full pickup and delivery addresses are now visible above.</p>
+      </div>
+      {% elif dr.status in ('requested', 'offers_received') %}
+      <h3 style="margin:0 0 14px;font-size:1rem;">Submit a Delivery Offer</h3>
+      <form method="POST" action="{{ url_for('delivery_offer', dr_id=dr.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="margin-bottom:12px;">
+          <label class="form-label">Your Delivery Price ($) <span style="color:#dc2626;">*</span></label>
+          <input class="form-control" type="number" name="quote_amount" min="1" step="0.01" placeholder="75" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="form-label">Your Availability</label>
+          <input class="form-control" type="text" name="availability" placeholder="e.g. Saturday 1–3 PM, flexible on date">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="form-label">Message / Notes</label>
+          <textarea class="form-control" name="message" rows="2" placeholder="Truck size, equipment, experience with similar items..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">📨 Submit Delivery Offer</button>
+      </form>
+      {% else %}
+      <p style="color:#a0aec0;text-align:center;padding:12px 0;font-size:0.9rem;">This delivery is no longer accepting offers.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- RIGHT: Sidebar -->
+  <div>
+
+    <!-- Status card -->
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;font-size:1rem;">Status</h3>
+      <div style="font-size:1.1rem;font-weight:700;color:{{ status_color }};">{{ status_icon }} {{ status_label }}</div>
+      <div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Updated {{ dr.updated_at.strftime('%b %-d, %Y') if dr.updated_at else '' }}</div>
+
+      {% if is_selected_hauler or is_admin %}
+      <div style="margin-top:14px;border-top:1px solid #f1f5f9;padding-top:14px;">
+        <div style="font-size:0.8rem;font-weight:700;color:#718096;margin-bottom:8px;">Update Status</div>
+        <form method="POST" action="{{ url_for('delivery_update_status', dr_id=dr.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select class="form-control" name="status" style="margin-bottom:8px;">
+            {% for s, (icon, label, color) in status_meta.items() %}
+            {% if is_admin or s in ('scheduled', 'picked_up', 'in_transit', 'delivered', 'cancelled') %}
+            <option value="{{ s }}" {% if s == dr.status %}selected{% endif %}>{{ icon }} {{ label }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-outline btn-sm" style="width:100%;">Update Status</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if is_buyer and dr.status == 'requested' %}
+      <div style="margin-top:14px;border-top:1px solid #f1f5f9;padding-top:14px;">
+        <form method="POST" action="{{ url_for('delivery_update_status', dr_id=dr.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="status" value="cancelled">
+          <button type="submit" class="btn btn-sm" style="width:100%;background:#fee2e2;color:#b91c1c;border:none;" onclick="return confirm('Cancel this delivery request?')">Cancel Request</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Parties card -->
+    <div class="card" style="padding:18px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;font-size:1rem;">People</h3>
+      <div style="font-size:0.86rem;">
+        <div style="margin-bottom:10px;">
+          <div style="font-weight:700;color:#718096;font-size:0.75rem;text-transform:uppercase;">Buyer</div>
+          <div>{{ dr.buyer.first_name or '' }} {{ dr.buyer.last_name or '' }}</div>
+        </div>
+        {% if dr.seller %}
+        <div style="margin-bottom:10px;">
+          <div style="font-weight:700;color:#718096;font-size:0.75rem;text-transform:uppercase;">Seller</div>
+          <div>{{ dr.seller.first_name or '' }} {{ dr.seller.last_name or '' }}</div>
+        </div>
+        {% endif %}
+        {% if selected_bid %}
+        <div>
+          <div style="font-weight:700;color:#718096;font-size:0.75rem;text-transform:uppercase;">Selected Hauler</div>
+          <div>{{ selected_bid.hauler_name }}</div>
+          {% if reveal_addresses and selected_bid.hauler_phone %}
+          <div style="color:#718096;font-size:0.82rem;">{{ selected_bid.hauler_phone }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Message seller link -->
+    {% if dr.listing and (is_buyer or is_seller) %}
+    <div class="card" style="padding:16px;text-align:center;">
+      <a href="{{ url_for('listing_message', listing_id=dr.listing.id) }}" class="btn btn-outline" style="width:100%;">💬 Message Seller</a>
+    </div>
+    {% endif %}
+
+    {% if is_admin %}
+    <div class="card" style="padding:16px;margin-top:0;">
+      <div style="font-size:0.78rem;font-weight:700;color:#718096;margin-bottom:8px;">Admin Info</div>
+      <div style="font-size:0.82rem;color:#4a5568;">
+        <div>Delivery #{{ dr.id }}</div>
+        {% if dr.job_id %}<div>Linked Job: <a href="{{ url_for('admin_request_detail', job_id=dr.job_id) }}">#{{ dr.job_id }}</a></div>{% endif %}
+        <div>Created {{ dr.created_at.strftime('%b %-d, %Y %-I:%M %p') }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+  [style*="grid-template-columns:1fr 360px"] { grid-template-columns:1fr !important; }
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+}
+</style>
+{% endblock %}

@@ -515,6 +515,22 @@ with app.app_context():
 
     try:
         from sqlalchemy import text as _text
+        for _col in [
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS pickup_address TEXT",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS delivery_address TEXT",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS need_loading BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS need_unloading BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS job_id INTEGER REFERENCES jobs(id)",
+        ]:
+            db.session.execute(_text(_col))
+        db.session.commit()
+        logging.info("Column migration: delivery_requests extended fields ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (delivery_requests extended) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
         db.session.execute(_text("""
             CREATE TABLE IF NOT EXISTS listing_reports (
                 id SERIAL PRIMARY KEY,

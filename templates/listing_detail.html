@@ -875,9 +875,7 @@
               {% endif %}
             {% else %}
               <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
-              {% if 'jhe_haul' in listing.delivery_options_list %}
-              <a href="{{ url_for('customer_request') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
-              {% endif %}
+              <a href="{{ url_for('listing_request_delivery', listing_id=listing.id) }}" class="btn-delivery">🚚 Need Delivery?</a>
             {% endif %}
 
             {# ── Offer controls: shown for all negotiable listings ── #}
@@ -917,9 +915,7 @@
               {% endif %}
             {% else %}
               <a href="{{ url_for('auth.login') }}" class="btn-primary">💬 Message Seller</a>
-              {% if 'jhe_haul' in listing.delivery_options_list %}
-              <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚛 Request JHE Haul Delivery</a>
-              {% endif %}
+              <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚚 Need Delivery?</a>
             {% endif %}
             {# Offer CTA for all negotiable listings (logged-out) #}
             {% if listing.price_type == 'negotiable' %}
