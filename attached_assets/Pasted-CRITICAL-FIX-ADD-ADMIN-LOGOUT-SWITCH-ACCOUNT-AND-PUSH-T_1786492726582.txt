@@ -1,0 +1,152 @@
+CRITICAL FIX — ADD ADMIN LOGOUT / SWITCH ACCOUNT AND PUSH TO PRODUCTION
+
+I am looking at the LIVE jhehaul.com Admin Dashboard right now.
+
+The dark Admin navigation currently shows:
+
+Dashboard
+Listings
+Users
+Reports
+Categories
+Gallery
+Settings
+View Marketplace
+
+There is STILL NO:
+
+🚪 Sign Out
+🔄 Switch Account
+
+STOP ALL OTHER WORK UNTIL THIS IS FIXED.
+
+STEP 1 — FIND THE ACTUAL LIVE ADMIN TEMPLATE
+
+Identify:
+- The exact route rendering the live Admin Dashboard
+- The exact template/component rendering the dark Admin navigation
+- Any duplicate or legacy admin templates
+
+Do NOT edit an unused template.
+
+STEP 2 — ADD THE BUTTONS
+
+Inside the ACTUAL dark Admin navigation panel, directly underneath:
+
+← View Marketplace
+
+ADD:
+
+🚪 Sign Out
+🔄 Switch Account
+
+These MUST be clearly visible on MOBILE and DESKTOP.
+
+STEP 3 — MAKE THEM FUNCTIONAL
+
+SIGN OUT:
+- End the authenticated session
+- Clear authentication/session state
+- Redirect to the normal sign-in page
+- Prevent access to /admin until the user logs in again
+- Do NOT delete the account
+
+SWITCH ACCOUNT:
+- Sign out the current account
+- Clear the current authenticated session
+- Redirect to sign-in
+- Allow the user to immediately sign into another account
+- Do NOT delete either account
+
+STEP 4 — ALSO VERIFY ACCOUNT PAGE
+
+The regular Account page should also contain:
+
+ACCOUNT ACCESS
+
+🚪 Sign Out
+🔄 Switch Account
+
+Place this directly ABOVE the Delete Account section.
+
+STEP 5 — COMMIT AND PUSH — THIS IS REQUIRED
+
+DO NOT leave these changes only in the Replit workspace.
+
+After the fix:
+
+1. Save all files.
+2. Run git status.
+3. Review the changes.
+4. Commit the completed changes.
+5. PUSH THE COMMIT TO:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+PUSH TO ORIGIN/MAIN.
+
+THIS PUSH IS REQUIRED.
+
+Do NOT stop after committing locally.
+Do NOT tell me it is finished until the push succeeds.
+
+STEP 6 — DIGITALOCEAN DEPLOYMENT
+
+After pushing:
+
+1. Confirm GitHub origin/main contains the new commit.
+2. Confirm DigitalOcean detects the new commit.
+3. Confirm a NEW production deployment starts.
+4. Wait until the deployment reports Healthy/Successful.
+5. Confirm jhehaul.com is running the NEW commit.
+
+STEP 7 — VERIFY THE ACTUAL LIVE WEBSITE
+
+Open the actual production website, NOT the Replit preview.
+
+Verify:
+
+jhehaul.com/admin
+
+The dark navigation MUST visibly show:
+
+← View Marketplace
+🚪 Sign Out
+🔄 Switch Account
+
+Then verify the Account page visibly shows:
+
+ACCOUNT ACCESS
+🚪 Sign Out
+🔄 Switch Account
+
+Test Sign Out.
+
+Test Switch Account.
+
+FINAL REPORT:
+
+Tell me:
+
+1. Exact admin template/component changed
+2. Exact account template/component changed
+3. Logout route/function
+4. New commit hash
+5. Confirmation: PUSHED TO origin/main
+6. Confirmation: GitHub main contains the commit
+7. Confirmation: DigitalOcean deployed that exact commit
+8. Exact commit currently running on jhehaul.com
+9. Confirmation that you opened LIVE jhehaul.com and visually verified the buttons
+10. Why the previous attempts did not appear
+
+IMPORTANT:
+
+DO NOT make additional unrelated changes.
+DO NOT leave the fix sitting locally.
+DO NOT stop after creating a commit.
+
+YOU MUST PUSH THE CHANGES TO MAIN AND VERIFY DIGITALOCEAN DEPLOYED THEM.
