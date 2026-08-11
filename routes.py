@@ -23,7 +23,8 @@ from email_service import (
     notify_admin_bid_accepted, notify_admin_deposit_paid,
     notify_admin_job_completed, notify_admin_job_cancelled,
     notify_admin_user_deleted,
-    notify_customer_quote_received, notify_customer_deposit_confirmed,
+    notify_customer_quote_received, notify_customer_quote_withdrawn,
+    notify_customer_deposit_confirmed,
     notify_customer_appointment_confirmed,
     notify_admin_new_request,
 )
@@ -32,7 +33,8 @@ from sms_service import (
     notify_hauler_deposit_paid_sms, notify_hauler_bid_rejected_sms,
     notify_hauler_job_cancelled_sms,
     notify_customer_new_bid_sms, notify_customer_job_completed_sms,
-    notify_customer_quote_received_sms, notify_customer_deposit_confirmed_sms,
+    notify_customer_quote_received_sms, notify_customer_quote_withdrawn_sms,
+    notify_customer_deposit_confirmed_sms,
     notify_customer_appointment_confirmed_sms,
     notify_admin_sms, send_sms, send_verification_sms, get_sms_settings,
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
@@ -2671,6 +2673,25 @@ def admin_withdraw_quote(quote_id):
     if not other_pending and job.status == 'quoted':
         job.status = 'reviewing'
     db.session.commit()
+
+    # Notify the customer
+    customer = User.query.get(job.customer_id)
+    if customer:
+        try:
+            if customer.email:
+                notify_customer_quote_withdrawn(
+                    customer.email, job.id, job.service_type or 'Service Request'
+                )
+        except Exception as e:
+            app.logger.warning("Failed to send quote-withdrawn email: %s", e)
+        try:
+            if customer.notify_sms and customer.sms_consent and customer.phone:
+                notify_customer_quote_withdrawn_sms(
+                    customer.phone, job.id, job.service_type or 'Service Request'
+                )
+        except Exception as e:
+            app.logger.warning("Failed to send quote-withdrawn SMS: %s", e)
+
     flash(f"Quote #{quote.id} has been withdrawn. The customer can no longer act on it.", "success")
     return redirect(url_for('admin_request_detail', job_id=job.id))
 

@@ -647,6 +647,27 @@ def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, de
     )
 
 
+def notify_customer_quote_withdrawn(customer_email, job_id, service_type):
+    """Email the customer when admin withdraws a pending quote."""
+    service_label = service_type or 'Service'
+    body = f"""
+    <p>We wanted to let you know that the quote for your recent service request has been withdrawn by our team.</p>
+    <div class="info-box">
+      <p><strong>Request #:</strong> {job_id}</p>
+      <p><strong>Service:</strong> {service_label}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Quote Withdrawn</span></p>
+    </div>
+    <p>Our team is reviewing your request and will follow up with you shortly. If you have any questions, you can message us directly through your request page.</p>
+    <a href="{_APP_URL}/customer/request/{job_id}" class="btn">View Your Request →</a>"""
+    return send_email(
+        customer_email,
+        f"Quote Update — {service_label} (Request #{job_id})",
+        _html("Quote Update", "Our team will follow up with you shortly.",
+              "📋 Quote Withdrawn", body),
+        'customer_quote_withdrawn'
+    )
+
+
 def notify_customer_deposit_confirmed(customer_email, job_id, service_type, estimated_completion=None):
     service_label = service_type or 'Service'
     est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'
