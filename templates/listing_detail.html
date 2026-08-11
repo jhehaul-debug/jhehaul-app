@@ -586,6 +586,99 @@
   cursor: pointer;
 }
 .btn-offer-submit:hover { background: linear-gradient(135deg, #d97706, #b45309); }
+
+/* ── Similar Listings ── */
+.sim-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e5e7eb;
+}
+.sim-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.sim-head h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin: 0;
+}
+.sim-head a {
+  font-size: 0.86rem;
+  color: #38a169;
+  font-weight: 600;
+  text-decoration: none;
+}
+.sim-head a:hover { text-decoration: underline; }
+.sim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 600px) {
+  .sim-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+.sim-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.sim-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+}
+.sim-card-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: #f1f5f9;
+  display: block;
+}
+.sim-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #cbd5e0;
+  background: linear-gradient(135deg, #edf2f7, #e2e8f0);
+}
+.sim-card-body {
+  padding: 10px 12px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sim-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sim-card-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #276749;
+}
+.sim-card-meta {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: auto;
+}
 </style>
 
 <div class="ld-wrap">
@@ -1076,6 +1169,50 @@
 
     </div>
   </div>
+
+  {# ── Similar Listings ── only for sold/reserved, non-owner #}
+  {% if similar_listings and not is_owner %}
+  <div class="sim-section">
+    <div class="sim-head">
+      <h2>Similar listings you might like</h2>
+      {% if listing.category %}
+        <a href="/marketplace?category={{ listing.category.slug }}">Browse more →</a>
+      {% elif listing.is_property %}
+        <a href="/marketplace?listing_type={{ listing.listing_type }}">Browse more →</a>
+      {% else %}
+        <a href="/marketplace">Browse all →</a>
+      {% endif %}
+    </div>
+    <div class="sim-grid">
+      {% for sim in similar_listings %}
+      <a href="/listing/{{ sim.id }}" class="sim-card">
+        {% set sim_photo = sim.primary_photo %}
+        {% if sim_photo %}
+          <img class="sim-card-img" src="{{ sim_photo.storage_url or url_for('serve_listing_photo', photo_id=sim_photo.id) }}" alt="{{ sim.title }}" loading="lazy">
+        {% else %}
+          <div class="sim-card-img sim-card-placeholder">{{ '🏠' if sim.is_property else '📦' }}</div>
+        {% endif %}
+        <div class="sim-card-body">
+          <div class="sim-card-title">{{ sim.title | truncate(55) }}</div>
+          <div class="sim-card-price">
+            {% if sim.price_type == 'free' %}
+              <span style="color:#2b6cb0;font-weight:800">Free</span>
+            {% elif sim.price %}
+              ${{ "%.0f"|format(sim.price) }}{% if sim.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}
+            {% else %}
+              Contact
+            {% endif %}
+          </div>
+          {% if sim.city or sim.state %}
+          <div class="sim-card-meta">{{ sim.city or '' }}{% if sim.city and sim.state %}, {% endif %}{{ sim.state or '' }}</div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 <!-- Lightbox -->

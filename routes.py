@@ -1292,6 +1292,21 @@ def listing_detail(listing_id):
                          .order_by(ListingOffer.created_at.desc())
                          .all())
 
+    # Similar active listings (sold/reserved pages only, shown to non-owners)
+    similar_listings = []
+    if listing.status in ('sold', 'reserved'):
+        from models import Listing as _SL
+        sim_q = _SL.query.filter(
+            _SL.id != listing_id,
+            _SL.status == 'active',
+            _SL.moderation_status == 'approved',
+        )
+        if listing.category_id:
+            sim_q = sim_q.filter(_SL.category_id == listing.category_id)
+        elif listing.is_property:
+            sim_q = sim_q.filter(_SL.listing_type == listing.listing_type)
+        similar_listings = sim_q.order_by(_SL.created_at.desc()).limit(6).all()
+
     return render_template(
         'listing_detail.html',
         listing=listing,
@@ -1303,6 +1318,7 @@ def listing_detail(listing_id):
         seller_sold_count=seller_sold_count,
         buyer_offer=buyer_offer,
         seller_offers=seller_offers,
+        similar_listings=similar_listings,
     )
 
 
