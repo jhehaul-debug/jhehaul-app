@@ -1,0 +1,246 @@
+JHE HAUL — ADD MARKETPLACE DELIVERY SCHEDULING
+
+JHE Haul is a local marketplace, but Haul & Delivery remains an important OPTIONAL service.
+
+I want buyers and sellers to be able to arrange delivery of marketplace purchases using registered JHE Haul haulers.
+
+DO NOT remove the existing hauler accounts, bidding system, messaging, notifications, or hauling database functionality.
+
+Instead, integrate the existing hauling system into the marketplace as a DELIVERY service.
+
+====================================
+1. ADD “NEED DELIVERY?” TO LISTINGS
+====================================
+
+On marketplace item listing pages, add a clear button:
+
+🚚 Need Delivery?
+
+Also allow:
+
+Schedule Delivery
+
+Do NOT show this on rental-property or home-for-sale listings.
+
+====================================
+2. DELIVERY REQUEST
+====================================
+
+When the user selects Need Delivery, open a simple delivery request form.
+
+Include:
+
+Item being delivered
+Item photo
+Pickup ZIP
+Pickup address
+Delivery ZIP
+Delivery address
+Preferred delivery date
+Preferred time
+Item size
+Number of items
+Stairs at pickup? Yes/No
+Stairs at delivery? Yes/No
+Need help loading? Yes/No
+Need help unloading? Yes/No
+Special instructions
+
+If the request comes directly from a marketplace listing, automatically attach:
+
+Listing ID
+Listing title
+Listing photo
+Seller
+Buyer
+
+Do not make the user re-enter information already available.
+
+====================================
+3. ADDRESS PRIVACY
+====================================
+
+Protect exact addresses.
+
+Haulers browsing available delivery requests should initially see:
+
+Pickup City/ZIP
+Delivery City/ZIP
+Approximate distance
+Item
+Photos
+Date/time
+Loading requirements
+
+Do NOT publicly expose residential street addresses.
+
+Reveal the exact pickup/drop-off information only to the selected/confirmed hauler at the appropriate point in the workflow.
+
+====================================
+4. HAULER SIDE
+====================================
+
+Registered haulers should have a section:
+
+🚚 Available Deliveries
+
+They can view nearby delivery requests and submit:
+
+Delivery price
+Availability
+Message/notes
+
+Example:
+
+Delivery Offer
+$75
+Available Saturday 1–3 PM
+
+Use the existing bid/quote infrastructure where practical instead of building a completely separate duplicate system.
+
+However, customer-facing terminology should say:
+
+Delivery Offer
+
+instead of:
+
+Hauling Bid / Job Bid
+
+when the request originated from a marketplace purchase.
+
+====================================
+5. BUYER SIDE
+====================================
+
+Buyer should see:
+
+Delivery Offers
+
+Example:
+
+John's Delivery Offer
+$75
+Saturday 1–3 PM
+
+[View Profile]
+[Message]
+[Select Delivery]
+
+After selection show:
+
+Delivery Scheduled
+
+with:
+
+Hauler
+Date
+Time
+Pickup
+Delivery
+Status
+
+====================================
+6. DELIVERY STATUS
+====================================
+
+Use:
+
+Requested
+Offers Received
+Hauler Selected
+Scheduled
+Picked Up
+In Transit
+Delivered
+Cancelled
+
+Buyer, seller, hauler and Admin should see the appropriate status.
+
+====================================
+7. MESSAGING
+====================================
+
+Connect delivery requests to the existing messaging system.
+
+Allow buyer and selected hauler to communicate through JHE Haul without publicly exposing their personal contact information.
+
+====================================
+8. NOTIFICATIONS
+====================================
+
+Use the existing notification/SMS infrastructure.
+
+Send appropriate notifications for:
+
+New delivery request nearby
+New delivery offer
+Delivery offer selected
+Delivery scheduled
+Delivery reminder
+Item picked up
+Item delivered
+Delivery cancelled
+
+Respect existing SMS opt-in settings.
+
+====================================
+9. ADMIN
+====================================
+
+Create/maintain a separate:
+
+HAUL & DELIVERY
+
+section in Admin.
+
+Show:
+
+Registered Haulers
+Available Deliveries
+Scheduled Deliveries
+Deliveries In Progress
+Completed Deliveries
+Cancelled Deliveries
+
+Move “Total Haulers” out of the primary general User Analytics area.
+
+Primary User Analytics should count everyone as JHE Haul users.
+
+Haulers are a specialized provider type within the Haul & Delivery service.
+
+====================================
+10. IMPORTANT
+====================================
+
+DO NOT rebuild systems that already exist.
+
+Reuse the existing:
+- hauler accounts
+- bids/quotes
+- messages
+- SMS
+- notifications
+- address privacy
+- database relationships
+
+where possible.
+
+The goal is to connect the EXISTING hauling technology to the NEW marketplace.
+
+JHE Haul remains MARKETPLACE FIRST.
+
+Haul & Delivery is an optional service available when someone needs an item transported.
+
+Do not break existing marketplace, housing, rental, real-estate, account, admin, authentication, messaging, or photo functionality.
+
+Before pushing/deploying, show me:
+1. What was changed
+2. Which existing hauling components were reused
+3. What new database fields/tables were required
+4. Screens/pages added
+5. How address privacy works
+6. How a buyer schedules delivery
+7. How a hauler accepts/offers delivery
+8. Any remaining work
+
+DO NOT PUSH OR DEPLOY until I review it.
