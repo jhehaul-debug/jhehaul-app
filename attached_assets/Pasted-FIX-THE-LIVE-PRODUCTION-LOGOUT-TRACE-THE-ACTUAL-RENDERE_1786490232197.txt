@@ -1,0 +1,61 @@
+FIX THE LIVE PRODUCTION LOGOUT — TRACE THE ACTUAL RENDERED TEMPLATE
+
+I STILL do not see Sign Out or Switch Account on the live jhehaul.com site.
+
+Do not make another blind UI change.
+
+I need you to TRACE the exact production code path and fix the template/component that is ACTUALLY rendering.
+
+1. Confirm the exact production branch currently deployed to jhehaul.com.
+2. Confirm the exact production commit hash currently running.
+3. Compare that commit to the latest commit you pushed.
+4. Confirm whether DigitalOcean successfully deployed the latest commit.
+5. Identify the exact route used for:
+   - /account
+   - /admin
+6. Identify the exact template/component rendered by each route.
+7. Search for duplicate or legacy account/admin templates.
+8. Verify whether your previous logout changes were made to a template that is NOT actually being used.
+
+THEN FIX THE ACTUAL LIVE TEMPLATE.
+
+On the real /account page, add this directly above Delete Account:
+
+ACCOUNT ACCESS
+
+[ 🚪 Sign Out ]
+[ 🔄 Switch Account ]
+
+On the real Admin navigation, add:
+
+🚪 Sign Out
+🔄 Switch Account
+
+Place them near “View Marketplace.”
+
+LOGOUT FUNCTION:
+
+- End authenticated session
+- Clear session/authentication state
+- Redirect to sign-in
+- Prevent access to /admin after logout
+- Do not delete account data
+- Do not automatically log the same user back in
+
+IMPORTANT:
+Do not say this is fixed until you personally verify the ACTUAL production jhehaul.com page contains the visible buttons.
+
+After fixing:
+
+1. Commit the change.
+2. Push to the branch DigitalOcean ACTUALLY deploys.
+3. Trigger/redeploy production if required.
+4. Verify jhehaul.com is running that exact commit.
+5. Open the live /account page and confirm the buttons are visible.
+6. Open the live /admin page and confirm the buttons are visible.
+7. Tell me the exact production commit hash.
+8. Tell me the exact template filenames/routes that were fixed.
+9. Tell me why the previous changes were not appearing.
+
+Do not stop at the Replit preview.
+Verify the LIVE production site.
