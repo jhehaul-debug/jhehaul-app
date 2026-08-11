@@ -344,6 +344,18 @@ def notify_customer_job_completed_sms(phone, job_id):
     return send_sms(phone, msg, 'customer_job_completed')
 
 
+# ── Seller / listing notifications ────────────────────────────────────────────
+
+def notify_seller_listing_expired_sms(phone, listing_id, title):
+    """SMS to a seller when their listing auto-expires. Respects global SMS kill-switch."""
+    if not is_sms_enabled('seller_listing_expired'):
+        return False
+    safe_title = (title or f"Listing #{listing_id}")[:50]
+    msg = (f"JHE Haul: Your listing \"{safe_title}\" has expired. "
+           f"Renew it from My Listings: {_APP_URL}/my-listings")
+    return send_sms(phone, msg, 'seller_listing_expired')
+
+
 # ── Admin notifications ────────────────────────────────────────────────────────
 
 def notify_admin_sms(message):

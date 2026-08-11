@@ -29,8 +29,12 @@ def _run_checks(app):
             notify_customer_job_expiring_soon,
             notify_admin_job_expired,
             notify_customer_appointment_reminder,
+            notify_seller_listing_expired,
         )
-        from sms_service import notify_customer_appointment_reminder_sms
+        from sms_service import (
+            notify_customer_appointment_reminder_sms,
+            notify_seller_listing_expired_sms,
+        )
 
         now = datetime.now()
 
@@ -50,6 +54,20 @@ def _run_checks(app):
                 db.session.commit()
                 listing_expired_count += 1
                 log.info("Listing #%s auto-expired (expires_at: %s)", lst.id, lst.expires_at)
+
+                # Notify the seller by email (and SMS if opted-in)
+                seller = User.query.get(lst.seller_id) if lst.seller_id else None
+                if seller and seller.email:
+                    try:
+                        notify_seller_listing_expired(seller.email, lst.id, lst.title)
+                    except Exception as e:
+                        log.error("Listing expired email failed (listing #%s): %s", lst.id, e)
+                if seller and seller.notify_sms and seller.sms_consent and seller.phone:
+                    try:
+                        notify_seller_listing_expired_sms(seller.phone, lst.id, lst.title)
+                    except Exception as e:
+                        log.error("Listing expired SMS failed (listing #%s): %s", lst.id, e)
+
             except Exception as e:
                 log.error("Listing expiry error for listing #%s: %s", lst.id, e)
                 db.session.rollback()

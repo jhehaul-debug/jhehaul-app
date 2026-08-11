@@ -467,6 +467,32 @@ def notify_hauler_job_cancelled(hauler_email, job_id, customer_name):
     )
 
 
+def notify_seller_listing_expired(seller_email, listing_id, title):
+    """Notify the seller that their listing has auto-expired."""
+    safe_title = title or f"Listing #{listing_id}"
+    body = f"""
+    <p>Your listing <strong>{safe_title}</strong> has expired and is no longer visible
+       in the marketplace.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Expired</span></p>
+    </div>
+    <p>You can renew the listing from your <strong>My Listings</strong> page — it takes
+       just a few seconds to make it active again.</p>
+    <a href="{_APP_URL}/my-listings" class="btn">Go to My Listings →</a>"""
+    return send_email(
+        seller_email,
+        f"Your listing \"{safe_title}\" has expired",
+        _html(
+            "Your Listing Has Expired",
+            "Renew it from My Listings to keep selling.",
+            "⏰ Listing Expired",
+            body,
+        ),
+        'seller_listing_expired',
+    )
+
+
 def notify_customer_pending_bids_reminder(customer_email, job_id, bid_count):
     """24-hour inactivity reminder — bids waiting for review."""
     body = f"""
