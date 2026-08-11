@@ -1,0 +1,132 @@
+EXPAND THE HOUSING FEATURE TO INCLUDE REAL ESTATE FOR SALE.
+
+Rename the main section:
+
+🏠 HOUSING & REAL ESTATE
+
+When a user enters Housing & Real Estate, provide two prominent choices:
+
+🏷️ FOR SALE
+🔑 FOR RENT
+
+FOR SALE CATEGORIES:
+
+* Houses for Sale
+* Condos & Townhomes for Sale
+* Multi-Family Properties
+* Land & Lots
+* Commercial Property
+* Manufactured/Mobile Homes
+* Other Real Estate
+
+FOR RENT:
+Keep the rental categories and functionality already specified in the current Housing task.
+
+REAL ESTATE FOR-SALE LISTING FORM:
+
+Required:
+
+* Listing title
+* Asking price
+* Property type
+* City
+* ZIP code
+* Description
+* Photos
+* Listed by: Owner / Licensed Real Estate Agent / Builder
+
+Property-specific fields when applicable:
+
+* Bedrooms
+* Bathrooms
+* Square footage
+* Lot size
+* Year built
+* Garage/parking
+* Property taxes, if supplied
+* HOA fee, if applicable
+* Open house date/time
+* Amenities
+* Accessibility features
+
+LOCATION:
+Continue using the Twin Cities service-area system already being built.
+
+Public property listings may display:
+City, MN ZIP
+
+Allow the property lister to optionally provide the street/property address for a property being publicly marketed for sale or rent.
+
+Do NOT expose a private account/home address merely because it exists in the user’s profile.
+
+SEARCH & FILTERS FOR PROPERTIES FOR SALE:
+
+* City
+* ZIP
+* Distance
+* Minimum price
+* Maximum price
+* Property type
+* Bedrooms
+* Bathrooms
+* Minimum square footage
+* Newest
+* Open houses
+
+PROPERTY CARDS:
+Show:
+
+* Main property photo
+* Asking price
+* Bedrooms/bathrooms
+* Square footage when available
+* Property type
+* City/ZIP
+* For Sale badge
+* Save/Favorite button
+
+PROPERTY DETAIL PAGE:
+Include:
+
+* Photo gallery
+* Asking price
+* Property information
+* Description
+* Location
+* Amenities/features
+* Open house information
+* Seller/Agent/Builder designation
+* Save Property
+* Message Seller/Agent
+
+Do not process real estate purchase funds, earnest money, down payments, mortgage payments, closing funds, security deposits, or rent payments through JHE Haul at this stage.
+
+JHE Haul is currently a marketplace/listing and communication platform, not a real estate brokerage, lender, escrow service, title company, property manager, or party to a real estate transaction.
+
+ADMIN:
+Expand Housing administration to separately show:
+
+* Properties For Sale
+* Rentals
+* Pending Listings
+* Reported Listings
+* Expired Listings
+
+Admin must be able to review, hide, remove, and moderate real estate listings.
+
+Add appropriate reporting options for:
+
+* Suspected scam/fraud
+* Duplicate listing
+* Incorrect property information
+* Discriminatory housing content
+* Other
+
+MOBILE:
+When the user presses Sell, provide clear choices such as:
+
+Sell an Item
+List a Property for Sale
+List a Rental
+
+Do not undo or duplicate any Housing work already completed in the current task. Integrate these requirements into the same Housing & Real Estate architecture.
