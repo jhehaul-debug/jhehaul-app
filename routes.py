@@ -319,9 +319,11 @@ def home():
             return redirect(url_for('admin_dashboard'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-    categories = _marketplace_categories()
-    ctx = _marketplace_homepage_ctx()
-    return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+        categories = _marketplace_categories()
+        ctx = _marketplace_homepage_ctx()
+        return render_template('marketplace.html', categories=categories, is_search=False, **ctx)
+    # Logged-out visitors see the marketing landing page
+    return redirect(url_for('landing'))
 
 
 # Twin Cities metro cities (expansion-ready: add more cities later)

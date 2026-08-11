@@ -40,6 +40,7 @@
                         {% endif %}
                         <span>{{ current_user.first_name or current_user.email or 'User' }}</span>
                     </div>
+                    <a href="{{ url_for('landing') }}">Our Work</a>
                     <a href="{{ url_for('home') }}">Home</a>
                     <a href="{{ url_for('marketplace') }}">Marketplace</a>
                     <a href="/sell" class="nav-sell-btn">+ Sell</a>
@@ -79,6 +80,7 @@
                 {{ current_user.first_name or current_user.email or 'User' }}
                 {% if current_user.is_admin %} · Admin{% endif %}
             </div>
+            <a href="{{ url_for('landing') }}">📸 Our Work</a>
             <a href="{{ url_for('home') }}">🏠 Home</a>
             <a href="{{ url_for('marketplace') }}">🛍️ Marketplace</a>
             <a href="/sell">💰 Sell Something</a>
@@ -138,6 +140,7 @@
             </div>
             <div class="footer-col">
                 <h4>Company</h4>
+                <a href="{{ url_for('landing') }}">Our Work</a>
                 <a href="{{ url_for('about') }}">About JHE Haul</a>
                 <a href="mailto:jhehaul@gmail.com">Contact</a>
                 <a href="{{ url_for('customer_terms') }}">Terms of Service</a>
