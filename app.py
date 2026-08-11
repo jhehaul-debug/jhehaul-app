@@ -2,6 +2,7 @@ import os
 import logging
 
 from flask import Flask
+from flask_wtf.csrf import generate_csrf  # required; install Flask-WTF from requirements.txt
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +34,6 @@ db.init_app(app)
 @app.context_processor
 def _csrf_context():
     """Make csrf_token() callable in all templates without global enforcement."""
-    from flask_wtf.csrf import generate_csrf
     return dict(csrf_token=generate_csrf)
 
 # ---- Upload folder ----
