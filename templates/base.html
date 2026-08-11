@@ -86,6 +86,8 @@
             <a href="/sell">💰 Sell Something</a>
             <a href="{{ url_for('marketplace_messages') if current_user.is_authenticated else url_for('auth.login') }}">💬 Messages{% if customer_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ customer_unread_count }}</span>{% endif %}</a>
             <a href="{{ url_for('profile') }}">👤 My Account</a>
+            <a href="{{ url_for('my_listings') }}">📦 My Listings</a>
+            <a href="{{ url_for('seller_offers') }}" style="position:relative;">📬 Incoming Offers</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
             {% if current_user.user_type == 'customer' %}
             <a href="{{ url_for('customer_request') }}">📦 Request Service</a>

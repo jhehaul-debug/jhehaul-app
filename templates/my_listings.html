@@ -66,7 +66,15 @@
 <div class="my-listings-wrap">
   <div class="page-header">
     <h1>My Listings</h1>
-    <a href="{{ url_for('sell') }}" class="btn-new">+ New Listing</a>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <a href="{{ url_for('seller_offers') }}" style="display:inline-flex;align-items:center;gap:6px;position:relative;padding:9px 18px;border-radius:8px;font-size:.88rem;font-weight:700;color:#8b5cf6;background:#faf5ff;border:1.5px solid #c4b5fd;text-decoration:none;">
+        📬 Offers
+        {% if pending_offers_count %}
+        <span style="background:#ef4444;color:#fff;font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:12px;line-height:1.5;">{{ pending_offers_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('sell') }}" class="btn-new">+ New Listing</a>
+    </div>
   </div>
 
   {% if not listings %}

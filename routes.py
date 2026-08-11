@@ -1212,8 +1212,14 @@ def my_listings():
     listings = visible_drafts + non_drafts
 
     from datetime import datetime as _dt
+    from models import ListingOffer
+    pending_offers_count = (ListingOffer.query
+                            .filter_by(seller_id=current_user.id)
+                            .filter(ListingOffer.status.in_(['pending', 'countered']))
+                            .count())
     return render_template('my_listings.html', listings=listings,
                            hidden_draft_count=hidden_draft_count,
+                           pending_offers_count=pending_offers_count,
                            now=_dt.now())
 
 
@@ -1626,6 +1632,19 @@ def my_offers():
               .order_by(ListingOffer.updated_at.desc())
               .all())
     return render_template('my_offers.html', offers=offers)
+
+
+@app.route("/seller/offers")
+@require_login
+def seller_offers():
+    """Seller's aggregated inbox — all incoming offers across all their listings."""
+    from models import ListingOffer
+    offers = (ListingOffer.query
+              .filter_by(seller_id=current_user.id)
+              .order_by(ListingOffer.updated_at.desc())
+              .all())
+    pending_count = sum(1 for o in offers if o.status in ('pending', 'countered'))
+    return render_template('seller_offers.html', offers=offers, pending_count=pending_count)
 
 
 # ── Seller Profile (public) ──────────────────────────────────────────────────

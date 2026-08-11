@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Incoming Offers — JHE Marketplace{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:0 auto;padding:28px 16px 80px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="{{ url_for('my_listings') }}" style="color:#6b7280;font-size:.9rem;text-decoration:none;">← My Listings</a>
+      <h1 style="margin:0;font-size:1.4rem;font-weight:800;color:#1a1a2e;">📬 Incoming Offers</h1>
+      {% if pending_count %}
+      <span style="background:#ef4444;color:#fff;font-size:.78rem;font-weight:700;padding:2px 10px;border-radius:12px;">{{ pending_count }} pending</span>
+      {% elif offers %}
+      <span style="background:#f1f5f9;color:#64748b;font-size:.8rem;font-weight:700;padding:2px 10px;border-radius:12px;">{{ offers|length }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if offers %}
+
+  <!-- Status filter tabs -->
+  {% set statuses = offers | map(attribute='status') | list %}
+  {% set has_pending   = 'pending'   in statuses %}
+  {% set has_countered = 'countered' in statuses %}
+  {% set has_accepted  = 'accepted'  in statuses %}
+  {% set has_declined  = 'declined'  in statuses %}
+
+  {% set filter_param = request.args.get('filter', 'active') %}
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+    <a href="{{ url_for('seller_offers') }}?filter=active"
+       style="font-size:.82rem;font-weight:700;padding:5px 14px;border-radius:20px;text-decoration:none;
+              {% if filter_param == 'active' %}background:#2563eb;color:#fff;{% else %}background:#f1f5f9;color:#374151;{% endif %}">
+      Active
+    </a>
+    <a href="{{ url_for('seller_offers') }}?filter=all"
+       style="font-size:.82rem;font-weight:700;padding:5px 14px;border-radius:20px;text-decoration:none;
+              {% if filter_param == 'all' %}background:#2563eb;color:#fff;{% else %}background:#f1f5f9;color:#374151;{% endif %}">
+      All Offers
+    </a>
+  </div>
+
+  {% set ns = namespace(shown=0) %}
+  {% for offer in offers %}
+    {% set show = (filter_param != 'active') or (offer.status in ('pending', 'countered')) %}
+    {% if show %}
+    {% set ns.shown = ns.shown + 1 %}
+    {% set listing = offer.listing %}
+    {% set buyer   = offer.buyer %}
+
+    {# Pick card color by status #}
+    {% if offer.status == 'pending' %}
+      {% set border_color = '#f59e0b' %}{% set bg = '#fffbeb' %}
+      {% set badge_bg = '#fef3c7' %}{% set badge_color = '#92400e' %}
+      {% set status_icon = '⏳' %}{% set status_label = 'Pending' %}
+    {% elif offer.status == 'countered' %}
+      {% set border_color = '#8b5cf6' %}{% set bg = '#faf5ff' %}
+      {% set badge_bg = '#ede9fe' %}{% set badge_color = '#5b21b6' %}
+      {% set status_icon = '🔄' %}{% set status_label = 'Countered' %}
+    {% elif offer.status == 'accepted' %}
+      {% set border_color = '#22c55e' %}{% set bg = '#f0fdf4' %}
+      {% set badge_bg = '#dcfce7' %}{% set badge_color = '#15803d' %}
+      {% set status_icon = '✅' %}{% set status_label = 'Accepted' %}
+    {% elif offer.status == 'declined' %}
+      {% set border_color = '#ef4444' %}{% set bg = '#fef2f2' %}
+      {% set badge_bg = '#fee2e2' %}{% set badge_color = '#991b1b' %}
+      {% set status_icon = '❌' %}{% set status_label = 'Declined' %}
+    {% elif offer.status == 'withdrawn' %}
+      {% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}
+      {% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}
+      {% set status_icon = '↩️' %}{% set status_label = 'Withdrawn' %}
+    {% else %}
+      {% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}
+      {% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}
+      {% set status_icon = '•' %}{% set status_label = offer.status | title %}
+    {% endif %}
+
+    <div style="background:{{ bg }};border:1.5px solid {{ border_color }};border-radius:12px;padding:16px 18px;margin-bottom:12px;">
+      <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+
+        <!-- Listing thumbnail -->
+        {% if listing %}
+          {% set photo = listing.photos | selectattr('is_primary') | first %}
+          {% if not photo and listing.photos %}{% set photo = listing.photos[0] %}{% endif %}
+          <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" style="flex-shrink:0;">
+            {% if photo %}
+            <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}"
+                 alt="{{ listing.title }}"
+                 style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;display:block;">
+            {% else %}
+            <div style="width:72px;height:72px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
+              {% if listing.listing_type == 'property_sale' %}🏠{% elif listing.listing_type == 'rental' %}🔑{% else %}📦{% endif %}
+            </div>
+            {% endif %}
+          </a>
+        {% endif %}
+
+        <!-- Main info -->
+        <div style="flex:1;min-width:180px;">
+          <!-- Listing title -->
+          {% if listing %}
+          <a href="{{ url_for('listing_detail', listing_id=listing.id) }}"
+             style="font-weight:700;font-size:.95rem;color:#1a202c;text-decoration:none;display:block;margin-bottom:2px;">
+            {{ listing.title }}
+          </a>
+          {% else %}
+          <span style="font-weight:700;font-size:.95rem;color:#6b7280;display:block;margin-bottom:2px;">Listing no longer available</span>
+          {% endif %}
+
+          <!-- Buyer + status row -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <span style="font-size:.82rem;color:#374151;font-weight:600;">
+              👤 {{ buyer.first_name or '' }} {{ buyer.last_name or '' or buyer.email or 'Buyer' }}
+            </span>
+            <span style="background:{{ badge_bg }};color:{{ badge_color }};font-size:.73rem;font-weight:700;padding:2px 8px;border-radius:10px;">
+              {{ status_icon }} {{ status_label }}
+            </span>
+            <span style="font-size:.78rem;color:#9ca3af;">{{ offer.updated_at.strftime('%-m/%-d/%Y') }}</span>
+          </div>
+
+          <!-- Amount row -->
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:.9rem;color:#374151;">
+              Offer: <strong style="font-size:1.05rem;color:#1a1a2e;">${{ "%.0f"|format(offer.amount) }}</strong>
+            </span>
+            {% if offer.status == 'countered' and offer.counter_amount %}
+            <span style="font-size:.85rem;color:#5b21b6;">
+              Your counter: <strong>${{ "%.0f"|format(offer.counter_amount) }}</strong>
+            </span>
+            {% endif %}
+            {% if listing and listing.price %}
+            <span style="font-size:.78rem;color:#9ca3af;">Listed: ${{ "%.0f"|format(listing.price) }}</span>
+            {% endif %}
+          </div>
+
+          {% if offer.message %}
+          <div style="margin-top:5px;font-size:.82rem;color:#6b7280;font-style:italic;">"{{ offer.message | truncate(100) }}"</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick action buttons -->
+      {% if listing and offer.status in ('pending', 'countered') %}
+      <div style="margin-top:14px;border-top:1px solid {{ border_color }}33;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+
+        <!-- Accept -->
+        <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" name="action" value="accept"
+                  style="background:#16a34a;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
+                  onclick="return confirm('Accept this ${{ "%.0f"|format(offer.amount) }} offer?')">
+            ✅ Accept ${{ "%.0f"|format(offer.amount) }}
+          </button>
+        </form>
+
+        <!-- Decline -->
+        <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" name="action" value="decline"
+                  style="background:#fff;color:#dc2626;border:1.5px solid #fca5a5;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
+                  onclick="return confirm('Decline this offer?')">
+            ❌ Decline
+          </button>
+        </form>
+
+        <!-- Counter -->
+        {% if offer.status == 'pending' %}
+        <button type="button"
+                style="background:#fff;color:#8b5cf6;border:1.5px solid #c4b5fd;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
+                onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='block';this.style.display='none'">
+          🔄 Counter
+        </button>
+        <form id="counter-form-{{ offer.id }}" method="POST"
+              action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}"
+              style="display:none;display:none;align-items:center;gap:6px;flex-wrap:wrap;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="counter">
+          <input type="number" name="counter_amount" min="1" step="1"
+                 placeholder="Counter $"
+                 style="width:110px;padding:6px 10px;border:1.5px solid #c4b5fd;border-radius:8px;font-size:.85rem;">
+          <button type="submit"
+                  style="background:#8b5cf6;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;">
+            Send Counter
+          </button>
+          <button type="button"
+                  style="background:none;border:none;color:#9ca3af;font-size:.82rem;cursor:pointer;padding:4px 6px;"
+                  onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='none';document.querySelector('[onclick*=counter-form-{{ offer.id }}]').style.display=''">
+            Cancel
+          </button>
+        </form>
+        {% endif %}
+
+        <a href="{{ url_for('listing_message', listing_id=listing.id) }}"
+           style="margin-left:auto;font-size:.82rem;color:#2563eb;text-decoration:none;font-weight:600;">
+          💬 Message Buyer
+        </a>
+      </div>
+      {% elif listing %}
+      <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+        <a href="{{ url_for('listing_detail', listing_id=listing.id) }}"
+           style="font-size:.8rem;color:#6b7280;text-decoration:none;">View Listing →</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  {% endfor %}
+
+  {% if ns.shown == 0 %}
+  <div style="text-align:center;padding:48px 24px;background:#fff;border-radius:12px;border:1px solid #f0f0f0;">
+    <div style="font-size:2.2rem;margin-bottom:10px;">✅</div>
+    <h3 style="margin:0 0 6px;color:#374151;">No active offers</h3>
+    <p style="color:#9ca3af;font-size:.9rem;margin:0 0 16px;">You're all caught up! Active offers will appear here.</p>
+    <a href="{{ url_for('seller_offers') }}?filter=all" style="font-size:.85rem;color:#2563eb;text-decoration:none;font-weight:600;">View all offers →</a>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty state -->
+  <div style="text-align:center;padding:64px 24px;background:#fff;border-radius:12px;border:1px solid #f0f0f0;">
+    <div style="font-size:3rem;margin-bottom:16px;">📬</div>
+    <h2 style="margin:0 0 8px;font-size:1.2rem;font-weight:700;color:#1a1a2e;">No offers yet</h2>
+    <p style="color:#6b7280;margin:0 0 24px;font-size:.92rem;">
+      When buyers make offers on your listings, they'll show up here.<br>
+      Make sure your listings have <strong>Negotiable</strong> pricing enabled.
+    </p>
+    <a href="{{ url_for('my_listings') }}" style="background:#2563eb;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem;">
+      ← Back to My Listings
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  // Fix counter form toggle — show/hide properly
+  document.querySelectorAll('[id^="counter-form-"]').forEach(function(form) {
+    form.style.display = 'none';
+  });
+</script>
+{% endblock %}
