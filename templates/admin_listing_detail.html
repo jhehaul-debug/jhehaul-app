@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Listing #{{ listing.id }} — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <a href="{{ url_for('admin_listings') }}" style="color:#64748b;font-size:0.88rem;text-decoration:none;">← All Listings</a>
+        <h2 class="page-title" style="margin:0;">{{ listing.title }}</h2>
+        {% if listing.featured %}
+        <span style="background:#fef9c3;color:#ca8a04;font-size:0.8rem;font-weight:700;padding:3px 10px;border-radius:20px;">★ Featured</span>
+        {% endif %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <form method="POST" action="{{ url_for('admin_listing_toggle_featured', listing_id=listing.id) }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;">{% if listing.featured %}☆ Unfeature{% else %}★ Feature{% endif %}</button>
+        </form>
+        {% if listing.status == 'removed' or listing.moderation_status == 'removed' %}
+        <form method="POST" action="{{ url_for('admin_listing_restore', listing_id=listing.id) }}" style="margin:0;" onsubmit="return confirm('Restore this listing to active?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary" style="padding:7px 16px;font-size:0.85rem;">↩ Restore Listing</button>
+        </form>
+        {% else %}
+            {% if listing.status != 'active' or listing.moderation_status != 'approved' %}
+            <form method="POST" action="{{ url_for('admin_listing_approve', listing_id=listing.id) }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary" style="padding:7px 16px;font-size:0.85rem;">✓ Approve</button>
+            </form>
+            {% endif %}
+            {% if listing.status not in ['sold'] %}
+            <form method="POST" action="{{ url_for('admin_listing_mark_sold', listing_id=listing.id) }}" style="margin:0;" onsubmit="return confirm('Mark this listing as sold?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;">Mark Sold</button>
+            </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('admin_listing_hide', listing_id=listing.id) }}" style="margin:0;" onsubmit="return confirm('Hide this listing?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;background:#fef3c7;color:#d97706;border-color:#fde68a;">Hide</button>
+            </form>
+            <form method="POST" action="{{ url_for('admin_listing_remove', listing_id=listing.id) }}" style="margin:0;" onsubmit="return confirm('Permanently remove this listing from the marketplace?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" style="padding:7px 16px;font-size:0.85rem;">Remove</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;">
+
+    <!-- Left column: photos + description -->
+    <div>
+        <!-- Photos -->
+        <div class="card" style="padding:16px;margin-bottom:16px;">
+            <h3 style="margin:0 0 14px;font-size:0.95rem;color:#374151;font-weight:700;">Photos ({{ listing.photos|length }})</h3>
+            {% if listing.photos %}
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
+                {% for photo in listing.photos %}
+                <div style="position:relative;">
+                    <img src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}"
+                         style="width:100%;height:130px;object-fit:cover;border-radius:8px;border:2px solid {% if photo.is_primary %}#3b82f6{% else %}#e2e8f0{% endif %};"
+                         onerror="this.parentElement.style.display='none'">
+                    {% if photo.is_primary %}
+                    <span style="position:absolute;bottom:6px;left:6px;background:#3b82f6;color:#fff;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:8px;">Primary</span>
+                    {% endif %}
+                    <span style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:8px;">#{{ loop.index }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="padding:24px 0;text-align:center;color:#94a3b8;font-size:0.9rem;">No photos uploaded.</div>
+            {% endif %}
+        </div>
+
+        <!-- Description -->
+        <div class="card" style="padding:16px;">
+            <h3 style="margin:0 0 10px;font-size:0.95rem;color:#374151;font-weight:700;">Description</h3>
+            {% if listing.description %}
+            <p style="margin:0;color:#4a5568;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">{{ listing.description }}</p>
+            {% else %}
+            <p style="margin:0;color:#94a3b8;font-size:0.88rem;">No description provided.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right column: details -->
+    <div>
+        <!-- Status card -->
+        <div class="card" style="padding:16px;margin-bottom:16px;">
+            <h3 style="margin:0 0 12px;font-size:0.95rem;color:#374151;font-weight:700;">Status</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.82rem;color:#64748b;">Listing status</span>
+                    {% set s = listing.status %}
+                    <span style="background:{% if s=='active' %}#dcfce7;color:#15803d{% elif s=='pending' %}#fef3c7;color:#d97706{% elif s=='sold' %}#dbeafe;color:#1d4ed8{% elif s=='removed' %}#fee2e2;color:#dc2626{% elif s=='draft' %}#f1f5f9;color:#64748b{% else %}#f1f5f9;color:#64748b{% endif %};font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">{{ s.title() }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.82rem;color:#64748b;">Moderation</span>
+                    {% set m = listing.moderation_status %}
+                    <span style="background:{% if m=='approved' %}#dcfce7;color:#15803d{% elif m=='flagged' %}#fee2e2;color:#dc2626{% elif m=='removed' %}#fee2e2;color:#dc2626{% else %}#fef3c7;color:#d97706{% endif %};font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">{{ m.title() }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.82rem;color:#64748b;">Featured</span>
+                    <span style="font-size:0.82rem;font-weight:600;color:{% if listing.featured %}#ca8a04{% else %}#94a3b8{% endif %};">{% if listing.featured %}★ Yes{% else %}No{% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Listing details -->
+        <div class="card" style="padding:16px;margin-bottom:16px;">
+            <h3 style="margin:0 0 12px;font-size:0.95rem;color:#374151;font-weight:700;">Details</h3>
+            <table style="width:100%;font-size:0.84rem;border-collapse:collapse;">
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;width:45%;">ID</td>
+                    <td style="padding:7px 0;color:#1a202c;font-weight:500;">#{{ listing.id }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Price</td>
+                    <td style="padding:7px 0;color:#1a202c;font-weight:600;">
+                        {% if listing.price_type == 'free' or not listing.price %}
+                        <span style="color:#16a34a;">FREE</span>
+                        {% else %}
+                        ${{ "%.2f"|format(listing.price) }}{% if listing.price_type == 'negotiable' %} <span style="color:#64748b;font-weight:400;font-size:0.78rem;">OBO</span>{% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Category</td>
+                    <td style="padding:7px 0;color:#1a202c;">{% if listing.category %}{{ listing.category.icon or '' }} {{ listing.category.name }}{% else %}—{% endif %}</td>
+                </tr>
+                {% if listing.subcategory %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Subcategory</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.subcategory.name }}</td>
+                </tr>
+                {% endif %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Condition</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.condition.replace('_',' ').title() if listing.condition else '—' }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Location</td>
+                    <td style="padding:7px 0;color:#1a202c;">{% if listing.city or listing.state %}{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Delivery</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.delivery_option or '—' }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Views</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.view_count }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Favorites</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.favorite_count }}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Posted</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.created_at | ct('%b %d, %Y') or '—' }}</td>
+                </tr>
+                {% if listing.sold_at %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:7px 0;color:#64748b;">Sold</td>
+                    <td style="padding:7px 0;color:#1a202c;">{{ listing.sold_at | ct('%b %d, %Y') }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <!-- Seller info -->
+        <div class="card" style="padding:16px;">
+            <h3 style="margin:0 0 12px;font-size:0.95rem;color:#374151;font-weight:700;">Seller</h3>
+            {% if listing.seller %}
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div style="width:38px;height:38px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#1d4ed8;flex-shrink:0;">
+                    {{ (listing.seller.first_name or '?')[0].upper() }}
+                </div>
+                <div>
+                    <div style="font-weight:600;color:#1a202c;font-size:0.9rem;">{{ ((listing.seller.first_name or '') ~ ' ' ~ (listing.seller.last_name or '')).strip() or 'Unknown' }}</div>
+                    <div style="font-size:0.78rem;color:#64748b;">{{ listing.seller.email or '—' }}</div>
+                </div>
+            </div>
+            <div style="font-size:0.8rem;color:#64748b;">User ID: {{ listing.seller.id }}</div>
+            <div style="margin-top:10px;">
+                <a href="{{ url_for('admin_users') }}?q={{ listing.seller.email or '' }}" style="font-size:0.82rem;color:#3b82f6;text-decoration:none;">View in Users →</a>
+            </div>
+            {% else %}
+            <p style="color:#94a3b8;font-size:0.88rem;margin:0;">Seller not found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

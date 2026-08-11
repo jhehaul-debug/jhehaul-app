@@ -2903,6 +2903,7 @@ def admin_listings():
 @app.route("/admin/listings/<int:listing_id>/approve", methods=["POST"])
 @require_admin
 def admin_listing_approve(listing_id):
+    _check_listing_csrf()
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'approved'
     if listing.status == 'pending':
@@ -2915,6 +2916,7 @@ def admin_listing_approve(listing_id):
 @app.route("/admin/listings/<int:listing_id>/hide", methods=["POST"])
 @require_admin
 def admin_listing_hide(listing_id):
+    _check_listing_csrf()
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'flagged'
     listing.status = 'removed'
@@ -2926,6 +2928,7 @@ def admin_listing_hide(listing_id):
 @app.route("/admin/listings/<int:listing_id>/remove", methods=["POST"])
 @require_admin
 def admin_listing_remove(listing_id):
+    _check_listing_csrf()
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'removed'
     listing.status = 'removed'
@@ -2937,12 +2940,47 @@ def admin_listing_remove(listing_id):
 @app.route("/admin/listings/<int:listing_id>/sold", methods=["POST"])
 @require_admin
 def admin_listing_mark_sold(listing_id):
+    _check_listing_csrf()
     listing = Listing.query.get_or_404(listing_id)
     listing.status = 'sold'
     listing.sold_at = datetime.now()
     db.session.commit()
     flash(f'Listing "{listing.title}" marked as sold.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>/restore", methods=["POST"])
+@require_admin
+def admin_listing_restore(listing_id):
+    _check_listing_csrf()
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.moderation_status not in ('removed', 'flagged') and listing.status != 'removed':
+        flash('Listing cannot be restored from its current state.', 'error')
+        return redirect(request.referrer or url_for('admin_listings'))
+    listing.moderation_status = 'approved'
+    listing.status = 'active'
+    db.session.commit()
+    flash(f'Listing "{listing.title}" restored to active.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>/toggle_featured", methods=["POST"])
+@require_admin
+def admin_listing_toggle_featured(listing_id):
+    _check_listing_csrf()
+    listing = Listing.query.get_or_404(listing_id)
+    listing.featured = not listing.featured
+    db.session.commit()
+    state = 'featured' if listing.featured else 'unfeatured'
+    flash(f'Listing "{listing.title}" {state}.', 'success')
+    return redirect(request.referrer or url_for('admin_listings'))
+
+
+@app.route("/admin/listings/<int:listing_id>")
+@require_admin
+def admin_listing_detail(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    return render_template('admin_listing_detail.html', listing=listing)
 
 
 # ── Admin: Users ───────────────────────────────────────────────────────────

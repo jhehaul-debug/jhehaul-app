@@ -68,7 +68,7 @@
                 <td style="padding:10px 14px;max-width:240px;">
                     <div style="display:flex;align-items:center;gap:10px;">
                         {% if l.primary_photo %}
-                        <img src="{{ l.primary_photo.storage_url or url_for('uploaded_file_db', photo_id=l.primary_photo.id) if l.primary_photo.data else '' }}"
+                        <img src="{{ l.primary_photo.storage_url or url_for('serve_listing_photo', photo_id=l.primary_photo.id) }}"
                              style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid #e2e8f0;"
                              onerror="this.style.display='none'">
                         {% else %}
@@ -110,21 +110,35 @@
                 </td>
                 <td style="padding:10px 14px;text-align:right;white-space:nowrap;">
                     <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+                        <a href="{{ url_for('admin_listing_detail', listing_id=l.id) }}" class="btn btn-sm" style="background:#f1f5f9;color:#475569;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;text-decoration:none;">View</a>
+                        <form method="POST" action="{{ url_for('admin_listing_toggle_featured', listing_id=l.id) }}" style="margin:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm" style="background:{% if l.featured %}#fef9c3;color:#ca8a04{% else %}#f1f5f9;color:#64748b{% endif %};border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;" title="{% if l.featured %}Remove from featured{% else %}Mark as featured{% endif %}">{% if l.featured %}★ Featured{% else %}☆ Feature{% endif %}</button>
+                        </form>
                         {% if l.status != 'active' or l.moderation_status != 'approved' %}
                         <form method="POST" action="{{ url_for('admin_listing_approve', listing_id=l.id) }}" style="margin:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">✓ Approve</button>
                         </form>
                         {% endif %}
                         {% if l.status not in ['sold'] %}
                         <form method="POST" action="{{ url_for('admin_listing_mark_sold', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Mark this listing as sold?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#dbeafe;color:#1d4ed8;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Sold</button>
                         </form>
                         {% endif %}
-                        {% if l.status != 'removed' %}
+                        {% if l.status == 'removed' or l.moderation_status == 'removed' %}
+                        <form method="POST" action="{{ url_for('admin_listing_restore', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Restore this listing?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">↩ Restore</button>
+                        </form>
+                        {% else %}
                         <form method="POST" action="{{ url_for('admin_listing_hide', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Hide this listing?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#d97706;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Hide</button>
                         </form>
                         <form method="POST" action="{{ url_for('admin_listing_remove', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Remove this listing from the marketplace?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:0.78rem;">Remove</button>
                         </form>
                         {% endif %}
