@@ -1,0 +1,68 @@
+STOP ALL OTHER WORK.
+
+The live jhehaul.com app STILL does not show a visible Sign Out or Switch Account button.
+
+Do not add any new features.
+Do not do another generic logout edit.
+Do not assume the change is already present.
+
+I need you to diagnose the live production path and fix the ACTUAL rendered UI.
+
+FIRST VERIFY PRODUCTION:
+1. Confirm the exact commit currently running on DigitalOcean for jhehaul.com.
+2. Confirm whether that commit matches the newest commit on origin/main.
+3. If it does not match, push/deploy the newest main branch first.
+
+THEN TRACE THE ACTUAL LIVE ACCOUNT PAGE:
+4. Identify the exact route handling the live Account page.
+5. Identify the exact template/component that route renders.
+6. Search for duplicate/legacy account templates and determine whether previous logout edits were made to the wrong file.
+7. Do the same for the live Admin Dashboard.
+
+ADD TO THE ACTUAL LIVE ACCOUNT PAGE:
+Directly above Delete Account, visibly render:
+
+ACCOUNT ACCESS
+
+[ 🚪 Sign Out ]
+[ 🔄 Switch Account ]
+
+ADD TO THE ACTUAL LIVE ADMIN NAVIGATION:
+Near “View Marketplace,” visibly render:
+
+🚪 Sign Out
+🔄 Switch Account
+
+LOGOUT REQUIREMENTS:
+- terminate the current authenticated session
+- clear session/authentication state
+- redirect to the normal sign-in page
+- prevent access to /admin after logout
+- do not delete or modify the user account
+- allow immediate login to a different account
+
+IMPORTANT:
+The previous attempts did NOT appear on the live site.
+
+Do not mark this task complete based on code inspection alone.
+
+You must verify the ACTUAL production site after deployment:
+- open jhehaul.com/account and confirm both buttons are visible
+- open jhehaul.com/admin and confirm the buttons are visible
+- press Sign Out and verify the session ends
+- sign into a different account
+
+If the buttons are not visible after deployment, continue debugging until you find the reason.
+
+FINAL RESPONSE MUST INCLUDE:
+1. Live production commit hash
+2. GitHub main commit hash
+3. Exact Account route
+4. Exact Account template/component filename
+5. Exact Admin route
+6. Exact Admin template/component filename
+7. Exact logout route/function
+8. Why the previous edits were not appearing
+9. Confirmation the buttons are visibly present on live jhehaul.com
+
+DO NOT do any other JHE Haul work until this issue is fully resolved.
