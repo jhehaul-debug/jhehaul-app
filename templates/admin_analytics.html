@@ -43,26 +43,57 @@
 <div style="margin:18px 0 8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">User Analytics</div>
 <div class="stat-grid">
     <div class="stat-card blue">
-        <div class="stat-icon">🛒</div>
-        <div class="stat-value" style="color:#3498db;">{{ total_customers }}</div>
-        <div class="stat-label">Total Customers</div>
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" style="color:#3498db;">{{ total_users }}</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-sub">all registered accounts</div>
     </div>
     <div class="stat-card green">
-        <div class="stat-icon">🚛</div>
-        <div class="stat-value" style="color:#27ae60;">{{ total_haulers }}</div>
-        <div class="stat-label">Total Haulers</div>
+        <div class="stat-icon">✨</div>
+        <div class="stat-value" style="color:#27ae60;">{{ new_today }}</div>
+        <div class="stat-label">New Users Today</div>
+        <div class="stat-sub">{{ new_week }} new this week</div>
     </div>
     <div class="stat-card orange">
-        <div class="stat-icon">✨</div>
-        <div class="stat-value" style="color:#e67e22;">{{ new_today }}</div>
-        <div class="stat-label">New Today</div>
-        <div class="stat-sub">{{ new_week }} this week</div>
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" style="color:#e67e22;">{{ new_week }}</div>
+        <div class="stat-label">New Users This Week</div>
+        <div class="stat-sub">last 7 days</div>
     </div>
     <div class="stat-card purple">
         <div class="stat-icon">⚡</div>
         <div class="stat-value" style="color:#9b59b6;">{{ active_users }}</div>
-        <div class="stat-label">Active (7d)</div>
-        <div class="stat-sub">logged-in users</div>
+        <div class="stat-label">Active Users (7d)</div>
+        <div class="stat-sub">logged-in last 7 days</div>
+    </div>
+</div>
+
+<!-- Haul & Delivery subsection -->
+<div style="margin:16px 0 8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#a0aec0;">Haul &amp; Delivery Analytics</div>
+<div class="stat-grid">
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+        <div class="stat-icon">🚛</div>
+        <div class="stat-value" style="color:#059669;">{{ total_haulers }}</div>
+        <div class="stat-label">Registered Haulers</div>
+        <div class="stat-sub">delivery team accounts</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-value" style="color:#059669;">{{ active_haulers }}</div>
+        <div class="stat-label">Active Haulers (7d)</div>
+        <div class="stat-sub">placed a bid this week</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+        <div class="stat-icon">📮</div>
+        <div class="stat-value" style="color:#059669;">{{ total_jobs }}</div>
+        <div class="stat-label">Haul Requests</div>
+        <div class="stat-sub">{{ open_jobs }} open · {{ active_jobs }} active</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" style="color:#059669;">{{ completed_jobs }}</div>
+        <div class="stat-label">Completed Hauls</div>
+        <div class="stat-sub">${{ "%.0f"|format(total_revenue) }} total revenue</div>
     </div>
 </div>
 
@@ -99,6 +130,53 @@
         <div class="stat-label">Removed</div>
         <div class="stat-sub">moderated off marketplace</div>
     </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:4px solid #3b82f6;">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value" style="color:#1d4ed8;">{{ items_for_sale_a }}</div>
+        <div class="stat-label">Items for Sale</div>
+        <div class="stat-sub">standard item listings</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-left:4px solid #9333ea;">
+        <div class="stat-icon">🏠</div>
+        <div class="stat-value" style="color:#7e22ce;">{{ homes_for_sale_a }}</div>
+        <div class="stat-label">Homes for Sale</div>
+        <div class="stat-sub">property_sale listings</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-value" style="color:#ea580c;">{{ rentals_a }}</div>
+        <div class="stat-label">Rentals</div>
+        <div class="stat-sub">rental listings</div>
+    </div>
+</div>
+
+<!-- Housing & Real Estate section -->
+<div style="margin:18px 0 8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Housing &amp; Real Estate</div>
+<div class="stat-grid">
+    <div class="stat-card" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-left:4px solid #9333ea;">
+        <div class="stat-icon">🏠</div>
+        <div class="stat-value" style="color:#7e22ce;">{{ homes_for_sale_a }}</div>
+        <div class="stat-label">Homes for Sale</div>
+        <div class="stat-sub">for_sale property listings</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-left:4px solid #f97316;">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-value" style="color:#ea580c;">{{ rentals_a }}</div>
+        <div class="stat-label">Rentals</div>
+        <div class="stat-sub">apartment &amp; home rentals</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #10b981;">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" style="color:#059669;">{{ active_housing_a }}</div>
+        <div class="stat-label">Active Housing Listings</div>
+        <div class="stat-sub">live on marketplace</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:4px solid #f59e0b;">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value" style="color:#d97706;">{{ pending_housing_a }}</div>
+        <div class="stat-label">Pending Housing</div>
+        <div class="stat-sub">awaiting approval</div>
+    </div>
 </div>
 
 <!-- ───────────────────────────── CHARTS ──────────────────────────────── -->
@@ -114,7 +192,7 @@
 
     <!-- Daily Signups -->
     <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 14px;font-size:1rem;">Daily Signups — Last 30 Days</h3>
+        <h3 style="margin:0 0 14px;font-size:1rem;">New Members — Last 30 Days</h3>
         <canvas id="signupChart" height="200"></canvas>
     </div>
 
@@ -126,18 +204,18 @@
         </div>
     </div>
 
-    <!-- Job Status -->
+    <!-- Listing Status Breakdown -->
     <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 14px;font-size:1rem;">Job Status Breakdown</h3>
+        <h3 style="margin:0 0 14px;font-size:1rem;">Listing Status Breakdown</h3>
         <div style="max-width:260px;margin:0 auto;">
-            <canvas id="jobStatusChart" height="220"></canvas>
+            <canvas id="listingStatusChart" height="220"></canvas>
         </div>
     </div>
 
-    <!-- Daily Jobs -->
+    <!-- Daily Listings -->
     <div class="card" style="padding:18px;grid-column:1/-1;">
-        <h3 style="margin:0 0 14px;font-size:1rem;">Jobs Posted — Last 30 Days</h3>
-        <canvas id="jobsChart" height="110"></canvas>
+        <h3 style="margin:0 0 14px;font-size:1rem;">Listings Posted — Last 30 Days</h3>
+        <canvas id="listingsChart" height="110"></canvas>
     </div>
 </div>
 
@@ -192,13 +270,13 @@ new Chart(document.getElementById('deviceChart'), {
     }
 });
 
-new Chart(document.getElementById('jobStatusChart'), {
+new Chart(document.getElementById('listingStatusChart'), {
     type: 'doughnut',
     data: {
-        labels: {{ job_status_labels|safe }},
+        labels: {{ listing_status_labels|safe }},
         datasets: [{
-            data: {{ job_status_values|safe }},
-            backgroundColor: ['#3498db','#f39c12','#27ae60','#e74c3c'],
+            data: {{ listing_status_values|safe }},
+            backgroundColor: ['#10b981','#f59e0b','#8b5cf6','#9ca3af'],
             borderWidth: 0
         }]
     },
@@ -208,13 +286,13 @@ new Chart(document.getElementById('jobStatusChart'), {
     }
 });
 
-new Chart(document.getElementById('jobsChart'), {
+new Chart(document.getElementById('listingsChart'), {
     type: 'line',
     data: {
-        labels: {{ daily_job_labels|safe }},
+        labels: {{ daily_listing_labels|safe }},
         datasets: [{
-            data: {{ daily_job_values|safe }},
-            borderColor: '#9b59b6', backgroundColor: 'rgba(155,89,182,0.1)',
+            data: {{ daily_listing_values|safe }},
+            borderColor: '#9333ea', backgroundColor: 'rgba(147,51,234,0.1)',
             fill: true, tension: 0.3, pointRadius: 2
         }]
     },
@@ -271,40 +349,56 @@ new Chart(document.getElementById('jobsChart'), {
         {% endif %}
     </div>
 
-    <!-- Top Haulers -->
+    <!-- Top Sellers -->
     <div class="card" style="padding:18px;grid-column:1/-1;">
-        <h3 style="margin:0 0 12px;font-size:1rem;">Most Active Haulers</h3>
+        <h3 style="margin:0 0 12px;font-size:1rem;">🏆 Top Sellers by Active Listings</h3>
         <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
             <thead><tr style="border-bottom:2px solid #e2e8f0;">
-                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:600;">Name</th>
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:600;">Seller</th>
                 <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:600;">Email</th>
-                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Bids</th>
-                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Completed</th>
-                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Avg Rating</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Active</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Sold</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Total</th>
             </tr></thead>
             <tbody>
-            {% for h in top_haulers %}
+            {% for s in top_sellers %}
             <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:6px 8px;font-weight:600;">{{ (h[0] or '') ~ ' ' ~ (h[1] or '') }}</td>
-                <td style="padding:6px 8px;color:#718096;font-size:0.82rem;">{{ h[2] or '' }}</td>
-                <td style="padding:6px 8px;text-align:right;">{{ h[3] or 0 }}</td>
-                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#27ae60;">{{ h[4] or 0 }}</td>
-                <td style="padding:6px 8px;text-align:right;">
-                    {% if h[5] %}
-                    <span style="color:#f6c90e;">★</span> {{ h[5] }}
-                    {% else %}<span style="color:#a0aec0;">—</span>{% endif %}
-                </td>
+                <td style="padding:6px 8px;font-weight:600;">{{ ((s[0] or '') ~ ' ' ~ (s[1] or '')).strip() or '—' }}</td>
+                <td style="padding:6px 8px;color:#718096;font-size:0.82rem;">{{ s[2] or '' }}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#10b981;">{{ s[4] or 0 }}</td>
+                <td style="padding:6px 8px;text-align:right;color:#8b5cf6;">{{ s[5] or 0 }}</td>
+                <td style="padding:6px 8px;text-align:right;color:#3498db;">{{ s[3] or 0 }}</td>
             </tr>
             {% endfor %}
+            {% if not top_sellers %}
+            <tr><td colspan="5" style="padding:16px 8px;text-align:center;color:#a0aec0;font-size:0.88rem;">No listings posted yet.</td></tr>
+            {% endif %}
             </tbody>
         </table>
         </div>
     </div>
 
-    <!-- Top Areas -->
+    <!-- Recent Signups -->
     <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 12px;font-size:1rem;">Most Active Areas</h3>
+        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Signups</h3>
+        {% for u in recent_users %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:0.86rem;">
+            <div>
+                <strong>{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }}</strong>
+                <span style="margin-left:6px;font-size:0.75rem;padding:1px 7px;border-radius:10px;
+                    background:#dbeafe;color:#1d4ed8;">
+                    {% if u.is_admin %}admin{% elif u.user_type == 'hauler' %}hauler{% else %}member{% endif %}
+                </span>
+            </div>
+            <span style="color:#a0aec0;font-size:0.78rem;">{{ u.created_at | ct('%b %d') }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Top Areas (haul job areas) -->
+    <div class="card" style="padding:18px;">
+        <h3 style="margin:0 0 12px;font-size:1rem;">Most Active Areas <span style="font-size:0.75rem;font-weight:400;color:#a0aec0;">(haul jobs)</span></h3>
         <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
             <thead><tr style="border-bottom:2px solid #e2e8f0;">
@@ -324,31 +418,48 @@ new Chart(document.getElementById('jobsChart'), {
         </table>
         </div>
     </div>
-
-    <!-- Recent Signups -->
-    <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Signups</h3>
-        {% for u in recent_users %}
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:0.86rem;">
-            <div>
-                <strong>{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }}</strong>
-                <span style="margin-left:6px;font-size:0.75rem;padding:1px 7px;border-radius:10px;
-                    background:{{ '#dbeafe' if u.user_type == 'customer' else '#dcfce7' }};
-                    color:{{ '#1d4ed8' if u.user_type == 'customer' else '#15803d' }};">
-                    {{ u.user_type or 'pending' }}
-                </span>
-            </div>
-            <span style="color:#a0aec0;font-size:0.78rem;">{{ u.created_at | ct('%b %d') }}</span>
-        </div>
-        {% endfor %}
-    </div>
 </div>
 
-<!-- ──────────────────── ACTIVITY FEED ────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
-    <!-- Recent Jobs -->
+<!-- ────────────── HAUL & DELIVERY ACTIVITY ────────────────────────────── -->
+<div style="margin:24px 0 8px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#718096;">Haul &amp; Delivery Activity</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <!-- Most Active Haulers -->
+    <div class="card" style="padding:18px;grid-column:1/-1;">
+        <h3 style="margin:0 0 12px;font-size:1rem;">Most Active Haulers</h3>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.86rem;">
+            <thead><tr style="border-bottom:2px solid #e2e8f0;">
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:600;">Name</th>
+                <th style="text-align:left;padding:6px 8px;color:#718096;font-weight:600;">Email</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Bids</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Completed</th>
+                <th style="text-align:right;padding:6px 8px;color:#718096;font-weight:600;">Avg Rating</th>
+            </tr></thead>
+            <tbody>
+            {% for h in top_haulers %}
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:6px 8px;font-weight:600;">{{ (h[0] or '') ~ ' ' ~ (h[1] or '') }}</td>
+                <td style="padding:6px 8px;color:#718096;font-size:0.82rem;">{{ h[2] or '' }}</td>
+                <td style="padding:6px 8px;text-align:right;">{{ h[3] or 0 }}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;color:#27ae60;">{{ h[4] or 0 }}</td>
+                <td style="padding:6px 8px;text-align:right;">
+                    {% if h[5] %}<span style="color:#f6c90e;">★</span> {{ h[5] }}
+                    {% else %}<span style="color:#a0aec0;">—</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not top_haulers %}
+            <tr><td colspan="5" style="padding:16px 8px;text-align:center;color:#a0aec0;font-size:0.88rem;">No hauler activity yet.</td></tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Recent Haul Jobs -->
     <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Jobs</h3>
+        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Haul Requests</h3>
         {% for j in recent_jobs %}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:0.84rem;gap:8px;">
             <div>
@@ -363,12 +474,14 @@ new Chart(document.getElementById('jobsChart'), {
             </span>
         </div>
         {% endfor %}
-        <a href="{{ url_for('admin_dashboard') }}" style="font-size:0.84rem;color:#3498db;display:block;margin-top:10px;">View all in Admin →</a>
+        {% if not recent_jobs %}
+        <p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:16px 0;">No haul requests yet.</p>
+        {% endif %}
     </div>
 
-    <!-- Recent Bids -->
+    <!-- Recent Haul Bids -->
     <div class="card" style="padding:18px;">
-        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Bids</h3>
+        <h3 style="margin:0 0 12px;font-size:1rem;">Recent Haul Bids</h3>
         {% for b in recent_bids %}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:0.84rem;">
             <div>
@@ -378,6 +491,9 @@ new Chart(document.getElementById('jobsChart'), {
             <span style="font-weight:700;color:#27ae60;">${{ "%.0f"|format(b.quote_amount) }}</span>
         </div>
         {% endfor %}
+        {% if not recent_bids %}
+        <p style="color:#a0aec0;font-size:0.88rem;text-align:center;padding:16px 0;">No bids yet.</p>
+        {% endif %}
     </div>
 </div>
 

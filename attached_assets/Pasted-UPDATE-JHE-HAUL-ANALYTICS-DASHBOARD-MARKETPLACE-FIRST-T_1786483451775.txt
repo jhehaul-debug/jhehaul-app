@@ -1,0 +1,131 @@
+UPDATE JHE HAUL ANALYTICS DASHBOARD — MARKETPLACE FIRST
+
+The Analytics Dashboard looks good overall, but finish converting the analytics from the old hauling-based structure to the new JHE Haul Local Marketplace structure.
+
+DO NOT rebuild the dashboard.
+DO NOT reset or delete analytics data.
+DO NOT change the visitor tracking system.
+Preserve all existing page-view and visitor statistics.
+
+1. USER ANALYTICS
+
+Currently this section shows:
+- Total Customers
+- Total Haulers
+
+This is leftover terminology from the old hauling-first platform.
+
+Change the PRIMARY User Analytics cards to:
+
+- Total Users
+- New Users Today
+- New Users This Week
+- Active Users (7D)
+
+Normal marketplace members should be counted as USERS, not automatically classified as customers or haulers.
+
+If Haul & Delivery provider accounts still exist, keep that information in a separate subsection called:
+
+HAUL & DELIVERY ANALYTICS
+
+That subsection can contain:
+- Registered Haulers
+- Active Haulers
+- Hauling Requests
+- Completed Hauls
+
+Do not remove the actual hauling data or functionality.
+
+2. LISTING ANALYTICS
+
+Keep the existing:
+
+- Total Listings
+- Active Listings
+- Sold Items
+- Pending
+- Removed
+
+Also add marketplace breakdown cards if the database supports these categories:
+
+- Items for Sale
+- Homes for Sale
+- Rentals
+
+These numbers must come from real database records — never hard-code analytics numbers.
+
+3. HOUSING ANALYTICS
+
+Add a section:
+
+HOUSING & REAL ESTATE
+
+Show:
+
+- Homes for Sale
+- Rentals
+- Active Housing Listings
+- Pending Housing Listings
+
+Only add metrics that can be calculated accurately from the existing database.
+
+4. VISITOR ANALYTICS
+
+KEEP the existing:
+
+- Total Page Views
+- Unique Visitors
+- Returning Visitors
+- Last 30 Days
+
+Do not reset these statistics.
+
+The existing historical visitor analytics are valuable and must remain intact.
+
+5. ANALYTICS ACCURACY CHECK
+
+The dashboard currently displays very large historical visitor counts compared with the small number of registered users/listings.
+
+DO NOT delete or reset these numbers simply because they are large.
+
+Instead, inspect how these metrics are calculated and verify:
+
+- page views are actual tracked page views
+- unique visitors are calculated correctly
+- bots/crawlers are not accidentally being counted as normal visitors if the existing system can identify them
+- refreshes are not incorrectly generating new unique visitors
+- cookie/session identification is functioning correctly
+- “today,” “this week,” and “last 30 days” calculations use the correct dates
+
+Report any analytics-counting problem you discover before changing historical data.
+
+6. CSV EXPORT
+
+Keep Export CSV working.
+
+Update the CSV export so marketplace analytics are included.
+
+7. MOBILE DESIGN
+
+Keep the current clean card design and 2-column mobile layout.
+
+Make sure cards remain readable on iPhone.
+
+Do not allow the fixed bottom navigation to hide the bottom analytics cards.
+
+8. FINAL CHECK
+
+After completing this:
+
+Test the Analytics Dashboard.
+
+Tell me:
+
+- exactly what you changed
+- which files were changed
+- whether visitor analytics calculations are accurate
+- whether any legacy Customer/Hauler analytics remain
+- why any remaining hauling analytics are necessary
+- whether Items, Homes for Sale, and Rentals are being counted correctly
+
+DO NOT push/deploy yet. Let me review the completed dashboard first.

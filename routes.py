@@ -3578,12 +3578,19 @@ def admin_analytics():
     ).fetchall()
 
     # ── User stats ─────────────────────────────────────────────────────────────
+    total_users     = User.query.count()
     total_customers = User.query.filter_by(user_type='customer').count()
     total_haulers   = User.query.filter_by(user_type='hauler').count()
     new_today = User.query.filter(User.created_at >= today).count()
     new_week  = User.query.filter(User.created_at >= week_ago).count()
     active_users = db.session.execute(
         db.text("SELECT COUNT(DISTINCT user_id) FROM page_views WHERE user_id IS NOT NULL AND created_at >= :s"),
+        {"s": week_ago}
+    ).scalar() or 0
+    active_haulers = db.session.execute(
+        db.text("""SELECT COUNT(DISTINCT u.id) FROM users u
+                   JOIN bids b ON b.hauler_id = u.id
+                   WHERE u.user_type = 'hauler' AND b.created_at >= :s"""),
         {"s": week_ago}
     ).scalar() or 0
 
@@ -3602,6 +3609,20 @@ def admin_analytics():
         db.or_(Listing.status == 'pending', Listing.moderation_status == 'pending')
     ).count()
     removed_listings_a   = Listing.query.filter_by(status='removed').count()
+    # Listing type breakdown
+    items_for_sale_a  = Listing.query.filter_by(listing_type='item').count()
+    homes_for_sale_a  = Listing.query.filter_by(listing_type='property_sale').count()
+    rentals_a         = Listing.query.filter_by(listing_type='rental').count()
+    # Housing sub-stats
+    active_housing_a  = Listing.query.filter(
+        Listing.listing_type.in_(['property_sale', 'rental']),
+        Listing.status == 'active'
+    ).count()
+    pending_housing_a = Listing.query.filter(
+        Listing.listing_type.in_(['property_sale', 'rental']),
+        db.or_(Listing.status == 'pending', Listing.moderation_status == 'pending')
+    ).count()
+    total_housing_a   = homes_for_sale_a + rentals_a
 
     # Listings by category
     listings_by_cat = db.session.execute(db.text("""
@@ -3686,6 +3707,19 @@ def admin_analytics():
     recent_users = User.query.order_by(User.created_at.desc()).limit(8).all()
     recent_jobs  = Job.query.order_by(Job.id.desc()).limit(8).all()
     recent_bids  = Bid.query.order_by(Bid.id.desc()).limit(8).all()
+
+    # Top sellers by active listing count
+    top_sellers = db.session.execute(db.text("""
+        SELECT u.first_name, u.last_name, u.email,
+               COUNT(DISTINCT l.id) AS total_listings,
+               COUNT(DISTINCT CASE WHEN l.status='active' THEN l.id END) AS active_listings,
+               COUNT(DISTINCT CASE WHEN l.status='sold'   THEN l.id END) AS sold_listings
+        FROM users u
+        JOIN listings l ON l.seller_id = u.id AND l.status != 'draft'
+        GROUP BY u.id, u.first_name, u.last_name, u.email
+        ORDER BY active_listings DESC, total_listings DESC
+        LIMIT 10
+    """)).fetchall()
 
     # ── Service Area Analytics ──────────────────────────────────────────────────
     sa_days = request.args.get('days', '30')
@@ -3851,16 +3885,25 @@ def admin_analytics():
         device_labels=json.dumps(device_labels),
         device_values=json.dumps(device_values),
         referrers=referrers,
+        total_users=total_users,
         total_customers=total_customers, total_haulers=total_haulers,
         new_today=new_today, new_week=new_week, active_users=active_users,
+        active_haulers=active_haulers,
         daily_signup_labels=json.dumps(daily_signup_labels),
         daily_signup_values=json.dumps(daily_signup_values),
+        top_sellers=top_sellers,
         # Marketplace listing stats
         total_listings_a=total_listings_a,
         active_listings_a=active_listings_a,
         sold_listings_a=sold_listings_a,
         pending_listings_a=pending_listings_a,
         removed_listings_a=removed_listings_a,
+        items_for_sale_a=items_for_sale_a,
+        homes_for_sale_a=homes_for_sale_a,
+        rentals_a=rentals_a,
+        active_housing_a=active_housing_a,
+        pending_housing_a=pending_housing_a,
+        total_housing_a=total_housing_a,
         cat_labels=cat_labels, cat_values=cat_values,
         daily_listing_labels=json.dumps(daily_listing_labels),
         daily_listing_values=json.dumps(daily_listing_values),
@@ -3941,17 +3984,34 @@ def admin_analytics_export():
 
     w.writerow(['USER ANALYTICS', ''])
     w.writerow(['Metric', 'Value'])
-    w.writerow(['Total Customers', User.query.filter_by(user_type='customer').count()])
-    w.writerow(['Total Haulers', User.query.filter_by(user_type='hauler').count()])
-    w.writerow(['New Today', User.query.filter(User.created_at >= now.replace(hour=0,minute=0,second=0,microsecond=0)).count()])
+    _today_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    _week_dt  = _today_dt - timedelta(days=7)
+    w.writerow(['Total Users', User.query.count()])
+    w.writerow(['Total Members (customer role)', User.query.filter_by(user_type='customer').count()])
+    w.writerow(['New Today', User.query.filter(User.created_at >= _today_dt).count()])
+    w.writerow(['New This Week', User.query.filter(User.created_at >= _week_dt).count()])
+    w.writerow(['Active (7d)', db.session.execute(db.text("SELECT COUNT(DISTINCT user_id) FROM page_views WHERE user_id IS NOT NULL AND created_at >= :s"), {"s": _week_dt}).scalar() or 0])
     w.writerow([])
 
-    w.writerow(['MARKETPLACE ANALYTICS', ''])
+    w.writerow(['MARKETPLACE LISTING ANALYTICS', ''])
     w.writerow(['Metric', 'Value'])
-    w.writerow(['Total Jobs', Job.query.count()])
+    w.writerow(['Total Listings', Listing.query.count()])
+    w.writerow(['Active Listings', Listing.query.filter_by(status='active').count()])
+    w.writerow(['Sold Items', Listing.query.filter_by(status='sold').count()])
+    w.writerow(['Pending Listings', Listing.query.filter(db.or_(Listing.status=='pending', Listing.moderation_status=='pending')).count()])
+    w.writerow(['Removed Listings', Listing.query.filter_by(status='removed').count()])
+    w.writerow(['Items for Sale (item type)', Listing.query.filter_by(listing_type='item').count()])
+    w.writerow(['Homes for Sale', Listing.query.filter_by(listing_type='property_sale').count()])
+    w.writerow(['Rental Listings', Listing.query.filter_by(listing_type='rental').count()])
+    w.writerow([])
+
+    w.writerow(['HAUL & DELIVERY ANALYTICS', ''])
+    w.writerow(['Metric', 'Value'])
+    w.writerow(['Registered Haulers', User.query.filter_by(user_type='hauler').count()])
+    w.writerow(['Total Haul Requests', Job.query.count()])
     w.writerow(['Total Bids', Bid.query.count()])
-    w.writerow(['Completed Jobs', Job.query.filter_by(status='completed').count()])
-    w.writerow(['Total Revenue', f"${db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0:.2f}"])
+    w.writerow(['Completed Hauls', Job.query.filter_by(status='completed').count()])
+    w.writerow(['Total Haul Revenue', f"${db.session.query(db.func.sum(Job.accepted_quote)).filter(Job.status=='completed').scalar() or 0:.2f}"])
     w.writerow([])
 
     w.writerow(['TOP HAULERS', ''])
