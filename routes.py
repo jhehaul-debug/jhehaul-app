@@ -649,21 +649,49 @@ def _validate_listing(listing, require_photos=False):
     return errors
 
 
-@app.route("/listing/new")
+@app.route("/listing/new", methods=["GET", "POST"])
 @require_login
 def listing_new():
-    """Create a new draft listing and enter the wizard at step 1."""
+    """Step 1 of the listing wizard — stateless on GET; no DB row created until step 2."""
     if not current_user.user_type and not current_user.is_admin:
         return redirect(url_for('choose_role'))
-    from models import Listing
+    from models import Listing, Category
     lt = request.args.get('type', 'item')
     if lt not in ('item', 'property_sale', 'rental'):
         lt = 'item'
-    draft = Listing(seller_id=current_user.id, title='', status='draft',
-                    moderation_status='approved', listing_type=lt)
-    db.session.add(draft)
-    db.session.commit()
-    return redirect(url_for('listing_step', listing_id=draft.id, step=1))
+
+    if request.method == "POST":
+        _check_listing_csrf()
+        # Step 1 submitted — listing may already exist if the seller uploaded photos.
+        listing_id_raw = request.form.get('listing_id', '').strip()
+        listing_lt = request.form.get('listing_type', lt)
+        if listing_lt not in ('item', 'property_sale', 'rental'):
+            listing_lt = 'item'
+        if listing_id_raw and listing_id_raw.isdigit():
+            lid = int(listing_id_raw)
+            existing = Listing.query.filter_by(id=lid, seller_id=current_user.id,
+                                               status='draft').first()
+            if existing:
+                return redirect(url_for('listing_step', listing_id=lid, step=2))
+        # No listing yet (no photos uploaded) — create a minimal draft now so step 2
+        # can set the title.  The listing is created here rather than on GET so that
+        # sellers who visit /listing/new and abandon immediately leave no trace.
+        draft = Listing(seller_id=current_user.id, title='', status='draft',
+                        moderation_status='approved', listing_type=listing_lt)
+        db.session.add(draft)
+        db.session.commit()
+        return redirect(url_for('listing_step', listing_id=draft.id, step=2))
+
+    # GET — render step 1 without touching the database
+    TOTAL_STEPS = 6
+    labels = ['Photos', 'Details', 'Price', 'Location', 'Options', 'Review']
+    return render_template('listing_wizard.html',
+                           listing=None,
+                           listing_type=lt,
+                           step=1,
+                           total_steps=TOTAL_STEPS,
+                           labels=labels,
+                           categories=[])
 
 
 @app.route("/listing/<int:listing_id>/step/<int:step>", methods=["GET", "POST"])
@@ -885,6 +913,62 @@ def listing_photo_upload(listing_id):
 
     photo_url = storage_url or url_for('serve_listing_photo', photo_id=lp.id)
     return jsonify(id=lp.id, url=photo_url, is_primary=lp.is_primary), 200
+
+
+@app.route("/listing/new/photo/upload", methods=["POST"])
+@require_login
+def listing_new_photo_upload():
+    """AJAX: lazily create a draft listing then upload its first photo.
+
+    Called from the stateless step-1 page when the seller uploads a photo before
+    any Listing row exists.  Returns JSON with ``listing_id`` so the client can
+    use the regular upload endpoint for subsequent photos in the same session.
+    """
+    if not current_user.user_type and not current_user.is_admin:
+        return jsonify(error='Not authorized'), 403
+    _check_listing_csrf()
+    from models import Listing, ListingPhoto
+
+    lt = request.args.get('type', 'item')
+    if lt not in ('item', 'property_sale', 'rental'):
+        lt = 'item'
+
+    photo = request.files.get('photo')
+    if not photo or not photo.filename:
+        return jsonify(error='No file received.'), 400
+
+    ext = os.path.splitext(photo.filename)[1].lower()
+    allowed = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
+    if ext not in allowed:
+        return jsonify(error='Unsupported file type.'), 400
+
+    data, ct = _read_photo_bytes(photo, ext)
+    if len(data) > 15 * 1024 * 1024:
+        return jsonify(error='Photo must be under 15 MB.'), 400
+
+    # Create the draft listing now that the seller has shown real intent
+    draft = Listing(seller_id=current_user.id, title='', status='draft',
+                    moderation_status='approved', listing_type=lt)
+    db.session.add(draft)
+    db.session.flush()  # get draft.id without a full commit yet
+
+    from storage import upload_file as _upload_file
+    filename, storage_url = _upload_file(photo, ext)
+
+    lp = ListingPhoto(
+        listing_id=draft.id,
+        filename=filename,
+        storage_url=storage_url,
+        data=data if not storage_url else None,
+        content_type=ct,
+        display_order=0,
+        is_primary=True,
+    )
+    db.session.add(lp)
+    db.session.commit()
+
+    photo_url = storage_url or url_for('serve_listing_photo', photo_id=lp.id)
+    return jsonify(listing_id=draft.id, id=lp.id, url=photo_url, is_primary=True), 200
 
 
 @app.route("/listing/<int:listing_id>/photo/<int:photo_id>/delete", methods=["POST"])

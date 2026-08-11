@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}{{ 'Create a Listing' if listing.status == 'draft' else 'Edit Listing' }} — JHE Marketplace{% endblock %}
+{% block title %}{{ 'Create a Listing' if (not listing or listing.status == 'draft') else 'Edit Listing' }} — JHE Marketplace{% endblock %}
 
 {% block content %}
 <style>
@@ -116,14 +116,14 @@
 
 <div class="wizard-wrap">
   <div class="wizard-header">
-    <h1>{% if listing.status == 'draft' %}Create a Listing{% else %}Edit Listing{% endif %}</h1>
+    <h1>{% if not listing or listing.status == 'draft' %}Create a Listing{% else %}Edit Listing{% endif %}</h1>
     <div class="progress-bar">
-      {% set labels = ['Photos', 'Details', 'Price', 'Location', 'Delivery', 'Preview'] %}
+      {% set wiz_labels = labels if labels is defined else ['Photos', 'Details', 'Price', 'Location', 'Options', 'Review'] %}
       {% for i in range(1, total_steps + 1) %}
         {% if i > 1 %}<div class="progress-connector {{ 'done' if i <= step else '' }}"></div>{% endif %}
         <div class="progress-step {{ 'done' if i < step else ('active' if i == step else '') }}">
           <div class="progress-step-circle">{% if i < step %}✓{% else %}{{ i }}{% endif %}</div>
-          <span class="progress-step-label">{{ labels[i-1] }}</span>
+          <span class="progress-step-label">{{ wiz_labels[i-1] }}</span>
         </div>
       {% endfor %}
     </div>
@@ -131,17 +131,19 @@
 
   {# ─── STEP 1: PHOTOS ─── #}
   {% if step == 1 %}
+  {# listing may be None on a fresh /listing/new visit (stateless, no DB row yet) #}
+  {% set existing_photos = listing.photos if listing else [] %}
   <div class="step-card">
     <h2>📸 Add Photos</h2>
     <p class="hint">Upload up to 10 photos. Drag thumbnails to reorder. The starred photo is the cover image.</p>
 
-    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
-    {% if listing.photos|length > 1 %}
+    <div class="photo-count" id="photoCount">{{ existing_photos|length }} / 10 photos</div>
+    {% if existing_photos|length > 1 %}
     <div class="reorder-hint">⠿ Drag photos to reorder them</div>
     {% endif %}
 
     <div class="photo-grid" id="photoGrid">
-      {% for photo in listing.photos %}
+      {% for photo in existing_photos %}
       <div class="photo-thumb {{ 'is-primary' if photo.is_primary }}" id="thumb-{{ photo.id }}" data-id="{{ photo.id }}" draggable="true">
         {% if photo.is_primary %}<div class="primary-badge">⭐ Cover</div>{% endif %}
         <div class="drag-handle">⠿</div>
@@ -158,7 +160,7 @@
       {% endfor %}
     </div>
 
-    {% if listing.photos|length < 10 %}
+    {% if existing_photos|length < 10 %}
     <div class="photo-upload-zone" id="uploadZone">
       <input type="file" id="photoInput" accept="image/*" multiple>
       <div class="upload-icon">🖼️</div>
@@ -169,24 +171,43 @@
     {% endif %}
     <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
 
+    {# When listing=None the form posts to /listing/new (which creates the draft on demand).
+       When listing already exists the form posts to the normal step-1 handler. #}
+    {% if listing %}
     <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="listing_id" value="{{ listing.id }}">
       <div class="wizard-nav">
         <a href="{{ url_for('my_listings') }}" class="btn-back">Cancel</a>
         <button type="submit" class="btn-next">Next: Details →</button>
       </div>
     </form>
+    {% else %}
+    <form method="POST" action="{{ url_for('listing_new') }}?type={{ listing_type or 'item' }}" id="step1Form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="listing_type" value="{{ listing_type or 'item' }}">
+      {# Populated by JS after the first photo is lazily uploaded #}
+      <input type="hidden" name="listing_id" id="hiddenListingId" value="">
+      <div class="wizard-nav">
+        <a href="{{ url_for('my_listings') }}" class="btn-back">Cancel</a>
+        <button type="submit" class="btn-next">Next: Details →</button>
+      </div>
+    </form>
+    {% endif %}
   </div>
 
   <script>
-  const LISTING_ID = {{ listing.id }};
+  // LISTING_ID is null when the seller visits /listing/new fresh (no DB row yet).
+  // It is set to a real integer the first time a photo is uploaded (lazy creation).
+  let LISTING_ID = {{ listing.id if listing else 'null' }};
+  const LISTING_TYPE = '{{ listing_type or (listing.listing_type if listing else "item") }}';
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   const photoGrid = document.getElementById('photoGrid');
   const photoCount = document.getElementById('photoCount');
   const uploadZone = document.getElementById('uploadZone');
   const photoInput = document.getElementById('photoInput');
   const spinner = document.getElementById('uploadSpinner');
-  let currentCount = {{ listing.photos|length }};
+  let currentCount = {{ existing_photos|length }};
 
   function updateCount() {
     photoCount.textContent = currentCount + ' / 10 photos';
@@ -208,7 +229,7 @@
       document.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('drag-over-thumb'));
       const ids = Array.from(photoGrid.querySelectorAll('.photo-thumb[data-id]'))
                        .map(t => parseInt(t.dataset.id));
-      if (ids.length > 1) saveOrder(ids);
+      if (ids.length > 1 && LISTING_ID) saveOrder(ids);
     });
     thumb.addEventListener('dragover', e => {
       e.preventDefault();
@@ -230,6 +251,7 @@
   }
 
   async function saveOrder(ids) {
+    if (!LISTING_ID) return;
     try {
       await fetch(`/listing/${LISTING_ID}/photo/reorder`, {
         method: 'POST',
@@ -266,14 +288,30 @@
       spinner.style.display = 'block';
       const fd = new FormData();
       fd.append('photo', file);
+
+      // If no listing exists yet, use the lazy-create endpoint on the first upload.
+      // Subsequent uploads in the same session use the regular per-listing endpoint.
+      let uploadUrl;
+      if (LISTING_ID === null) {
+        uploadUrl = `/listing/new/photo/upload?type=${encodeURIComponent(LISTING_TYPE)}`;
+      } else {
+        uploadUrl = `/listing/${LISTING_ID}/photo/upload`;
+      }
+
       try {
-        const res = await fetch(`/listing/${LISTING_ID}/photo/upload`, {
+        const res = await fetch(uploadUrl, {
           method: 'POST',
           headers: { 'X-CSRFToken': csrfToken },
           body: fd
         });
         const data = await res.json();
         if (res.ok) {
+          // Lazy-create endpoint returns listing_id so we switch to the real endpoint.
+          if (data.listing_id && LISTING_ID === null) {
+            LISTING_ID = data.listing_id;
+            const hiddenField = document.getElementById('hiddenListingId');
+            if (hiddenField) hiddenField.value = LISTING_ID;
+          }
           currentCount++;
           photoGrid.appendChild(buildThumb(data.id, data.url, data.is_primary));
           updateCount();
@@ -296,6 +334,7 @@
   }
 
   async function deletePhoto(id) {
+    if (!LISTING_ID) return;
     if (!confirm('Remove this photo?')) return;
     const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`, {
       method: 'POST',
@@ -309,6 +348,7 @@
   }
 
   async function setPrimary(id) {
+    if (!LISTING_ID) return;
     const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`, {
       method: 'POST',
       headers: { 'X-CSRFToken': csrfToken }

@@ -1,10 +1,14 @@
 """
 draft_cleanup.py — background daemon thread that purges abandoned draft listings.
 
+Since listing creation is now deferred (no DB row is created when a seller merely
+visits /listing/new), the only abandoned drafts that can accumulate are listings
+where the seller uploaded at least one photo during step 1 but never entered a
+title in step 2.
+
 A draft is considered abandoned when ALL of the following are true:
   • status == 'draft'
   • title is empty (None or '')
-  • no ListingPhoto rows exist for it
   • created_at is older than DRAFT_MAX_AGE_HOURS
 
 The thread runs once at startup (after a short delay) and then every
@@ -32,7 +36,9 @@ def purge_abandoned_drafts(app):
 
         cutoff = datetime.now() - timedelta(hours=DRAFT_MAX_AGE_HOURS)
 
-        # Find draft listings older than the cutoff with no title
+        # Find draft listings older than the cutoff with no title.
+        # These are listings where a photo was uploaded (which lazily created the
+        # draft) but the seller never completed step 2 (title/details).
         candidates = (
             Listing.query
             .filter(
@@ -45,15 +51,22 @@ def purge_abandoned_drafts(app):
 
         deleted = 0
         for listing in candidates:
-            photo_count = ListingPhoto.query.filter_by(listing_id=listing.id).count()
-            if photo_count > 0:
-                # Seller started uploading photos — keep the draft
-                continue
+            # Delete any associated photos from storage before removing the row
+            photos = ListingPhoto.query.filter_by(listing_id=listing.id).all()
             try:
+                for photo in photos:
+                    try:
+                        from storage import delete_file as _delete_file
+                        _delete_file(photo.filename)
+                    except Exception as exc:
+                        log.warning("purge_abandoned_drafts: could not delete photo file %s: %s",
+                                    photo.filename, exc)
+                    db.session.delete(photo)
                 db.session.delete(listing)
                 db.session.commit()
                 deleted += 1
-                log.info("Purged abandoned draft listing #%s (created %s)", listing.id, listing.created_at)
+                log.info("Purged abandoned draft listing #%s (created %s, %d photo(s))",
+                         listing.id, listing.created_at, len(photos))
             except Exception as exc:
                 db.session.rollback()
                 log.error("Failed to delete draft listing #%s: %s", listing.id, exc)
