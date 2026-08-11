@@ -1,0 +1,102 @@
+PUSH AND DEPLOY ALL COMPLETED JHE HAUL CHANGES NOW
+
+I am authorizing you to push ALL completed changes we have made during this JHE Haul marketplace rebuild.
+
+The live jhehaul.com site has NOT updated with all of the work we completed.
+
+DO NOT rebuild the application from scratch.
+DO NOT undo completed work.
+DO NOT restore old junk-removal-only functionality.
+DO NOT discard any completed changes.
+
+FIRST:
+1. Review the current working branch.
+2. Identify ALL uncommitted, committed-but-not-pushed, and pending changes from our recent work.
+3. Make sure the changes are being applied to the production application that powers jhehaul.com.
+4. Check for duplicate/legacy templates or branches that may be causing the live site to show old content.
+
+THEN COMMIT AND PUSH ALL COMPLETED CHANGES TO THE MAIN/PRODUCTION BRANCH.
+
+The production version should include ALL of the marketplace changes we have completed, including:
+
+• JHE Haul converted from a junk-removal-focused site into a local marketplace
+• Buy / Sell marketplace functionality
+• Browse Listings
+• Sell Something
+• Item listings
+• Housing & Real Estate category
+• Homes for Sale
+• Homes & Apartments for Rent
+• Twin Cities / Minnesota ZIP-code restrictions we added
+• Property listing fields and property browsing
+• Marketplace categories
+• Marketplace admin management
+• Listing approval/moderation
+• User management
+• Reports
+• Messaging
+• Marketplace sharing/invite functionality
+• Updated marketplace wording throughout the site
+• Removal/replacement of outdated junk-removal-only language
+• Updated footer:
+  Buy • Sell • Rent • Find Homes • Connect Locally
+• Updated Terms, Privacy, Safety and Community Guidelines links/features
+• Updated marketplace analytics
+• Homes for Sale analytics
+• Rental Listings analytics
+• Listing analytics
+• Admin Gallery management
+• Persistent gallery/database photo storage work
+• Updated mobile navigation
+• Any completed delivery/hauler functionality that belongs with the new marketplace
+• Any other completed changes from this current marketplace rebuild
+
+IMPORTANT — INCLUDE THE LOGOUT FIX:
+
+The live Admin Dashboard still does not display the logout controls.
+
+Make sure the production version includes:
+
+🚪 Sign Out
+🔄 Switch Account
+
+Admin navigation must have a visible Sign Out option.
+
+The Account page must also have visible:
+• Sign Out
+• Switch Account
+
+Logging out must terminate the authenticated session and return the user to the normal login/sign-in page.
+
+DEPLOYMENT:
+
+After reviewing everything:
+
+1. Save all completed files.
+2. Commit ALL completed marketplace changes.
+3. Push them to the production/main branch.
+4. Trigger the production deployment.
+5. Wait for deployment to complete.
+6. Check the actual production jhehaul.com site — not only the development preview.
+7. Verify the production site is running the newest commit.
+8. Verify there are no deployment/build/database errors.
+9. Verify mobile pages load correctly.
+10. Verify existing user accounts/data were not deleted.
+
+DO NOT tell me the changes are live merely because the code was changed.
+
+I want you to VERIFY the actual production deployment.
+
+After deployment, give me:
+
+• Commit hash
+• Branch pushed
+• Deployment status
+• Production URL
+• Confirmation that production is running that exact commit
+• Any errors encountered
+• A short list of everything successfully deployed
+
+If production is not connected to the branch you pushed, STOP and identify exactly what branch/service jhehaul.com is currently deploying from, then correct the deployment configuration without deleting production data.
+
+PUSH AND DEPLOY EVERYTHING NOW.
