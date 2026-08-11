@@ -1272,7 +1272,12 @@ def listing_message(listing_id, convo_id=None):
 
     # Buyer path — only allowed to start new threads on active+approved listing
     if not is_public:
-        abort(404)
+        if listing.status in ('sold', 'reserved'):
+            label = 'sold' if listing.status == 'sold' else 'reserved'
+            flash(f"This listing is already {label} and is no longer accepting messages.", "error")
+        else:
+            flash("This listing is not available for messages.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
 
     convo = ListingConversation.query.filter_by(
         listing_id=listing_id, buyer_id=current_user.id

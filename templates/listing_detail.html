@@ -824,13 +824,39 @@
           {% endif %}
 
         {% elif listing.status == 'sold' %}
-          <div style="text-align:center;padding:16px;color:#6b7280;font-size:0.95rem;">
+          <div style="text-align:center;padding:16px 16px 8px;color:#6b7280;font-size:0.95rem;">
             🏷️ This item has been sold.
           </div>
+          {% if not is_owner %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
+            {% endif %}
+          {% endif %}
         {% elif listing.status == 'reserved' %}
-          <div style="text-align:center;padding:16px;color:#6b7280;font-size:0.95rem;">
+          <div style="text-align:center;padding:16px 16px 8px;color:#6b7280;font-size:0.95rem;">
             🔒 This item is currently reserved.
           </div>
+          {% if not is_owner %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
+            {% endif %}
+          {% endif %}
         {% endif %}
       </div>
 
