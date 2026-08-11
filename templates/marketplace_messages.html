@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}My Messages — Marketplace | JHE Haul{% endblock %}
+{% block content %}
+
+<style>
+.mp-msg-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:10px; }
+.mp-msg-header h2 { margin:0; font-size:1.5rem; }
+.tab-row { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid #e2e8f0; }
+.tab-btn { padding:9px 20px; font-size:0.92rem; font-weight:600; background:none; border:none;
+    cursor:pointer; color:#718096; border-bottom:2px solid transparent; margin-bottom:-2px; }
+.tab-btn.active { color:#2563eb; border-bottom-color:#2563eb; }
+.conv-list { display:flex; flex-direction:column; gap:10px; }
+.conv-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px;
+    display:flex; align-items:center; gap:14px; text-decoration:none; color:inherit;
+    transition:box-shadow .15s, border-color .15s; }
+.conv-card:hover { box-shadow:0 3px 12px rgba(0,0,0,0.09); border-color:#cbd5e0; }
+.conv-card.has-unread { border-left:4px solid #e53e3e; }
+.conv-thumb { width:56px; height:56px; object-fit:cover; border-radius:8px;
+    flex-shrink:0; background:#f0f4f8; }
+.conv-thumb-placeholder { width:56px; height:56px; border-radius:8px; flex-shrink:0;
+    background:#f0f4f8; display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; }
+.conv-body { flex:1; min-width:0; }
+.conv-title { font-weight:700; font-size:0.97rem; color:#1a202c; margin-bottom:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-subtitle { font-size:0.82rem; color:#718096; margin-bottom:3px; }
+.conv-preview { font-size:0.85rem; color:#718096; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+.conv-meta { display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0; }
+.conv-time { font-size:0.77rem; color:#a0aec0; }
+.unread-badge { background:#e53e3e; color:#fff; font-size:0.72rem; font-weight:800;
+    border-radius:20px; padding:2px 9px; white-space:nowrap; }
+.empty-state { text-align:center; padding:60px 20px; background:#fff;
+    border:1px solid #e2e8f0; border-radius:12px; }
+.empty-state h3 { color:#1a202c; margin-bottom:8px; }
+.empty-state p { color:#718096; margin-bottom:22px; }
+@media(max-width:540px) {
+    .conv-card { padding:12px 13px; gap:10px; }
+    .conv-thumb, .conv-thumb-placeholder { width:44px; height:44px; }
+}
+</style>
+
+<div class="mp-msg-header">
+    <h2>💬 My Messages</h2>
+    <a href="{{ url_for('marketplace') }}" class="btn btn-sm">Browse Marketplace</a>
+</div>
+
+{% if buying_convos or selling_convos %}
+
+<div class="tab-row" id="tabRow">
+    <button class="tab-btn active" onclick="showTab('buying', this)">
+        Buying
+        {% set buy_unread = buying_convos | selectattr('unread_count') | list | length %}
+        {% if buy_unread > 0 %}<span style="background:#e53e3e;color:#fff;font-size:0.68rem;font-weight:800;border-radius:20px;padding:1px 7px;margin-left:5px;">{{ buy_unread }}</span>{% endif %}
+    </button>
+    <button class="tab-btn" onclick="showTab('selling', this)">
+        Selling
+        {% set sell_unread = selling_convos | selectattr('unread_count') | list | length %}
+        {% if sell_unread > 0 %}<span style="background:#e53e3e;color:#fff;font-size:0.68rem;font-weight:800;border-radius:20px;padding:1px 7px;margin-left:5px;">{{ sell_unread }}</span>{% endif %}
+    </button>
+</div>
+
+<!-- Buying tab -->
+<div id="tab-buying" class="conv-list">
+{% if buying_convos %}
+    {% for c in buying_convos %}
+    <a href="{{ url_for('listing_message', listing_id=c.listing.id, convo_id=c.convo.id) }}"
+       class="conv-card{% if c.unread_count > 0 %} has-unread{% endif %}">
+        {% if c.thumb_url %}
+        <img class="conv-thumb" src="{{ c.thumb_url }}" alt="{{ c.listing.title }}">
+        {% else %}
+        <div class="conv-thumb-placeholder">🛍️</div>
+        {% endif %}
+        <div class="conv-body">
+            <div class="conv-title">{{ c.listing.title }}</div>
+            <div class="conv-subtitle">Seller: {{ c.convo.seller.first_name or c.convo.seller.email or 'Seller' }}</div>
+            <div class="conv-preview">
+                {% if c.last_message %}
+                    {% if c.last_message.sender_id == current_user.id %}
+                        <span style="color:#a0aec0;">You: </span>
+                    {% else %}
+                        <span style="color:#dd6b20;font-weight:600;">{{ c.convo.seller.first_name or 'Seller' }}: </span>
+                    {% endif %}
+                    {{ (c.last_message.body or '')[:90] }}{% if c.last_message.body and c.last_message.body|length > 90 %}…{% endif %}
+                {% else %}
+                    <span style="color:#a0aec0;">No messages yet</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="conv-meta">
+            {% if c.unread_count > 0 %}
+            <span class="unread-badge">{{ c.unread_count }} new</span>
+            {% endif %}
+            {% if c.last_message %}
+            <span class="conv-time">{{ c.last_message.created_at.strftime('%b %d') }}</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div style="font-size:3rem;margin-bottom:12px;">🛍️</div>
+        <h3>No buying conversations yet</h3>
+        <p>Message a seller on any listing to start a thread.</p>
+        <a href="{{ url_for('marketplace') }}" class="btn btn-success">Browse Listings</a>
+    </div>
+{% endif %}
+</div>
+
+<!-- Selling tab -->
+<div id="tab-selling" class="conv-list" style="display:none;">
+{% if selling_convos %}
+    {% for c in selling_convos %}
+    <a href="{{ url_for('listing_message', listing_id=c.listing.id, convo_id=c.convo.id) }}"
+       class="conv-card{% if c.unread_count > 0 %} has-unread{% endif %}">
+        {% if c.thumb_url %}
+        <img class="conv-thumb" src="{{ c.thumb_url }}" alt="{{ c.listing.title }}">
+        {% else %}
+        <div class="conv-thumb-placeholder">🏷️</div>
+        {% endif %}
+        <div class="conv-body">
+            <div class="conv-title">{{ c.listing.title }}</div>
+            <div class="conv-subtitle">Buyer: {{ c.convo.buyer.first_name or c.convo.buyer.email or 'Buyer' }}</div>
+            <div class="conv-preview">
+                {% if c.last_message %}
+                    {% if c.last_message.sender_id == current_user.id %}
+                        <span style="color:#a0aec0;">You: </span>
+                    {% else %}
+                        <span style="color:#dd6b20;font-weight:600;">{{ c.convo.buyer.first_name or 'Buyer' }}: </span>
+                    {% endif %}
+                    {{ (c.last_message.body or '')[:90] }}{% if c.last_message.body and c.last_message.body|length > 90 %}…{% endif %}
+                {% else %}
+                    <span style="color:#a0aec0;">No messages yet</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="conv-meta">
+            {% if c.unread_count > 0 %}
+            <span class="unread-badge">{{ c.unread_count }} new</span>
+            {% endif %}
+            {% if c.last_message %}
+            <span class="conv-time">{{ c.last_message.created_at.strftime('%b %d') }}</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div style="font-size:3rem;margin-bottom:12px;">🏷️</div>
+        <h3>No selling conversations yet</h3>
+        <p>Buyers will show up here when they message you about your listings.</p>
+        <a href="/sell" class="btn btn-success">Post a Listing</a>
+    </div>
+{% endif %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div style="font-size:3rem;margin-bottom:12px;">💬</div>
+    <h3>No conversations yet</h3>
+    <p>Browse the marketplace and message sellers, or post a listing and hear from buyers.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('marketplace') }}" class="btn btn-success">Browse Marketplace</a>
+        <a href="/sell" class="btn">Sell Something</a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.conv-list[id^="tab-"]').forEach(function(el) {
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('tab-' + name).style.display = 'flex';
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}

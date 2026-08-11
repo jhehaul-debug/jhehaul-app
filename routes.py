@@ -106,12 +106,26 @@ def inject_globals():
                     .filter(Message.read_at == None, User.is_admin == False)
                     .count())
             elif current_user.user_type == 'customer':
-                result['customer_unread_count'] = (Message.query
+                job_unread = (Message.query
                     .join(Job, Message.job_id == Job.id)
                     .filter(Job.customer_id == current_user.id,
                             Message.sender_id != current_user.id,
                             Message.read_at == None)
                     .count())
+                from models import ListingConversation, ListingMessage
+                marketplace_unread = (ListingMessage.query
+                    .join(ListingConversation,
+                          ListingMessage.conversation_id == ListingConversation.id)
+                    .filter(
+                        db.or_(
+                            ListingConversation.buyer_id == current_user.id,
+                            ListingConversation.seller_id == current_user.id,
+                        ),
+                        ListingMessage.sender_id != current_user.id,
+                        ListingMessage.read_at == None,
+                    )
+                    .count())
+                result['customer_unread_count'] = job_unread + marketplace_unread
         except Exception:
             pass
     return result
@@ -1119,6 +1133,55 @@ def listing_report(listing_id):
     db.session.commit()
     flash("Thank you — your report has been submitted for review.", "success")
     return redirect(url_for('listing_detail', listing_id=listing_id))
+
+
+@app.route("/marketplace/messages")
+@require_login
+def marketplace_messages():
+    """Unified inbox: all ListingConversation rows where the user is buyer or seller."""
+    from models import ListingConversation, ListingMessage
+
+    def _enrich(convos, viewer_id):
+        out = []
+        for convo in convos:
+            msgs = convo.messages  # already ordered by created_at via relationship
+            last_msg = msgs[-1] if msgs else None
+            unread = sum(1 for m in msgs
+                         if m.sender_id != viewer_id and m.read_at is None)
+            # Thumbnail: primary photo of the listing
+            thumb_url = None
+            if convo.listing and convo.listing.primary_photo:
+                p = convo.listing.primary_photo
+                if p.storage_url:
+                    thumb_url = p.storage_url
+                else:
+                    thumb_url = url_for('serve_listing_photo', photo_id=p.id)
+            out.append({
+                'convo': convo,
+                'listing': convo.listing,
+                'last_message': last_msg,
+                'unread_count': unread,
+                'thumb_url': thumb_url,
+                'sort_ts': last_msg.created_at if last_msg else convo.created_at,
+            })
+        out.sort(key=lambda x: x['sort_ts'], reverse=True)
+        return out
+
+    uid = current_user.id
+    buying = (ListingConversation.query
+              .filter_by(buyer_id=uid)
+              .order_by(ListingConversation.updated_at.desc())
+              .all())
+    selling = (ListingConversation.query
+               .filter_by(seller_id=uid)
+               .order_by(ListingConversation.updated_at.desc())
+               .all())
+
+    return render_template(
+        'marketplace_messages.html',
+        buying_convos=_enrich(buying, uid),
+        selling_convos=_enrich(selling, uid),
+    )
 
 
 @app.route("/listing/<int:listing_id>/message", methods=["GET", "POST"])
