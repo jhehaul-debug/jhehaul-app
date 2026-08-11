@@ -2039,6 +2039,30 @@ def admin_send_quote(job_id):
     return redirect(url_for('admin_request_detail', job_id=job_id))
 
 
+@app.route("/admin/quote/<int:quote_id>/withdraw", methods=["POST"])
+@require_login
+def admin_withdraw_quote(quote_id):
+    if not current_user.is_admin:
+        return "Access denied", 403
+    quote = Quote.query.get_or_404(quote_id)
+    job = Job.query.get_or_404(quote.job_id)
+    if quote.status != 'pending':
+        flash("Only pending quotes can be withdrawn.", "error")
+        return redirect(url_for('admin_request_detail', job_id=job.id))
+    quote.status = 'withdrawn'
+    # Revert job status to 'reviewing' if no other pending quote remains
+    other_pending = Quote.query.filter(
+        Quote.job_id == job.id,
+        Quote.id != quote.id,
+        Quote.status == 'pending'
+    ).first()
+    if not other_pending and job.status == 'quoted':
+        job.status = 'reviewing'
+    db.session.commit()
+    flash(f"Quote #{quote.id} has been withdrawn. The customer can no longer act on it.", "success")
+    return redirect(url_for('admin_request_detail', job_id=job.id))
+
+
 # ── ADMIN PORTAL ROUTES ────────────────────────────────────────────────────────
 
 _PORTAL_STATUSES = ['reviewing', 'quoted', 'waiting_for_payment', 'scheduled', 'in_progress', 'completed', 'cancelled']
