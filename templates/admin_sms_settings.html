@@ -27,7 +27,7 @@
     </div>
 </div>
 {% else %}
-<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 18px;margin-bottom:{% if twilio_trial %}8px{% else %}16px{% endif %};display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
     <div style="display:flex;gap:10px;align-items:center;">
         <span style="color:#15803d;font-size:1.1rem;">✓</span>
         <span style="color:#166534;font-weight:600;font-size:0.9rem;">
@@ -36,6 +36,23 @@
     </div>
     <span style="font-size:0.82rem;color:#15803d;">SMS is ready to send.</span>
 </div>
+{% if twilio_trial %}
+<div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;">
+    <span style="font-size:1.4rem;flex-shrink:0;">⚠️</span>
+    <div>
+        <div style="font-weight:700;color:#b45309;margin-bottom:6px;">Twilio Trial Account — SMS delivery is restricted</div>
+        <div style="font-size:0.88rem;color:#78350f;line-height:1.7;">
+            Trial accounts can <strong>only send SMS to phone numbers you have manually verified</strong> in the Twilio console.
+            Any other number will silently fail with error 21608.<br><br>
+            To fix this, choose one of:
+            <ul style="margin:6px 0 0 18px;padding:0;">
+                <li><strong>Add test numbers:</strong> <a href="https://console.twilio.com/us1/develop/phone-numbers/manage/verified" target="_blank" rel="noopener" style="color:#b45309;">console.twilio.com → Verified Caller IDs</a> — add each number you want to test with.</li>
+                <li><strong>Upgrade account:</strong> Add a payment method at <a href="https://console.twilio.com/us1/billing" target="_blank" rel="noopener" style="color:#b45309;">console.twilio.com → Billing</a> to lift the restriction and send to any number.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endif %}
 
 <!-- ── Stats row ───────────────────────────────────────────────────────────── -->

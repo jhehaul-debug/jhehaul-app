@@ -5204,9 +5204,22 @@ def admin_sms_settings():
     from_num = os.environ.get("TWILIO_PHONE_NUMBER") or os.environ.get("TWILIO_FROM_NUMBER") or ""
     twilio_configured = bool(twilio_sid and twilio_tok and from_num)
     masked = ('*' * max(0, len(from_num) - 4) + from_num[-4:]) if from_num else ""
+
+    # Check whether Twilio account is in Trial mode (trial = only verified numbers can receive SMS)
+    twilio_trial = False
+    if twilio_configured:
+        try:
+            from twilio.rest import Client as _TwilioClient
+            _tc = _TwilioClient(twilio_sid, twilio_tok)
+            acct = _tc.api.accounts(twilio_sid).fetch()
+            twilio_trial = (acct.type == 'Trial')
+        except Exception:
+            pass  # If check fails, don't block the page
+
     return render_template('admin_sms_settings.html',
                            settings=settings,
                            twilio_configured=twilio_configured,
+                           twilio_trial=twilio_trial,
                            from_number_masked=masked,
                            sms_sent=sms_sent,
                            sms_failed=sms_failed,
