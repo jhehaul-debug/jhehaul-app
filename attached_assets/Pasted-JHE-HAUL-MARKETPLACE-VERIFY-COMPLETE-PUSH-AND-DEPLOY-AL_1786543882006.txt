@@ -1,0 +1,648 @@
+JHE HAUL MARKETPLACE — VERIFY, COMPLETE, PUSH, AND DEPLOY ALL RECENT MARKETPLACE CHANGES
+
+The live JHE Haul Marketplace at jhehaul.com is NOT reflecting the latest requested changes.
+
+CURRENT LIVE PROBLEM:
+
+The Sell/Create Listing page is still showing:
+
+“Upload up to 10 photos”
+
+and
+
+“0 / 10 photos”
+
+It should be:
+
+“Upload up to 20 photos”
+
+and
+
+“0 / 20 photos”
+
+Also, the required listing video upload section is not visible.
+
+DO NOT only fix this one screen.
+
+I want you to audit ALL recent marketplace changes that were requested and make sure they are actually implemented in the codebase, committed, pushed to the EXISTING GitHub repository, and deployed to the EXISTING DigitalOcean production application.
+
+==================================================
+
+1. CHECK CURRENT GIT / DEPLOYMENT STATE FIRST
+    ==================================================
+
+Before changing anything, determine:
+
+* Current Git branch
+* Current local commit
+* Current remote GitHub commit
+* Current production/DigitalOcean deployed commit
+* Whether there are uncommitted local changes
+* Whether there are commits that were created but never pushed
+* Whether GitHub contains changes that DigitalOcean has not deployed
+* Whether the wrong branch is connected to production
+* Whether deployment is failing
+* Whether cached/stale code is being served
+
+Report any mismatch you find.
+
+Then fix the deployment chain so the live jhehaul.com application reflects the current approved marketplace code.
+
+==================================================
+2. PHOTO LIMIT — MUST BE 20
+
+The marketplace requirement is:
+
+MAXIMUM 20 PHOTOS PER LISTING.
+
+Search the entire codebase for any listing-photo limit still set to 10.
+
+Look for examples such as:
+
+* Upload up to 10 photos
+* 0 / 10 photos
+* / 10 photos
+* max photos = 10
+* MAX_PHOTOS = 10
+* photo_limit = 10
+* photoCount >= 10
+* any backend validation enforcing 10
+* any API validation enforcing 10
+* any database/config value enforcing 10
+
+Do NOT blindly change unrelated values of 10.
+
+Update all applicable marketplace listing-photo limits to:
+
+20
+
+The interface must display:
+
+“Upload up to 20 photos. Drag thumbnails to reorder. The starred photo is the cover image.”
+
+The counter must display:
+
+0 / 20 photos
+
+and dynamically update:
+
+1 / 20
+5 / 20
+10 / 20
+19 / 20
+20 / 20
+
+A 21st photo must be rejected.
+
+Error message:
+
+“You can upload up to 20 photos per listing.”
+
+The limit must be enforced both:
+
+CLIENT-SIDE
+
+AND
+
+SERVER-SIDE / API-SIDE.
+
+==================================================
+3. VIDEO UPLOAD — REQUIRED
+
+Every marketplace listing must support:
+
+MAXIMUM 1 VIDEO
+
+MAXIMUM VIDEO LENGTH:
+
+60 SECONDS
+
+The video does NOT count toward the 20-photo limit.
+
+On the Sell/Create Listing media step, add a clearly visible section beneath the photo uploader:
+
+🎥 Add Video
+
+Display:
+
+“Add 1 video — up to 60 seconds.”
+
+Display a status such as:
+
+Video: 0 / 1
+
+After selecting a video:
+
+Video: 1 / 1
+
+The seller must be able to:
+
+* Select a video from phone/device
+* Upload it
+* Preview it
+* Play/pause it
+* Remove it
+* Replace it
+
+A second video must be rejected.
+
+A video longer than 60 seconds must be rejected.
+
+Display:
+
+“Videos must be 60 seconds or less.”
+
+The 60-second restriction must be enforced server-side as well as client-side.
+
+==================================================
+4. VIDEO ON LISTING PAGE
+
+When a listing contains a video:
+
+The video must appear on the listing detail page.
+
+Buyer should be able to:
+
+* Play
+* Pause
+* Replay
+
+Do not autoplay with sound.
+
+Where appropriate, display a play/video indicator.
+
+The selected cover PHOTO should remain the primary marketplace-card image.
+
+==================================================
+5. 18+ ACCOUNT REQUIREMENT
+
+Verify the requested 18+ marketplace requirement is actually implemented.
+
+Registration must require:
+
+“I certify that I am at least 18 years old.”
+
+The checkbox must NOT be pre-selected.
+
+If the user does not check it:
+
+Account creation must fail.
+
+Also enforce this server-side where applicable.
+
+Verify the 18+ requirement appears appropriately in:
+
+* Registration
+* Terms of Use
+* Marketplace Rules/Safety information
+
+==================================================
+6. FRAUD / SCAM / CRIMINAL ACTIVITY SAFETY
+
+Verify the marketplace safety features requested previously are actually implemented.
+
+Users should be warned to watch for:
+
+* Fraud
+* Scams
+* Fake listings
+* Stolen items
+* Counterfeit goods
+* Payment scams
+* Phishing
+* Identity-theft attempts
+* Suspicious links
+* Requests for passwords
+* Requests for verification codes
+* Requests for banking login information
+* Harassment
+* Threats
+* Criminal activity
+
+Include concise warnings where appropriate.
+
+Do NOT overwhelm the marketplace UI.
+
+==================================================
+7. REPORT LISTING
+
+Verify users can report a marketplace listing.
+
+Reasons should include:
+
+* Suspected Scam
+* Suspected Fraud
+* Suspected Stolen Item
+* Counterfeit Item
+* Fake/Misleading Listing
+* Prohibited Item
+* Suspicious Payment Request
+* Harassment/Threat
+* Criminal Activity
+* Spam
+* Other
+
+Allow explanation:
+
+“Tell us what happened.”
+
+==================================================
+8. REPORT USER
+
+Verify users can report another marketplace user.
+
+Reasons should include:
+
+* Suspected Scam
+* Suspected Fraud
+* Suspicious Payment Request
+* Harassment
+* Threats
+* Fake Account
+* Suspected Criminal Activity
+* Spam
+* Prohibited Conduct
+* Other
+
+==================================================
+9. ADMIN SAFETY / MODERATION
+
+Verify the existing Admin dashboard contains the requested marketplace moderation system.
+
+Admin should be able to review:
+
+* Reports
+* Reported listings
+* Reported users
+* Report reason
+* Report description
+* Evidence where supported
+* Previous reports
+* Account/listing status
+
+Admin actions should support:
+
+* Dismiss report
+* Warn user
+* Suspend listing
+* Remove listing
+* Suspend account
+* Ban account
+* Restore listing where appropriate
+* Internal admin notes
+
+Maintain an admin audit trail where already planned/implemented.
+
+==================================================
+10. MARKETPLACE NOTIFICATIONS
+
+Verify the marketplace notification system requested previously is implemented and working.
+
+The notification system is for the NEW marketplace, NOT the old bidding system.
+
+Important notification types should include:
+
+* New buyer/seller message
+* New offer
+* Counteroffer
+* Offer accepted
+* Offer declined
+* Listing reserved
+* Listing sold
+* Listing expired
+* Delivery request
+* Delivery quote ready
+* Delivery quote accepted
+* Important admin/moderation notice
+
+Primary method:
+
+IN-APP NOTIFICATIONS
+
+Email may be used for important events.
+
+Do NOT make paid SMS a requirement.
+
+Preserve existing Twilio configuration without requiring it.
+
+Verify:
+
+* Notification bell
+* Unread badge
+* Notification page
+* Mark as read
+* Mark all as read
+* Clicking notification opens correct related item/conversation/offer/delivery request
+
+==================================================
+11. PRESERVE MARKETPLACE SYSTEM
+
+Do NOT damage or remove:
+
+* Existing users
+* Authentication
+* Admin access
+* Marketplace listings
+* Messaging
+* Offers
+* Favorites
+* Seller profiles
+* Delivery requests
+* Stripe integration
+* Email integration
+* Twilio configuration
+* Existing database data
+* GitHub repository
+* DigitalOcean deployment configuration
+
+Do not rebuild from scratch.
+
+Use migrations if database changes are required.
+
+==================================================
+12. VERIFY MOBILE SELL FLOW
+
+The live mobile Sell flow must clearly show:
+
+STEP 1 — Photos / Media
+STEP 2 — Details
+STEP 3 — Price
+STEP 4 — Location
+STEP 5 — Delivery
+
+On Step 1, the user must see:
+
+ADD PHOTOS
+
+Up to 20 photos
+
+0 / 20 photos
+
+AND
+
+ADD VIDEO
+
+1 video maximum
+
+Up to 60 seconds
+
+The current live screenshot only shows the old 10-photo configuration.
+
+This must be corrected.
+
+==================================================
+13. FULL CODEBASE SEARCH
+
+Search the full codebase for stale references to OLD requirements, including:
+
+* 10-photo limit
+* old hauling/job-bidding copy on marketplace pages
+* outdated notification language
+* missing 18+ requirement
+* missing fraud/scam warnings
+* missing report controls
+* missing video upload controls
+
+Correct stale marketplace-facing code where appropriate.
+
+Do not delete old database data just because the old public functionality has been replaced.
+
+==================================================
+14. TESTING REQUIRED
+
+Test all of the following before pushing:
+
+PHOTO TESTS
+
+0 photos → allowed
+
+10 photos → allowed
+
+20 photos → allowed
+
+21st photo → rejected
+
+Photo counter shows /20
+
+Photo reorder works
+
+Cover/starred photo works
+
+VIDEO TESTS
+
+1 video under 60 seconds → allowed
+
+1 video exactly 60 seconds → allowed
+
+1 video over 60 seconds → rejected
+
+Second video → rejected
+
+Video preview works
+
+Video displays on published listing
+
+DIRECT API BYPASS TESTS
+
+21st photo through API → rejected
+
+Second video through API → rejected
+
+Video over 60 seconds through API → rejected
+
+Unauthorized media modification → rejected
+
+AGE TESTS
+
+18+ unchecked → registration rejected
+
+18+ checked → registration may continue
+
+SAFETY TESTS
+
+Report listing → Admin sees report
+
+Report user → Admin sees report
+
+Admin removes listing → listing unavailable
+
+Admin suspends user → restrictions applied
+
+NOTIFICATION TESTS
+
+New message → notification
+
+New offer → notification
+
+Counteroffer → notification
+
+Offer accepted → notification
+
+Delivery quote ready → notification
+
+Unread count updates correctly
+
+==================================================
+15. PRODUCTION BUILD
+
+Run the full production build.
+
+Fix all critical:
+
+* Build errors
+* Runtime errors
+* Migration errors
+* Authentication errors
+* Upload errors
+* Permission errors
+* Mobile UI errors
+
+Do not declare this complete if the production build is failing.
+
+==================================================
+16. COMMIT ALL COMPLETED RECENT CHANGES
+
+After verification:
+
+Review Git status.
+
+Make sure ALL completed approved marketplace changes are included.
+
+Do not leave finished changes sitting uncommitted locally.
+
+Commit the completed work to the EXISTING JHE Haul repository.
+
+Use a clear commit message such as:
+
+fix: sync marketplace media safety notifications and production updates
+
+Do not create a new repository.
+
+Do not force-push production history.
+
+Do not commit secrets.
+
+==================================================
+17. PUSH TO EXISTING GITHUB
+
+PUSH ALL COMPLETED AND TESTED CHANGES TO THE EXISTING GITHUB REPOSITORY.
+
+Verify that the remote repository now contains the latest commit.
+
+Report:
+
+Local commit ID
+
+Remote GitHub commit ID
+
+Branch pushed
+
+Push result
+
+==================================================
+18. VERIFY DIGITALOCEAN DEPLOYMENT
+
+After the GitHub push:
+
+Verify DigitalOcean receives the correct commit.
+
+Verify:
+
+* Correct branch
+* Correct GitHub repository
+* Deployment triggered
+* Build succeeded
+* Application started
+* Health checks pass
+* Production jhehaul.com is serving the new deployment
+
+If deployment does NOT trigger automatically:
+
+Determine why.
+
+If deployment fails:
+
+Read the deployment logs.
+
+Fix the issue.
+
+Commit and push the correction.
+
+Redeploy.
+
+Do not stop at “GitHub push succeeded.”
+
+The LIVE jhehaul.com website must reflect the approved changes.
+
+==================================================
+19. VERIFY LIVE PRODUCTION WEBSITE
+
+After deployment, test the LIVE jhehaul.com site.
+
+Specifically verify on production:
+
+Sell → Photos step shows:
+
+“Upload up to 20 photos”
+
+and
+
+“0 / 20 photos”
+
+Verify the video section appears:
+
+“Add 1 video — up to 60 seconds.”
+
+Verify the 18+ registration rule.
+
+Verify reporting.
+
+Verify notifications.
+
+Verify marketplace navigation.
+
+Verify Admin access.
+
+Do not rely only on local/staging behavior.
+
+==================================================
+20. FINAL REPORT
+
+After everything is complete, report:
+
+1. Why production was still showing 10 photos
+2. Whether the latest changes had previously been committed
+3. Whether they had previously been pushed to GitHub
+4. Whether DigitalOcean was on the correct commit
+5. Current local Git commit
+6. Current GitHub remote commit
+7. Current DigitalOcean deployed commit
+8. Files changed
+9. Database migrations
+10. Photo limit now implemented
+11. Video upload now implemented
+12. Video 60-second enforcement
+13. 18+ requirement status
+14. Fraud/scam safety status
+15. Report Listing status
+16. Report User status
+17. Admin moderation status
+18. Notification system status
+19. Tests performed
+20. Test results
+21. Production build status
+22. GitHub push status
+23. DigitalOcean deployment status
+24. Confirmation that LIVE jhehaul.com now displays 20-photo limit
+25. Confirmation that LIVE jhehaul.com now displays the 1-video/60-second option
+26. Any unresolved issues
+
+IMPORTANT:
+
+DO NOT just tell me the code was changed.
+
+DO NOT just tell me GitHub was pushed.
+
+VERIFY THE LIVE PRODUCTION WEBSITE.
+
+The task is not complete until the approved changes are visible and working on jhehaul.com.
