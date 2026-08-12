@@ -160,6 +160,10 @@
 
   <!-- Compose -->
   <div class="msg-compose">
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:8px 12px;margin-bottom:10px;font-size:0.8rem;color:#92400e;line-height:1.5;">
+      🛡️ Stay safe — never share passwords, verification codes, or banking credentials.
+      <a href="{{ url_for('safety') }}" style="color:#b45309;">Safety tips</a>
+    </div>
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <textarea name="body" placeholder="Type your message…" maxlength="2000" required autofocus></textarea>

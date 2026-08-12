@@ -1,18 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Reports — Admin - JHE Haul{% endblock %}
+{% block title %}Reports & Moderation — Admin - JHE Haul{% endblock %}
 {% block content %}
 {% set reported_listings = pending_count %}
 {% include "admin_nav.html" %}
 
 <div class="page-header" style="flex-wrap:wrap;gap:10px;">
     <div style="display:flex;align-items:center;gap:12px;">
-        <h2 class="page-title" style="margin:0;">🚩 Reports & Moderation</h2>
+        <h2 class="page-title" style="margin:0;">🚩 Reports &amp; Moderation</h2>
         {% if pending_count > 0 %}
         <span style="background:#fee2e2;color:#dc2626;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ pending_count }} pending</span>
         {% endif %}
     </div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <a href="{{ url_for('admin_reports') }}?status=pending" class="btn {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Pending</a>
+        <a href="{{ url_for('admin_reports') }}?status=under_investigation" class="btn {% if status_filter == 'under_investigation' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">🔍 Investigating</a>
         <a href="{{ url_for('admin_reports') }}?status=resolved" class="btn {% if status_filter == 'resolved' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Resolved</a>
         <a href="{{ url_for('admin_reports') }}?status=all" class="btn {% if status_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">All</a>
     </div>
@@ -20,12 +21,14 @@
 
 {% if reports %}
 {% for r in reports %}
-<div class="card" style="padding:16px 20px;margin-bottom:12px;border-left:4px solid {% if r.status == 'pending' %}#ef4444{% else %}#d1d5db{% endif %};">
+<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid {% if r.investigation_flag %}#d97706{% elif r.status == 'pending' %}#ef4444{% else %}#d1d5db{% endif %};">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
                 <span style="font-weight:700;color:#1a202c;">Report #{{ r.id }}</span>
-                <span style="background:{% if r.status == 'pending' %}#fee2e2;color:#dc2626{% else %}#dcfce7;color:#15803d{% endif %};font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:10px;">{{ r.status.title() }}</span>
+                <span style="background:{% if r.investigation_flag %}#fef3c7;color:#b45309{% elif r.status == 'pending' %}#fee2e2;color:#dc2626{% else %}#dcfce7;color:#15803d{% endif %};font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:10px;">
+                    {% if r.investigation_flag %}🔍 Under Investigation{% else %}{{ r.status.replace('_', ' ').title() }}{% endif %}
+                </span>
                 <span style="font-size:0.8rem;color:#94a3b8;">{{ r.created_at | ct('%b %d, %Y') or '' }}</span>
             </div>
             <div style="margin-bottom:8px;">
@@ -44,6 +47,11 @@
                 <span style="margin-left:4px;font-size:0.85rem;">{{ ((r.listing.seller.first_name or '') ~ ' ' ~ (r.listing.seller.last_name or '')).strip() or r.listing.seller.email }}</span>
                 <a href="{{ url_for('admin_user_detail', user_id=r.listing.seller.id) }}"
                    style="font-size:0.78rem;color:#2563eb;margin-left:6px;">View Profile →</a>
+                {% if r.listing.seller.is_banned %}
+                <span style="background:#fef2f2;color:#dc2626;font-size:0.72rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px;">BANNED</span>
+                {% elif r.listing.seller.is_suspended %}
+                <span style="background:#fffbeb;color:#b45309;font-size:0.72rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px;">SUSPENDED</span>
+                {% endif %}
             </div>
             {% endif %}
             <div style="margin-bottom:6px;">
@@ -61,37 +69,73 @@
                 <div style="margin-top:4px;font-size:0.84rem;color:#4a5568;line-height:1.5;">{{ r.details }}</div>
                 {% endif %}
             </div>
-        </div>
-        {% if r.status == 'pending' %}
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:140px;">
-            <form method="POST" action="{{ url_for('admin_report_dismiss', report_id=r.id) }}" style="margin:0;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline btn-sm" style="width:100%;white-space:nowrap;">✓ Dismiss</button>
-            </form>
-            {% if r.listing %}
-              {% if r.listing.status != 'removed' %}
-              <form method="POST" action="{{ url_for('admin_report_remove_listing', report_id=r.id) }}" style="margin:0;"
-                    onsubmit="return confirm('Remove this listing and resolve the report?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;">🗑 Remove Listing</button>
-              </form>
-              {% else %}
-              <form method="POST" action="{{ url_for('admin_report_restore_listing', report_id=r.id) }}" style="margin:0;"
-                    onsubmit="return confirm('Restore this listing?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-sm" style="width:100%;white-space:nowrap;background:#16a34a;color:#fff;border:none;">↩ Restore Listing</button>
-              </form>
-              {% endif %}
-              {% if r.listing.seller and not r.listing.seller.is_admin and not r.listing.seller.is_suspended %}
-              <form method="POST" action="{{ url_for('admin_report_suspend_seller', report_id=r.id) }}" style="margin:0;"
-                    onsubmit="return confirm('Suspend this seller?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;background:#7c2d12;border-color:#7c2d12;">🚫 Suspend Seller</button>
-              </form>
-              {% endif %}
+            {% if r.admin_notes %}
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-top:8px;">
+                <div style="font-size:0.75rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Admin Notes</div>
+                <div style="font-size:0.84rem;color:#78350f;line-height:1.5;">{{ r.admin_notes }}</div>
+            </div>
             {% endif %}
         </div>
-        {% endif %}
+
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:150px;">
+            {% if r.status != 'resolved' %}
+            <form method="POST" action="{{ url_for('admin_report_dismiss', report_id=r.id) }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-sm" style="width:100%;">✓ Dismiss</button>
+            </form>
+            {% endif %}
+            {% if r.listing %}
+              {% if r.listing.status not in ('removed', 'suspended') %}
+              <form method="POST" action="{{ url_for('admin_report_remove_listing', report_id=r.id) }}" style="margin:0;"
+                    onsubmit="return confirm('Remove this listing?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">🗑 Remove Listing</button>
+              </form>
+              {% else %}
+              <form method="POST" action="{{ url_for('admin_report_restore_listing', report_id=r.id) }}" style="margin:0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm" style="width:100%;background:#16a34a;color:#fff;border:none;">↩ Restore</button>
+              </form>
+              {% endif %}
+              {% if r.listing.seller and not r.listing.seller.is_admin %}
+                {% if not r.listing.seller.is_banned %}
+                <form method="POST" action="{{ url_for('admin_ban_user', user_id=r.listing.seller.id) }}" style="margin:0;"
+                      onsubmit="return confirm('PERMANENTLY BAN this account? This cannot easily be reversed.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="report_id" value="{{ r.id }}">
+                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%;background:#7f1d1d;border-color:#7f1d1d;">🔨 Ban Account</button>
+                </form>
+                {% endif %}
+                {% if not r.listing.seller.is_suspended %}
+                <form method="POST" action="{{ url_for('admin_report_suspend_seller', report_id=r.id) }}" style="margin:0;"
+                      onsubmit="return confirm('Suspend this seller?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm" style="width:100%;background:#b45309;border-color:#b45309;">🚫 Suspend Seller</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('admin_warn_user', user_id=r.listing.seller.id) }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="report_id" value="{{ r.id }}">
+                    <button type="submit" class="btn btn-sm" style="width:100%;background:#d97706;color:#fff;border:none;">⚠️ Warn User</button>
+                </form>
+              {% endif %}
+            {% endif %}
+            {% if not r.investigation_flag %}
+            <form method="POST" action="{{ url_for('admin_report_flag_investigate', report_id=r.id) }}" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm" style="width:100%;background:#1e40af;color:#fff;border:none;">🔍 Flag Investigate</button>
+            </form>
+            {% endif %}
+            <!-- Add internal notes -->
+            <details style="margin:0;">
+                <summary style="cursor:pointer;font-size:0.8rem;color:#64748b;font-weight:600;">📝 Add Note</summary>
+                <form method="POST" action="{{ url_for('admin_report_add_note', report_id=r.id) }}" style="margin:4px 0 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <textarea name="admin_notes" rows="2" style="width:100%;font-size:0.82rem;border:1px solid #e2e8f0;border-radius:6px;padding:6px;resize:vertical;" placeholder="Internal notes…"></textarea>
+                    <button type="submit" class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;">Save Note</button>
+                </form>
+            </details>
+        </div>
     </div>
 </div>
 {% endfor %}
@@ -101,6 +145,7 @@
         <div class="empty-icon">🚩</div>
         <p>
             {% if status_filter == 'pending' %}No pending reports — everything looks clean!
+            {% elif status_filter == 'under_investigation' %}No reports flagged for investigation.
             {% elif status_filter == 'resolved' %}No resolved reports yet.
             {% else %}No reports found.{% endif %}
         </p>

@@ -144,6 +144,49 @@ def inject_globals():
 def make_session_permanent():
     session.permanent = True
 
+
+# ── Age confirmation gate ─────────────────────────────────────────────────────
+_AGE_GATE_EXEMPT = {
+    'confirm_age', 'auth.logout', 'auth.switch_account', 'auth.login',
+    'auth.error', 'static', 'serve_listing_photo',
+    'api_notification_count',  # polling must not redirect
+}
+
+@app.before_request
+def enforce_age_confirmation():
+    """Redirect authenticated users who have not confirmed 18+ to the age gate."""
+    if not current_user.is_authenticated:
+        return
+    if getattr(current_user, 'age_confirmed', True):
+        return
+    endpoint = request.endpoint or ''
+    if endpoint in _AGE_GATE_EXEMPT:
+        return
+    if request.path.startswith('/static/') or request.path.startswith('/api/'):
+        return
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return
+    return redirect(url_for('confirm_age'))
+
+
+@app.route('/confirm-age', methods=['GET', 'POST'])
+@require_login
+def confirm_age():
+    """18+ age confirmation gate shown to new users after OAuth sign-in."""
+    if current_user.age_confirmed:
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        _check_listing_csrf()
+        if request.form.get('age_cert') == '1':
+            current_user.age_confirmed = True
+            db.session.commit()
+            next_url = session.pop('next_url', None)
+            return redirect(next_url or url_for('home'))
+        else:
+            flash("You must confirm that you are at least 18 years old to use JHE Haul Marketplace.", "error")
+    return render_template('confirm_age.html')
+
+
 _SKIP_TRACKING = {'/health', '/robots.txt', '/sitemap.xml', '/favicon.ico'}
 
 @app.before_request
@@ -988,8 +1031,8 @@ def listing_photo_upload(listing_id):
     listing = _listing_owner_or_403(listing_id)
 
     current_count = ListingPhoto.query.filter_by(listing_id=listing_id).count()
-    if current_count >= 10:
-        return jsonify(error='Maximum 10 photos allowed.'), 400
+    if current_count >= 20:
+        return jsonify(error='Maximum 20 photos allowed per listing.'), 400
 
     photo = request.files.get('photo')
     if not photo or not photo.filename:
@@ -1136,6 +1179,95 @@ def listing_photo_reorder(listing_id):
     db.session.commit()
     return jsonify(ok=True), 200
 
+
+# ── Listing Video Upload / Delete ────────────────────────────────────────────
+
+VIDEO_ALLOWED_EXTS = {'.mp4', '.mov', '.webm', '.avi', '.m4v'}
+VIDEO_ALLOWED_CT   = {'video/mp4', 'video/quicktime', 'video/webm',
+                      'video/avi', 'video/x-msvideo', 'video/x-m4v'}
+VIDEO_MAX_BYTES    = 150 * 1024 * 1024  # 150 MB
+
+@app.route("/listing/<int:listing_id>/video/upload", methods=["POST"])
+@require_login
+def listing_video_upload(listing_id):
+    """AJAX: attach one video to a listing (max 1, max 150 MB, max 60 s client-reported)."""
+    _check_listing_csrf()
+    from models import Listing, ListingVideo
+    _listing_owner_or_403(listing_id)
+
+    # Only one video allowed
+    if ListingVideo.query.filter_by(listing_id=listing_id).count() >= 1:
+        return jsonify(error='Only one video per listing is allowed.'), 400
+
+    vid = request.files.get('video')
+    if not vid or not vid.filename:
+        return jsonify(error='No video file received.'), 400
+
+    ext = os.path.splitext(vid.filename)[1].lower()
+    if ext not in VIDEO_ALLOWED_EXTS:
+        return jsonify(error='Unsupported video type. Use MP4, MOV, WebM, or AVI.'), 400
+
+    # Size check (read once — stream to memory only to measure; real projects stream to disk)
+    raw = vid.read()
+    if len(raw) > VIDEO_MAX_BYTES:
+        return jsonify(error='Video must be under 150 MB.'), 400
+    vid.seek(0)
+
+    # MIME sniff
+    ct = vid.content_type or ''
+    if ct and ct not in VIDEO_ALLOWED_CT:
+        # Allow extension-only match as fallback
+        if not any(ext == e for e in VIDEO_ALLOWED_EXTS):
+            return jsonify(error='Invalid video content type.'), 400
+
+    # Try to upload to storage (DO Spaces / S3); fall back gracefully
+    storage_url = None
+    filename = None
+    try:
+        from storage import upload_file as _uf
+        filename, storage_url = _uf(vid, ext)
+    except Exception:
+        filename = f'video_{listing_id}_{int(datetime.now().timestamp())}{ext}'
+
+    duration = None
+    try:
+        duration = float(request.form.get('duration_seconds', 0)) or None
+    except (ValueError, TypeError):
+        pass
+
+    lv = ListingVideo(
+        listing_id=listing_id,
+        filename=filename,
+        storage_url=storage_url,
+        content_type=ct or f'video/{ext.lstrip(".")}',
+        file_size_bytes=len(raw),
+        duration_seconds=duration,
+    )
+    db.session.add(lv)
+    db.session.commit()
+    return jsonify(id=lv.id, url=storage_url or '', ok=True), 200
+
+
+@app.route("/listing/<int:listing_id>/video/<int:video_id>/delete", methods=["POST"])
+@require_login
+def listing_video_delete(listing_id, video_id):
+    """AJAX: remove the video from a listing."""
+    _check_listing_csrf()
+    from models import ListingVideo
+    _listing_owner_or_403(listing_id)
+    lv = ListingVideo.query.filter_by(id=video_id, listing_id=listing_id).first_or_404()
+    if lv.filename:
+        try:
+            from storage import delete_file as _df
+            _df(lv.filename)
+        except Exception:
+            pass
+    db.session.delete(lv)
+    db.session.commit()
+    return jsonify(ok=True), 200
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 @app.route("/listing/<int:listing_id>/edit", methods=["GET", "POST"])
 @require_login
@@ -4790,6 +4922,132 @@ def admin_user_report_suspend(report_id):
         flash("User suspended and report resolved.", "success")
     else:
         flash("Cannot suspend this user.", "error")
+    return redirect(url_for('admin_user_reports'))
+
+
+# ── Admin: Moderation actions (ban, unban, warn, flag, notes) ──────────────
+
+def _log_mod_action(action, target_type, target_id, report_id=None, notes=None):
+    """Record a moderation action in the audit log."""
+    from models import ModerationAuditLog
+    entry = ModerationAuditLog(
+        admin_id=current_user.id,
+        action=action,
+        target_type=target_type,
+        target_id=str(target_id),
+        report_id=report_id,
+        notes=notes,
+    )
+    db.session.add(entry)
+
+
+@app.route("/admin/users/<user_id>/ban", methods=["POST"])
+@require_admin
+def admin_ban_user(user_id):
+    _check_listing_csrf()
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        flash("Cannot ban an admin account.", "error")
+        return redirect(request.referrer or url_for('admin_user_reports'))
+    report_id = request.form.get('report_id')
+    notes = request.form.get('notes', '')
+    user.is_banned = True
+    user.is_suspended = True
+    _log_mod_action('ban', 'user', user_id,
+                    report_id=int(report_id) if report_id else None,
+                    notes=notes or f'Banned by admin {current_user.email}')
+    db.session.commit()
+    flash(f"Account for {user.email or user.id} has been permanently banned.", "success")
+    return redirect(request.referrer or url_for('admin_user_reports'))
+
+
+@app.route("/admin/users/<user_id>/unban", methods=["POST"])
+@require_admin
+def admin_unban_user(user_id):
+    _check_listing_csrf()
+    user = User.query.get_or_404(user_id)
+    user.is_banned = False
+    user.is_suspended = False
+    _log_mod_action('unban', 'user', user_id,
+                    notes=f'Unbanned by admin {current_user.email}')
+    db.session.commit()
+    flash(f"Account for {user.email or user.id} has been unbanned.", "success")
+    return redirect(request.referrer or url_for('admin_user_reports'))
+
+
+@app.route("/admin/users/<user_id>/warn", methods=["POST"])
+@require_admin
+def admin_warn_user(user_id):
+    _check_listing_csrf()
+    user = User.query.get_or_404(user_id)
+    report_id = request.form.get('report_id')
+    notes = request.form.get('notes', '')
+    user.marketplace_warning_count = (user.marketplace_warning_count or 0) + 1
+    _log_mod_action('warn', 'user', user_id,
+                    report_id=int(report_id) if report_id else None,
+                    notes=notes or f'Warning #{user.marketplace_warning_count} issued by {current_user.email}')
+    db.session.commit()
+    flash(f"Warning issued to {user.email or user.id} (total: {user.marketplace_warning_count}).", "success")
+    return redirect(request.referrer or url_for('admin_user_reports'))
+
+
+@app.route("/admin/reports/<int:report_id>/flag-investigate", methods=["POST"])
+@require_admin
+def admin_report_flag_investigate(report_id):
+    _check_listing_csrf()
+    report = ListingReport.query.get_or_404(report_id)
+    report.investigation_flag = True
+    report.status = 'under_investigation'
+    _log_mod_action('flag_investigate', 'report', report_id)
+    db.session.commit()
+    flash("Report flagged for investigation.", "success")
+    return redirect(url_for('admin_reports'))
+
+
+@app.route("/admin/reports/<int:report_id>/add-note", methods=["POST"])
+@require_admin
+def admin_report_add_note(report_id):
+    _check_listing_csrf()
+    report = ListingReport.query.get_or_404(report_id)
+    notes = request.form.get('admin_notes', '').strip()
+    if notes:
+        existing = (report.admin_notes or '').strip()
+        ts = datetime.now().strftime('%b %d %H:%M')
+        report.admin_notes = f"{existing}\n[{ts} — {current_user.email}] {notes}".strip()
+        _log_mod_action('add_note', 'report', report_id, notes=notes)
+        db.session.commit()
+        flash("Note saved.", "success")
+    return redirect(url_for('admin_reports'))
+
+
+@app.route("/admin/user-reports/<int:report_id>/flag-investigate", methods=["POST"])
+@require_admin
+def admin_user_report_flag_investigate(report_id):
+    _check_listing_csrf()
+    from models import UserReport
+    report = UserReport.query.get_or_404(report_id)
+    report.investigation_flag = True
+    report.status = 'under_investigation'
+    _log_mod_action('flag_investigate', 'report', report_id)
+    db.session.commit()
+    flash("Report flagged for investigation.", "success")
+    return redirect(url_for('admin_user_reports'))
+
+
+@app.route("/admin/user-reports/<int:report_id>/add-note", methods=["POST"])
+@require_admin
+def admin_user_report_add_note(report_id):
+    _check_listing_csrf()
+    from models import UserReport
+    report = UserReport.query.get_or_404(report_id)
+    notes = request.form.get('admin_notes', '').strip()
+    if notes:
+        existing = (report.admin_notes or '').strip()
+        ts = datetime.now().strftime('%b %d %H:%M')
+        report.admin_notes = f"{existing}\n[{ts} — {current_user.email}] {notes}".strip()
+        _log_mod_action('add_note', 'report', report_id, notes=notes)
+        db.session.commit()
+        flash("Note saved.", "success")
     return redirect(url_for('admin_user_reports'))
 
 

@@ -154,10 +154,14 @@
   {# listing may be None on a fresh /listing/new visit (stateless, no DB row yet) #}
   {% set existing_photos = listing.photos if listing else [] %}
   <div class="step-card">
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:9px 13px;margin-bottom:16px;font-size:0.82rem;color:#92400e;line-height:1.5;">
+      🛡️ <strong>Stay safe.</strong> Use accurate photos of the real item. Never ask for payment before a buyer has seen it in person.
+      <a href="{{ url_for('safety') }}" style="color:#b45309;margin-left:6px;">Marketplace Safety →</a>
+    </div>
     <h2>📸 Add Photos</h2>
-    <p class="hint">Upload up to 10 photos. Drag thumbnails to reorder. The starred photo is the cover image.</p>
+    <p class="hint">Upload up to 20 photos. Drag thumbnails to reorder. The starred photo is the cover image.</p>
 
-    <div class="photo-count" id="photoCount">{{ existing_photos|length }} / 10 photos</div>
+    <div class="photo-count" id="photoCount">{{ existing_photos|length }} / 20 photos</div>
     {% if existing_photos|length > 1 %}
     <div class="reorder-hint">⠿ Drag photos to reorder them</div>
     {% endif %}
@@ -180,7 +184,7 @@
       {% endfor %}
     </div>
 
-    {% if existing_photos|length < 10 %}
+    {% if existing_photos|length < 20 %}
     <div class="photo-upload-zone" id="uploadZone">
       <input type="file" id="photoInput" accept="image/*" multiple>
       <div class="upload-icon">🖼️</div>
@@ -214,6 +218,41 @@
       </div>
     </form>
     {% endif %}
+
+    {# ─── Video Upload Section ─── #}
+    <hr style="margin:28px 0 20px;border:none;border-top:1px solid #e2e8f0;">
+    <h3 style="font-size:1rem;font-weight:700;color:#1a202c;margin:0 0 4px;">🎬 Add a Video <span style="font-size:.8rem;font-weight:400;color:#94a3b8;">(Optional)</span></h3>
+    <p style="font-size:.85rem;color:#718096;margin:0 0 14px;line-height:1.5;">Up to 1 video · Max 60 seconds · Max 150 MB · MP4, MOV, or WebM</p>
+
+    <div id="videoPreviewArea" style="{{ 'display:none' if not (listing and listing.videos) else '' }}">
+      {% if listing and listing.videos %}
+      {% set vid = listing.videos[0] %}
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;" id="videoExistingRow">
+        <span style="font-size:1.4rem;">🎬</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:.88rem;color:#1a202c;word-break:break-all;">{{ vid.filename or 'Video' }}</div>
+          {% if vid.file_size_bytes %}<div style="font-size:.78rem;color:#94a3b8;">{{ (vid.file_size_bytes / 1048576) | round(1) }} MB{% if vid.duration_seconds %} · {{ vid.duration_seconds | int }}s{% endif %}</div>{% endif %}
+        </div>
+        <button type="button" onclick="deleteVideo({{ vid.id }})"
+                style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.83rem;font-weight:600;">✕ Remove</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <div id="videoUploadZone" style="{{ 'display:none' if (listing and listing.videos) else '' }};border:2px dashed #cbd5e0;border-radius:8px;padding:20px;text-align:center;cursor:pointer;background:#f8fafc;"
+         onclick="document.getElementById('videoInput').click();">
+      <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm,video/avi,.mp4,.mov,.webm,.avi,.m4v" style="display:none;" onchange="handleVideoSelect(this.files[0])">
+      <div style="font-size:1.8rem;margin-bottom:6px;">🎬</div>
+      <p style="margin:0;font-size:.88rem;color:#64748b;">Click to select a video</p>
+      <p style="margin:4px 0 0;font-size:.76rem;color:#94a3b8;">MP4, MOV, WebM · max 60 s · max 150 MB</p>
+    </div>
+    <div id="videoProgress" style="display:none;margin-top:10px;">
+      <div style="font-size:.85rem;color:#4a5568;margin-bottom:4px;">⏳ Uploading video…</div>
+      <div style="background:#e2e8f0;border-radius:4px;height:6px;overflow:hidden;">
+        <div id="videoProgressBar" style="background:#3b82f6;height:100%;width:0%;transition:width .3s;"></div>
+      </div>
+    </div>
+    <div id="videoDurationWarning" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:10px 12px;margin-top:8px;font-size:.83rem;color:#92400e;"></div>
   </div>
 
   <script>
@@ -230,8 +269,8 @@
   let currentCount = {{ existing_photos|length }};
 
   function updateCount() {
-    photoCount.textContent = currentCount + ' / 10 photos';
-    if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : '';
+    photoCount.textContent = currentCount + ' / 20 photos';
+    if (uploadZone) uploadZone.style.display = currentCount >= 20 ? 'none' : '';
   }
 
   /* ─── Drag-to-reorder ─── */
@@ -304,7 +343,7 @@
 
   async function uploadFiles(files) {
     for (const file of files) {
-      if (currentCount >= 10) break;
+      if (currentCount >= 20) break;
       spinner.style.display = 'block';
       const fd = new FormData();
       fd.append('photo', file);
@@ -351,6 +390,121 @@
       uploadZone.classList.remove('drag-over');
       uploadFiles(e.dataTransfer.files);
     });
+  }
+
+  /* ─── Video Upload ─── */
+  let hasVideo = {{ 'true' if (listing and listing.videos) else 'false' }};
+
+  async function handleVideoSelect(file) {
+    if (!file) return;
+    const warn = document.getElementById('videoDurationWarning');
+    warn.style.display = 'none';
+
+    // Client-side size check (150 MB)
+    if (file.size > 150 * 1024 * 1024) {
+      warn.textContent = '⚠ Video must be under 150 MB. Please choose a smaller file.';
+      warn.style.display = '';
+      document.getElementById('videoInput').value = '';
+      return;
+    }
+
+    // Client-side duration check via HTMLMediaElement
+    let duration = null;
+    try {
+      duration = await new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const vid = document.createElement('video');
+        vid.preload = 'metadata';
+        vid.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(vid.duration); };
+        vid.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        vid.src = url;
+      });
+    } catch(e) { duration = null; }
+
+    if (duration && duration > 60) {
+      warn.textContent = `⚠ This video is ${Math.round(duration)} seconds long. Please trim it to 60 seconds or less before uploading.`;
+      warn.style.display = '';
+      document.getElementById('videoInput').value = '';
+      return;
+    }
+
+    if (!LISTING_ID) {
+      warn.textContent = '⚠ Please upload at least one photo first, then add a video.';
+      warn.style.display = '';
+      document.getElementById('videoInput').value = '';
+      return;
+    }
+
+    // Upload
+    const prog = document.getElementById('videoProgress');
+    const bar  = document.getElementById('videoProgressBar');
+    prog.style.display = '';
+
+    const fd = new FormData();
+    fd.append('video', file);
+    if (duration) fd.append('duration_seconds', duration.toFixed(1));
+
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/listing/${LISTING_ID}/video/upload`);
+      xhr.setRequestHeader('X-CSRFToken', csrfToken);
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) bar.style.width = (e.loaded / e.total * 100) + '%';
+      };
+      xhr.onload = () => {
+        prog.style.display = 'none';
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          hasVideo = true;
+          document.getElementById('videoUploadZone').style.display = 'none';
+          const area = document.getElementById('videoPreviewArea');
+          area.style.display = '';
+          area.innerHTML = `
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;" id="videoExistingRow">
+              <span style="font-size:1.4rem;">🎬</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:.88rem;color:#1a202c;">${file.name}</div>
+                <div style="font-size:.78rem;color:#94a3b8;">${(file.size/1048576).toFixed(1)} MB${duration ? ' · ' + Math.round(duration) + 's' : ''}</div>
+              </div>
+              <button type="button" onclick="deleteVideo(${data.id})"
+                      style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.83rem;font-weight:600;">✕ Remove</button>
+            </div>`;
+        } else {
+          try { warn.textContent = '⚠ ' + JSON.parse(xhr.responseText).error; }
+          catch(e2) { warn.textContent = '⚠ Video upload failed.'; }
+          warn.style.display = '';
+          document.getElementById('videoInput').value = '';
+        }
+      };
+      xhr.onerror = () => {
+        prog.style.display = 'none';
+        warn.textContent = '⚠ Video upload error. Please try again.';
+        warn.style.display = '';
+      };
+      xhr.send(fd);
+    } catch(e) {
+      prog.style.display = 'none';
+      warn.textContent = '⚠ Video upload error: ' + e;
+      warn.style.display = '';
+    }
+  }
+
+  async function deleteVideo(id) {
+    if (!LISTING_ID) return;
+    if (!confirm('Remove this video?')) return;
+    try {
+      const res = await fetch(`/listing/${LISTING_ID}/video/${id}/delete`, {
+        method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+      });
+      if (res.ok) {
+        hasVideo = false;
+        document.getElementById('videoPreviewArea').style.display = 'none';
+        document.getElementById('videoPreviewArea').innerHTML = '';
+        document.getElementById('videoUploadZone').style.display = '';
+        document.getElementById('videoDurationWarning').style.display = 'none';
+        document.getElementById('videoInput').value = '';
+      }
+    } catch(e) { alert('Error removing video.'); }
   }
 
   async function deletePhoto(id) {

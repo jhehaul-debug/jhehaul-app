@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Age Confirmation — JHE Haul Marketplace{% endblock %}
+{% block content %}
+
+<style>
+.age-gate-card {
+  max-width: 480px;
+  margin: 40px auto;
+  text-align: center;
+  padding: 40px 36px;
+}
+.age-gate-icon { font-size: 3rem; margin-bottom: 16px; }
+.age-gate-title { font-size: 1.5rem; font-weight: 800; color: #1a202c; margin: 0 0 8px; }
+.age-gate-sub { color: #718096; font-size: 0.95rem; margin: 0 0 28px; line-height: 1.6; }
+.age-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 10px;
+  padding: 16px 18px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.age-checkbox-label input[type=checkbox] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+.age-checkbox-text {
+  font-size: 0.95rem;
+  color: #166534;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.age-safety-notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 0.84rem;
+  color: #92400e;
+  text-align: left;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.btn-age-continue {
+  width: 100%;
+  padding: 14px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-age-continue:hover { background: #1e40af; }
+.btn-age-continue:disabled { background: #94a3b8; cursor: not-allowed; }
+.age-signout { font-size: 0.83rem; color: #94a3b8; margin-top: 16px; }
+.age-signout a { color: #64748b; }
+</style>
+
+<div class="card age-gate-card">
+  <div class="age-gate-icon">🔒</div>
+  <h1 class="age-gate-title">Welcome to JHE Haul Marketplace</h1>
+  <p class="age-gate-sub">
+    Before you continue, please confirm that you meet the age requirement
+    for using JHE Haul Marketplace.
+  </p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}
+  <div class="flash flash-{% if cat == 'error' %}error{% else %}success{% endif %}" style="text-align:left;margin-bottom:16px;">
+    {% if cat == 'error' %}⚠{% else %}✓{% endif %} {{ msg }}
+  </div>
+  {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('confirm_age') }}" id="ageForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="age-checkbox-label" for="age_cert">
+      <input type="checkbox" id="age_cert" name="age_cert" value="1" required
+             onchange="document.getElementById('continueBtn').disabled = !this.checked;">
+      <span class="age-checkbox-text">
+        I certify that I am at least <strong>18 years old</strong> and agree to the
+        <a href="{{ url_for('customer_terms') }}" target="_blank" style="color:#15803d;">Terms of Service</a>
+        and <a href="{{ url_for('guidelines') }}" target="_blank" style="color:#15803d;">Marketplace Rules</a>.
+      </span>
+    </label>
+
+    <div class="age-safety-notice">
+      🛡️ <strong>Stay safe on the marketplace.</strong> Never share passwords,
+      verification codes, or banking credentials with other users.
+      JHE Haul Marketplace cannot guarantee the identity or intentions
+      of every buyer or seller — use good judgment.
+    </div>
+
+    <button type="submit" class="btn-age-continue" id="continueBtn" disabled>
+      Continue to JHE Haul Marketplace →
+    </button>
+  </form>
+
+  <p class="age-signout">
+    Not you? <a href="{{ url_for('auth.logout') }}">Sign out</a>
+  </p>
+</div>
+
+<script>
+/* Re-enable/disable the button if JS loads before the checkbox is interacted with */
+document.addEventListener('DOMContentLoaded', function() {
+  var cb = document.getElementById('age_cert');
+  var btn = document.getElementById('continueBtn');
+  if (cb && btn) btn.disabled = !cb.checked;
+});
+/* Extra guard: form cannot submit without the checkbox */
+document.getElementById('ageForm').addEventListener('submit', function(e) {
+  if (!document.getElementById('age_cert').checked) {
+    e.preventDefault();
+    alert('You must confirm that you are at least 18 years old to continue.');
+  }
+});
+</script>
+
+{% endblock %}

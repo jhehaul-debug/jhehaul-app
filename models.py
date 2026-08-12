@@ -35,6 +35,9 @@ class User(UserMixin, db.Model):
     profile_photo_data = db.Column(db.LargeBinary, nullable=True)
     profile_photo_content_type = db.Column(db.String(80), nullable=True)
     is_suspended = db.Column(db.Boolean, default=False)
+    is_banned = db.Column(db.Boolean, default=False)
+    age_confirmed = db.Column(db.Boolean, default=False)
+    marketplace_warning_count = db.Column(db.Integer, default=0)
     city = db.Column(db.String(100), nullable=True)
     zip_code = db.Column(db.String(10), nullable=True)
 
@@ -431,6 +434,22 @@ class ListingPhoto(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
+class ListingVideo(db.Model):
+    """One video per marketplace listing — max 60 s, max 150 MB."""
+    __tablename__ = 'listing_videos'
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
+    filename = db.Column(db.String(200), nullable=True)
+    storage_url = db.Column(db.String(500), nullable=True)   # DO Spaces URL
+    content_type = db.Column(db.String(100), nullable=True)
+    file_size_bytes = db.Column(db.BigInteger, nullable=True)
+    duration_seconds = db.Column(db.Float, nullable=True)    # client-reported, informational
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    listing = db.relationship('Listing',
+                              backref=db.backref('videos', lazy=True, cascade='all, delete-orphan'))
+
+
 class ListingFavorite(db.Model):
     """A user saving/favoriting a listing."""
     __tablename__ = 'listing_favorites'
@@ -546,13 +565,16 @@ class DeliveryRequest(db.Model):
 class ListingReport(db.Model):
     """A user reporting a listing for admin review."""
     __tablename__ = 'listing_reports'
-    # Status values: pending | reviewed | resolved
+    # Status values: pending | under_investigation | resolved
     id = db.Column(db.Integer, primary_key=True)
     listing_id = db.Column(db.Integer, db.ForeignKey('listings.id'), nullable=False)
     reporter_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
     reason = db.Column(db.String(100), nullable=False)
     details = db.Column(db.Text, nullable=True)
-    status = db.Column(db.String(20), default='pending')
+    evidence_url = db.Column(db.String(500), nullable=True)   # uploaded screenshot/image
+    admin_notes = db.Column(db.Text, nullable=True)
+    investigation_flag = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(30), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     reporter = db.relationship('User', foreign_keys=[reporter_id])
@@ -576,19 +598,40 @@ class UserBlock(db.Model):
 class UserReport(db.Model):
     """A user reporting another user to admin."""
     __tablename__ = 'user_reports'
-    # Status values: pending | reviewed | resolved
+    # Status values: pending | under_investigation | resolved
     id = db.Column(db.Integer, primary_key=True)
     reported_user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
     reporter_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
     reason = db.Column(db.String(100), nullable=False)
     details = db.Column(db.Text, nullable=True)
-    status = db.Column(db.String(20), default='pending')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    related_listing_id = db.Column(db.Integer, nullable=True)  # conversation context
+    admin_notes = db.Column(db.Text, nullable=True)
+    investigation_flag = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(30), default='pending')
 
     reported_user = db.relationship('User', foreign_keys=[reported_user_id],
                                     backref=db.backref('reports_against', lazy=True))
     reporter = db.relationship('User', foreign_keys=[reporter_id],
                                backref=db.backref('user_reports_filed', lazy=True))
+
+
+class ModerationAuditLog(db.Model):
+    """Audit trail for admin moderation actions."""
+    __tablename__ = 'moderation_audit_logs'
+    # Action values: ban | unban | warn | suspend | unsuspend |
+    #                remove_listing | restore_listing | suspend_listing |
+    #                dismiss | flag_investigate | add_note
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=True)
+    action = db.Column(db.String(50), nullable=False)
+    target_type = db.Column(db.String(20), nullable=False)  # user | listing | report
+    target_id = db.Column(db.String(50), nullable=False)
+    report_id = db.Column(db.Integer, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    admin = db.relationship('User', foreign_keys=[admin_id],
+                            backref=db.backref('moderation_actions', lazy=True))
 
 
 class Notification(db.Model):

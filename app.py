@@ -228,6 +228,20 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.city/zip_code) skipped: %s", _e)
 
+    # ── User safety columns (must run before ANY User query below) ───────────
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS age_confirmed BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS marketplace_warning_count INTEGER DEFAULT 0"))
+        # Existing users are pre-confirmed
+        db.session.execute(_text("UPDATE users SET age_confirmed = TRUE WHERE age_confirmed IS NOT TRUE"))
+        db.session.commit()
+        logging.info("Column migration: users safety columns (is_banned, age_confirmed, warning_count) ensured (early)")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users safety early) skipped: %s", _e)
+
     try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
@@ -667,6 +681,49 @@ with app.app_context():
         logging.info("Table migration: notifications ensured")
     except Exception as _e:
         logging.info("Table migration (notifications) skipped: %s", _e)
+
+    # ── Safety & media tables (listing_videos, moderation_audit_logs) ─────────
+    try:
+        from models import ListingVideo as _LV, ModerationAuditLog as _MAL  # noqa: F401
+        db.create_all()
+        logging.info("Table migration: listing_videos + moderation_audit_logs ensured")
+    except Exception as _e:
+        logging.info("Table migration (safety/media tables) skipped: %s", _e)
+
+    # ── User safety columns ────────────────────────────────────────────────────
+    try:
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS age_confirmed BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE users ADD COLUMN IF NOT EXISTS marketplace_warning_count INTEGER DEFAULT 0"))
+        # Existing users are pre-confirmed — they already agreed to terms before this feature
+        db.session.execute(_text("UPDATE users SET age_confirmed = TRUE WHERE age_confirmed IS NOT TRUE AND created_at < NOW()"))
+        db.session.commit()
+        logging.info("Column migration: users safety columns (is_banned, age_confirmed, warning_count) ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users safety) skipped: %s", _e)
+
+    # ── ListingReport safety columns ───────────────────────────────────────────
+    try:
+        db.session.execute(_text("ALTER TABLE listing_reports ADD COLUMN IF NOT EXISTS evidence_url VARCHAR(500)"))
+        db.session.execute(_text("ALTER TABLE listing_reports ADD COLUMN IF NOT EXISTS admin_notes TEXT"))
+        db.session.execute(_text("ALTER TABLE listing_reports ADD COLUMN IF NOT EXISTS investigation_flag BOOLEAN DEFAULT FALSE"))
+        db.session.commit()
+        logging.info("Column migration: listing_reports safety columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listing_reports safety) skipped: %s", _e)
+
+    # ── UserReport safety columns ──────────────────────────────────────────────
+    try:
+        db.session.execute(_text("ALTER TABLE user_reports ADD COLUMN IF NOT EXISTS admin_notes TEXT"))
+        db.session.execute(_text("ALTER TABLE user_reports ADD COLUMN IF NOT EXISTS investigation_flag BOOLEAN DEFAULT FALSE"))
+        db.session.execute(_text("ALTER TABLE user_reports ADD COLUMN IF NOT EXISTS related_listing_id INTEGER"))
+        db.session.commit()
+        logging.info("Column migration: user_reports safety columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (user_reports safety) skipped: %s", _e)
 
     # ── Seed default marketplace categories ──────────────────────────────────
     try:

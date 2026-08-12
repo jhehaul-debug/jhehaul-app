@@ -10,8 +10,9 @@
     <span style="background:#fee2e2;color:#dc2626;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ pending_count }} pending</span>
     {% endif %}
   </div>
-  <div style="display:flex;gap:8px;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
     <a href="{{ url_for('admin_user_reports') }}?status=pending" class="btn {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Pending</a>
+    <a href="{{ url_for('admin_user_reports') }}?status=under_investigation" class="btn {% if status_filter == 'under_investigation' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">🔍 Investigating</a>
     <a href="{{ url_for('admin_user_reports') }}?status=resolved" class="btn {% if status_filter == 'resolved' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Resolved</a>
     <a href="{{ url_for('admin_user_reports') }}?status=all" class="btn {% if status_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">All</a>
   </div>
@@ -19,12 +20,14 @@
 
 {% if reports %}
 {% for r in reports %}
-<div class="card" style="padding:16px 20px;margin-bottom:12px;border-left:4px solid {% if r.status == 'pending' %}#ef4444{% else %}#d1d5db{% endif %};">
+<div class="card" style="padding:16px 20px;margin-bottom:14px;border-left:4px solid {% if r.investigation_flag %}#d97706{% elif r.status == 'pending' %}#ef4444{% else %}#d1d5db{% endif %};">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
     <div style="flex:1;min-width:200px;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
         <span style="font-weight:700;color:#1a202c;">Report #{{ r.id }}</span>
-        <span style="background:{% if r.status == 'pending' %}#fee2e2;color:#dc2626{% else %}#dcfce7;color:#15803d{% endif %};font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:10px;">{{ r.status.title() }}</span>
+        <span style="background:{% if r.investigation_flag %}#fef3c7;color:#b45309{% elif r.status == 'pending' %}#fee2e2;color:#dc2626{% else %}#dcfce7;color:#15803d{% endif %};font-size:0.74rem;font-weight:700;padding:2px 8px;border-radius:10px;">
+          {% if r.investigation_flag %}🔍 Under Investigation{% else %}{{ r.status.replace('_', ' ').title() }}{% endif %}
+        </span>
         <span style="font-size:0.8rem;color:#94a3b8;">{{ r.created_at.strftime('%b %d, %Y') }}</span>
       </div>
 
@@ -35,6 +38,11 @@
           {{ ((r.reported_user.first_name or '') ~ ' ' ~ (r.reported_user.last_name or '')).strip() or r.reported_user.email }}
         </span>
         <a href="{{ url_for('admin_user_detail', user_id=r.reported_user.id) }}" style="font-size:.78rem;color:#2563eb;margin-left:6px;">View Profile →</a>
+        {% if r.reported_user.is_banned %}
+        <span style="background:#fef2f2;color:#dc2626;font-size:0.72rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px;">BANNED</span>
+        {% elif r.reported_user.is_suspended %}
+        <span style="background:#fffbeb;color:#b45309;font-size:0.72rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px;">SUSPENDED</span>
+        {% endif %}
         {% else %}
         <span style="color:#94a3b8;font-size:.82rem;margin-left:4px;">Unknown user</span>
         {% endif %}
@@ -56,23 +64,63 @@
         <div style="margin-top:4px;font-size:.84rem;color:#4a5568;line-height:1.5;">{{ r.details }}</div>
         {% endif %}
       </div>
-    </div>
-
-    {% if r.status == 'pending' %}
-    <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
-      <form method="POST" action="{{ url_for('admin_user_report_dismiss', report_id=r.id) }}" style="margin:0;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-outline btn-sm" style="width:100%;white-space:nowrap;">✓ Dismiss</button>
-      </form>
-      {% if r.reported_user and not r.reported_user.is_admin and not r.reported_user.is_suspended %}
-      <form method="POST" action="{{ url_for('admin_user_report_suspend', report_id=r.id) }}" style="margin:0;"
-            onsubmit="return confirm('Suspend this user and resolve the report?')">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-danger btn-sm" style="width:100%;white-space:nowrap;">🚫 Suspend User</button>
-      </form>
+      {% if r.admin_notes %}
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-top:8px;">
+        <div style="font-size:0.75rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Admin Notes</div>
+        <div style="font-size:0.84rem;color:#78350f;line-height:1.5;">{{ r.admin_notes }}</div>
+      </div>
       {% endif %}
     </div>
-    {% endif %}
+
+    <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:150px;">
+      {% if r.status != 'resolved' %}
+      <form method="POST" action="{{ url_for('admin_user_report_dismiss', report_id=r.id) }}" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline btn-sm" style="width:100%;">✓ Dismiss</button>
+      </form>
+      {% endif %}
+      {% if r.reported_user and not r.reported_user.is_admin %}
+        {% if not r.reported_user.is_banned %}
+        <form method="POST" action="{{ url_for('admin_ban_user', user_id=r.reported_user.id) }}" style="margin:0;"
+              onsubmit="return confirm('PERMANENTLY BAN this account?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="report_id" value="{{ r.id }}">
+          <button type="submit" class="btn btn-danger btn-sm" style="width:100%;background:#7f1d1d;border-color:#7f1d1d;">🔨 Ban Account</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('admin_unban_user', user_id=r.reported_user.id) }}" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm" style="width:100%;background:#16a34a;color:#fff;border:none;">↩ Unban</button>
+        </form>
+        {% endif %}
+        {% if not r.reported_user.is_suspended and not r.reported_user.is_banned %}
+        <form method="POST" action="{{ url_for('admin_user_report_suspend', report_id=r.id) }}" style="margin:0;"
+              onsubmit="return confirm('Suspend this user?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">🚫 Suspend User</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('admin_warn_user', user_id=r.reported_user.id) }}" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="report_id" value="{{ r.id }}">
+          <button type="submit" class="btn btn-sm" style="width:100%;background:#d97706;color:#fff;border:none;">⚠️ Warn User</button>
+        </form>
+      {% endif %}
+      {% if not r.investigation_flag %}
+      <form method="POST" action="{{ url_for('admin_user_report_flag_investigate', report_id=r.id) }}" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm" style="width:100%;background:#1e40af;color:#fff;border:none;">🔍 Flag Investigate</button>
+      </form>
+      {% endif %}
+      <details style="margin:0;">
+        <summary style="cursor:pointer;font-size:0.8rem;color:#64748b;font-weight:600;">📝 Add Note</summary>
+        <form method="POST" action="{{ url_for('admin_user_report_add_note', report_id=r.id) }}" style="margin:4px 0 0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea name="admin_notes" rows="2" style="width:100%;font-size:0.82rem;border:1px solid #e2e8f0;border-radius:6px;padding:6px;resize:vertical;" placeholder="Internal notes…"></textarea>
+          <button type="submit" class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;">Save Note</button>
+        </form>
+      </details>
+    </div>
   </div>
 </div>
 {% endfor %}
@@ -83,6 +131,7 @@
     <div class="empty-icon">🚩</div>
     <p>
       {% if status_filter == 'pending' %}No pending user reports.
+      {% elif status_filter == 'under_investigation' %}No reports under investigation.
       {% elif status_filter == 'resolved' %}No resolved reports yet.
       {% else %}No user reports found.{% endif %}
     </p>

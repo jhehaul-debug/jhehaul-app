@@ -1,56 +1,145 @@
 {% extends "base.html" %}
-{% block title %}Buying & Selling Safely — JHE Haul Marketplace{% endblock %}
+{% block title %}Marketplace Safety — JHE Haul{% endblock %}
 {% block content %}
 
 <div class="page-header">
-    <h2 class="page-title">🔒 Buying &amp; Selling Safely</h2>
-    <p style="color:#718096;margin:0;">Tips to protect yourself and have a great experience on JHE Haul Marketplace.</p>
+    <h2 class="page-title">🔒 Marketplace Safety</h2>
+    <p style="color:#718096;margin:0;">How to protect yourself and have a safe experience on JHE Haul Marketplace.</p>
 </div>
 
+<!-- Fraud & scam warning banner -->
+<div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;gap:16px;align-items:flex-start;">
+    <span style="font-size:1.8rem;flex-shrink:0;">⚠️</span>
+    <div>
+        <div style="font-weight:700;color:#dc2626;font-size:1rem;margin-bottom:6px;">Stay Alert — Fraud, Scams &amp; Criminal Activity Happen</div>
+        <p style="color:#7f1d1d;font-size:0.92rem;line-height:1.7;margin:0 0 8px;">
+            <strong>Stay alert for fraud, scams, and criminal activity. Never send passwords, verification codes,
+            banking login information, or other sensitive personal information to another marketplace user.</strong>
+        </p>
+        <p style="color:#991b1b;font-size:0.87rem;line-height:1.6;margin:0;">
+            JHE Haul Marketplace cannot guarantee the identity, honesty, ownership claims, or intentions of every
+            buyer or seller. Use good judgment and report suspicious activity immediately.
+        </p>
+    </div>
+</div>
+
+<!-- Age requirement -->
+<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;">
+    <span style="font-size:1.5rem;flex-shrink:0;">🔞</span>
+    <div>
+        <div style="font-weight:700;color:#1e40af;margin-bottom:4px;">18+ Age Requirement</div>
+        <p style="color:#1e3a8a;font-size:0.88rem;line-height:1.6;margin:0;">
+            You must be at least <strong>18 years old</strong> to use JHE Haul Marketplace. By using this platform
+            you certify that you meet this requirement.
+        </p>
+    </div>
+</div>
+
+<!-- For Buyers -->
 <div class="card" style="padding:28px;margin-bottom:20px;border-left:4px solid #38a169;">
     <h3 style="color:#276749;margin-bottom:16px;">✅ For Buyers</h3>
     <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0;">
-        <li><strong>Inspect before you pay.</strong> Always check items in person before handing over any money. Photos don't always show everything.</li>
-        <li><strong>Meet in public when possible.</strong> A coffee shop, store parking lot, or police department parking area are all good options for small items.</li>
-        <li><strong>Bring a friend</strong> for large pickups at a seller's home, especially if you're moving heavy items.</li>
-        <li><strong>Use the built-in messaging system.</strong> Keep communication on the platform so there's a record. Be cautious of sellers who quickly push you off-platform.</li>
-        <li><strong>Trust your instincts.</strong> If a deal feels off or a seller is pressuring you to act fast, walk away.</li>
-        <li><strong>Don't send money upfront</strong> to hold an item to someone you've never met. Agree to meet and inspect first.</li>
+        <li><strong>Inspect before you pay.</strong> Always check items in person before handing over any money.</li>
+        <li><strong>Meet in a public location when appropriate.</strong> A coffee shop, store parking lot, or police department parking area are good options for small items.</li>
+        <li><strong>Bring someone</strong> for large pickups, especially at unfamiliar locations.</li>
+        <li><strong>Use the built-in messaging.</strong> Keep communication on the platform so there is a record. Be cautious of anyone pushing you off-platform immediately.</li>
+        <li><strong>Trust your instincts.</strong> If a deal feels wrong or a seller is pressuring you to act fast, walk away.</li>
+        <li><strong>Never send money upfront</strong> to hold an item from someone you have never met.</li>
+        <li><strong>Be cautious of unrealistically low prices.</strong> If it seems too good to be true, it may be.</li>
+        <li><strong>Never provide another user with your password, verification codes, or banking login credentials.</strong></li>
     </ul>
 </div>
 
+<!-- For Sellers -->
 <div class="card" style="padding:28px;margin-bottom:20px;border-left:4px solid #3182ce;">
     <h3 style="color:#2c5282;margin-bottom:16px;">✅ For Sellers</h3>
     <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0;">
-        <li><strong>Be accurate in your listing.</strong> Describe condition honestly — include any flaws, damage, or missing parts. Honest listings build trust and prevent disputes.</li>
+        <li><strong>Be accurate in your listing.</strong> Describe condition honestly, including defects, damage, or missing parts.</li>
         <li><strong>Use real photos.</strong> Take your own photos in good lighting. Avoid stock images or photos from the internet.</li>
-        <li><strong>Arrange daytime meetups</strong> and let someone know where you're going for large-item pickups at your home.</li>
-        <li><strong>Verify payment before handing over items.</strong> Confirm cash or payment has cleared before releasing the item.</li>
-        <li><strong>Don't accept overpayment requests.</strong> Scammers sometimes "overpay" and ask for a refund. Refuse and report these.</li>
-        <li><strong>Mark your item sold</strong> once a deal is complete so other buyers aren't left waiting.</li>
+        <li><strong>Arrange daytime meetups</strong> and let someone know where you are for large-item pickups.</li>
+        <li><strong>Verify payment before releasing an item.</strong> Confirm payment is received and legitimate before handing over goods.</li>
+        <li><strong>Do not accept overpayment.</strong> Scammers sometimes "overpay" and ask for a refund of the difference — refuse and report.</li>
+        <li><strong>Be cautious of unusual payment requests.</strong> Gift cards, wire transfers, and cryptocurrency sent by strangers are common scam methods.</li>
+        <li><strong>You are responsible</strong> for ensuring you have the legal right to sell any listed property.</li>
     </ul>
 </div>
 
+<!-- What to watch for -->
 <div class="card" style="padding:28px;margin-bottom:20px;border-left:4px solid #e53e3e;">
     <h3 style="color:#c53030;margin-bottom:16px;">🚩 Red Flags to Watch For</h3>
     <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0;">
-        <li>Seller or buyer wants to communicate only by text or email immediately</li>
-        <li>Price is dramatically lower than market value — "too good to be true"</li>
-        <li>Buyer offers to send a check or money order</li>
-        <li>Someone asks you to use gift cards, wire transfers, or cryptocurrency</li>
-        <li>Seller can't meet in person and asks to ship with advance payment</li>
-        <li>Pressure to decide or pay immediately</li>
+        <li>Requests for your <strong>password, verification code, or banking credentials</strong></li>
+        <li>Requests to move conversation <strong>off-platform</strong> immediately</li>
+        <li>Price dramatically <strong>lower than market value</strong> — "too good to be true"</li>
+        <li>Someone asks you to pay with <strong>gift cards, wire transfers, or cryptocurrency</strong></li>
+        <li>A buyer sends a <strong>check or money order</strong></li>
+        <li>Seller cannot meet in person and asks to <strong>ship with advance payment</strong></li>
+        <li><strong>Urgency or pressure</strong> to decide or pay immediately</li>
+        <li>Suspicious <strong>links</strong> sent in messages</li>
+        <li>Requests for <strong>unusual payment arrangements</strong></li>
+        <li>Claims of <strong>escrow services</strong> you did not agree to</li>
+        <li>Items that appear to be <strong>stolen, counterfeit, or misrepresented</strong></li>
+        <li><strong>Harassment, threats,</strong> or intimidating communication</li>
+        <li>Newly created accounts offering <strong>high-value items at very low prices</strong></li>
+        <li>Requests for your <strong>Social Security number, driver's license, or identity documents</strong></li>
     </ul>
 </div>
 
-<div class="card" style="padding:24px;background:#f7fafc;">
-    <h3 style="margin-bottom:12px;">📧 Report a Problem</h3>
-    <p style="color:#4a5568;line-height:1.7;margin-bottom:14px;">
-        If you encounter a suspicious listing, unsafe behavior, or anything that violates our community
-        guidelines, please report it immediately using the Report button on the listing page,
-        or contact us directly.
+<!-- Specific fraud types -->
+<div class="card" style="padding:28px;margin-bottom:20px;">
+    <h3 style="margin-bottom:16px;">🛑 Common Fraud &amp; Scam Types</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Payment Scams</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Fake payment confirmations, overpayment tricks, or requests to pay through unusual methods.</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Fake Listings</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Listings for items that don't exist or don't belong to the seller, often with stolen photos.</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Phishing</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Links designed to steal your login credentials, financial information, or personal data.</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Identity Theft</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Attempts to collect your personal information under false pretenses.</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Counterfeit Goods</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Fake branded items sold as authentic. Selling or knowingly buying counterfeits is illegal.</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:#1a202c;margin-bottom:4px;">Stolen Property</div>
+            <div style="font-size:0.85rem;color:#718096;line-height:1.6;">Items reported or suspected to be stolen. Buying stolen property can have serious consequences.</div>
+        </div>
+    </div>
+</div>
+
+<!-- How to report -->
+<div class="card" style="padding:28px;margin-bottom:20px;border-left:4px solid #d97706;">
+    <h3 style="color:#92400e;margin-bottom:14px;">📋 How to Report</h3>
+    <ul style="color:#4a5568;font-size:0.95rem;line-height:1.9;padding-left:18px;margin:0 0 14px;">
+        <li><strong>Report a listing:</strong> Use the <em>Report Listing</em> button on any listing page.</li>
+        <li><strong>Report a user:</strong> Use the <em>Report User</em> option on a seller's profile or listing.</li>
+        <li><strong>Keep important communication on-platform</strong> so there is a record available if you need to report suspicious activity.</li>
+        <li><strong>If there is an immediate threat or emergency,</strong> contact appropriate emergency services directly. JHE Haul does not replace law enforcement.</li>
+    </ul>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="{{ url_for('marketplace') }}" class="btn btn-outline btn-sm">Browse Marketplace</a>
+        <a href="{{ url_for('guidelines') }}" class="btn btn-outline btn-sm">Community Guidelines</a>
+    </div>
+</div>
+
+<!-- Disclaimer -->
+<div class="card" style="padding:20px 24px;background:#f8fafc;">
+    <p style="color:#718096;font-size:0.87rem;line-height:1.7;margin:0;">
+        <strong>Disclaimer:</strong> JHE Haul Marketplace is a platform that connects buyers and sellers.
+        We do not guarantee the identity, honesty, ownership claims, legal authority to sell, or intentions
+        of every buyer or seller on the platform. We do not guarantee the legitimacy or safety of every
+        transaction. Users are solely responsible for verifying items, arrangements, and payment before
+        completing any transaction.
     </p>
-    <a href="mailto:jhehaul@gmail.com" class="btn btn-outline">Contact Us</a>
 </div>
 
 {% endblock %}

@@ -97,6 +97,8 @@ def google_logged_in(blueprint, token):
     )
     if user:
         login_user(user)
+        if not user.age_confirmed:
+            return redirect(url_for('confirm_age'))
     next_url = session.pop('next_url', None)
     return redirect(next_url or url_for('home'))
 
@@ -131,6 +133,8 @@ def github_logged_in(blueprint, token):
     )
     if user:
         login_user(user)
+        if not user.age_confirmed:
+            return redirect(url_for('confirm_age'))
     next_url = session.pop('next_url', None)
     return redirect(next_url or url_for('home'))
 
