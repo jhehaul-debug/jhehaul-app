@@ -526,6 +526,34 @@ def notify_seller_listing_expiring_soon(seller_email, listing_id, title, expires
     )
 
 
+def notify_seller_draft_expiring(seller_email, listing_id):
+    """Notify the seller that their unfinished draft will be auto-deleted in ~24 hours."""
+    # Link to step 2 of the wizard so the seller can fill in details and publish,
+    # not the edit page (which only saves changes, never transitions draft → active).
+    finish_url = f"{_APP_URL}/listing/{listing_id}/step/2"
+    body = f"""
+    <p>You started listing an item but never finished it. Your draft will be
+       <strong>automatically deleted in approximately 24 hours</strong> if left incomplete.</p>
+    <div class="info-box">
+      <p><strong>Draft ID:</strong> #{listing_id}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Incomplete Draft</span></p>
+      <p><strong>Action needed:</strong> Complete the listing wizard to publish your item, or your photos will be lost.</p>
+    </div>
+    <p>It only takes a minute — click below to pick up where you left off and publish your listing.</p>
+    <a href="{finish_url}" class="btn">Finish &amp; Publish My Listing →</a>"""
+    return send_email(
+        seller_email,
+        "Your draft listing will be deleted in 24 hours — finish it now",
+        _html(
+            "Your Draft Is About to Be Deleted",
+            "Complete it now before your photos are removed.",
+            "⚠️ Draft Expiring",
+            body,
+        ),
+        'seller_draft_expiring',
+    )
+
+
 def notify_customer_pending_bids_reminder(customer_email, job_id, bid_count):
     """24-hour inactivity reminder — bids waiting for review."""
     body = f"""

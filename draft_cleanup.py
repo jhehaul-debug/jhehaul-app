@@ -22,8 +22,113 @@ from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
-DRAFT_MAX_AGE_HOURS = 48          # delete drafts older than this
-CLEANUP_INTERVAL    = 6 * 60 * 60 # run every 6 hours
+DRAFT_MAX_AGE_HOURS  = 48          # delete drafts older than this
+REMINDER_MIN_HOURS   = 24          # start sending reminders once draft reaches this age
+CLEANUP_INTERVAL     = 60 * 60     # run every hour (keeps reminder close to the 24h mark)
+
+
+def send_draft_reminders(app):
+    """
+    Send a one-time reminder email to sellers whose untitled draft is at least
+    REMINDER_MIN_HOURS old but not yet old enough to be purged.  The window is
+    intentionally wide (24h → 48h) so that every 6-hour worker run has a chance
+    to catch each draft before it is deleted.  The draft_reminder_sent flag
+    prevents duplicate emails across multiple runs.
+    Returns the number of reminder emails sent.
+    """
+    with app.app_context():
+        from models import db, Listing
+        from email_service import notify_seller_draft_expiring
+
+        now = datetime.now()
+        reminder_cutoff = now - timedelta(hours=REMINDER_MIN_HOURS)
+        delete_cutoff   = now - timedelta(hours=DRAFT_MAX_AGE_HOURS)
+
+        # Eligible: old enough to warn (≥ 24h) but not yet deleted (< 48h), and
+        # reminder not yet successfully sent.
+        candidates = (
+            Listing.query
+            .filter(
+                Listing.status == 'draft',
+                db.or_(Listing.title == None, Listing.title == ''),
+                Listing.created_at <= reminder_cutoff,
+                Listing.created_at > delete_cutoff,
+                Listing.draft_reminder_sent == False,
+            )
+            .all()
+        )
+
+        sent = 0
+        for listing in candidates:
+            seller = listing.seller
+            if not seller or not seller.email:
+                log.warning("Draft reminder: listing #%s has no seller email, skipping", listing.id)
+                continue
+            try:
+                # Atomically claim this listing with a full eligibility re-check in the
+                # WHERE clause so that:
+                #   (a) concurrent Gunicorn workers cannot both send the same email, and
+                #   (b) a listing that was completed/activated after the SELECT is skipped.
+                from sqlalchemy import text as _text
+                claim = db.session.execute(
+                    _text(
+                        "UPDATE listings SET draft_reminder_sent = true "
+                        "WHERE id = :lid "
+                        "  AND draft_reminder_sent = false "
+                        "  AND status = 'draft' "
+                        "  AND (title IS NULL OR title = '') "
+                        "  AND created_at <= :reminder_cutoff "
+                        "  AND created_at > :delete_cutoff"
+                    ),
+                    {
+                        "lid": listing.id,
+                        "reminder_cutoff": reminder_cutoff,
+                        "delete_cutoff": delete_cutoff,
+                    },
+                )
+                db.session.commit()
+                if claim.rowcount == 0:
+                    log.debug("Draft reminder: listing #%s already claimed or no longer eligible", listing.id)
+                    continue
+
+                # Send the email.  On any failure reset the flag so the next
+                # hourly run can retry — this preserves deduplication while
+                # keeping the notification reliable.
+                ok = notify_seller_draft_expiring(seller.email, listing.id)
+                if ok:
+                    sent += 1
+                    log.info("Draft reminder sent for listing #%s to %s", listing.id, seller.email)
+                else:
+                    db.session.execute(
+                        _text("UPDATE listings SET draft_reminder_sent = false WHERE id = :lid"),
+                        {"lid": listing.id},
+                    )
+                    db.session.commit()
+                    log.warning(
+                        "Draft reminder: SendGrid delivery failed for listing #%s — "
+                        "flag reset, will retry next run",
+                        listing.id,
+                    )
+            except Exception as exc:
+                try:
+                    db.session.rollback()
+                    # Release the claim so the next run can retry
+                    from sqlalchemy import text as _text
+                    db.session.execute(
+                        _text("UPDATE listings SET draft_reminder_sent = false WHERE id = :lid"),
+                        {"lid": listing.id},
+                    )
+                    db.session.commit()
+                except Exception:
+                    pass
+                log.error("Failed to send draft reminder for listing #%s: %s", listing.id, exc)
+
+        if sent:
+            log.info("Draft reminders: sent %d email(s)", sent)
+        else:
+            log.debug("Draft reminders: no drafts in reminder window")
+
+        return sent
 
 
 def purge_abandoned_drafts(app):
@@ -86,6 +191,10 @@ def start_draft_cleanup_thread(app):
         time.sleep(90)  # Let the app fully start before first run
         while True:
             try:
+                send_draft_reminders(app)
+            except Exception as exc:
+                log.error("Draft reminder loop error: %s", exc)
+            try:
                 purge_abandoned_drafts(app)
             except Exception as exc:
                 log.error("Draft cleanup loop error: %s", exc)
@@ -94,7 +203,8 @@ def start_draft_cleanup_thread(app):
     t = threading.Thread(target=_loop, daemon=True, name="draft-cleanup")
     t.start()
     log.info(
-        "Draft cleanup background thread started (interval=%ds, max_age=%dh)",
+        "Draft cleanup background thread started (interval=%ds, max_age=%dh, reminder_after=%dh)",
         CLEANUP_INTERVAL,
         DRAFT_MAX_AGE_HOURS,
+        REMINDER_MIN_HOURS,
     )

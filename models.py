@@ -347,6 +347,7 @@ class Listing(db.Model):
     expired_at = db.Column(db.DateTime, nullable=True)
     expires_at = db.Column(db.DateTime, nullable=True)   # seller-set expiry date
     expiry_reminder_sent = db.Column(db.Boolean, default=False)  # 3-day-ahead reminder sent
+    draft_reminder_sent = db.Column(db.Boolean, default=False)   # 24h-before-deletion reminder sent
 
     # ── Housing & Real Estate fields ──────────────────────────────────────────
     # listing_type: 'item' | 'property_sale' | 'rental'
