@@ -5116,19 +5116,29 @@ def admin_analytics_export():
 @app.route("/profile/send-phone-verify", methods=["POST"])
 @require_login
 def send_phone_verify():
-    from datetime import datetime as _dt
+    from datetime import datetime as _dt, timedelta
     phone = current_user.phone
     if not phone:
         flash("Save your phone number first, then request a verification code.", "error")
         return redirect(url_for('profile'))
-    code = send_verification_sms(phone)
+
+    # Rate limit: one send per 60 seconds
+    if current_user.phone_verify_sent_at:
+        elapsed = (_dt.now() - current_user.phone_verify_sent_at).total_seconds()
+        if elapsed < 60:
+            wait = int(60 - elapsed)
+            flash(f"Please wait {wait} more second{'s' if wait != 1 else ''} before requesting another code.", "error")
+            return redirect(url_for('profile'))
+
+    code, error = send_verification_sms(phone)
     if code:
         current_user.phone_verify_code = code
         current_user.phone_verify_sent_at = _dt.now()
         db.session.commit()
-        flash("Verification code sent! Enter the 6-digit code below.", "success")
+        flash("Verification code sent! Check your texts and enter the 6-digit code below.", "success")
     else:
-        flash("Could not send the verification SMS. Check that Twilio is configured or try again.", "error")
+        # Show the specific Twilio error so the issue is diagnosable
+        flash(f"Could not send verification SMS — {error}", "error")
     return redirect(url_for('profile'))
 
 

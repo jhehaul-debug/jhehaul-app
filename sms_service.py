@@ -215,14 +215,34 @@ def send_sms(to_phone, message, event_type='sms'):
 
 def send_verification_sms(phone):
     """
-    Generate a 6-digit verification code, send it, and return the code.
-    Returns the code string on success, None on failure.
+    Generate a 6-digit verification code, send it, and return (code, error).
+    On success: (code_string, None)
+    On failure:  (None, human_readable_error_string)
     The caller must save the code to user.phone_verify_code.
     """
+    formatted = _format_phone(phone) if phone else None
+    if not formatted:
+        return None, f"Could not parse '{phone}' as a US phone number. Please re-enter your number in the format (651) 555-1234."
+
     code = ''.join(random.choices(string.digits, k=6))
     msg = f"JHE Haul verification code: {code}. Expires in 10 minutes. Do not share this code."
-    ok = send_sms(phone, msg, 'phone_verification')
-    return code if ok else None
+
+    client, from_phone = _twilio_client()
+    if not client:
+        return None, "SMS is not configured. Contact support."
+
+    # Ensure FROM number is E.164
+    from_formatted = _format_phone(from_phone) or from_phone
+    try:
+        twilio_msg = client.messages.create(body=msg, from_=from_formatted, to=formatted)
+        logging.info("Verification SMS → %s | SID=%s", formatted, twilio_msg.sid)
+        _log_sms('phone_verification', formatted, msg, 'sent', twilio_sid=twilio_msg.sid)
+        return code, None
+    except Exception as e:
+        friendly = _friendly_twilio_error(e)
+        logging.error("Verification SMS failed → %s: %s", formatted, friendly)
+        _log_sms('phone_verification', formatted, msg, 'failed', error_msg=friendly)
+        return None, friendly
 
 
 def sms_fallback(email_sent_ok, user, event_type, sms_message):
