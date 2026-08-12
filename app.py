@@ -727,3 +727,13 @@ start_expiry_thread(app)
 
 from draft_cleanup import start_draft_cleanup_thread
 start_draft_cleanup_thread(app)
+
+# Deactivate any pinned gallery listings whose listing is no longer active.
+try:
+    with app.app_context():
+        from routes import _deactivate_stale_gallery_pins
+        n = _deactivate_stale_gallery_pins()
+        if n:
+            logging.info("Startup: deactivated %d stale gallery pin(s)", n)
+except Exception as _e:
+    logging.warning("Startup gallery pin cleanup skipped: %s", _e)

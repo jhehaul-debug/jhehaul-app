@@ -1183,7 +1183,6 @@ def listing_delete(listing_id):
     return redirect(url_for('my_listings'))
 
 
-
 @app.route("/listing/<int:listing_id>/status", methods=["POST"])
 @require_login
 def listing_set_status(listing_id):
@@ -5408,12 +5407,38 @@ def _gallery_photos(active_only=False):
         q = q.filter(GalleryPhoto.is_active == True)
     return q.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
 
+def _deactivate_stale_gallery_pins():
+    """Delete pinned listing gallery entries whose listing is no longer active.
 
-_GALLERY_MAX_PX    = 1600              # longest-edge cap in pixels
-_GALLERY_QUALITY   = 80               # JPEG compression quality (0–95)
-_GALLERY_MAX_BYTES = 10 * 1024 * 1024  # 10 MB input limit
+    A listing pin is considered stale when:
+    - The listing no longer exists (orphaned foreign key)
+    - The listing status is anything other than 'active'  (sold, reserved, expired, removed, draft, …)
+    - The listing's moderation_status is not 'approved'
 
-
+    Stale pins are deleted (not merely deactivated) so the admin Featured Content
+    list never fills up with dead entries.  Runs at startup and on every admin
+    gallery page visit.  Returns the count of rows deleted.
+    """
+    from models import GalleryPhoto
+    all_listing_pins = (GalleryPhoto.query
+                        .filter_by(item_type='listing')
+                        .all())
+    removed = 0
+    for pin in all_listing_pins:
+        listing = pin.listing_rel
+        if (listing is None
+                or listing.status != 'active'
+                or listing.moderation_status != 'approved'):
+            db.session.delete(pin)
+            removed += 1
+    if removed:
+        try:
+            db.session.commit()
+            app.logger.info("gallery cleanup: removed %d stale pinned listing(s)", removed)
+        except Exception as _e:
+            db.session.rollback()
+            app.logger.warning("gallery cleanup: commit failed: %s", _e)
+    return removed
 def _compress_gallery_image(raw_bytes: bytes, ext: str):
     """
     Resize and compress an uploaded gallery image with Pillow.
@@ -5575,6 +5600,7 @@ def serve_gallery_photo(photo_id):
 @app.route("/admin/gallery")
 @require_admin
 def admin_gallery():
+    _deactivate_stale_gallery_pins()
     return render_template('admin_gallery.html', photos=_gallery_photos(active_only=False))
 
 @app.route("/admin/gallery/listing-search")
