@@ -526,12 +526,97 @@
           <input class="form-control" type="text" name="zip_code" value="{{ listing.zip_code or '' }}" placeholder="12345" maxlength="10">
         </div>
       </div>
+      {# ── Location preview (updated live by JS on ZIP blur; also server-rendered on return) ── #}
+      <div id="zip-preview" style="margin-top:16px;">
+        {% if listing.latitude and listing.longitude %}
+        <div style="border:1px solid #bbf7d0;border-radius:10px;overflow:hidden;background:#f0fdf4;">
+          <div style="padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #bbf7d0;">
+            <span style="font-size:1.1rem;">📍</span>
+            <div>
+              <strong style="color:#15803d;font-size:0.9rem;">Location confirmed</strong>
+              <span id="zip-coords" style="color:#166534;font-size:0.82rem;margin-left:8px;">
+                {{ "%.4f"|format(listing.latitude) }}°N, {{ "%.4f"|format(listing.longitude|abs) }}°W
+              </span>
+              <a id="zip-map-link"
+                 href="https://www.openstreetmap.org/?mlat={{ listing.latitude }}&mlon={{ listing.longitude }}&zoom=12"
+                 target="_blank" rel="noopener"
+                 style="margin-left:10px;font-size:0.78rem;color:#2563eb;text-decoration:none;">View on map ↗</a>
+            </div>
+          </div>
+          <iframe id="zip-map-frame"
+            src="https://www.openstreetmap.org/export/embed.html?bbox={{ listing.longitude - 0.06 }},{{ listing.latitude - 0.04 }},{{ listing.longitude + 0.06 }},{{ listing.latitude + 0.04 }}&layer=mapnik&marker={{ listing.latitude }},{{ listing.longitude }}"
+            style="width:100%;height:180px;border:none;display:block;"
+            loading="lazy"
+            title="Listing location map">
+          </iframe>
+        </div>
+        {% elif listing.zip_code %}
+        <div style="padding:11px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:flex-start;gap:8px;">
+          <span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>
+          <div style="font-size:0.85rem;color:#92400e;">
+            <strong>ZIP code not found.</strong> Your listing won't appear in location-based searches.
+            Check that the ZIP is correct and try again.
+          </div>
+        </div>
+        {% endif %}
+      </div>
       <div class="wizard-nav">
         <a href="{{ url_for('listing_step', listing_id=listing.id, step=3) }}" class="btn-back">← Back</a>
         <button type="submit" class="btn-next">Next: Delivery →</button>
       </div>
     </form>
   </div>
+  <script>
+  (function(){
+    var zipInput = document.querySelector('input[name="zip_code"]');
+    var preview  = document.getElementById('zip-preview');
+    if (!zipInput || !preview) return;
+
+    function showConfirmed(lat, lon) {
+      var latF = lat.toFixed(4), lonF = Math.abs(lon).toFixed(4);
+      var bbox = (lon-0.06)+','+(lat-0.04)+','+(lon+0.06)+','+(lat+0.04);
+      preview.innerHTML =
+        '<div style="border:1px solid #bbf7d0;border-radius:10px;overflow:hidden;background:#f0fdf4;">' +
+          '<div style="padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #bbf7d0;">' +
+            '<span style="font-size:1.1rem;">📍</span>' +
+            '<div>' +
+              '<strong style="color:#15803d;font-size:0.9rem;">Location confirmed</strong>' +
+              '<span style="color:#166534;font-size:0.82rem;margin-left:8px;">' + latF + '°N, ' + lonF + '°W</span>' +
+              '<a href="https://www.openstreetmap.org/?mlat='+lat+'&mlon='+lon+'&zoom=12" target="_blank" rel="noopener" ' +
+                 'style="margin-left:10px;font-size:0.78rem;color:#2563eb;text-decoration:none;">View on map ↗</a>' +
+            '</div>' +
+          '</div>' +
+          '<iframe src="https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+lat+','+lon+'" ' +
+            'style="width:100%;height:180px;border:none;display:block;" loading="lazy" title="Listing location map"></iframe>' +
+        '</div>';
+    }
+
+    function showNotFound() {
+      preview.innerHTML =
+        '<div style="padding:11px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:flex-start;gap:8px;">' +
+          '<span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>' +
+          '<div style="font-size:0.85rem;color:#92400e;">' +
+            '<strong>ZIP code not found.</strong> Your listing won\'t appear in location-based searches. ' +
+            'Check that the ZIP is correct and try again.' +
+          '</div>' +
+        '</div>';
+    }
+
+    function lookupZip(zip) {
+      if (!zip || zip.length < 5) { preview.innerHTML = ''; return; }
+      fetch('/api/zip_lookup?zip=' + encodeURIComponent(zip))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.found) { showConfirmed(d.lat, d.lon); }
+          else         { showNotFound(); }
+        })
+        .catch(function(){ /* network error — leave current preview */ });
+    }
+
+    zipInput.addEventListener('blur', function(){ lookupZip(this.value.trim()); });
+    zipInput.addEventListener('change', function(){ lookupZip(this.value.trim()); });
+  })();
+  </script>
 
   {# ─── STEP 5: DELIVERY ─── #}
   {% elif step == 5 %}

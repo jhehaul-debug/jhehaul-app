@@ -900,6 +900,18 @@ def listing_step(listing_id, step):
                     listing.longitude = zc.lon
                     if not listing.city:  listing.city  = zc.city
                     if not listing.state: listing.state = zc.state
+                else:
+                    listing.latitude  = None
+                    listing.longitude = None
+                    flash(
+                        f"ZIP code {listing.zip_code} wasn't found in our location database. "
+                        "Your listing will still be saved, but it may not appear in location-based "
+                        "searches. Double-check the ZIP and update it if needed.",
+                        "warning"
+                    )
+            else:
+                listing.latitude  = None
+                listing.longitude = None
             if listing.is_property:
                 listing.property_address = request.form.get('property_address', '').strip()[:200] or None
 
@@ -1841,6 +1853,20 @@ def notification_open(notif_id):
     if n.action_url:
         return redirect(n.action_url)
     return redirect(url_for('notifications_page'))
+
+
+@app.route("/api/zip_lookup")
+def api_zip_lookup():
+    """Return lat/lon/city/state for a given ZIP code, or {found: false} if not in the database."""
+    from models import ZipCode as _ZC
+    zip_code = request.args.get('zip', '').strip()[:10]
+    if not zip_code:
+        return jsonify({'found': False})
+    zc = _ZC.query.get(zip_code)
+    if zc:
+        return jsonify({'found': True, 'lat': zc.lat, 'lon': zc.lon,
+                        'city': zc.city or '', 'state': zc.state or ''})
+    return jsonify({'found': False})
 
 
 @app.route("/api/notifications/count")
