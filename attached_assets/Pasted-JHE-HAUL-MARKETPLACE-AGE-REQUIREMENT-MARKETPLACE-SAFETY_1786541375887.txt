@@ -1,0 +1,805 @@
+JHE HAUL MARKETPLACE — AGE REQUIREMENT, MARKETPLACE SAFETY, FRAUD PROTECTION, REPORTING, AND MEDIA UPLOAD LIMITS
+
+Add the following requirements to the EXISTING JHE Haul Marketplace reconstruction.
+
+IMPORTANT:
+
+These requirements apply to the NEW JHE HAUL MARKETPLACE where users list items for sale, buyers browse listings, buyers and sellers communicate, offers are made, and JHE Haul delivery may be requested.
+
+These requirements are NOT for the old hauling/job-bidding system.
+
+Do NOT rebuild the application from scratch.
+
+Preserve the existing:
+
+* User accounts
+* Authentication
+* Admin system
+* Database
+* Marketplace work already completed
+* Stripe integration
+* Email integration
+* Twilio integration
+* GitHub repository
+* DigitalOcean deployment
+* Environment variables
+* Existing working functionality
+
+Use safe database migrations when database changes are required.
+
+Do not delete old production data.
+
+==================================================
+
+1. ACCOUNT AGE REQUIREMENT — 18+
+    ==================================================
+
+A person must be at least 18 years old to create a JHE Haul Marketplace account.
+
+During account registration, prominently display:
+
+“I certify that I am at least 18 years old.”
+
+Require the user to actively check the checkbox before account creation can continue.
+
+DO NOT pre-check this box.
+
+If the user does not confirm that they are at least 18 years old:
+
+ACCOUNT CREATION MUST NOT CONTINUE.
+
+Implement appropriate client-side AND server-side validation so the requirement cannot simply be bypassed through a direct API request.
+
+Include the 18+ requirement in:
+
+* Registration
+* Terms of Use
+* Marketplace Rules
+* Marketplace Safety information
+
+Prepare the architecture so stronger age-verification methods could be added later if required.
+
+Do NOT unnecessarily collect driver’s licenses, Social Security numbers, or other sensitive identity documents merely to implement the basic 18+ confirmation.
+
+==================================================
+2. MARKETPLACE SAFETY WARNING
+
+Create clear marketplace safety warnings telling users to watch for:
+
+* Fraud
+* Scams
+* Fake listings
+* Stolen property
+* Counterfeit merchandise
+* Misrepresentation
+* Payment scams
+* Phishing
+* Identity-theft attempts
+* Suspicious links
+* Requests for passwords
+* Requests for verification/security codes
+* Requests for banking login information
+* Suspicious payment methods
+* Harassment
+* Threats
+* Other suspicious or criminal activity
+
+Use clear language similar to:
+
+“Stay alert for fraud, scams, and criminal activity. Never send passwords, verification codes, banking login information, or other sensitive personal information to another marketplace user.”
+
+Also communicate:
+
+“JHE Haul Marketplace cannot guarantee the identity, honesty, ownership claims, or intentions of every buyer or seller. Use good judgment and report suspicious activity.”
+
+Do not represent JHE Haul as guaranteeing the legitimacy or safety of every transaction.
+
+==================================================
+3. MARKETPLACE SAFETY PAGE
+
+Create a dedicated:
+
+MARKETPLACE SAFETY
+
+page.
+
+Include practical safety guidance.
+
+Examples:
+
+* Inspect an item before paying whenever practical.
+* Meet in a safe public location when appropriate.
+* Be cautious of prices that appear unrealistically low.
+* Never provide another user with your password.
+* Never provide another user with account verification codes.
+* Never provide banking login credentials.
+* Be cautious about clicking suspicious links.
+* Be cautious when someone pressures you to act immediately.
+* Be cautious when someone requests unusual payment arrangements.
+* Report suspicious listings and users.
+* Keep important marketplace communication inside JHE Haul when practical so there is a record of the conversation.
+* Trust your judgment if a transaction appears suspicious.
+* If there is an immediate threat or emergency, contact appropriate emergency services directly.
+
+Do not imply that JHE Haul replaces law enforcement.
+
+==================================================
+4. REPORT LISTING
+
+Every marketplace listing should have a:
+
+REPORT LISTING
+
+option.
+
+Allow users to select reasons including:
+
+* Suspected Scam
+* Suspected Fraud
+* Suspected Stolen Item
+* Counterfeit Item
+* Fake or Misleading Listing
+* Prohibited Item
+* Suspicious Payment Request
+* Harassment or Threat
+* Criminal Activity
+* Spam
+* Other
+
+Include a field:
+
+“Tell us what happened.”
+
+Allow supporting evidence where technically practical.
+
+Evidence may include:
+
+* Screenshot
+* Image
+* Other relevant supported attachment
+
+Evidence must NOT be publicly displayed.
+
+==================================================
+5. REPORT USER
+
+Users must be able to:
+
+REPORT USER
+
+Reasons should include:
+
+* Suspected Scam
+* Suspected Fraud
+* Suspicious Payment Request
+* Harassment
+* Threats
+* Fake Account
+* Suspected Criminal Activity
+* Spam
+* Prohibited Conduct
+* Other
+
+Allow the reporting user to explain what happened.
+
+==================================================
+6. REPORT CONVERSATION
+
+Where technically appropriate, allow a user to report suspicious marketplace communication.
+
+Provide:
+
+REPORT CONVERSATION
+
+or allow relevant conversation context to be included when reporting another user.
+
+Do not publicly expose private conversations.
+
+Only authorized users and authorized administrators should have access to private report evidence.
+
+==================================================
+7. ADMIN FRAUD / SAFETY REVIEW
+
+Add a marketplace safety/moderation queue to the existing Admin dashboard.
+
+Admin should be able to review:
+
+* Report type
+* Reporting user
+* Reported user
+* Reported listing
+* Date/time
+* Report description
+* Supporting evidence
+* Relevant conversation context where legally and technically appropriate
+* Previous reports involving the same listing
+* Previous reports involving the same account
+* Current account/listing status
+
+Admin actions should include:
+
+* Dismiss Report
+* Warn User
+* Temporarily Suspend Listing
+* Remove Listing
+* Temporarily Suspend Account
+* Ban Account
+* Restore Listing where appropriate
+* Mark for Further Investigation
+* Add Internal Admin Notes
+
+Maintain an audit log for important moderation actions.
+
+==================================================
+8. SUSPICIOUS ACTIVITY DETECTION
+
+Prepare architecture for future automated fraud/scam detection.
+
+Potential signals may eventually include:
+
+* Unusually high listing volume
+* Repeated duplicate listings
+* Multiple accounts showing suspicious similarities
+* Repeated reports
+* Suspicious payment language
+* Repeated prohibited keywords
+* Newly created accounts immediately posting unusually high volumes
+* Repeated removed listings
+* Abnormal messaging behavior
+* Repeated suspicious links
+
+IMPORTANT:
+
+Do NOT automatically permanently ban someone merely because an automated system flags suspicious behavior.
+
+Initially, suspicious-activity signals should assist ADMIN REVIEW.
+
+==================================================
+9. ACCOUNT / MARKETPLACE SAFETY NOTICES
+
+Add concise safety reminders at appropriate locations.
+
+Possible locations:
+
+* Registration
+* Create Listing
+* Marketplace Messages
+* Offer Screen
+* Marketplace Safety page
+
+Example:
+
+“Protect yourself from scams. Never share passwords, verification codes, or banking login information.”
+
+Do not overload every page with excessive warning text.
+
+==================================================
+10. MEDIA LIMITS — PER MARKETPLACE LISTING
+
+Each individual marketplace listing may contain a MAXIMUM of:
+
+20 PHOTOS
+
+AND
+
+1 VIDEO
+
+The ONE video may be a MAXIMUM OF:
+
+60 SECONDS
+
+These limits apply PER LISTING.
+
+They do NOT mean that a seller can only upload 20 photos across their entire account.
+
+A seller with multiple listings can upload media separately for each listing, subject to the limits for each individual listing.
+
+==================================================
+11. PHOTO LIMIT
+
+Allow a maximum of:
+
+20 PHOTOS PER LISTING
+
+Display an upload counter such as:
+
+Photos: 0 / 20
+
+Photos: 8 / 20
+
+Photos: 20 / 20
+
+Once 20 photos have been uploaded:
+
+Do not allow another photo.
+
+Display:
+
+“You can upload up to 20 photos per listing.”
+
+A 21st photo must be rejected.
+
+==================================================
+12. PHOTO MANAGEMENT
+
+Allow sellers to:
+
+* Take photos from a supported mobile device
+* Select existing photos
+* Upload photos
+* Preview photos
+* Reorder photos
+* Delete photos
+* Replace photos
+* Select a primary/cover photo
+
+The primary photo should appear on the marketplace listing card.
+
+Optimize marketplace images for reasonable performance while maintaining useful visual quality.
+
+==================================================
+13. VIDEO LIMIT
+
+Allow:
+
+1 VIDEO PER LISTING
+
+Maximum runtime:
+
+60 SECONDS
+
+Display clearly during listing creation:
+
+“1 video maximum — up to 60 seconds.”
+
+If the user attempts to upload another video:
+
+Reject the second video.
+
+Display:
+
+“You can upload one video per listing.”
+
+==================================================
+14. 60-SECOND VIDEO VALIDATION
+
+The marketplace must NOT accept a listing video longer than 60 seconds.
+
+If a seller attempts to upload a video exceeding 60 seconds, display:
+
+“Videos must be 60 seconds or less.”
+
+Validate the video duration:
+
+CLIENT-SIDE where technically appropriate
+
+AND
+
+SERVER-SIDE
+
+Do not rely solely on the browser/app interface.
+
+A user must not be able to bypass the 60-second limit through a direct API request.
+
+==================================================
+15. VIDEO MANAGEMENT
+
+Allow sellers to:
+
+* Upload one video
+* Select a video from their device
+* Preview the video
+* Remove the video
+* Replace the video
+
+Do not allow multiple videos during Phase 1.
+
+Optimize/compress video where technically appropriate while maintaining reasonable marketplace viewing quality.
+
+==================================================
+16. VIDEO FILE-SIZE LIMIT
+
+In addition to the 60-second runtime limit, determine a reasonable maximum VIDEO FILE SIZE based on the application’s existing:
+
+* DigitalOcean infrastructure
+* Storage configuration
+* Bandwidth considerations
+* Upload architecture
+* Video-processing capabilities
+
+Do NOT create a storage-heavy configuration that risks production stability or unexpectedly high infrastructure costs.
+
+Before production deployment, report the maximum video file-size limit selected and explain why it is appropriate.
+
+==================================================
+17. SUPPORTED MEDIA FORMATS
+
+Use safe and practical media formats supported by the existing technology stack.
+
+Validate:
+
+* File extension
+* MIME type
+* File size
+* Video duration
+* Photo count
+* Video count
+
+Do not trust the file extension alone.
+
+==================================================
+18. SERVER-SIDE UPLOAD SECURITY
+
+Media restrictions must be enforced SERVER-SIDE.
+
+Do not rely exclusively on client-side validation.
+
+Verify:
+
+* User authentication
+* Listing ownership
+* File type
+* MIME type
+* File size
+* Image count
+* Video count
+* Video runtime
+
+Prevent users from bypassing:
+
+20-photo maximum
+
+1-video maximum
+
+60-second video maximum
+
+through direct API requests.
+
+Use safe filenames/storage identifiers.
+
+Do not execute uploaded files.
+
+==================================================
+19. MEDIA OWNERSHIP SECURITY
+
+A user must NEVER be able to:
+
+* Add media to another user’s listing
+* Delete another user’s listing media
+* Replace another user’s listing media
+* Reorder another user’s listing photos
+* Change another user’s cover photo
+
+Verify listing ownership before media modifications.
+
+Admin access should follow existing authorized admin rules.
+
+==================================================
+20. TERMS OF USE / MARKETPLACE RULES
+
+Update marketplace terms/rules to reflect:
+
+* Users must be 18 or older.
+* Fraud is prohibited.
+* Scams are prohibited.
+* Criminal activity is prohibited.
+* Stolen property is prohibited.
+* Counterfeit goods are prohibited.
+* Misrepresentation is prohibited.
+* Prohibited items may not be listed.
+* Harassment and threats are prohibited.
+* Users are responsible for ensuring they have the legal right to sell listed property.
+* Suspicious or prohibited listings may be removed.
+* Accounts may be suspended or banned for serious marketplace violations.
+* JHE Haul does not guarantee every buyer, seller, listing, ownership claim, or transaction.
+
+Do not invent legal guarantees.
+
+Keep marketplace terms consistent with the actual functionality of JHE Haul Marketplace.
+
+==================================================
+21. REGISTRATION TESTING
+
+Test:
+
+USER DOES NOT CHECK 18+ CERTIFICATION
+→ Account creation must fail.
+
+USER CHECKS 18+ CERTIFICATION
+→ Registration may continue if all other requirements are satisfied.
+
+DIRECT API ATTEMPT WITHOUT REQUIRED 18+ CONFIRMATION
+→ Must be rejected where applicable.
+
+==================================================
+22. PHOTO TESTING
+
+Test:
+
+1 photo
+→ Allowed
+
+10 photos
+→ Allowed
+
+20 photos
+→ Allowed
+
+21 photos
+→ Rejected
+
+Delete one of 20 photos
+→ User can add another photo
+
+Attempt to bypass photo limit through API
+→ Rejected
+
+Unauthorized user attempts to change another seller’s photos
+→ Rejected
+
+==================================================
+23. VIDEO TESTING
+
+Test:
+
+1 video
+→ Allowed
+
+2 videos
+→ Second video rejected
+
+Video under 60 seconds
+→ Allowed if all other requirements pass
+
+Video exactly 60 seconds
+→ Allowed
+
+Video longer than 60 seconds
+→ Rejected
+
+20 photos + 1 video of 60 seconds or less
+→ Allowed
+
+20 photos + second video
+→ Rejected
+
+Attempt to bypass runtime through direct API request
+→ Rejected
+
+Attempt to bypass video count through API
+→ Rejected
+
+Unauthorized user attempts to modify another seller’s video
+→ Rejected
+
+==================================================
+24. FRAUD / REPORTING TESTING
+
+Test:
+
+User reports listing
+→ Report appears in Admin moderation queue
+
+User reports seller
+→ Report appears in Admin moderation queue
+
+User reports suspected scam
+→ Correct reason is stored
+
+User reports suspected fraud
+→ Correct reason is stored
+
+User reports suspected criminal activity
+→ Correct reason is stored
+
+Admin dismisses report
+→ Status updates
+
+Admin suspends listing
+→ Listing is no longer publicly available as appropriate
+
+Admin removes listing
+→ Listing becomes unavailable
+
+Admin suspends account
+→ Account restrictions are enforced
+
+Admin bans account
+→ Marketplace access is blocked according to the implemented ban rules
+
+Admin moderation actions
+→ Audit log records appropriate actions
+
+==================================================
+25. PRIVACY / SECURITY TESTING
+
+Verify that marketplace safety features do NOT accidentally expose:
+
+* Exact private addresses
+* Phone numbers
+* Private email addresses
+* Passwords
+* Authentication tokens
+* Payment credentials
+* Internal secrets
+* Private report evidence
+* Private conversations to unauthorized users
+
+==================================================
+26. PRESERVE EXISTING SYSTEMS
+
+Do NOT delete or break:
+
+* Existing authentication
+* Existing users
+* Admin access
+* Marketplace listings already created
+* Marketplace messaging
+* Marketplace offers
+* Marketplace notifications
+* JHE Haul delivery functionality
+* Existing Stripe functionality
+* Existing email functionality
+* Existing Twilio configuration
+* Existing GitHub repository
+* Existing DigitalOcean deployment configuration
+
+If a conflict is discovered, STOP and report the conflict before making a destructive change.
+
+==================================================
+27. PRODUCTION BUILD
+
+After implementing this complete phase:
+
+Run all available automated tests.
+
+Run the production build.
+
+Check for:
+
+* Compilation errors
+* TypeScript errors where applicable
+* Database migration errors
+* Authentication problems
+* Permission problems
+* Upload errors
+* Video-processing errors
+* Broken marketplace pages
+* Broken Admin functionality
+
+Fix critical errors before deployment.
+
+==================================================
+28. GITHUB COMMIT AND PUSH
+
+After this phase is COMPLETELY IMPLEMENTED AND SUCCESSFULLY TESTED:
+
+Commit the completed changes to the EXISTING JHE Haul GitHub repository.
+
+DO NOT create a new repository.
+
+DO NOT force-push over production history.
+
+DO NOT delete Git history.
+
+DO NOT commit:
+
+* .env files
+* Passwords
+* API keys
+* Stripe secret keys
+* Twilio credentials
+* Email credentials
+* Database credentials
+* Authentication secrets
+* Tokens
+* Other sensitive information
+
+Use a descriptive commit message such as:
+
+feat: add marketplace age safety fraud reporting and media limits
+
+Then:
+
+PUSH THE COMMIT TO THE EXISTING GITHUB REPOSITORY.
+
+Do not leave completed changes only in the local development environment.
+
+==================================================
+29. VERIFY DEPLOYMENT
+
+If the existing GitHub push triggers the DigitalOcean production deployment:
+
+Verify the deployment.
+
+Confirm:
+
+* Deployment started
+* Build succeeded
+* Application started successfully
+* Marketplace loads
+* Registration works
+* 18+ requirement works
+* Login/logout works
+* Admin works
+* Listings work
+* 20-photo limit works
+* 1-video limit works
+* 60-second video limit works
+* Reporting works
+* Existing marketplace functionality still works
+
+If deployment fails:
+
+Investigate the failure.
+
+Do NOT ignore a failed deployment.
+
+Fix critical deployment problems before declaring the phase complete.
+
+==================================================
+30. FINAL REPORT TO ME
+
+After implementation, testing, GitHub push, and deployment verification, report:
+
+1. Exact features implemented
+2. Files changed
+3. Database migrations made
+4. 18+ registration implementation
+5. Fraud/scam reporting implementation
+6. Admin moderation implementation
+7. Photo upload implementation
+8. Maximum photos per listing
+9. Video upload implementation
+10. Maximum videos per listing
+11. Maximum video runtime
+12. Maximum video file size selected
+13. Media storage method
+14. Tests performed
+15. Test results
+16. Production build status
+17. Git commit ID
+18. GitHub push status
+19. DigitalOcean deployment status
+20. Any warnings or unresolved issues
+
+==================================================
+FINAL REQUIREMENTS
+
+The final marketplace requirements for this phase are:
+
+ACCOUNT AGE:
+18+ ONLY
+
+PHOTOS:
+MAXIMUM 20 PER LISTING
+
+VIDEOS:
+MAXIMUM 1 PER LISTING
+
+VIDEO LENGTH:
+MAXIMUM 60 SECONDS
+
+SAFETY:
+WARN USERS ABOUT FRAUD, SCAMS, AND CRIMINAL ACTIVITY
+
+REPORTING:
+REPORT LISTING, REPORT USER, AND APPROPRIATE CONVERSATION REPORTING
+
+ADMIN:
+FRAUD/SAFETY MODERATION QUEUE
+
+SECURITY:
+SERVER-SIDE ENFORCEMENT OF AGE CONFIRMATION AND MEDIA LIMITS
+
+AFTER SUCCESSFUL TESTING:
+
+COMMIT
+
+PUSH TO EXISTING GITHUB REPOSITORY
+
+VERIFY DIGITALOCEAN DEPLOYMENT
+
+REPORT RESULTS
+
+Proceed with these changes without removing or breaking existing JHE Haul Marketplace functionality.
