@@ -556,8 +556,8 @@ def marketplace():
             from datetime import datetime as _now_dt
             qobj = qobj.filter(Listing.open_house_dt >= _now_dt.utcnow())
 
-        # City / ZIP filter — scoped to property listings only
-        if city_zip_filter and listing_type_filter in ('property_sale', 'rental', 'housing'):
+        # City / ZIP filter — applies to any listing type
+        if city_zip_filter:
             _czf = city_zip_filter.strip()
             _is_zip = _czf.isdigit() and len(_czf) == 5
             if _is_zip:

@@ -403,20 +403,22 @@
 </div>
 
 {# ── Type Filter Tabs ── #}
+{# Preserve city_zip value across tab switches #}
+{% set _czp = ('&city_zip=' ~ city_zip_filter) if city_zip_filter else '' %}
 <div class="mp-cats" style="border-bottom:1px solid #f0f0f0;padding-bottom:10px;margin-bottom:2px;">
-    <a href="/marketplace" class="mp-cat-chip {{ 'active' if not listing_type_filter and not area_filter }}">
+    <a href="/marketplace{{ ('?city_zip=' ~ city_zip_filter) if city_zip_filter else '' }}" class="mp-cat-chip {{ 'active' if not listing_type_filter and not area_filter }}">
         <span class="cat-icon">🏷️</span> All
     </a>
-    <a href="/marketplace?listing_type=item" class="mp-cat-chip {{ 'active' if listing_type_filter == 'item' }}">
+    <a href="/marketplace?listing_type=item{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'item' }}">
         <span class="cat-icon">📦</span> Items
     </a>
-    <a href="/marketplace?listing_type=property_sale" class="mp-cat-chip {{ 'active' if listing_type_filter == 'property_sale' }}">
+    <a href="/marketplace?listing_type=property_sale{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'property_sale' }}">
         <span class="cat-icon">🏠</span> For Sale
     </a>
-    <a href="/marketplace?listing_type=rental" class="mp-cat-chip {{ 'active' if listing_type_filter == 'rental' }}">
+    <a href="/marketplace?listing_type=rental{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'rental' }}">
         <span class="cat-icon">🔑</span> Rentals
     </a>
-    <a href="/marketplace?area=twin-cities" class="mp-cat-chip {{ 'active' if area_filter == 'twin-cities' }}">
+    <a href="/marketplace?area=twin-cities{{ _czp }}" class="mp-cat-chip {{ 'active' if area_filter == 'twin-cities' }}">
         <span class="cat-icon">📍</span> Twin Cities
     </a>
 </div>
@@ -430,6 +432,26 @@
     </a>
     {% endfor %}
 </div>
+{% endif %}
+
+{# ── City / ZIP filter — always visible for All, Items, and Twin Cities tabs ── #}
+{% if listing_type_filter not in ('property_sale', 'rental', 'housing') %}
+<form method="get" action="/marketplace" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end">
+    {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+    {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
+    {% if search_query is defined and search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+    {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
+    <div>
+        <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">City or ZIP</label>
+        <input type="text" name="city_zip" value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" style="width:160px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem" autocomplete="off">
+    </div>
+    <button type="submit" style="background:#38a169;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;height:34px;margin-top:16px">Filter</button>
+    {% if city_zip_filter %}
+    {% if area_filter %}<a href="/marketplace?area={{ area_filter }}" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>
+    {% elif listing_type_filter %}<a href="/marketplace?listing_type={{ listing_type_filter }}" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>
+    {% else %}<a href="/marketplace" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>{% endif %}
+    {% endif %}
+</form>
 {% endif %}
 
 {# ── Featured Listings (curated by admin, shown only on homepage) ── #}
