@@ -282,3 +282,77 @@ def notify_admin_notice(user_id, title, message=None, action_url=None):
         message=message,
         action_url=action_url,
     )
+
+
+def notify_listing_reserved_to_watchers(listing_id, listing_title):
+    """Send in-app notifications (and emails) to users watching a listing when it is marked Reserved.
+
+    Watchers = users who saved/favorited the listing  +  buyers with an active conversation.
+    Deduplicates so no buyer gets two notifications.
+    Never raises — notification failure must not break the caller.
+    """
+    try:
+        from models import ListingFavorite, ListingConversation, User
+        from email_service import notify_buyer_listing_reserved
+
+        safe_title = (listing_title or f"Listing #{listing_id}")[:60]
+        action_url = f"/listing/{listing_id}"
+        notified_ids: set = set()
+
+        # ── Saved / favorited buyers ──────────────────────────────────────────
+        favorites = (ListingFavorite.query
+                     .filter_by(listing_id=listing_id)
+                     .all())
+        for fav in favorites:
+            uid = str(fav.user_id)
+            if uid in notified_ids:
+                continue
+            notified_ids.add(uid)
+            create_notification(
+                user_id=uid,
+                notif_type='listing_reserved',
+                title=f'"{safe_title}" is now Reserved',
+                message="This item may still become available. Check back or contact the seller.",
+                action_url=action_url,
+                related_listing_id=listing_id,
+            )
+            # Also send an email if the user has one
+            user = User.query.get(uid)
+            if user and user.email:
+                try:
+                    notify_buyer_listing_reserved(user.email, safe_title, listing_id)
+                except Exception as _email_err:
+                    _log.warning("Reserved email failed for user %s: %s", uid, _email_err)
+
+        # ── Buyers with active conversations ──────────────────────────────────
+        convos = (ListingConversation.query
+                  .filter_by(listing_id=listing_id)
+                  .all())
+        for convo in convos:
+            uid = str(convo.buyer_id)
+            if uid in notified_ids:
+                continue
+            notified_ids.add(uid)
+            create_notification(
+                user_id=uid,
+                notif_type='listing_reserved',
+                title=f'"{safe_title}" is now Reserved',
+                message="This item may still become available. Check back or contact the seller.",
+                action_url=action_url,
+                related_listing_id=listing_id,
+                related_conversation_id=convo.id,
+            )
+            user = User.query.get(uid)
+            if user and user.email:
+                try:
+                    notify_buyer_listing_reserved(user.email, safe_title, listing_id)
+                except Exception as _email_err:
+                    _log.warning("Reserved email failed for user %s: %s", uid, _email_err)
+
+        _log.info(
+            "notify_listing_reserved_to_watchers: listing=%s notified=%d buyers",
+            listing_id, len(notified_ids),
+        )
+    except Exception as exc:
+        _log.error("notify_listing_reserved_to_watchers failed (listing=%s): %s",
+                   listing_id, exc)

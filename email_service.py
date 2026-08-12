@@ -467,6 +467,33 @@ def notify_hauler_job_cancelled(hauler_email, job_id, customer_name):
     )
 
 
+def notify_buyer_listing_reserved(buyer_email, listing_title, listing_id):
+    """Notify a buyer (saved/watching) that a listing has been marked Reserved."""
+    safe_title = listing_title or f"Listing #{listing_id}"
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>An item you were watching has been marked as <strong>Reserved</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Reserved</span></p>
+    </div>
+    <p>This means the seller is in talks with another buyer, but the item may still become
+       available if the deal falls through. You can still view the listing and message the
+       seller to express your interest.</p>
+    <a href="{listing_url}" class="btn">View Listing →</a>"""
+    return send_email(
+        buyer_email,
+        f"Item you're watching is now Reserved — \"{safe_title}\"",
+        _html(
+            "This Item Is Now Reserved",
+            "It may still become available — stay in touch with the seller.",
+            "📌 Reserved",
+            body,
+        ),
+        'buyer_listing_reserved',
+    )
+
+
 def notify_seller_listing_expired(seller_email, listing_id, title):
     """Notify the seller that their listing has auto-expired."""
     safe_title = title or f"Listing #{listing_id}"

@@ -1412,6 +1412,13 @@ def listing_set_status(listing_id):
     db.session.commit()
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
     flash(labels[new_status], "success")
+    # Notify buyers watching this listing when it transitions to reserved
+    if new_status == 'reserved' and prior_status != 'reserved':
+        try:
+            from notification_service import notify_listing_reserved_to_watchers
+            notify_listing_reserved_to_watchers(listing_id, listing.title)
+        except Exception as _notif_err:
+            app.logger.warning("listing_set_status: reserved notification failed: %s", _notif_err)
     return redirect(url_for('my_listings'))
 
 
