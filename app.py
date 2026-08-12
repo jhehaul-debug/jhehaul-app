@@ -394,6 +394,17 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (sms_settings.ev_quote_received) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text(
+            "ALTER TABLE sms_settings ADD COLUMN IF NOT EXISTS ev_quote_withdrawn BOOLEAN DEFAULT TRUE"
+        ))
+        db.session.commit()
+        logging.info("Column migration: sms_settings.ev_quote_withdrawn ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (sms_settings.ev_quote_withdrawn) skipped: %s", _e)
+
     # ── Marketplace Phase 2 migrations ───────────────────────────────────────
 
     try:

@@ -5761,6 +5761,7 @@ def admin_sms_settings_update():
     settings.ev_bid_rejected     = request.form.get("ev_bid_rejected") == "1"
     settings.ev_admin_alert      = request.form.get("ev_admin_alert") == "1"
     settings.ev_quote_received   = request.form.get("ev_quote_received") == "1"
+    settings.ev_quote_withdrawn  = request.form.get("ev_quote_withdrawn") == "1"
     settings.email_fallback_to_sms = request.form.get("email_fallback_to_sms") == "1"
     db.session.commit()
     flash("SMS settings saved.", "success")

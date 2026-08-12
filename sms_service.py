@@ -28,6 +28,7 @@ _EVENT_TO_SETTING = {
     'hauler_job_cancelled':    'ev_job_cancelled',
     'admin_alert':             'ev_admin_alert',
     'customer_quote_received': 'ev_quote_received',
+    'customer_quote_withdrawn': 'ev_quote_withdrawn',
 }
 
 
