@@ -1,0 +1,547 @@
+JHE HAUL MARKETPLACE — FINAL MORNING CHANGES SYNC, GITHUB PUSH, DIGITALOCEAN DEPLOYMENT, AND LIVE VERIFICATION
+
+The live production website is STILL not showing the marketplace changes requested this morning.
+
+I need you to stop treating this as a normal coding task and perform a COMPLETE PRODUCTION SYNC AND DEPLOYMENT VERIFICATION.
+
+Your job is to make sure EVERYTHING requested this morning is actually:
+
+1. Implemented in the codebase
+2. Saved locally
+3. Committed
+4. Pushed to the EXISTING GitHub repository
+5. Deployed to the EXISTING DigitalOcean production application
+6. Visible and working on LIVE jhehaul.com
+
+DO NOT create a new repository.
+DO NOT create a new DigitalOcean app.
+DO NOT switch production to a different branch unless you confirm the current production branch is wrong.
+DO NOT delete existing production data.
+DO NOT expose secrets.
+
+==================================================
+STEP 1 — DETERMINE WHY LIVE PRODUCTION IS STALE
+
+Before making new feature changes, inspect and report:
+
+* Current local Git branch
+* Current local HEAD commit
+* Current Git status
+* Uncommitted files
+* Untracked files
+* Existing GitHub remote URL
+* Remote GitHub branch connected to production
+* Latest commit currently on GitHub
+* DigitalOcean repository connection
+* DigitalOcean branch configured for production
+* Current DigitalOcean deployed commit
+* Current deployment status
+* Last successful deployment time
+* Any failed deployment logs
+* Whether automatic deploy on push is enabled
+* Whether production is serving stale build artifacts/cache
+* Whether the wrong DigitalOcean component/app is connected to jhehaul.com
+
+Compare:
+
+LOCAL
+vs.
+GITHUB
+vs.
+DIGITALOCEAN
+vs.
+LIVE jhehaul.com
+
+Identify the exact mismatch.
+
+Do not guess.
+
+==================================================
+STEP 2 — VERIFY EVERY MARKETPLACE CHANGE REQUESTED THIS MORNING
+
+Search the entire codebase and verify the following features are ACTUALLY implemented.
+
+A. PHOTO LIMIT
+
+Each listing must allow:
+
+MAXIMUM 20 PHOTOS
+
+The Sell page must display:
+
+“Upload up to 20 photos.”
+
+and:
+
+“0 / 20 photos”
+
+The limit must be enforced both frontend and backend.
+
+The 21st photo must be rejected.
+
+Search for stale references to:
+
+10 photos
+/ 10 photos
+MAX_PHOTOS = 10
+photo limit = 10
+
+Change only marketplace photo-limit values that should now be 20.
+
+⸻
+
+B. VIDEO UPLOAD
+
+Each listing must allow:
+
+MAXIMUM 1 VIDEO
+
+MAXIMUM LENGTH:
+
+60 SECONDS
+
+The Sell page must visibly show:
+
+“Add 1 video — up to 60 seconds.”
+
+The user must be able to:
+
+* Upload video
+* Preview video
+* Remove video
+* Replace video
+
+A second video must be rejected.
+
+A video over 60 seconds must be rejected.
+
+Validate on frontend AND backend/API.
+
+⸻
+
+C. 18+ ACCOUNT REQUIREMENT
+
+Registration must require an unchecked confirmation:
+
+“I certify that I am at least 18 years old.”
+
+If not checked:
+
+Account creation must fail.
+
+Verify server-side validation exists where applicable.
+
+⸻
+
+D. FRAUD / SCAM / CRIMINAL ACTIVITY SAFETY
+
+Verify marketplace safety warnings are implemented.
+
+Users should be warned about:
+
+* Fraud
+* Scams
+* Fake listings
+* Stolen goods
+* Counterfeit goods
+* Suspicious payments
+* Phishing
+* Requests for passwords
+* Requests for verification codes
+* Banking credential requests
+* Harassment
+* Threats
+* Criminal activity
+
+⸻
+
+E. REPORT LISTING
+
+Verify users can report listings with reasons including:
+
+* Scam
+* Fraud
+* Stolen item
+* Counterfeit item
+* Fake/misleading listing
+* Prohibited item
+* Suspicious payment request
+* Harassment/threat
+* Criminal activity
+* Spam
+* Other
+
+⸻
+
+F. REPORT USER
+
+Verify users can report marketplace users.
+
+⸻
+
+G. ADMIN MODERATION
+
+Verify Admin can review reports and take actions including:
+
+* Dismiss
+* Warn
+* Suspend listing
+* Remove listing
+* Suspend account
+* Ban account
+* Add internal notes
+
+⸻
+
+H. MARKETPLACE NOTIFICATIONS
+
+Verify the marketplace notification system exists and is for the NEW marketplace, not the old hauling bidding system.
+
+Required important notifications include:
+
+* New message
+* New offer
+* Counteroffer
+* Offer accepted
+* Offer declined
+* Listing reserved
+* Listing sold
+* Listing expired
+* Delivery request
+* Delivery quote ready
+* Delivery accepted
+* Important admin notice
+
+Primary method:
+
+IN-APP NOTIFICATIONS
+
+Email for important marketplace activity where appropriate.
+
+SMS/Twilio must NOT be required.
+
+Verify:
+
+* Bell icon
+* Unread count
+* Notification list/page
+* Mark as read
+* Mark all as read
+* Correct links to listing/message/offer/delivery request
+
+==================================================
+STEP 3 — CHECK FOR PARTIAL OR LOCAL-ONLY CHANGES
+
+Search for all files modified this morning.
+
+Determine whether any approved changes are:
+
+* Only in local files
+* Uncommitted
+* Committed locally but not pushed
+* Pushed to a non-production branch
+* Pushed to GitHub but not deployed
+* Present in backend but missing from frontend
+* Present in frontend but missing server-side
+* Hidden because old templates/routes are still serving production
+* Overridden by stale templates
+* Not included in the DigitalOcean build
+
+Do not assume that a previous “completed” message means the change is actually live.
+
+==================================================
+STEP 4 — FIX ALL MISSING / INCOMPLETE MORNING CHANGES
+
+Implement or correct anything from the above list that is incomplete.
+
+Do NOT just update visible text.
+
+The actual behavior must match the requirements.
+
+Specifically:
+
+PHOTO LIMIT:
+20 real photos allowed.
+
+VIDEO:
+1 real uploaded video, maximum 60 seconds.
+
+AGE:
+18+ registration enforcement.
+
+SAFETY:
+Fraud/scam/criminal-activity warnings.
+
+REPORTING:
+Report listing and report user.
+
+ADMIN:
+Moderation queue/actions.
+
+NOTIFICATIONS:
+Marketplace in-app notification system.
+
+==================================================
+STEP 5 — RUN FULL TESTS
+
+Before committing, test:
+
+PHOTO
+
+0 photos → allowed
+10 photos → allowed
+20 photos → allowed
+21 photos → rejected
+
+VIDEO
+
+1 video under 60 sec → allowed
+1 video exactly 60 sec → allowed
+1 video over 60 sec → rejected
+2nd video → rejected
+
+AGE
+
+18+ unchecked → registration rejected
+18+ checked → registration allowed if other requirements pass
+
+REPORTING
+
+Report listing → Admin sees report
+Report user → Admin sees report
+
+ADMIN
+
+Suspend/remove actions work
+
+NOTIFICATIONS
+
+Message → notification
+Offer → notification
+Counteroffer → notification
+Accepted offer → notification
+Delivery quote → notification
+
+SECURITY
+
+Unauthorized user cannot modify another seller’s listing/media.
+
+==================================================
+STEP 6 — RUN PRODUCTION BUILD
+
+Run the actual production build used by the DigitalOcean deployment.
+
+Fix all critical:
+
+* Build errors
+* Runtime errors
+* Migration errors
+* Import errors
+* Template errors
+* JavaScript errors
+* API errors
+* Authentication errors
+
+Do not proceed if the production build is broken.
+
+==================================================
+STEP 7 — COMMIT EVERYTHING THAT IS COMPLETE
+
+Run Git status.
+
+Make sure all completed approved changes are included.
+
+Do not leave finished changes unstaged/uncommitted.
+
+Create a clear commit such as:
+
+fix: sync all morning marketplace updates to production
+
+Report the new commit SHA.
+
+==================================================
+STEP 8 — PUSH TO EXISTING GITHUB REPOSITORY
+
+Push the completed commit to the EXACT branch used by the current production DigitalOcean application.
+
+Do not create another repository.
+
+Do not create a temporary production branch.
+
+Verify the push succeeded.
+
+After pushing, report:
+
+* Repository
+* Branch
+* Commit SHA
+* Remote HEAD SHA
+
+Confirm local and GitHub SHAs match.
+
+==================================================
+STEP 9 — DEPLOY TO DIGITALOCEAN
+
+Verify that the DigitalOcean production application receives the new GitHub commit.
+
+If automatic deployment is enabled:
+
+Confirm deployment starts.
+
+If it does not start:
+
+Determine why and trigger the proper deployment using the existing production setup.
+
+Do not create a new DigitalOcean application.
+
+Verify:
+
+* Correct GitHub repository
+* Correct branch
+* Correct commit SHA
+* Build completes
+* App starts
+* Health check passes
+* jhehaul.com remains connected
+
+If deployment fails:
+
+Read the logs.
+
+Fix the actual problem.
+
+Commit the fix.
+
+Push again.
+
+Redeploy.
+
+==================================================
+STEP 10 — VERIFY LIVE JHEHAUL.COM
+
+DO NOT stop after DigitalOcean says “deployed.”
+
+Open/test LIVE:
+
+https://jhehaul.com
+
+Verify the live production site itself.
+
+SELL PAGE MUST SHOW:
+
+“Upload up to 20 photos”
+
+and:
+
+“0 / 20 photos”
+
+It must also show:
+
+“Add 1 video — up to 60 seconds.”
+
+Verify on the live site:
+
+* 20-photo limit
+* 1-video limit
+* 60-second video restriction
+* 18+ registration
+* Fraud/scam warnings
+* Report Listing
+* Report User
+* Admin moderation
+* Marketplace notifications
+* Login/logout
+* Marketplace navigation
+* Existing JHE Haul delivery functionality
+
+==================================================
+STEP 11 — HANDLE CACHE / STALE ASSETS
+
+If GitHub and DigitalOcean contain the correct commit but jhehaul.com still shows the old interface:
+
+Investigate:
+
+* Browser/static asset caching
+* CDN caching
+* DigitalOcean cache
+* Old template/static bundle being served
+* Service worker cache
+* Build artifact reuse
+* Wrong app component
+* Wrong domain routing
+* Multiple app instances/environments
+
+Invalidate/rebuild caches safely where appropriate.
+
+Do not tell me simply to refresh my browser until you confirm production itself is on the correct commit.
+
+==================================================
+STEP 12 — FINAL PROOF
+
+When finished, give me a concise production verification report containing:
+
+LOCAL:
+
+* Branch
+* Commit SHA
+
+GITHUB:
+
+* Repository
+* Branch
+* Remote commit SHA
+* Push status
+
+DIGITALOCEAN:
+
+* App/component
+* Branch
+* Deployed commit SHA
+* Deployment status
+
+LIVE SITE:
+
+* jhehaul.com verified YES/NO
+* 20 photos visible YES/NO
+* 1 video visible YES/NO
+* 60-second limit working YES/NO
+* 18+ requirement working YES/NO
+* Fraud/scam safety working YES/NO
+* Report Listing working YES/NO
+* Report User working YES/NO
+* Admin moderation working YES/NO
+* Marketplace notifications working YES/NO
+
+Also report:
+
+* Files changed
+* Database migrations
+* Tests run
+* Test results
+* Build result
+* Any remaining issue
+
+==================================================
+CRITICAL COMPLETION RULE
+
+DO NOT mark this task complete because:
+
+“the code was updated”
+
+or
+
+“the commit was created”
+
+or
+
+“GitHub was pushed.”
+
+THIS TASK IS ONLY COMPLETE WHEN:
+
+1. All approved morning changes are implemented.
+2. They are committed.
+3. They are pushed to the EXISTING GitHub repository.
+4. DigitalOcean deploys the SAME commit.
+5. LIVE jhehaul.com visibly and functionally reflects the changes.
+
+Start by diagnosing the current LOCAL → GITHUB → DIGITALOCEAN → LIVE SITE mismatch, then fix it completely.
