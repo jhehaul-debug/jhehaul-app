@@ -117,8 +117,56 @@ else:
 # ---- Initialize tables and load ZIP codes ----
 with app.app_context():
     import models as _models  # noqa: F401
-    db.create_all()
-    logging.info("Database tables created")
+    try:
+        db.create_all()
+        logging.info("Database tables created")
+    except Exception as _db_init_exc:
+        # Database is unreachable — the process cannot start.  Alert admin
+        # before crashing so the failure doesn't go unnoticed.
+        logging.critical(
+            "FATAL: db.create_all() failed — database unreachable: %s", _db_init_exc
+        )
+        try:
+            _ALERT_SENTINEL = "/tmp/jhe_health_alert_sent"
+            _fd = os.open(_ALERT_SENTINEL, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            os.close(_fd)
+            # This worker owns the alert slot — send SMS and email.
+            _err_msg = f"DB unreachable at startup: {str(_db_init_exc)[:250]}"
+            try:
+                from sms_service import send_sms as _send_sms
+                _admin_phone = os.environ.get("ADMIN_PHONE")
+                if _admin_phone:
+                    _send_sms(
+                        _admin_phone,
+                        f"[JHE Haul] FATAL: {_err_msg}",
+                        event_type="admin_health_alert",
+                    )
+            except Exception as _sms_exc:
+                logging.error("startup DB-fail SMS error: %s", _sms_exc)
+            try:
+                from email_service import send_email as _send_email, _html as _email_html
+                _admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
+                _send_email(
+                    _admin_email,
+                    "[JHE Haul] 🚨 FATAL: Database unreachable at startup",
+                    _email_html(
+                        "Fatal Startup Failure",
+                        "The database was unreachable when the app tried to initialize.",
+                        "🚨 Health Alert",
+                        "<p>The app cannot start. DigitalOcean will restart the container.</p>"
+                        f"<div class='info-box'><pre style='margin:0;white-space:pre-wrap;"
+                        f"font-size:0.88rem;color:#b91c1c;'>{_err_msg}</pre></div>",
+                    ),
+                    event_type="admin_health_alert",
+                )
+            except Exception as _email_exc:
+                logging.error("startup DB-fail email error: %s", _email_exc)
+        except FileExistsError:
+            # Another worker already sent the alert for this deploy.
+            logging.info("DB-fail alert already sent by another worker — skipping duplicate.")
+        except Exception as _sentinel_exc:
+            logging.error("startup DB-fail sentinel error: %s", _sentinel_exc)
+        raise  # Re-raise — DB is required; let the process crash and restart.
 
     try:
         from models import ZipCode

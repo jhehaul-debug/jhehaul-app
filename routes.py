@@ -5832,13 +5832,11 @@ def admin_sms_resend(log_id):
         flash("Resend failed. Check Twilio configuration and SMS logs for the error.", "error")
     return redirect(url_for('admin_sms_logs'))
 
-
-@app.route("/health")
-def health():
+def _run_health_checks():
     """
-    Health-check endpoint used by DigitalOcean App Platform (see .do/app.yaml).
-    Returns 200 when critical imports and the DB are reachable; 503 otherwise.
-    Lightweight and unauthenticated — safe to poll frequently.
+    Run all startup / liveness checks and return a list of error strings.
+    An empty list means everything is healthy.
+    Called both by the /health route and by the wsgi.py startup notifier.
     """
     errors = []
 
@@ -5869,6 +5867,15 @@ def health():
     except Exception as exc:
         errors.append(f"database unreachable: {exc}")
 
+    return errors
+@app.route("/health")
+def health():
+    """
+    Health-check endpoint used by DigitalOcean App Platform (see .do/app.yaml).
+    Returns 200 when critical imports and the DB are reachable; 503 otherwise.
+    Lightweight and unauthenticated — safe to poll frequently.
+    """
+    errors = _run_health_checks()
     if errors:
         return jsonify({"status": "error", "errors": errors}), 503
     return jsonify({"status": "ok"}), 200
