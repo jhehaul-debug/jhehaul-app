@@ -1,0 +1,131 @@
+CRITICAL — PHONE VERIFICATION IS NOT WORKING ON LIVE JHEHAUL.COM
+
+The Phone Verification UI appears on the Account page, but the verification system is not functioning correctly.
+
+STOP adding new features until this is fixed.
+
+I need you to debug the ENTIRE live production SMS verification flow end-to-end.
+
+1. TRACE THE SEND VERIFICATION FLOW
+
+Identify the exact route/function used when the user presses:
+
+“Send Verification Code”
+
+Check:
+- whether a 6-digit code is actually generated
+- where that code is stored
+- whether it is tied to the correct user/account
+- whether it has an expiration time
+- whether repeated requests invalidate the prior code appropriately
+
+2. CHECK TWILIO DELIVERY
+
+Inspect the actual Twilio send response and application logs.
+
+Verify:
+- TWILIO_ACCOUNT_SID is present
+- TWILIO_AUTH_TOKEN is present
+- TWILIO_PHONE_NUMBER is present
+- the configured sender number is valid
+- the destination number is converted to proper E.164 format, e.g. +16517178103
+- Twilio is not rejecting the number
+- the application logs the Twilio Message SID
+- any Twilio error code/message is captured and displayed/logged
+
+Do NOT expose secrets in the UI or in your final report.
+
+3. CHECK TRIAL / VERIFIED-NUMBER RESTRICTIONS
+
+Determine whether the Twilio account is still in trial mode or has any sending restrictions.
+
+If Twilio is refusing delivery because the destination number is not verified, the sender is restricted, A2P/registration is incomplete, or the account lacks required capability, identify the exact reason.
+
+Do not pretend the message was sent if Twilio rejected it.
+
+4. FIX FALSE “CODE SENT” MESSAGES
+
+The UI currently displays:
+
+“Code sent! Enter the 6-digit code from your text message”
+
+That message must ONLY appear after Twilio confirms the send request was accepted.
+
+If Twilio returns an error, show a clear user-friendly error instead.
+
+5. TRACE THE VERIFY BUTTON
+
+Identify the exact route/function used by:
+
+“Verify”
+
+Check:
+- entered code is compared against the correct stored code
+- code expiration is enforced
+- code cannot be reused
+- success marks the correct user phone number as verified
+- failure gives a clear error
+- verification status persists after page refresh/login
+
+6. PHONE NUMBER NORMALIZATION
+
+Normalize US numbers safely.
+
+For example:
+(651) 717-8103
+should be sent to Twilio as:
++16517178103
+
+Do not alter the displayed formatting unnecessarily.
+
+7. SECURITY
+
+Verification codes must:
+- be random 6-digit codes
+- expire after 10 minutes or less
+- be tied to one user and one phone number
+- be invalidated after successful verification
+- have resend/rate-limit protection
+- not be written to public logs or displayed in plaintext to users
+
+8. LIVE PRODUCTION TEST
+
+Test on the ACTUAL live production site, not only Replit preview.
+
+Test:
+Account
+→ enter phone number
+→ Save Changes
+→ Send Verification Code
+→ confirm Twilio accepts the message
+→ confirm text actually arrives
+→ enter the 6-digit code
+→ Verify
+→ confirm status changes to Verified
+→ refresh page
+→ confirm it remains Verified
+
+9. PUSH AND DEPLOY
+
+After fixing:
+
+- commit all required changes
+- PUSH to origin/main
+- confirm GitHub main contains the new commit
+- confirm DigitalOcean deploys the exact new commit
+- verify jhehaul.com is running it
+
+FINAL REPORT MUST INCLUDE:
+
+1. Exact send-verification route/function
+2. Exact verify-code route/function
+3. Root cause of the failure
+4. Twilio error code/message if there was one
+5. Whether the Twilio account has trial or messaging restrictions
+6. Whether E.164 formatting was fixed
+7. New commit hash
+8. Confirmation PUSHED to origin/main
+9. Confirmation DigitalOcean deployed it
+10. Confirmation live phone verification works end-to-end
+
+Do not expose Twilio credentials or verification codes.
