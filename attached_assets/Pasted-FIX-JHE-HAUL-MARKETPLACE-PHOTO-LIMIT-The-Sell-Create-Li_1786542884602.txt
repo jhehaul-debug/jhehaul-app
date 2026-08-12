@@ -1,0 +1,106 @@
+FIX JHE HAUL MARKETPLACE PHOTO LIMIT
+
+The Sell/Create Listing page is still showing:
+
+“Upload up to 10 photos”
+“0 / 10 photos”
+
+This is incorrect.
+
+The marketplace requirement is:
+
+MAXIMUM 20 PHOTOS PER LISTING.
+
+Please fix this everywhere in the application.
+
+1. Change the Create Listing / Add Photos page to say:
+
+“Upload up to 20 photos. Drag thumbnails to reorder. The starred photo is the cover image.”
+
+2. Change the counter from:
+
+0 / 10 photos
+
+to:
+
+0 / 20 photos
+
+The counter must update dynamically as photos are added.
+
+Examples:
+
+1 / 20 photos
+10 / 20 photos
+19 / 20 photos
+20 / 20 photos
+
+3. Update ALL frontend validation from 10 photos to 20 photos.
+
+4. Update ALL backend/server-side validation from 10 photos to 20 photos.
+
+5. Search the ENTIRE codebase for:
+- max 10 photos
+- maximum 10 photos
+- up to 10 photos
+- / 10 photos
+- MAX_PHOTOS = 10
+- photo limits set to 10
+- any hard-coded value of 10 specifically controlling listing photo uploads
+
+Replace the listing photo limit with 20 wherever appropriate.
+
+Do NOT blindly change unrelated values of 10.
+
+6. A listing must allow:
+- Up to 20 photos
+- 1 video
+- Video maximum length: 60 seconds
+
+The video does NOT count as one of the 20 photos.
+
+7. Test:
+
+0 photos → allowed
+1 photo → allowed
+10 photos → allowed
+20 photos → allowed
+21st photo → rejected
+
+At 20 photos display:
+20 / 20 photos
+
+If a 21st photo is attempted, display:
+“You can upload up to 20 photos per listing.”
+
+8. Make sure the 20-photo limit cannot be bypassed through the backend/API.
+
+9. Do NOT remove or break:
+- photo reordering
+- cover/starred photo
+- photo deletion
+- photo replacement
+- video upload
+- listing creation
+- existing marketplace features
+
+10. After fixing and testing:
+
+COMMIT THE CHANGES.
+
+PUSH THEM TO THE EXISTING JHE HAUL GITHUB REPOSITORY.
+
+Do not create a new repository.
+
+Verify the DigitalOcean deployment completes successfully.
+
+Then report back:
+- files changed
+- frontend photo limit
+- backend photo limit
+- test results
+- Git commit ID
+- GitHub push status
+- DigitalOcean deployment status
+
+IMPORTANT:
+Do not simply change the displayed text from 10 to 20. The ACTUAL upload limit must be 20 on both the frontend and backend.
