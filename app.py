@@ -276,6 +276,22 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.city/zip_code) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import inspect as _sa_inspect
+        _inspector = _sa_inspect(db.engine)
+        _user_cols = {c['name'] for c in _inspector.get_columns('users')}
+        if 'profile_nudge_dismissed' not in _user_cols:
+            db.session.execute(_text(
+                "ALTER TABLE users ADD COLUMN profile_nudge_dismissed BOOLEAN DEFAULT FALSE"
+            ))
+            db.session.commit()
+            logging.info("Column migration: users.profile_nudge_dismissed added")
+        else:
+            logging.info("Column migration: users.profile_nudge_dismissed already exists")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.profile_nudge_dismissed) skipped: %s", _e)
+
     # ── User safety columns (must run before ANY User query below) ───────────
     try:
         from sqlalchemy import text as _text

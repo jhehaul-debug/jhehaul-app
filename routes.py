@@ -297,6 +297,15 @@ def serve_profile_photo(user_id):
     return r
 
 
+@app.route("/profile/nudge/dismiss", methods=["POST"])
+@require_login
+def dismiss_profile_nudge():
+    """Permanently dismiss the profile-completion nudge banner for this user."""
+    current_user.profile_nudge_dismissed = True
+    db.session.commit()
+    return ('', 204)
+
+
 @app.route("/profile/photo/upload", methods=["POST"])
 @require_login
 def profile_photo_upload():
@@ -412,9 +421,16 @@ def home():
             session['hide_sold'] = bool(hs_param and hs_param != '0')
         hide_sold_pref = session.get('hide_sold', False)
         ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
+        # Show profile nudge if profile is incomplete and user hasn't dismissed it
+        profile_incomplete = (not current_user.profile_image_url and
+                              not current_user.profile_photo_data and
+                              not current_user.phone)
+        show_profile_nudge = (profile_incomplete and
+                              not getattr(current_user, 'profile_nudge_dismissed', False))
         return render_template('marketplace.html', categories=categories, is_search=False,
                                hide_sold='1' if hide_sold_pref else '',
                                show_welcome=show_welcome,
+                               show_profile_nudge=show_profile_nudge,
                                gallery_photos=_gallery_photos(active_only=True),
                                saved_listing_ids=_saved_listing_ids(), **ctx)
     # Logged-out visitors see the marketing landing page
@@ -569,6 +585,13 @@ def marketplace():
 
         search_results = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(48).all()
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
+        _mp_profile_incomplete = (
+            current_user.is_authenticated and
+            not current_user.profile_image_url and
+            not current_user.profile_photo_data and
+            not current_user.phone
+        )
+        _mp_show_nudge = _mp_profile_incomplete and not getattr(current_user, 'profile_nudge_dismissed', False)
         return render_template('marketplace.html',
                                categories=categories,
                                is_search=True,
@@ -584,6 +607,8 @@ def marketplace():
                                min_beds=min_beds, open_house_only=open_house_only,
                                hide_sold=hide_sold,
                                saved_listing_ids=_saved_listing_ids(),
+                               show_welcome=False,
+                               show_profile_nudge=_mp_show_nudge,
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
@@ -594,10 +619,18 @@ def marketplace():
             session['hide_sold'] = bool(hs_param and hs_param != '0')
         hide_sold_pref = session.get('hide_sold', False)
         ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
+        _mp_profile_incomplete = (
+            current_user.is_authenticated and
+            not current_user.profile_image_url and
+            not current_user.profile_photo_data and
+            not current_user.phone
+        )
+        _mp_show_nudge = _mp_profile_incomplete and not getattr(current_user, 'profile_nudge_dismissed', False)
         return render_template('marketplace.html', categories=categories, is_search=False,
                                listing_type_filter='', area_filter='', city_zip_filter='',
                                hide_sold='1' if hide_sold_pref else '',
                                show_welcome=show_welcome,
+                               show_profile_nudge=_mp_show_nudge,
                                saved_listing_ids=_saved_listing_ids(), **ctx)
 
 

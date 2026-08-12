@@ -40,6 +40,7 @@ class User(UserMixin, db.Model):
     marketplace_warning_count = db.Column(db.Integer, default=0)
     city = db.Column(db.String(100), nullable=True)
     zip_code = db.Column(db.String(10), nullable=True)
+    profile_nudge_dismissed = db.Column(db.Boolean, default=False)
 
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')

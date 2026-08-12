@@ -384,6 +384,50 @@
 </div>
 {% endif %}
 
+{# ── Profile-completion nudge (shown when profile has no photo and no phone) ── #}
+{% if show_profile_nudge %}
+<div id="profile-nudge-banner" style="
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+">
+    <div style="font-size:1.6rem;flex-shrink:0;">👤</div>
+    <div style="flex:1;min-width:0;">
+        <div style="font-size:0.95rem;font-weight:700;color:#1e40af;margin-bottom:3px;">Complete your profile to build trust with buyers &amp; sellers</div>
+        <div style="font-size:0.84rem;color:#3b82f6;">Add a profile photo and phone number so others know who they're dealing with.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+        <a href="/profile" style="
+            display:inline-block;
+            background:#2563eb;
+            color:#fff;
+            font-weight:700;
+            font-size:0.88rem;
+            padding:8px 20px;
+            border-radius:8px;
+            text-decoration:none;
+            white-space:nowrap;
+        ">Complete Profile</a>
+        <button id="nudge-dismiss-btn" onclick="dismissProfileNudge()" aria-label="Dismiss" style="
+            background:none;border:none;color:#9ca3af;font-size:1.3rem;
+            cursor:pointer;padding:0 4px;line-height:1;
+        ">&times;</button>
+    </div>
+</div>
+<script>
+function dismissProfileNudge() {
+    document.getElementById('profile-nudge-banner').style.display = 'none';
+    fetch('/profile/nudge/dismiss', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+}
+</script>
+{% endif %}
+
 {# ── Hero ── #}
 <div class="mp-hero">
     <h1>🛋️ JHE Marketplace</h1>
