@@ -134,16 +134,189 @@
     {% endif %}
 
     {# Unsave button — sits outside the card anchor to avoid nested links #}
-    <form action="/listing/{{ listing.id }}/favorite" method="post"
-          style="position:absolute;top:16px;right:16px;margin:0;"
-          onsubmit="return confirm('Remove from saved items?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="next" value="{{ url_for('saved_items') }}">
-      <button type="submit" class="btn-unsave">✕ Remove</button>
-    </form>
+    <button class="btn-unsave"
+            style="position:absolute;top:16px;right:16px;"
+            data-listing-id="{{ listing.id }}"
+            data-csrf="{{ csrf_token() }}"
+            onclick="unsaveItem(this)">✕ Remove</button>
   </div>
   {% endfor %}
 
   {% endif %}
 </div>
+
+{# ── Undo toast ── #}
+<div id="unsave-toast" style="
+  display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:#1a1a2e; color:#fff; padding:12px 20px; border-radius:10px;
+  font-size:0.9rem; font-weight:600; z-index:9999; align-items:center; gap:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.25); white-space:nowrap;">
+  <span>Removed from saved items</span>
+  <button id="undo-btn" style="background:none;border:none;color:#60a5fa;font-weight:700;font-size:0.9rem;cursor:pointer;padding:0;">Undo</button>
+</div>
+
+<script>
+(function () {
+  /*
+   * Per-card state lives on the wrapper element itself:
+   *   wrapper._jheHide    — setTimeout id for the 260ms hide animation (per card)
+   *   wrapper._jheRemoved — true once the server confirms removal
+   *
+   * A single global undo slot holds the most-recently-removed card.
+   * When a second card is removed while a toast is showing, the previous
+   * removal is committed immediately (its timer runs / display:none set)
+   * and the undo slot is replaced with the new card.
+   */
+
+  let _undo = null;       // { listingId, csrf, wrapper, btn }
+  let _toastTimer = null;
+
+  // ── helpers ──────────────────────────────────────────────────────────────
+
+  function visibleCount() {
+    // Count wrappers whose card is not logically removed
+    let n = 0;
+    document.querySelectorAll('.btn-unsave').forEach(b => {
+      if (!b.parentElement._jheRemoved) n++;
+    });
+    return n;
+  }
+
+  function updateBadge(count) {
+    const counter = document.querySelector('p[style*="margin:-10px"]');
+    if (!counter) return;
+    if (count <= 0) { counter.style.display = 'none'; return; }
+    counter.style.display = '';
+    counter.textContent = count + ' saved listing' + (count !== 1 ? 's' : '');
+  }
+
+  function applyHide(wrapper) {
+    // Physically hide a wrapper whose removal is already logically committed
+    clearTimeout(wrapper._jheHide);
+    wrapper._jheHide = null;
+    wrapper.style.display = 'none';
+  }
+
+  function maybeShowEmptyState() {
+    if (visibleCount() > 0) return;
+    const wrap = document.querySelector('.saved-wrap');
+    if (!wrap) return;
+    const header = wrap.querySelector('.page-header');
+    let node = header ? header.nextSibling : null;
+    while (node) { const nx = node.nextSibling; wrap.removeChild(node); node = nx; }
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="empty-state">
+        <span class="emoji">🔖</span>
+        <h2>Nothing saved yet</h2>
+        <p>Tap the heart on any listing to save it here for later.</p>
+        <a href="/marketplace" class="btn-browse">Browse Listings</a>
+      </div>`);
+  }
+
+  function commitPreviousRemoval() {
+    if (!_undo) return;
+    const { wrapper } = _undo;
+    // Ensure it is physically hidden
+    if (wrapper.style.display !== 'none') applyHide(wrapper);
+    _undo = null;
+  }
+
+  function closeToast() {
+    clearTimeout(_toastTimer);
+    document.getElementById('unsave-toast').style.display = 'none';
+    commitPreviousRemoval();
+    maybeShowEmptyState();
+  }
+
+  function showToast(listingId, csrf, wrapper, btn) {
+    // Commit any previously pending removal before replacing the undo slot
+    commitPreviousRemoval();
+    _undo = { listingId, csrf, wrapper, btn };
+    document.getElementById('unsave-toast').style.display = 'flex';
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(closeToast, 5000);
+  }
+
+  function postFavorite(listingId, csrf) {
+    return fetch('/listing/' + listingId + '/favorite', {
+      method:  'POST',
+      headers: {
+        'Content-Type':     'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: 'csrf_token=' + encodeURIComponent(csrf),
+    }).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+  }
+
+  // ── Remove ───────────────────────────────────────────────────────────────
+
+  window.unsaveItem = function (btn) {
+    if (btn.disabled) return;
+    btn.disabled = true;
+
+    const listingId = btn.dataset.listingId;
+    const csrf      = btn.dataset.csrf;
+    const wrapper   = btn.parentElement;
+
+    postFavorite(listingId, csrf)
+      .then(data => {
+        if (!data || data.favorited !== false) {
+          btn.disabled = false;
+          return;
+        }
+
+        // Mark logically removed immediately so counts are always correct
+        wrapper._jheRemoved = true;
+        updateBadge(visibleCount());
+
+        // Begin fade animation
+        wrapper.style.transition = 'opacity .25s, transform .25s';
+        wrapper.style.opacity    = '0';
+        wrapper.style.transform  = 'translateY(-6px)';
+
+        // Per-card hide timer (does NOT affect other cards)
+        clearTimeout(wrapper._jheHide);
+        wrapper._jheHide = setTimeout(() => {
+          wrapper._jheHide = null;
+          wrapper.style.display = 'none';
+        }, 260);
+
+        showToast(listingId, csrf, wrapper, btn);
+      })
+      .catch(() => { btn.disabled = false; });
+  };
+
+  // ── Undo ─────────────────────────────────────────────────────────────────
+
+  document.getElementById('undo-btn').addEventListener('click', function () {
+    if (!_undo) return;
+
+    const { listingId, csrf, wrapper, btn } = _undo;
+    _undo = null;
+
+    // Dismiss toast (no empty-state check — we're restoring the card)
+    clearTimeout(_toastTimer);
+    document.getElementById('unsave-toast').style.display = 'none';
+
+    // Cancel the per-card animation timer
+    clearTimeout(wrapper._jheHide);
+    wrapper._jheHide = null;
+
+    // Logically un-remove before restoring display, so visibleCount is right
+    wrapper._jheRemoved = false;
+
+    // Restore card visually
+    wrapper.style.display   = '';
+    wrapper.style.opacity   = '1';
+    wrapper.style.transform = '';
+    if (btn) btn.disabled = false;
+    updateBadge(visibleCount());
+
+    // Re-save on server; reload on any failure
+    postFavorite(listingId, csrf)
+      .then(data => { if (!data || data.favorited !== true) window.location.reload(); })
+      .catch(() => { window.location.reload(); });
+  });
+})();
+</script>
 {% endblock %}
