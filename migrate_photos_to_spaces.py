@@ -16,6 +16,16 @@ safe to re-run at any time.
 
 Usage:
   python migrate_photos_to_spaces.py [--dry-run]
+  python migrate_photos_to_spaces.py --cleanup [--dry-run]
+
+Flags:
+  --dry-run   Scan and report without uploading, writing to the DB, or
+              deleting any files.  Safe to run at any time.
+  --cleanup   After migration, delete local uploads/ files whose DB row
+              already has storage_url set (i.e. they have been confirmed
+              uploaded to Spaces).  Files that are not referenced in the
+              DB are never touched, so future local-mode files are safe.
+              Combine with --dry-run to preview what would be deleted.
 
 Required env vars (same ones that storage.py uses):
   SPACES_KEY       Spaces access key
@@ -46,13 +56,23 @@ parser = argparse.ArgumentParser(description="Migrate local photos to DO Spaces"
 parser.add_argument(
     "--dry-run",
     action="store_true",
-    help="Scan and report without uploading or updating the DB",
+    help="Scan and report without uploading, updating the DB, or deleting files",
+)
+parser.add_argument(
+    "--cleanup",
+    action="store_true",
+    help=(
+        "Delete local uploads/ files whose DB row already has storage_url set. "
+        "Files not referenced by any DB row are left untouched. "
+        "Use --dry-run together with --cleanup to preview deletions."
+    ),
 )
 args = parser.parse_args()
 DRY_RUN = args.dry_run
+CLEANUP = args.cleanup
 
 if DRY_RUN:
-    log.info("DRY-RUN mode — no uploads or DB writes will happen")
+    log.info("DRY-RUN mode — no uploads, DB writes, or deletions will happen")
 
 # ── Validate Spaces config ────────────────────────────────────────────────────
 
@@ -210,6 +230,77 @@ with app.app_context():
                 db.session.rollback()
                 counters["errors"] += 1
 
+    # ── Cleanup: remove local files already migrated to Spaces ───────────────
+    if CLEANUP:
+        log.info("")
+        log.info("── Cleanup ─────────────────────────────────────────")
+
+        if DRY_RUN:
+            log.info("  DRY-RUN mode — no files will actually be deleted")
+
+        # Build a set of filenames that have been successfully migrated
+        # (storage_url IS NOT NULL) across all tables.
+        migrated_filenames: set[str] = set()
+        for _label, model in TABLES:
+            rows = model.query.filter(model.storage_url.isnot(None)).all()
+            for row in rows:
+                if row.filename:
+                    migrated_filenames.add(row.filename)
+
+        log.info("  DB rows with storage_url set : %d unique filenames", len(migrated_filenames))
+
+        # Scan the uploads/ folder and decide what to delete.
+        cleanup_counters = {
+            "deleted":          0,
+            "would_delete":     0,
+            "skipped_no_db":    0,
+            "skipped_not_file": 0,
+            "errors":           0,
+        }
+
+        try:
+            local_files = os.listdir(UPLOAD_FOLDER)
+        except FileNotFoundError:
+            local_files = []
+            log.warning("  uploads/ folder not found — nothing to clean up")
+
+        for fname in sorted(local_files):
+            fpath = os.path.join(UPLOAD_FOLDER, fname)
+
+            if not os.path.isfile(fpath):
+                cleanup_counters["skipped_not_file"] += 1
+                continue  # skip subdirectories etc.
+
+            if fname not in migrated_filenames:
+                # Not referenced by any migrated DB row — leave it alone.
+                log.debug("  KEEP  %s  (not in DB or not yet migrated)", fname)
+                cleanup_counters["skipped_no_db"] += 1
+                continue
+
+            # File is confirmed migrated to Spaces — safe to remove.
+            if DRY_RUN:
+                log.info("  DRY-RUN would delete  uploads/%s", fname)
+                cleanup_counters["would_delete"] += 1
+            else:
+                try:
+                    os.remove(fpath)
+                    log.info("  Deleted  uploads/%s", fname)
+                    cleanup_counters["deleted"] += 1
+                except Exception as exc:
+                    log.error("  Failed to delete uploads/%s : %s", fname, exc)
+                    cleanup_counters["errors"] += 1
+
+        log.info("")
+        log.info("  Local files scanned        : %d", len(local_files))
+        if DRY_RUN:
+            log.info("  Would delete               : %d", cleanup_counters["would_delete"])
+        else:
+            log.info("  Deleted                    : %d", cleanup_counters["deleted"])
+        log.info("  Kept (not in DB / pending) : %d", cleanup_counters["skipped_no_db"])
+        log.info("  Errors                     : %d", cleanup_counters["errors"])
+        if cleanup_counters["errors"]:
+            counters["errors"] += cleanup_counters["errors"]
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 log.info("")
@@ -220,7 +311,7 @@ log.info("  Uploaded to Spaces      : %d", counters["uploaded"])
 log.info("  Skipped (no local file) : %d", counters["skipped_no_file"])
 log.info("  Errors                  : %d", counters["errors"])
 if DRY_RUN:
-    log.info("  (DRY-RUN — nothing written)")
+    log.info("  (DRY-RUN — nothing written or deleted)")
 
 if counters["errors"]:
     sys.exit(1)
