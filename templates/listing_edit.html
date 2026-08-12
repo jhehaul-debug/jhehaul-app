@@ -88,7 +88,7 @@
   {# ── Photos ── #}
   <div class="section">
     <h2>📸 Photos</h2>
-    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
+    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 20 photos</div>
     {% if listing.photos|length > 1 %}
     <div class="reorder-hint">⠿ Drag thumbnails to reorder</div>
     {% endif %}
@@ -105,7 +105,7 @@
       </div>
       {% endfor %}
     </div>
-    {% if listing.photos|length < 10 %}
+    {% if listing.photos|length < 20 %}
     <div class="photo-upload-zone" id="uploadZone">
       <input type="file" id="photoInput" accept="image/*" multiple>
       <div>📷 <strong>Add Photos</strong></div>
@@ -397,8 +397,8 @@ const spinner = document.getElementById('uploadSpinner');
 let currentCount = {{ listing.photos|length }};
 
 function updateCount() {
-  photoCount.textContent = currentCount + ' / 10 photos';
-  if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : '';
+  photoCount.textContent = currentCount + ' / 20 photos';
+  if (uploadZone) uploadZone.style.display = currentCount >= 20 ? 'none' : '';
 }
 
 /* ─── Drag-to-reorder ─── */
@@ -467,7 +467,7 @@ function buildThumb(id, url, isPrimary) {
 
 async function uploadFiles(files) {
   for (const file of files) {
-    if (currentCount >= 10) break;
+    if (currentCount >= 20) break;
     spinner.style.display = 'block';
     const fd = new FormData();
     fd.append('photo', file);

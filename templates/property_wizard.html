@@ -159,8 +159,8 @@
   {% if step == 1 %}
   <div class="step-card">
     <h2>📸 Add Property Photos</h2>
-    <p class="hint">Upload up to 10 photos. Drag to reorder. The starred photo is the cover image.</p>
-    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 10 photos</div>
+    <p class="hint">Upload up to 20 photos. Drag to reorder. The starred photo is the cover image.</p>
+    <div class="photo-count" id="photoCount">{{ listing.photos|length }} / 20 photos</div>
     {% if listing.photos|length > 1 %}<div class="reorder-hint">⠿ Drag photos to reorder them</div>{% endif %}
     <div class="photo-grid" id="photoGrid">
       {% for photo in listing.photos %}
@@ -179,7 +179,7 @@
       </div>
       {% endfor %}
     </div>
-    {% if listing.photos|length < 10 %}
+    {% if listing.photos|length < 20 %}
     <div class="photo-upload-zone" id="uploadZone">
       <input type="file" id="photoInput" accept="image/*" multiple>
       <div class="upload-icon">🏠</div>
@@ -206,7 +206,7 @@
   const photoInput = document.getElementById('photoInput');
   const spinner = document.getElementById('uploadSpinner');
   let currentCount = {{ listing.photos|length }};
-  function updateCount() { photoCount.textContent = currentCount + ' / 10 photos'; if (uploadZone) uploadZone.style.display = currentCount >= 10 ? 'none' : ''; }
+  function updateCount() { photoCount.textContent = currentCount + ' / 20 photos'; if (uploadZone) uploadZone.style.display = currentCount >= 20 ? 'none' : ''; }
   let dragSrc = null;
   function addDragListeners(thumb) {
     thumb.setAttribute('draggable','true');
@@ -225,7 +225,7 @@
   }
   async function uploadFiles(files) {
     for (const file of files) {
-      if (currentCount >= 10) break; spinner.style.display='block';
+      if (currentCount >= 20) break; spinner.style.display='block';
       const fd=new FormData(); fd.append('photo',file);
       try { const res=await fetch(`/listing/${LISTING_ID}/photo/upload`,{method:'POST',headers:{'X-CSRFToken':csrfToken},body:fd}); const data=await res.json(); if(res.ok){currentCount++;photoGrid.appendChild(buildThumb(data.id,data.url,data.is_primary));updateCount();}else{alert(data.error||'Upload failed.');} } catch(e){alert('Upload error: '+e);}
     }
