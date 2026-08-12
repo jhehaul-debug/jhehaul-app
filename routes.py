@@ -4239,7 +4239,20 @@ def admin_listings():
         query = query.filter_by(status=status_filter)
     if category_filter:
         try:
-            query = query.filter_by(category_id=int(category_filter))
+            cat_id = int(category_filter)
+            # For the Housing category, also capture property listings matched by
+            # listing_type so legacy rows with NULL category_id still appear.
+            housing_cat = Category.query.filter_by(slug='housing').first()
+            if housing_cat and cat_id == housing_cat.id:
+                housing_child_ids = [c.id for c in housing_cat.subcategories]
+                cat_filter_expr = db.or_(
+                    Listing.category_id == cat_id,
+                    Listing.category_id.in_(housing_child_ids) if housing_child_ids else db.false(),
+                    Listing.listing_type.in_(['property_sale', 'rental']),
+                )
+                query = query.filter(cat_filter_expr)
+            else:
+                query = query.filter_by(category_id=cat_id)
         except (ValueError, TypeError):
             pass
     if lt_filter in ('item', 'property_sale', 'rental'):

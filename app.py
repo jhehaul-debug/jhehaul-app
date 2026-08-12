@@ -736,6 +736,30 @@ with app.app_context():
         db.session.rollback()
         logging.info("Category migration (housing) skipped: %s", _e)
 
+    # ── Backfill Housing category on existing property listings ──────────────
+    # Listings created before category_id was auto-assigned have NULL category_id.
+    # Set it now so the admin /admin/listings category filter finds them correctly.
+    try:
+        from models import Category as _BHC, Listing as _BL
+        _housing_cat = _BHC.query.filter_by(slug='housing').first()
+        if _housing_cat:
+            updated = (_BL.query
+                       .filter(_BL.listing_type.in_(['property_sale', 'rental']),
+                               _BL.category_id.is_(None))
+                       .update({'category_id': _housing_cat.id},
+                               synchronize_session=False))
+            db.session.commit()
+            if updated:
+                logging.info("Backfill: set category_id=%d (housing) on %d existing property listings",
+                             _housing_cat.id, updated)
+            else:
+                logging.info("Backfill: no property listings needed category_id update")
+        else:
+            logging.info("Backfill: housing category not found yet, skipping")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Backfill (housing category_id) skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
 
