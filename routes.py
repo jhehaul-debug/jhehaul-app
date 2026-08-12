@@ -365,6 +365,7 @@ def home():
         return render_template('marketplace.html', categories=categories, is_search=False,
                                hide_sold='1' if hide_sold_pref else '',
                                show_welcome=show_welcome,
+                               gallery_photos=_gallery_photos(active_only=True),
                                saved_listing_ids=_saved_listing_ids(), **ctx)
     # Logged-out visitors see the marketing landing page
     return redirect(url_for('landing'))
