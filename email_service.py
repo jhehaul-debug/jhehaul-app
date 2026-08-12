@@ -467,6 +467,101 @@ def notify_hauler_job_cancelled(hauler_email, job_id, customer_name):
     )
 
 
+def notify_buyer_offer_accepted(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when the seller accepts their offer."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    # Subject uses a plain-text version (no HTML tags, newlines stripped)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>Great news — the seller has <strong>accepted</strong> your offer of
+       <span class="pill pill-green">${offer_amount:,.2f}</span>
+       on <strong>{safe_title}</strong>!</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-green">Accepted ✅</span></p>
+    </div>
+    <p>Log in to message the seller and arrange pickup or delivery.</p>
+    <a href="{listing_url}" class="btn">View Listing &amp; Message Seller →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your offer was accepted — \"{subject_title}\"",
+        _html(
+            "Your Offer Was Accepted! 🎉",
+            "The seller said yes — reach out to arrange the details.",
+            "✅ Offer Accepted",
+            body,
+        ),
+        'buyer_offer_accepted',
+    )
+
+
+def notify_buyer_offer_declined(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when the seller declines their offer."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>Unfortunately, the seller has <strong>declined</strong> your offer of
+       <span class="pill pill-red">${offer_amount:,.2f}</span>
+       on <strong>{safe_title}</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Declined</span></p>
+    </div>
+    <p>You can browse the listing to see if the seller's asking price works for you, or
+       explore other items in the marketplace.</p>
+    <a href="{listing_url}" class="btn">View Listing →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your offer was declined — \"{subject_title}\"",
+        _html(
+            "Your Offer Was Declined",
+            "The seller passed on this one — browse more great listings.",
+            "❌ Offer Declined",
+            body,
+        ),
+        'buyer_offer_declined',
+    )
+
+
+def notify_buyer_offer_countered(buyer_email, listing_title, listing_id,
+                                  original_amount, counter_amount):
+    """Email the buyer when the seller counters their offer."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>The seller has made a <strong>counteroffer</strong> on <strong>{safe_title}</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Original Offer:</strong> ${original_amount:,.2f}</p>
+      <p><strong>Seller's Counter:</strong> <span class="pill pill-orange">${counter_amount:,.2f}</span></p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Counteroffer</span></p>
+    </div>
+    <p>Log in to accept or decline the counteroffer.</p>
+    <a href="{listing_url}" class="btn">Respond to Counteroffer →</a>"""
+    return send_email(
+        buyer_email,
+        f"Counteroffer received — \"{subject_title}\" (${counter_amount:,.2f})",
+        _html(
+            "The Seller Made a Counteroffer",
+            "Log in to accept or decline their counteroffer.",
+            "💬 Counteroffer",
+            body,
+        ),
+        'buyer_offer_countered',
+    )
+
+
 def notify_buyer_listing_reserved(buyer_email, listing_title, listing_id):
     """Notify a buyer (saved/watching) that a listing has been marked Reserved."""
     safe_title = listing_title or f"Listing #{listing_id}"

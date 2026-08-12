@@ -1771,14 +1771,21 @@ def offer_seller_respond(listing_id, offer_id):
         offer.status = 'accepted'
         offer.updated_at = datetime.now()
         db.session.commit()
+        buyer = offer.buyer
         try:
             from sms_service import send_sms
-            buyer = offer.buyer
             if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
                 send_sms(buyer.phone,
                          f"✅ Your ${offer.amount:,.0f} offer on \"{listing.title[:40]}\" was accepted! "
                          f"Message the seller to arrange pickup.",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # Email notification → buyer
+        try:
+            from email_service import notify_buyer_offer_accepted as _eboa
+            if buyer and buyer.email:
+                _eboa(buyer.email, listing.title, listing_id, offer.amount)
         except Exception:
             pass
         # In-app notification → buyer
@@ -1797,14 +1804,21 @@ def offer_seller_respond(listing_id, offer_id):
         offer.status = 'declined'
         offer.updated_at = datetime.now()
         db.session.commit()
+        buyer = offer.buyer
         try:
             from sms_service import send_sms
-            buyer = offer.buyer
             if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
                 send_sms(buyer.phone,
                          f"Your offer on \"{listing.title[:40]}\" was declined. "
                          f"Browse more listings at JHEHaul.com.",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # Email notification → buyer
+        try:
+            from email_service import notify_buyer_offer_declined as _ebod
+            if buyer and buyer.email:
+                _ebod(buyer.email, listing.title, listing_id, offer.amount)
         except Exception:
             pass
         # In-app notification → buyer
@@ -1826,18 +1840,26 @@ def offer_seller_respond(listing_id, offer_id):
         except (ValueError, AttributeError):
             flash("Please enter a valid counter offer amount.", "error")
             return redirect(url_for('listing_detail', listing_id=listing_id))
+        original_amount = offer.amount
         offer.counter_amount = counter_amount
         offer.status = 'countered'
         offer.updated_at = datetime.now()
         db.session.commit()
+        buyer = offer.buyer
         try:
             from sms_service import send_sms
-            buyer = offer.buyer
             if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
                 send_sms(buyer.phone,
                          f"💬 The seller countered your offer on \"{listing.title[:40]}\" "
                          f"at ${counter_amount:,.0f}. Log in to respond.",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # Email notification → buyer
+        try:
+            from email_service import notify_buyer_offer_countered as _eboc
+            if buyer and buyer.email:
+                _eboc(buyer.email, listing.title, listing_id, original_amount, counter_amount)
         except Exception:
             pass
         # In-app notification → buyer
