@@ -1,0 +1,111 @@
+JHE HAUL — FORCE A BRAND-NEW DIGITALOCEAN DEPLOYMENT NOW
+
+The problem is that a NEW DigitalOcean deployment still has NOT been created.
+
+Do NOT just verify GitHub.
+Do NOT just say the code is pushed.
+Do NOT just inspect the existing deployment.
+
+I need you to actually trigger a NEW production deployment for the EXISTING JHE Haul DigitalOcean app.
+
+========================================
+REQUIRED ACTIONS
+
+1. Confirm the latest approved marketplace changes are committed.
+2. Confirm the latest commit is pushed to the EXISTING GitHub production branch.
+3. Confirm the EXISTING DigitalOcean JHE Haul app is connected to that exact GitHub repository and branch.
+4. Trigger a BRAND-NEW DigitalOcean production deployment from the newest GitHub commit.
+5. Make sure a NEW deployment record appears in DigitalOcean with a NEW deployment timestamp.
+6. Do NOT simply restart the old deployment.
+7. Do NOT reuse an old deployment.
+8. Do NOT tell me “deployment is current.”
+
+I want a NEW build/deployment event created.
+
+========================================
+IF AUTO-DEPLOY DOES NOT TRIGGER
+
+If DigitalOcean does not automatically create a new deployment after the GitHub push:
+
+Use the existing DigitalOcean production app controls/API/CLI available to you to manually trigger a redeploy of the newest commit.
+
+Do NOT create a new app.
+
+Do NOT create a new repository.
+
+Do NOT change the production domain.
+
+========================================
+VERIFY NEW DEPLOYMENT EXISTS
+
+After triggering it, confirm:
+
+* New deployment ID
+* New deployment timestamp
+* GitHub commit SHA used
+* Branch used
+* Build status
+* Deployment status
+
+The new deployment must use the latest GitHub commit.
+
+========================================
+WAIT FOR BUILD TO COMPLETE
+
+Wait until the new deployment finishes.
+
+If it fails:
+
+* Read the deployment logs
+* Identify the error
+* Fix the error
+* Commit the fix
+* Push to GitHub
+* Trigger another NEW deployment
+
+Do not stop at a failed build.
+
+========================================
+VERIFY LIVE SITE
+
+After the NEW deployment succeeds, check LIVE:
+
+jhehaul.com
+
+Verify these recent changes are visible:
+
+* 20 photos maximum per listing
+* “0 / 20 photos”
+* 1 video maximum per listing
+* 60-second maximum video
+* 18+ account requirement
+* Fraud/scam/criminal-activity safety warnings
+* Report Listing
+* Report User
+* Admin moderation
+* Marketplace notifications
+
+========================================
+FINAL REPORT
+
+Do not mark complete until you provide:
+
+* Latest GitHub commit SHA
+* New DigitalOcean deployment ID
+* New deployment timestamp
+* DigitalOcean deployed commit SHA
+* Build result
+* Deployment result
+* Confirmation that the deployment is NEW
+* Confirmation that live jhehaul.com was checked
+* Confirmation that the 20-photo change is visible
+* Confirmation that the 1-video/60-second change is visible
+* Any remaining issue
+
+CRITICAL:
+
+I am specifically asking you to CREATE A NEW DIGITALOCEAN DEPLOYMENT.
+
+Do not respond by only saying the current deployment is up to date.
+
+Trigger the deployment now.
