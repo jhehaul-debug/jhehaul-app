@@ -734,9 +734,16 @@ def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, de
     )
 
 
-def notify_customer_quote_withdrawn(customer_email, job_id, service_type):
+def notify_customer_quote_withdrawn(customer_email, job_id, service_type, withdrawal_note=None):
     """Email the customer when admin withdraws a pending quote."""
     service_label = service_type or 'Service'
+    note_html = (
+        f'<div class="info-box" style="border-left:3px solid #f59e0b;">'
+        f'<p><strong>Note from our team:</strong></p>'
+        f'<p style="white-space:pre-wrap;">{withdrawal_note}</p>'
+        f'</div>'
+        if withdrawal_note else ''
+    )
     body = f"""
     <p>We wanted to let you know that the quote for your recent service request has been withdrawn by our team.</p>
     <div class="info-box">
@@ -744,6 +751,7 @@ def notify_customer_quote_withdrawn(customer_email, job_id, service_type):
       <p><strong>Service:</strong> {service_label}</p>
       <p><strong>Status:</strong> <span class="pill pill-orange">Quote Withdrawn</span></p>
     </div>
+    {note_html}
     <p>Our team is reviewing your request and will follow up with you shortly. If you have any questions, you can message us directly through your request page.</p>
     <a href="{_APP_URL}/customer/request/{job_id}" class="btn">View Your Request →</a>"""
     return send_email(

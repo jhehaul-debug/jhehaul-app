@@ -356,6 +356,17 @@ with app.app_context():
 
     try:
         from sqlalchemy import text as _text
+        db.session.execute(_text(
+            "ALTER TABLE quotes ADD COLUMN IF NOT EXISTS withdrawal_note TEXT"
+        ))
+        db.session.commit()
+        logging.info("Column migration: quotes.withdrawal_note ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (quotes.withdrawal_note) skipped: %s", _e)
+
+    try:
+        from sqlalchemy import text as _text
         db.session.execute(_text("""
             CREATE TABLE IF NOT EXISTS messages (
                 id SERIAL PRIMARY KEY,

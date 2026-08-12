@@ -273,7 +273,8 @@ class Quote(db.Model):
     admin_notes = db.Column(db.Text, nullable=True)
     customer_notes = db.Column(db.Text, nullable=True)
     estimated_completion = db.Column(db.String, nullable=True)
-    status = db.Column(db.String, default='pending')  # pending / accepted / declined
+    status = db.Column(db.String, default='pending')  # pending / accepted / declined / withdrawn
+    withdrawal_note = db.Column(db.Text, nullable=True)  # optional admin note shown to customer on withdrawal
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

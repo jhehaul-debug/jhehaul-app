@@ -3084,7 +3084,9 @@ def admin_withdraw_quote(quote_id):
     if quote.status != 'pending':
         flash("Only pending quotes can be withdrawn.", "error")
         return redirect(url_for('admin_request_detail', job_id=job.id))
+    withdrawal_note = request.form.get('withdrawal_note', '').strip() or None
     quote.status = 'withdrawn'
+    quote.withdrawal_note = withdrawal_note
     # Revert job status to 'reviewing' if no other pending quote remains
     other_pending = Quote.query.filter(
         Quote.job_id == job.id,
@@ -3101,14 +3103,16 @@ def admin_withdraw_quote(quote_id):
         try:
             if customer.email:
                 notify_customer_quote_withdrawn(
-                    customer.email, job.id, job.service_type or 'Service Request'
+                    customer.email, job.id, job.service_type or 'Service Request',
+                    withdrawal_note=withdrawal_note
                 )
         except Exception as e:
             app.logger.warning("Failed to send quote-withdrawn email: %s", e)
         try:
             if customer.notify_sms and customer.sms_consent and customer.phone:
                 notify_customer_quote_withdrawn_sms(
-                    customer.phone, job.id, job.service_type or 'Service Request'
+                    customer.phone, job.id, job.service_type or 'Service Request',
+                    withdrawal_note=withdrawal_note
                 )
         except Exception as e:
             app.logger.warning("Failed to send quote-withdrawn SMS: %s", e)
