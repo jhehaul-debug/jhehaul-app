@@ -1,0 +1,207 @@
+JHE HAUL MARKETPLACE — ADD AND VERIFY LISTING VIDEO UPLOAD
+
+The Create Listing / Sell flow currently shows the photo upload section, but the listing video upload option is not clearly visible.
+
+Add and verify the marketplace video upload feature.
+
+IMPORTANT REQUIREMENTS:
+
+Each marketplace listing may have:
+
+* Maximum 20 photos
+* Maximum 1 video
+* Maximum video length: 60 seconds
+
+The video does NOT count toward the 20-photo limit.
+
+==================================================
+VIDEO UPLOAD UI
+
+On the Add Photos/Create Listing screen, add a clearly visible section below the photo uploader:
+
+🎥 ADD VIDEO
+
+Display:
+
+“Add 1 video — up to 60 seconds.”
+
+Add a video counter/status such as:
+
+Video: 0 / 1
+
+After a video is selected:
+
+Video: 1 / 1
+
+==================================================
+VIDEO ACTIONS
+
+Allow the seller to:
+
+* Select video from phone/device
+* Upload video
+* Preview video
+* Play/pause preview
+* Remove video
+* Replace video before publishing
+
+Do not allow more than one video per listing.
+
+==================================================
+60-SECOND LIMIT
+
+Videos must be 60 seconds or less.
+
+If the seller attempts to select a video longer than 60 seconds, reject it and display:
+
+“Videos must be 60 seconds or less.”
+
+A video exactly 60 seconds long should be allowed.
+
+==================================================
+UPLOAD PROGRESS
+
+When uploading a video, show a clear progress state such as:
+
+“Uploading video…”
+
+Do not allow users to accidentally submit the listing while a video upload is incomplete.
+
+Display an understandable error if the upload fails.
+
+==================================================
+VIDEO THUMBNAIL
+
+Where technically practical, generate or display a video thumbnail.
+
+Clearly identify video media with a play icon so buyers know it is a video.
+
+==================================================
+LISTING DETAIL PAGE
+
+When a listing contains a video:
+
+Display it in the listing media gallery along with the photos.
+
+The buyer should be able to:
+
+* Tap the video
+* Play it
+* Pause it
+* Replay it
+
+Do not autoplay marketplace videos with sound.
+
+Use mobile-friendly video controls.
+
+==================================================
+MARKETPLACE CARD
+
+If a listing has a video, optionally display a small video/play indicator on the marketplace listing card.
+
+Do not replace the seller’s chosen cover photo with the video unless specifically designed that way.
+
+The selected photo cover should remain the primary listing card image.
+
+==================================================
+VALIDATION
+
+Enforce all limits both client-side and server-side.
+
+Test:
+
+20 photos + no video
+→ Allowed
+
+20 photos + 1 video
+→ Allowed
+
+1 video under 60 seconds
+→ Allowed
+
+1 video exactly 60 seconds
+→ Allowed
+
+1 video over 60 seconds
+→ Rejected
+
+Second video
+→ Rejected
+
+Direct API attempt to upload second video
+→ Rejected
+
+Direct API attempt to upload video over 60 seconds
+→ Rejected
+
+Unauthorized user attempts to add/remove another seller’s video
+→ Rejected
+
+==================================================
+FILE SIZE
+
+Use the reasonable video file-size limit previously selected based on the existing DigitalOcean/storage infrastructure.
+
+If no final file-size limit has been selected yet:
+
+Inspect the current storage/upload architecture and choose a practical limit that supports a 60-second marketplace video without creating unnecessary storage or bandwidth costs.
+
+Report the selected file-size limit.
+
+==================================================
+DO NOT BREAK
+
+Do not break:
+
+* 20-photo upload
+* Photo reordering
+* Cover/starred photo
+* Listing creation
+* Listing editing
+* Marketplace browsing
+* Messaging
+* Offers
+* Notifications
+* Admin
+* JHE Haul delivery
+* Authentication
+
+==================================================
+GITHUB / DEPLOYMENT
+
+After implementation:
+
+1. Run relevant tests.
+2. Run production build.
+3. Verify 20-photo limit still works.
+4. Verify one video upload works.
+5. Verify 60-second limit works.
+6. Verify second video is rejected.
+7. Verify video displays correctly on the listing.
+8. Verify mobile layout.
+9. Verify no secrets are committed.
+10. Commit the completed changes.
+11. PUSH to the EXISTING JHE Haul GitHub repository.
+12. Verify GitHub push succeeds.
+13. Verify DigitalOcean deployment succeeds.
+
+Report:
+
+* Files changed
+* Video UI added
+* Maximum video length
+* Maximum video file size
+* Storage method
+* Tests run
+* Test results
+* Production build status
+* Git commit ID
+* GitHub push status
+* DigitalOcean deployment status
+* Any unresolved issues
+
+IMPORTANT:
+
+Do not just add the text “1 video up to 60 seconds.”
+
+The actual video upload, validation, storage, preview, and listing playback must work.

@@ -526,6 +526,9 @@
     {% else %}
         <div class="mp-card-img-placeholder">{{ '🏠' if listing.is_property else placeholder }}</div>
     {% endif %}
+    {% if listing.videos %}
+    <div style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.62);color:#fff;border-radius:5px;padding:2px 8px;font-size:.72rem;font-weight:700;letter-spacing:.3px;pointer-events:none;">▶ VIDEO</div>
+    {% endif %}
     {# Sold / Reserved overlay banner #}
     {% if is_sold %}
         <div class="mp-status-overlay">

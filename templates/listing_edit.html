@@ -115,6 +115,55 @@
     <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
   </div>
 
+  {# ── Video ── #}
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+      <h2 style="margin:0;">🎥 Video <span style="font-size:.8rem;font-weight:400;color:#94a3b8;">(Optional)</span></h2>
+      <span id="videoCounter" style="font-size:.88rem;font-weight:600;color:#64748b;">Video: <span id="videoCountNum">{{ '1' if listing.videos else '0' }}</span> / 1</span>
+    </div>
+    <p style="font-size:.83rem;color:#718096;margin:0 0 14px;line-height:1.5;">Add 1 video — up to 60 seconds · max 150 MB · MP4, MOV, or WebM. Does not count toward the 20-photo limit.</p>
+
+    <div id="videoPreviewArea" style="{{ '' if listing.videos else 'display:none' }}">
+      {% if listing.videos %}{% set vid = listing.videos[0] %}
+      <div style="background:#0f172a;border-radius:10px;overflow:hidden;margin-bottom:10px;position:relative;">
+        <video id="videoPlayer" controls playsinline preload="metadata" style="width:100%;max-height:260px;display:block;background:#000;">
+          {% if vid.storage_url %}<source src="{{ vid.storage_url }}" type="{{ vid.content_type or 'video/mp4' }}">{% endif %}
+          Your browser does not support video playback.
+        </video>
+        <div style="position:absolute;top:8px;right:8px;">
+          <button type="button" onclick="deleteVideo({{ vid.id }})"
+                  style="background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-weight:700;">✕ Remove</button>
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:#94a3b8;margin-bottom:6px;">
+        {{ vid.filename or 'video' }}{% if vid.file_size_bytes %} · {{ (vid.file_size_bytes/1048576)|round(1) }} MB{% endif %}{% if vid.duration_seconds %} · {{ vid.duration_seconds|int }}s{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div id="videoUploadZone" style="{{ 'display:none' if listing.videos else '' }};border:2px dashed #cbd5e0;border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;background:#f8fafc;"
+         onclick="document.getElementById('videoInput').click();"
+         ondragover="event.preventDefault();this.style.borderColor='#3b82f6';"
+         ondragleave="this.style.borderColor='#cbd5e0';"
+         ondrop="event.preventDefault();this.style.borderColor='#cbd5e0';handleVideoSelect(event.dataTransfer.files[0]);">
+      <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm,video/avi,.mp4,.mov,.webm,.avi,.m4v" style="display:none;" onchange="handleVideoSelect(this.files[0])">
+      <div style="font-size:2rem;margin-bottom:6px;">🎥</div>
+      <p style="margin:0;font-size:.9rem;font-weight:600;color:#374151;">Click or drag to add a video</p>
+      <p style="margin:6px 0 0;font-size:.76rem;color:#94a3b8;">MP4 · MOV · WebM · max 60 s · max 150 MB</p>
+    </div>
+    <div id="videoProgress" style="display:none;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:.85rem;color:#2563eb;font-weight:600;">⏳ Uploading video…</span>
+        <span id="videoPct" style="font-size:.8rem;color:#64748b;">0%</span>
+      </div>
+      <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">
+        <div id="videoProgressBar" style="background:#3b82f6;height:100%;width:0%;transition:width .2s;"></div>
+      </div>
+      <div style="font-size:.75rem;color:#94a3b8;margin-top:4px;">Please wait — do not close this page.</div>
+    </div>
+    <div id="videoDurationWarning" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.84rem;color:#dc2626;font-weight:600;"></div>
+  </div>
+
   {# ── Save form ── #}
   <form method="POST" action="{{ url_for('listing_edit', listing_id=listing.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -521,6 +570,96 @@ async function setPrimary(id) {
     const el = document.getElementById('thumb-' + id);
     if (el) { el.classList.add('is-primary'); el.insertAdjacentHTML('afterbegin', '<div class="primary-badge">⭐ Cover</div>'); }
   }
+}
+
+/* ─── Video Upload ─── */
+let hasVideo = {{ 'true' if listing.videos else 'false' }};
+let videoUploading = false;
+function _setVideoCount(n) { const el = document.getElementById('videoCountNum'); if (el) el.textContent = String(n); }
+
+async function handleVideoSelect(file) {
+  if (!file) return;
+  const warn = document.getElementById('videoDurationWarning');
+  warn.style.display = 'none';
+  if (file.size > 150 * 1024 * 1024) {
+    warn.textContent = 'Video must be under 150 MB. Please choose a smaller file.';
+    warn.style.display = ''; document.getElementById('videoInput').value = ''; return;
+  }
+  let duration = null;
+  try {
+    duration = await new Promise(resolve => {
+      const u = URL.createObjectURL(file); const tmp = document.createElement('video');
+      tmp.preload = 'metadata';
+      tmp.onloadedmetadata = () => { URL.revokeObjectURL(u); resolve(tmp.duration); };
+      tmp.onerror = () => { URL.revokeObjectURL(u); resolve(null); };
+      tmp.src = u;
+    });
+  } catch(e) {}
+  if (duration && duration > 60) {
+    warn.textContent = 'Videos must be 60 seconds or less.';
+    warn.style.display = ''; document.getElementById('videoInput').value = ''; return;
+  }
+  const prog = document.getElementById('videoProgress');
+  const bar  = document.getElementById('videoProgressBar');
+  const pct  = document.getElementById('videoPct');
+  prog.style.display = ''; videoUploading = true;
+  const fd = new FormData();
+  fd.append('video', file);
+  if (duration) fd.append('duration_seconds', duration.toFixed(2));
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `/listing/${LISTING_ID}/video/upload`);
+  xhr.setRequestHeader('X-CSRFToken', csrfToken);
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) { const p = Math.round(e.loaded/e.total*100); bar.style.width=p+'%'; if(pct)pct.textContent=p+'%'; }
+  };
+  xhr.onload = () => {
+    prog.style.display = 'none'; videoUploading = false;
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      hasVideo = true; _setVideoCount(1);
+      document.getElementById('videoUploadZone').style.display = 'none';
+      const area = document.getElementById('videoPreviewArea');
+      area.style.display = '';
+      const objUrl = URL.createObjectURL(file);
+      area.innerHTML = `
+        <div style="background:#0f172a;border-radius:10px;overflow:hidden;margin-bottom:8px;position:relative;">
+          <video id="videoPlayer" controls playsinline style="width:100%;max-height:260px;display:block;background:#000;">
+            <source src="${objUrl}" type="${file.type||'video/mp4'}">
+          </video>
+          <div style="position:absolute;top:8px;right:8px;">
+            <button type="button" onclick="deleteVideo(${data.id})"
+                    style="background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.8rem;font-weight:700;">✕ Remove</button>
+          </div>
+        </div>
+        <div style="font-size:.78rem;color:#94a3b8;">${file.name} · ${(file.size/1048576).toFixed(1)} MB${duration?' · '+Math.round(duration)+'s':''}</div>`;
+    } else {
+      let msg = 'Video upload failed.';
+      try { msg = JSON.parse(xhr.responseText).error || msg; } catch(_) {}
+      warn.textContent = msg; warn.style.display = '';
+      document.getElementById('videoInput').value = '';
+    }
+  };
+  xhr.onerror = () => {
+    prog.style.display = 'none'; videoUploading = false;
+    warn.textContent = 'Video upload error — please check your connection and try again.';
+    warn.style.display = '';
+  };
+  xhr.send(fd);
+}
+
+async function deleteVideo(id) {
+  if (!confirm('Remove this video?')) return;
+  const res = await fetch(`/listing/${LISTING_ID}/video/${id}/delete`, {
+    method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+  });
+  if (res.ok) {
+    hasVideo = false; _setVideoCount(0);
+    const area = document.getElementById('videoPreviewArea');
+    area.style.display = 'none'; area.innerHTML = '';
+    document.getElementById('videoUploadZone').style.display = '';
+    document.getElementById('videoDurationWarning').style.display = 'none';
+    document.getElementById('videoInput').value = '';
+  } else { alert('Could not remove the video. Please try again.'); }
 }
 
 /* ─── Price type toggle ─── */

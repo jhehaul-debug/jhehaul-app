@@ -720,6 +720,7 @@
       <!-- Gallery -->
       <div class="ld-gallery">
         {% if photos %}
+          {# Main display: photo (default) or video #}
           <img
             id="ld-main-img"
             class="ld-main-photo"
@@ -727,7 +728,17 @@
             alt="{{ listing.title }}"
             loading="eager"
             onclick="openLightbox(0)">
-          {% if photos | length > 1 %}
+          {% if listing.videos %}
+          {% set lv = listing.videos[0] %}
+          <video id="ld-main-video"
+                 class="ld-main-photo"
+                 style="display:none;background:#000;border-radius:inherit;"
+                 controls playsinline preload="metadata">
+            {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
+          </video>
+          {% endif %}
+
+          {% if (photos|length > 1) or listing.videos %}
           <div class="ld-thumbs">
             {% for photo in photos %}
             <img
@@ -737,10 +748,27 @@
               loading="lazy"
               onclick="selectPhoto({{ loop.index0 }}, '{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}', this)">
             {% endfor %}
+            {% if listing.videos %}
+            <div class="ld-thumb ld-video-thumb" onclick="selectVideo(this)"
+                 title="Play video"
+                 style="position:relative;background:#0f172a;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;overflow:hidden;">
+              <span style="font-size:1.6rem;color:#fff;line-height:1;z-index:1;">▶</span>
+              <span style="position:absolute;bottom:3px;right:4px;font-size:.6rem;color:rgba(255,255,255,.7);font-weight:700;letter-spacing:.3px;">VIDEO</span>
+            </div>
+            {% endif %}
           </div>
           {% endif %}
         {% else %}
+          {# No photos — show video as main if available #}
+          {% if listing.videos %}
+          {% set lv = listing.videos[0] %}
+          <video class="ld-main-photo" style="background:#000;border-radius:inherit;"
+                 controls playsinline preload="metadata">
+            {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
+          </video>
+          {% else %}
           <div class="ld-main-placeholder">📦</div>
+          {% endif %}
         {% endif %}
       </div>
 
@@ -1310,14 +1338,28 @@ let currentIdx = 0;
 
 function selectPhoto(idx, src, thumbEl) {
   currentIdx = idx;
+  // Hide video player if showing
+  const vidEl = document.getElementById('ld-main-video');
+  if (vidEl) { vidEl.pause(); vidEl.style.display = 'none'; }
   const mainImg = document.getElementById('ld-main-img');
   if (mainImg) {
+    mainImg.style.display = '';
     mainImg.src = src;
     mainImg.onclick = () => openLightbox(idx);
   }
   document.querySelectorAll('.ld-thumb').forEach((t, i) => {
     t.classList.toggle('active', i === idx);
   });
+}
+
+function selectVideo(thumbEl) {
+  // Hide photo, show video player
+  const mainImg = document.getElementById('ld-main-img');
+  if (mainImg) { mainImg.style.display = 'none'; mainImg.onclick = null; }
+  const vidEl = document.getElementById('ld-main-video');
+  if (vidEl) { vidEl.style.display = ''; }
+  document.querySelectorAll('.ld-thumb').forEach(t => t.classList.remove('active'));
+  document.querySelector('.ld-video-thumb')?.classList.add('active');
 }
 
 // ── Lightbox ─────────────────────────────────────────────────

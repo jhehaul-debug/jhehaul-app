@@ -1235,6 +1235,10 @@ def listing_video_upload(listing_id):
     except (ValueError, TypeError):
         pass
 
+    # Server-side duration guard (uses client-reported value; rejects > 60s)
+    if duration and duration > 60:
+        return jsonify(error='Videos must be 60 seconds or less.'), 400
+
     lv = ListingVideo(
         listing_id=listing_id,
         filename=filename,
