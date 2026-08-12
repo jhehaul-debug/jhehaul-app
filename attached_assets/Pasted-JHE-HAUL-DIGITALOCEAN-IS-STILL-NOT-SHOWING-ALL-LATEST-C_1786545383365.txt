@@ -1,0 +1,298 @@
+JHE HAUL — DIGITALOCEAN IS STILL NOT SHOWING ALL LATEST CHANGES
+
+The live DigitalOcean production deployment is still missing some of the marketplace changes that were already requested and worked on.
+
+Do NOT start adding new features.
+
+Your job now is to identify exactly why DigitalOcean is serving an incomplete/outdated version and fix the deployment pipeline.
+
+========================================
+
+1. VERIFY EXACT GIT STATE
+    ========================================
+
+Report:
+
+* Current local branch
+* Current local HEAD commit SHA
+* Git status
+* Any uncommitted changes
+* Existing GitHub remote
+* Production GitHub branch
+* Latest remote GitHub commit SHA
+
+Confirm whether ALL completed marketplace changes are included in the remote GitHub commit.
+
+If there are completed changes that remain:
+
+* unstaged
+* uncommitted
+* committed locally only
+* pushed to the wrong branch
+
+fix that first.
+
+========================================
+2. VERIFY DIGITALOCEAN SOURCE
+
+Inspect the EXISTING DigitalOcean production app.
+
+Report:
+
+* DigitalOcean app name
+* App/component name
+* Connected GitHub repository
+* Connected branch
+* Current deployed commit SHA
+* Latest deployment commit SHA
+* Automatic deploy status
+* Last successful deployment
+* Last failed deployment, if any
+
+The DigitalOcean repository and branch must match the GitHub production repository/branch.
+
+========================================
+3. COMPARE COMMITS
+
+Compare:
+
+LOCAL HEAD SHA
+
+GITHUB REMOTE SHA
+
+DIGITALOCEAN DEPLOYED SHA
+
+These should all match after deployment.
+
+If they do not match, identify exactly why.
+
+Do not guess.
+
+========================================
+4. VERIFY ALL RECENT CHANGES EXIST IN GITHUB
+
+Before redeploying, verify the current GitHub production branch contains ALL recently approved marketplace changes, including:
+
+* 20 photos maximum per listing
+* UI showing 0 / 20 photos
+* 1 video per listing
+* 60-second maximum video
+* Video upload UI
+* Frontend and backend media validation
+* 18+ registration confirmation
+* Fraud/scam/criminal-activity safety warnings
+* Report Listing
+* Report User
+* Admin moderation
+* Marketplace notifications
+* Any other completed marketplace work from this morning
+
+If some features exist locally but not in GitHub:
+
+commit them.
+
+push them.
+
+Then continue.
+
+========================================
+5. FORCE A CLEAN DIGITALOCEAN REBUILD
+
+Redeploy the EXISTING production application from the newest GitHub commit.
+
+Do NOT create a new DigitalOcean app.
+
+Do NOT create a new repository.
+
+Do NOT deploy an old commit.
+
+Use the correct production branch.
+
+Perform a clean rebuild so stale build artifacts are not reused where the platform allows.
+
+Ensure current dependencies and static files are rebuilt.
+
+========================================
+6. CHECK BUILD AND STARTUP LOGS
+
+Review the complete DigitalOcean deployment logs.
+
+Look for:
+
+* Build failure
+* Dependency errors
+* Migration failures
+* Template errors
+* Static asset build problems
+* Incorrect startup command
+* Wrong working directory
+* Incorrect app component
+* Environment-variable errors
+* Database errors
+* Health-check failures
+
+Fix any real deployment error.
+
+If a code fix is required:
+
+commit it.
+
+push it to the SAME production branch.
+
+redeploy.
+
+========================================
+7. CHECK DATABASE MIGRATIONS
+
+Verify any required marketplace migrations have actually run in production.
+
+Do not assume they ran because the code deployed.
+
+Confirm migration status.
+
+Do NOT drop or reset the production database.
+
+Do NOT destroy existing users/listings/data.
+
+========================================
+8. CHECK STATIC/CACHED FILES
+
+If DigitalOcean is running the correct commit but the UI still looks old, investigate:
+
+* Static asset caching
+* Browser cache headers
+* CDN cache
+* Old compiled JavaScript/CSS
+* Old Flask/Jinja templates
+* Service worker
+* Multiple app components
+* Incorrect build output directory
+* Production route serving an older template
+* An old container/image still running
+
+Correct the actual source of the stale UI.
+
+========================================
+9. VERIFY PRODUCTION ROUTES
+
+Confirm jhehaul.com is pointing to the SAME DigitalOcean application/component that was just deployed.
+
+Check for:
+
+* Old staging app
+* Old production component
+* Multiple services
+* Incorrect domain mapping
+* Old deployment still receiving traffic
+
+Do not assume the domain points to the component you just updated.
+
+========================================
+10. TEST LIVE PRODUCTION
+
+After deployment, test LIVE jhehaul.com.
+
+Do not rely on local preview.
+
+Specifically open:
+
+SELL / CREATE LISTING
+
+and verify:
+
+“Upload up to 20 photos”
+
+“0 / 20 photos”
+
+Video upload is visible
+
+“1 video maximum — up to 60 seconds”
+
+Also verify:
+
+18+ registration requirement
+
+Fraud/scam safety information
+
+Report Listing
+
+Report User
+
+Admin moderation
+
+Marketplace notifications
+
+Messaging/offers
+
+Delivery functionality
+
+========================================
+11. IF ONLY SOME CHANGES ARE LIVE
+
+If some new features appear but others do not:
+
+Do not stop.
+
+Identify whether the missing feature is:
+
+* Not in GitHub
+* Not deployed
+* Behind another route/template
+* Hidden by stale frontend assets
+* Missing a migration
+* Disabled by feature/config flag
+* Broken by runtime error
+
+Fix each missing item individually.
+
+========================================
+12. FINAL DEPLOYMENT PROOF
+
+Do not mark this complete until you provide:
+
+LOCAL:
+
+* Branch
+* Commit SHA
+
+GITHUB:
+
+* Repository
+* Branch
+* Remote commit SHA
+* Push status
+
+DIGITALOCEAN:
+
+* App name
+* Component
+* Connected branch
+* Deployed commit SHA
+* Build status
+* Runtime status
+
+LIVE SITE:
+
+* jhehaul.com checked YES/NO
+* 20-photo limit visible YES/NO
+* 1-video UI visible YES/NO
+* 60-second rule visible/working YES/NO
+* 18+ working YES/NO
+* Fraud/scam safety working YES/NO
+* Report Listing working YES/NO
+* Report User working YES/NO
+* Admin moderation working YES/NO
+* Notifications working YES/NO
+
+Also state:
+
+WHY SOME CHANGES WERE NOT UPDATING ON DIGITALOCEAN.
+
+========================================
+CRITICAL RULE
+
+Do NOT respond only with:
+
+“Redeployed successfully.”
+
+Do not mark this complete until the ACTUAL live jhehaul.com production site is checked and the missing marketplace changes are confirmed visible and working.
