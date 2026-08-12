@@ -248,6 +248,46 @@
     </div>
 </div>
 
+{# ── Live Listings Preview ── #}
+{% if preview_listings %}
+<div class="card" style="padding:40px 36px;margin-bottom:20px;">
+    <div class="lp-section-head">
+        <h2>Recent Listings</h2>
+        <p>A look at what's for sale right now in your neighborhood.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+        {% for listing in preview_listings %}
+        {% set fp = listing.photos|sort(attribute='display_order')|first if listing.photos else None %}
+        <a href="{{ url_for('listing_detail', listing_id=listing.id) }}"
+           style="display:block;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s;"
+           onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.10)';this.style.transform='translateY(-2px)'"
+           onmouseout="this.style.boxShadow='';this.style.transform=''">
+            {% if fp %}
+            <img src="{{ fp.storage_url or url_for('serve_listing_photo', photo_id=fp.id) }}"
+                 alt="{{ listing.title }}" loading="lazy"
+                 style="width:100%;height:170px;object-fit:cover;display:block;">
+            {% else %}
+            <div style="width:100%;height:170px;background:linear-gradient(135deg,#e2e8f0,#cbd5e0);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🏷️</div>
+            {% endif %}
+            <div style="padding:12px 14px;">
+                <div style="font-weight:700;font-size:0.9rem;color:#1a202c;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ listing.title }}</div>
+                <div style="font-size:0.88rem;font-weight:700;color:#2563eb;">
+                    {% if listing.price_type == 'free' %}Free
+                    {% elif listing.price %}${{ '{:,.0f}'.format(listing.price) }}
+                    {% else %}Contact for price
+                    {% endif %}
+                </div>
+                {% if listing.city %}<div style="font-size:0.75rem;color:#a0aec0;margin-top:3px;">📍 {{ listing.city }}</div>{% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+        <a href="{{ url_for('marketplace') }}" style="font-size:0.95rem;color:#3182ce;font-weight:700;text-decoration:none;">See all listings →</a>
+    </div>
+</div>
+{% endif %}
+
 {# ── How It Works ── #}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">

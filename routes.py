@@ -6086,7 +6086,20 @@ def admin_gallery_upload():
 @app.route("/landing")
 def landing():
     """Public marketing landing page — featured listings for the homepage."""
-    return render_template('landing.html', gallery_photos=_gallery_photos(active_only=True))
+    from models import Listing
+    preview_listings = (
+        Listing.query
+        .filter_by(status='active', moderation_status='approved')
+        .filter(Listing.listing_type == 'item')
+        .order_by(Listing.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    return render_template(
+        'landing.html',
+        gallery_photos=_gallery_photos(active_only=True),
+        preview_listings=preview_listings,
+    )
 
 @app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
 @require_admin
