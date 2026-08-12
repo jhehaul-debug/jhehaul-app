@@ -99,6 +99,7 @@ def require_admin(f):
 @app.context_processor
 def inject_globals():
     result = {'admin_unread_count': 0, 'customer_unread_count': 0,
+              'notif_unread_count': 0,
               'admin_phone': os.environ.get('ADMIN_PHONE', '')}
     if current_user.is_authenticated:
         try:
@@ -128,6 +129,12 @@ def inject_globals():
                     )
                     .count())
                 result['customer_unread_count'] = job_unread + marketplace_unread
+        except Exception:
+            pass
+        # In-app notification unread count (all user types)
+        try:
+            from notification_service import get_unread_count as _notif_count
+            result['notif_unread_count'] = _notif_count(current_user.id)
         except Exception:
             pass
     return result
@@ -1536,6 +1543,18 @@ def listing_make_offer(listing_id):
     except Exception:
         pass
 
+    # In-app notification → seller
+    try:
+        from notification_service import notify_new_offer as _nno
+        _nno(seller_id=listing.seller_id,
+             buyer_name=current_user.first_name or current_user.email or 'A buyer',
+             amount=amount,
+             listing_title=listing.title,
+             listing_id=listing_id,
+             offer_id=offer.id)
+    except Exception:
+        pass
+
     flash("Your offer has been sent to the seller!", "success")
     return redirect(url_for('listing_detail', listing_id=listing_id))
 
@@ -1574,6 +1593,16 @@ def offer_seller_respond(listing_id, offer_id):
                          'customer_new_bid')
         except Exception:
             pass
+        # In-app notification → buyer
+        try:
+            from notification_service import notify_offer_accepted as _noa
+            _noa(buyer_id=offer.buyer_id,
+                 amount=offer.amount,
+                 listing_title=listing.title,
+                 listing_id=listing_id,
+                 offer_id=offer.id)
+        except Exception:
+            pass
         flash("Offer accepted! The buyer has been notified.", "success")
 
     elif action == 'decline':
@@ -1588,6 +1617,15 @@ def offer_seller_respond(listing_id, offer_id):
                          f"Your offer on \"{listing.title[:40]}\" was declined. "
                          f"Browse more listings at JHEHaul.com.",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # In-app notification → buyer
+        try:
+            from notification_service import notify_offer_declined as _nod
+            _nod(buyer_id=offer.buyer_id,
+                 listing_title=listing.title,
+                 listing_id=listing_id,
+                 offer_id=offer.id)
         except Exception:
             pass
         flash("Offer declined.", "success")
@@ -1612,6 +1650,16 @@ def offer_seller_respond(listing_id, offer_id):
                          f"💬 The seller countered your offer on \"{listing.title[:40]}\" "
                          f"at ${counter_amount:,.0f}. Log in to respond.",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # In-app notification → buyer
+        try:
+            from notification_service import notify_offer_countered as _noc
+            _noc(buyer_id=offer.buyer_id,
+                 counter_amount=counter_amount,
+                 listing_title=listing.title,
+                 listing_id=listing_id,
+                 offer_id=offer.id)
         except Exception:
             pass
         flash(f"Counteroffer of ${counter_amount:,.0f} sent to the buyer.", "success")
@@ -1653,6 +1701,17 @@ def offer_buyer_respond(listing_id, offer_id):
                          f"✅ {current_user.first_name or 'A buyer'} accepted your ${offer.amount:,.0f} "
                          f"counteroffer on \"{offer.listing.title[:40]}\".",
                          'customer_new_bid')
+        except Exception:
+            pass
+        # In-app notification → seller
+        try:
+            from notification_service import notify_counter_accepted as _nca
+            _nca(seller_id=offer.seller_id,
+                 buyer_name=current_user.first_name or current_user.email or 'The buyer',
+                 amount=offer.amount,
+                 listing_title=offer.listing.title,
+                 listing_id=listing_id,
+                 offer_id=offer.id)
         except Exception:
             pass
         flash("You accepted the counteroffer! Contact the seller to arrange pickup.", "success")
@@ -1703,6 +1762,111 @@ def seller_offers():
               .all())
     pending_count = sum(1 for o in offers if o.status in ('pending', 'countered'))
     return render_template('seller_offers.html', offers=offers, pending_count=pending_count)
+
+
+# ── In-App Notifications ─────────────────────────────────────────────────────
+
+_NOTIF_ICONS = {
+    'new_message':          '💬',
+    'new_offer':            '💰',
+    'offer_accepted':       '✅',
+    'offer_declined':       '❌',
+    'offer_countered':      '🔄',
+    'offer_expired':        '⏳',
+    'offer_withdrawn':      '↩️',
+    'listing_expired':      '⏰',
+    'listing_removed':      '🚫',
+    'listing_sold':         '🏷️',
+    'listing_reserved':     '📌',
+    'delivery_request':     '🚛',
+    'delivery_quote_ready': '💵',
+    'delivery_status':      '🚛',
+    'delivery_accepted':    '✅',
+    'delivery_declined':    '❌',
+    'admin_notice':         '⚙️',
+}
+
+_NOTIF_CATEGORIES = {
+    'messages': ['new_message'],
+    'offers':   ['new_offer', 'offer_accepted', 'offer_declined',
+                 'offer_countered', 'offer_expired', 'offer_withdrawn'],
+    'listings': ['listing_expired', 'listing_removed',
+                 'listing_sold', 'listing_reserved'],
+    'delivery': ['delivery_request', 'delivery_quote_ready',
+                 'delivery_status', 'delivery_accepted', 'delivery_declined'],
+    'account':  ['admin_notice'],
+}
+
+
+@app.route("/notifications")
+@require_login
+def notifications_page():
+    from models import Notification
+    filter_key = request.args.get('filter', 'all').lower()
+    query = Notification.query.filter_by(user_id=str(current_user.id))
+    if filter_key == 'unread':
+        query = query.filter_by(is_read=False)
+    elif filter_key in _NOTIF_CATEGORIES:
+        query = query.filter(Notification.type.in_(_NOTIF_CATEGORIES[filter_key]))
+    notifications = query.order_by(Notification.created_at.desc()).limit(100).all()
+    unread_count = Notification.query.filter_by(
+        user_id=str(current_user.id), is_read=False).count()
+    return render_template('notifications.html',
+                           notifications=notifications,
+                           notif_icons=_NOTIF_ICONS,
+                           filter_key=filter_key,
+                           unread_count=unread_count)
+
+
+@app.route("/notifications/mark-all-read", methods=["POST"])
+@require_login
+def notifications_mark_all_read():
+    from notification_service import mark_all_read as _mark_all
+    _mark_all(current_user.id)
+    return redirect(url_for('notifications_page'))
+
+
+@app.route("/notifications/<int:notif_id>/open")
+@require_login
+def notification_open(notif_id):
+    """Mark one notification as read and redirect to its action_url."""
+    from models import Notification
+    n = Notification.query.filter_by(
+        id=notif_id, user_id=str(current_user.id)
+    ).first_or_404()
+    if not n.is_read:
+        n.is_read = True
+        n.read_at = datetime.now()
+        db.session.commit()
+    if n.action_url:
+        return redirect(n.action_url)
+    return redirect(url_for('notifications_page'))
+
+
+@app.route("/api/notifications/count")
+@require_login
+def api_notification_count():
+    """JSON endpoint for badge polling. Returns {count: N}."""
+    from notification_service import get_unread_count as _gc
+    return {'count': _gc(current_user.id)}
+
+
+@app.route("/admin/send-notice/<user_id>", methods=["POST"])
+@require_admin
+def admin_send_notice(user_id):
+    """Send an admin notice notification to any user."""
+    from models import User as _U
+    target = _U.query.get_or_404(user_id)
+    title   = (request.form.get('notice_title',   '') or '').strip()
+    message = (request.form.get('notice_message', '') or '').strip() or None
+    action  = (request.form.get('notice_url',     '') or '').strip() or None
+    if not title:
+        flash("Notice title is required.", "error")
+        return redirect(request.referrer or url_for('admin_dashboard'))
+    from notification_service import notify_admin_notice as _nan
+    _nan(user_id, title, message, action)
+    flash(f"Notice sent to {target.first_name or target.email}.", "success")
+    return redirect(request.referrer or url_for('admin_dashboard'))
 
 
 # ── Seller Profile (public) ──────────────────────────────────────────────────
@@ -1865,6 +2029,20 @@ def listing_message(listing_id, convo_id=None):
                 db.session.add(msg)
                 convo.updated_at = datetime.now()
                 db.session.commit()
+                # In-app notification → the other participant
+                try:
+                    from notification_service import notify_new_message as _nnm
+                    recipient_id = (convo.seller_id
+                                    if str(current_user.id) == str(convo.buyer_id)
+                                    else convo.buyer_id)
+                    sender_name = current_user.first_name or current_user.email or 'Someone'
+                    _nnm(recipient_id=recipient_id,
+                         sender_name=sender_name,
+                         listing_title=listing.title,
+                         listing_id=listing_id,
+                         conversation_id=convo.id)
+                except Exception:
+                    pass
                 flash("Message sent!", "success")
             return redirect(url_for('listing_message',
                                     listing_id=listing_id, convo_id=convo_id))
@@ -3208,6 +3386,20 @@ def listing_request_delivery(listing_id):
     except Exception as _e:
         app.logger.error("Delivery admin notify failed: %s", _e)
 
+    # In-app notification → all admin users
+    try:
+        from notification_service import notify_delivery_request as _ndr
+        listing_title = listing.title if listing else 'marketplace item'
+        _buyer_name = buyer_name
+        admin_users = User.query.filter_by(is_admin=True).all()
+        for _admin in admin_users:
+            _ndr(admin_user_id=_admin.id,
+                 buyer_name=_buyer_name,
+                 listing_title=listing_title,
+                 dr_id=dr.id)
+    except Exception:
+        pass
+
     flash("Delivery request submitted! Registered haulers will be notified.", "success")
     return redirect(url_for('delivery_detail', dr_id=dr.id))
 
@@ -3386,6 +3578,27 @@ def delivery_update_status(dr_id):
 
     dr.status = new_status
     db.session.commit()
+
+    # In-app notification → buyer on any status change (all statuses)
+    try:
+        from notification_service import notify_delivery_status as _nds
+        from models import Listing as _DL
+        _dl = _DL.query.get(dr.listing_id) if dr.listing_id else None
+        _item_title = _dl.title if _dl else 'your item'
+        _status_label = new_status.replace('_', ' ').title()
+        _nds(buyer_id=dr.buyer_id,
+             status_label=_status_label,
+             listing_title=_item_title,
+             dr_id=dr_id)
+        # Separate "quote ready" notification for the buyer when admin marks quoted
+        if new_status == 'quoted' and is_admin:
+            from notification_service import notify_delivery_quote_ready as _ndqr
+            _ndqr(buyer_id=dr.buyer_id,
+                  listing_title=_item_title,
+                  dr_id=dr_id,
+                  amount=dr.quote_amount)
+    except Exception:
+        pass
 
     _buyer_msgs = {
         'scheduled':  "Your delivery is scheduled.",

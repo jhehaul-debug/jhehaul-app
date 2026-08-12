@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Notifications — JHE Haul{% endblock %}
+{% block content %}
+
+<style>
+.notif-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.notif-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notif-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  line-height: 1.5;
+}
+.notif-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.notif-filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1.5px solid #e2e8f0;
+  color: #4a5568;
+  background: #fff;
+  transition: all .15s;
+}
+.notif-filter-btn:hover { background: #f0f4f8; border-color: #cbd5e0; }
+.notif-filter-btn.active {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid #f0f4f8;
+  transition: background .12s;
+  position: relative;
+  border-radius: 0;
+}
+.notif-row:first-child { border-radius: 10px 10px 0 0; }
+.notif-row:last-child  { border-bottom: none; border-radius: 0 0 10px 10px; }
+.notif-row:only-child  { border-radius: 10px; }
+.notif-row:hover { background: #f8fafc; }
+.notif-row.unread { background: #eff6ff; }
+.notif-row.unread:hover { background: #dbeafe; }
+.notif-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0f4f8;
+}
+.notif-row.unread .notif-icon { background: #dbeafe; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-row-title {
+  font-weight: 600;
+  font-size: .93rem;
+  color: #1a202c;
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+.notif-row.unread .notif-row-title { color: #1d4ed8; }
+.notif-row-msg {
+  font-size: .84rem;
+  color: #718096;
+  margin: 0 0 4px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notif-time {
+  font-size: .78rem;
+  color: #a0aec0;
+}
+.notif-unread-dot {
+  width: 9px;
+  height: 9px;
+  background: #3b82f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.notif-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #a0aec0;
+}
+.notif-empty .notif-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.notif-empty p { margin: 0; font-size: .95rem; }
+.mark-all-btn {
+  background: none;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all .15s;
+}
+.mark-all-btn:hover { background: #f0f4f8; border-color: #cbd5e0; }
+</style>
+
+<div class="notif-page-header">
+  <div class="notif-title-row">
+    <h2 style="margin:0;">🔔 Notifications</h2>
+    {% if unread_count > 0 %}
+    <span class="notif-badge">{{ unread_count }} unread</span>
+    {% endif %}
+  </div>
+  {% if unread_count > 0 %}
+  <form method="POST" action="{{ url_for('notifications_mark_all_read') }}">
+    <button type="submit" class="mark-all-btn">✓ Mark all as read</button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- Filter tabs -->
+<div class="notif-filters">
+  {% set filters = [
+    ('all',      'All'),
+    ('unread',   'Unread'),
+    ('messages', 'Messages'),
+    ('offers',   'Offers'),
+    ('listings', 'Listings'),
+    ('delivery', 'Delivery'),
+    ('account',  'Account'),
+  ] %}
+  {% for key, label in filters %}
+  <a href="{{ url_for('notifications_page') }}{% if key != 'all' %}?filter={{ key }}{% endif %}"
+     class="notif-filter-btn {% if filter_key == key or (key == 'all' and filter_key == 'all') %}active{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  {% if notifications %}
+  <div class="notif-list">
+    {% for n in notifications %}
+    {% set icon = notif_icons.get(n.type, '🔔') %}
+    <a href="{{ url_for('notification_open', notif_id=n.id) }}"
+       class="notif-row {% if not n.is_read %}unread{% endif %}">
+      <div class="notif-icon">{{ icon }}</div>
+      <div class="notif-body">
+        <div class="notif-row-title">{{ n.title }}</div>
+        {% if n.message %}
+        <div class="notif-row-msg">{{ n.message }}</div>
+        {% endif %}
+        <div class="notif-time">
+          {{ n.created_at.strftime('%-I:%M %p · %b %-d, %Y') if n.created_at else '' }}
+          {% if n.is_read %}<span style="color:#22c55e;margin-left:6px;">✓ Read</span>{% endif %}
+        </div>
+      </div>
+      {% if not n.is_read %}
+      <div class="notif-unread-dot"></div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="notif-empty">
+    <div class="notif-empty-icon">🔔</div>
+    <p>
+      {% if filter_key == 'unread' %}No unread notifications.
+      {% elif filter_key != 'all' %}No {{ filter_key }} notifications yet.
+      {% else %}You have no notifications yet.{% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+{% if notifications|length >= 100 %}
+<p style="text-align:center;color:#a0aec0;font-size:.83rem;margin-top:12px;">
+  Showing the 100 most recent notifications.
+</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,533 @@
+Add the following notification system to the JHE Haul Marketplace reconstruction.
+
+IMPORTANT:
+
+These notifications are for the NEW JHE HAUL MARKETPLACE where users list items for sale.
+
+Do NOT build notifications around the old hauling-job bidding system.
+
+The notification system should be designed around:
+
+* Marketplace listings
+* Buyer/seller messages
+* Offers
+* Counteroffers
+* Sold/reserved listings
+* JHE Haul delivery requests
+* Delivery quotes
+* Account and admin notices
+
+========================================
+PRIMARY NOTIFICATION METHOD
+
+Build IN-APP NOTIFICATIONS as the primary notification system.
+
+Do NOT require paid SMS in Phase 1.
+
+Use email only for important marketplace activity where appropriate.
+
+The system should work even if SMS/Twilio is disabled.
+
+========================================
+NOTIFICATION BELL
+
+Add a notification bell to the logged-in interface.
+
+The bell should display an unread-count badge.
+
+Examples:
+
+🔔 1
+🔔 3
+🔔 12
+
+When the user taps the bell, open:
+
+Notifications
+
+Notifications should appear newest first.
+
+Each notification should display:
+
+* Notification icon
+* Short title
+* Short description
+* Time/date
+* Read/unread state
+
+Unread notifications should be visually distinct.
+
+========================================
+CLICKABLE NOTIFICATIONS
+
+Notifications must link directly to the relevant marketplace activity.
+
+Examples:
+
+New message
+→ Open the correct conversation
+
+New offer
+→ Open the offer and listing
+
+Counteroffer
+→ Open the offer
+
+Offer accepted
+→ Open listing/offer details
+
+Delivery quote ready
+→ Open delivery request
+
+Listing reported
+→ Admin moderation screen
+
+Do not send users to a generic page when a specific destination is available.
+
+========================================
+MARKETPLACE NOTIFICATION TYPES
+
+Create notification support for:
+
+NEW MESSAGE
+
+Example:
+
+“New message about your sofa”
+
+“You received a message from a buyer.”
+
+⸻
+
+NEW OFFER
+
+Example:
+
+“New offer: $175”
+
+“Someone made an offer on your listing.”
+
+⸻
+
+COUNTEROFFER RECEIVED
+
+Example:
+
+“Seller countered at $225”
+
+⸻
+
+OFFER ACCEPTED
+
+Example:
+
+“Your $225 offer was accepted.”
+
+⸻
+
+OFFER DECLINED
+
+Example:
+
+“Your offer was declined.”
+
+⸻
+
+OFFER EXPIRED
+
+Example:
+
+“Your offer has expired.”
+
+⸻
+
+LISTING RESERVED
+
+Example:
+
+“Your item is now reserved.”
+
+⸻
+
+LISTING SOLD
+
+Example:
+
+“Your listing was marked sold.”
+
+If another user has saved the listing, prepare architecture for a future notification such as:
+
+“An item you saved has sold.”
+
+Do not activate unnecessary notification types unless approved.
+
+⸻
+
+LISTING EXPIRED
+
+Example:
+
+“Your listing has expired.”
+
+CTA:
+
+Renew Listing
+
+⸻
+
+LISTING REMOVED / MODERATED
+
+Example:
+
+“Your listing was removed.”
+
+Include a reason where appropriate.
+
+⸻
+
+DELIVERY REQUEST RECEIVED
+
+Admin notification:
+
+“New JHE Haul delivery request.”
+
+⸻
+
+DELIVERY QUOTE READY
+
+Customer notification:
+
+“Your JHE Haul delivery quote is ready.”
+
+CTA:
+
+View Quote
+
+⸻
+
+DELIVERY ACCEPTED
+
+Admin notification:
+
+“Customer accepted delivery quote.”
+
+⸻
+
+DELIVERY DECLINED
+
+Admin notification:
+
+“Customer declined delivery quote.”
+
+⸻
+
+DELIVERY STATUS UPDATED
+
+Prepare support for statuses such as:
+
+Quote Pending
+Quote Ready
+Accepted
+Scheduled
+In Progress
+Completed
+Cancelled
+
+⸻
+
+ADMIN NOTICE
+
+Allow administrators to send important account or marketplace notices.
+
+Examples:
+
+“Action required on your account.”
+
+“Your listing requires changes.”
+
+“Marketplace policy notice.”
+
+========================================
+NOTIFICATION DATABASE
+
+Create or safely adapt a notifications table/model.
+
+Recommended fields:
+
+notification_id
+
+user_id
+
+type
+
+title
+
+message
+
+related_listing_id
+
+related_offer_id
+
+related_conversation_id
+
+related_delivery_request_id
+
+related_user_id
+
+action_url or destination information
+
+is_read
+
+created_at
+
+read_at
+
+metadata when needed
+
+Do not store unnecessary sensitive information inside notification text.
+
+========================================
+READ / UNREAD
+
+Support:
+
+Mark notification as read
+
+Mark notification as unread
+
+Mark all as read
+
+Unread count
+
+When the user opens a notification, it should normally become read.
+
+Do not delete notifications simply because they are read.
+
+========================================
+NOTIFICATION PAGE
+
+Create a full Notifications page.
+
+Include filters if appropriate:
+
+All
+Unread
+Messages
+Offers
+Listings
+Delivery
+Account
+
+Keep the mobile version simple.
+
+========================================
+EMAIL NOTIFICATIONS
+
+Where existing email infrastructure is available, use email for IMPORTANT marketplace events.
+
+Recommended email alerts:
+
+* New buyer inquiry/message
+* Offer accepted
+* Important counteroffer
+* Delivery quote ready
+* Account verification
+* Password reset
+* Important admin/moderation notice
+
+Avoid sending unnecessary emails for every minor marketplace action.
+
+Prevent email flooding.
+
+Where practical, allow users to control email notification preferences later.
+
+========================================
+EMAIL PREFERENCES
+
+Prepare support for notification settings such as:
+
+In-App Notifications:
+ON by default
+
+Email — Messages:
+ON/OFF
+
+Email — Offers:
+ON/OFF
+
+Email — Delivery:
+ON/OFF
+
+Email — Account/Security:
+Required where appropriate
+
+Marketing Email:
+Separate opt-in
+
+Do not treat required transactional/security emails as marketing emails.
+
+========================================
+SMS
+
+Do NOT make SMS a requirement in Phase 1.
+
+Preserve existing Twilio functionality if it already exists.
+
+Do not delete Twilio configuration.
+
+However:
+
+Marketplace notifications should work fully using:
+
+1. In-app notifications
+2. Email
+
+SMS can be added later as an optional paid/premium feature if desired.
+
+========================================
+REAL-TIME EXPERIENCE
+
+Where the current technology stack safely supports it, notifications should update promptly after events occur.
+
+Examples:
+
+Buyer sends message
+→ Seller receives notification
+
+Buyer makes offer
+→ Seller receives notification
+
+Seller accepts offer
+→ Buyer receives notification
+
+Admin enters delivery quote
+→ Customer receives notification
+
+Do not introduce unstable infrastructure solely for real-time behavior if a reliable polling/refetch system is more appropriate for the existing application.
+
+========================================
+MOBILE DESIGN
+
+The notification system must be mobile-first.
+
+Notification rows should be easy to tap.
+
+Use clear icons for:
+
+Messages
+Offers
+Listings
+Delivery
+Admin
+
+Unread notifications should be obvious without making the interface cluttered.
+
+========================================
+ADMIN NOTIFICATIONS
+
+Admin dashboard should surface:
+
+New delivery requests
+
+Reported listings
+
+Reported users
+
+New moderation issues
+
+Delivery quotes awaiting action
+
+Other marketplace issues requiring attention
+
+These can appear in an admin notification center or dashboard alert system.
+
+========================================
+SECURITY
+
+A user must NEVER be able to access another user’s private notification.
+
+Every notification endpoint must verify ownership.
+
+Do not expose:
+
+Private messages
+
+Addresses
+
+Private contact information
+
+Admin-only data
+
+through notification previews unless the user is authorized to see it.
+
+========================================
+TESTING
+
+Test at minimum:
+
+Buyer sends seller a message
+→ Seller receives notification
+
+Buyer submits offer
+→ Seller receives notification
+
+Seller counters
+→ Buyer receives notification
+
+Seller accepts offer
+→ Buyer receives notification
+
+Seller declines offer
+→ Buyer receives notification
+
+Admin enters delivery quote
+→ Customer receives notification
+
+User opens notification
+→ Notification becomes read
+
+Unread count updates correctly
+
+Mark all as read works
+
+Notification links open correct destination
+
+Unauthorized users cannot access another user’s notifications
+
+Email notifications send only for configured important events
+
+Application continues working if SMS/Twilio is unavailable
+
+========================================
+GITHUB / DEPLOYMENT
+
+After this notification phase is completed:
+
+1. Run all relevant tests.
+2. Run the production build.
+3. Fix critical errors.
+4. Verify authentication.
+5. Verify notification ownership/security.
+6. Verify marketplace messaging and offers still work.
+7. Verify no secrets are committed.
+8. Commit the completed changes.
+9. Push to the EXISTING GitHub repository.
+10. Verify deployment.
+11. Report:
+
+* Files changed
+* Database migration
+* Notification types implemented
+* Tests run
+* Test results
+* Build status
+* Git commit ID
+* Push status
+* Deployment status
+* Any unresolved issues
+
+Do not create a new repository.
+
+Do not delete existing email/Twilio integrations.
+
+Do not break the existing authentication or admin systems.

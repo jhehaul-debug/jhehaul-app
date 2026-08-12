@@ -660,6 +660,14 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (gallery_photos featured content) skipped: %s", _e)
 
+    # ── Notifications table ───────────────────────────────────────────────────
+    try:
+        from models import Notification as _Notif  # noqa: F401
+        db.create_all()  # creates notifications table if it doesn't exist
+        logging.info("Table migration: notifications ensured")
+    except Exception as _e:
+        logging.info("Table migration (notifications) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

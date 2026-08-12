@@ -591,6 +591,37 @@ class UserReport(db.Model):
                                backref=db.backref('user_reports_filed', lazy=True))
 
 
+class Notification(db.Model):
+    """In-app notification for marketplace events (messages, offers, delivery, admin)."""
+    __tablename__ = 'notifications'
+    # Type values: new_message | new_offer | offer_accepted | offer_declined |
+    #              offer_countered | listing_expired | listing_removed |
+    #              listing_sold | listing_reserved | delivery_request |
+    #              delivery_quote_ready | delivery_status | admin_notice
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String, db.ForeignKey('users.id', ondelete='CASCADE'),
+                        nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=True)
+    action_url = db.Column(db.String(500), nullable=True)
+    # Related entity IDs stored without FK constraints to survive cascade deletes
+    related_listing_id = db.Column(db.Integer, nullable=True)
+    related_offer_id = db.Column(db.Integer, nullable=True)
+    related_conversation_id = db.Column(db.Integer, nullable=True)
+    related_delivery_request_id = db.Column(db.Integer, nullable=True)
+    related_user_id = db.Column(db.String, nullable=True)
+    # State
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    metadata_json = db.Column(db.Text, nullable=True)
+
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('notifications', lazy='dynamic',
+                                             cascade='all, delete-orphan'))
+
+
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def expire_pending_offers(listing_id):
