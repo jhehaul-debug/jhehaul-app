@@ -1025,7 +1025,7 @@ def listing_step(listing_id, step):
 @app.route("/listing/<int:listing_id>/photo/upload", methods=["POST"])
 @require_login
 def listing_photo_upload(listing_id):
-    """AJAX: upload a photo to a listing (max 10)."""
+    """AJAX: upload a photo to a listing (max 20)."""
     _check_listing_csrf()
     from models import Listing, ListingPhoto
     listing = _listing_owner_or_403(listing_id)
