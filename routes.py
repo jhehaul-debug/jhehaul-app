@@ -308,6 +308,18 @@ def _marketplace_categories():
             .all())
 
 
+def _saved_listing_ids():
+    """Return a set of listing IDs saved by the current user (empty set if logged out)."""
+    if not current_user.is_authenticated:
+        return set()
+    try:
+        from models import ListingFavorite
+        rows = ListingFavorite.query.filter_by(user_id=current_user.id).with_entities(ListingFavorite.listing_id).all()
+        return {r.listing_id for r in rows}
+    except Exception:
+        return set()
+
+
 def _marketplace_homepage_ctx(hide_sold=False):
     """Build context dict for the marketplace homepage (no active filters)."""
     from models import Listing
@@ -352,7 +364,8 @@ def home():
         ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
         return render_template('marketplace.html', categories=categories, is_search=False,
                                hide_sold='1' if hide_sold_pref else '',
-                               show_welcome=show_welcome, **ctx)
+                               show_welcome=show_welcome,
+                               saved_listing_ids=_saved_listing_ids(), **ctx)
     # Logged-out visitors see the marketing landing page
     return redirect(url_for('landing'))
 
@@ -519,6 +532,7 @@ def marketplace():
                                min_price=min_price, max_price=max_price,
                                min_beds=min_beds, open_house_only=open_house_only,
                                hide_sold=hide_sold,
+                               saved_listing_ids=_saved_listing_ids(),
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
@@ -532,7 +546,8 @@ def marketplace():
         return render_template('marketplace.html', categories=categories, is_search=False,
                                listing_type_filter='', area_filter='', city_zip_filter='',
                                hide_sold='1' if hide_sold_pref else '',
-                               show_welcome=show_welcome, **ctx)
+                               show_welcome=show_welcome,
+                               saved_listing_ids=_saved_listing_ids(), **ctx)
 
 
 @app.route("/sell")

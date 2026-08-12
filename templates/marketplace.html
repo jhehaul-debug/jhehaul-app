@@ -322,6 +322,28 @@
 .mp-hide-sold-btn:hover   { background: #f3f4f6; text-decoration: none; }
 /* Active chip highlight */
 .mp-cat-chip.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+/* ── Heart / Save button on listing cards ── */
+.mp-card-wrap { position: relative; display: flex; flex-direction: column; }
+.mp-card-wrap .mp-card { flex: 1; }
+.mp-heart-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    z-index: 10;
+    background: rgba(255,255,255,0.92);
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1.05rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    transition: background 0.12s, transform 0.12s;
+    line-height: 1;
+    padding: 0;
+}
+.mp-heart-btn:hover { background: #fff; transform: scale(1.12); }
+.mp-heart-btn[aria-pressed="true"] { background: #fff5f5; }
+.mp-heart-btn .mp-heart-icon { pointer-events: none; }
 
 @media (max-width: 600px) {
     .mp-hero { padding: 36px 20px 28px; }
@@ -414,6 +436,8 @@
 {% macro listing_card(listing, placeholder='📦') %}
 {% set is_sold     = listing.status == 'sold' %}
 {% set is_reserved = listing.status == 'reserved' %}
+{% set is_saved    = listing.id in (saved_listing_ids or []) %}
+<div class="mp-card-wrap">
 <a href="/listing/{{ listing.id }}" class="mp-card{% if is_sold %} mp-card--sold{% elif is_reserved %} mp-card--reserved{% endif %}">
     {% set photo = listing.primary_photo %}
     {% if photo %}
@@ -461,6 +485,19 @@
         <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
     </div>
 </a>
+{# Heart / save button — sits outside the <a> so clicks don't navigate #}
+<button
+    class="mp-heart-btn"
+    aria-label="{{ 'Unsave listing' if is_saved else 'Save listing' }}"
+    aria-pressed="{{ 'true' if is_saved else 'false' }}"
+    data-listing-id="{{ listing.id }}"
+    data-authed="{{ 'true' if current_user.is_authenticated else 'false' }}"
+    onclick="mpToggleSave(event, this)"
+    title="{{ 'Saved' if is_saved else 'Save' }}"
+>
+    <span class="mp-heart-icon">{{ '❤️' if is_saved else '🤍' }}</span>
+</button>
+</div>
 {% endmacro %}
 
 {# ── Search Results View ── #}
@@ -651,5 +688,54 @@
 </div>
 
 {% endif %}{# end is_search / else #}
+
+<script>
+function mpToggleSave(evt, btn) {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    var authed = btn.dataset.authed === 'true';
+    if (!authed) {
+        window.location.href = '/invite?role=customer';
+        return;
+    }
+
+    var listingId = btn.dataset.listingId;
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+    // Optimistic UI update
+    var pressed = btn.getAttribute('aria-pressed') === 'true';
+    var newPressed = !pressed;
+    btn.setAttribute('aria-pressed', newPressed ? 'true' : 'false');
+    btn.querySelector('.mp-heart-icon').textContent = newPressed ? '❤️' : '🤍';
+    btn.setAttribute('aria-label', newPressed ? 'Unsave listing' : 'Save listing');
+    btn.title = newPressed ? 'Saved' : 'Save';
+
+    fetch('/listing/' + listingId + '/favorite', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrf,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'csrf_token=' + encodeURIComponent(csrf),
+    })
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(data) {
+        // Sync with server truth
+        btn.setAttribute('aria-pressed', data.favorited ? 'true' : 'false');
+        btn.querySelector('.mp-heart-icon').textContent = data.favorited ? '❤️' : '🤍';
+        btn.setAttribute('aria-label', data.favorited ? 'Unsave listing' : 'Save listing');
+        btn.title = data.favorited ? 'Saved' : 'Save';
+    })
+    .catch(function() {
+        // Revert optimistic update on error
+        btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+        btn.querySelector('.mp-heart-icon').textContent = pressed ? '❤️' : '🤍';
+        btn.setAttribute('aria-label', pressed ? 'Unsave listing' : 'Save listing');
+        btn.title = pressed ? 'Saved' : 'Save';
+    });
+}
+</script>
 
 {% endblock %}
