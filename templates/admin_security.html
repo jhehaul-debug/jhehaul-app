@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Admin Security — JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header">
+  <h2 class="page-title">🔐 Admin Security</h2>
+</div>
+
+{% if success %}
+<div style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:0.92rem;">
+  ✅ {{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:0.92rem;">
+  ⚠️ {{ error }}
+</div>
+{% endif %}
+
+<!-- Email system status -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin:0 0 14px;font-size:1rem;font-weight:700;color:#1a202c;">📧 Email System</h3>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <span style="font-size:0.9rem;color:#4a5568;">SendGrid:</span>
+    {% if sendgrid_ok %}
+    <span style="background:#dcfce7;color:#15803d;font-size:0.8rem;font-weight:700;padding:3px 12px;border-radius:20px;">✓ Configured</span>
+    {% else %}
+    <span style="background:#fee2e2;color:#991b1b;font-size:0.8rem;font-weight:700;padding:3px 12px;border-radius:20px;">✗ SENDGRID_API_KEY not set</span>
+    {% endif %}
+  </div>
+  <form method="POST" action="{{ url_for('admin_security_settings') }}" style="margin:0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="send_test_email">
+    <button type="submit" class="btn btn-outline" style="font-size:0.84rem;padding:8px 16px;"
+            {% if not sendgrid_ok %}disabled title="SendGrid is not configured"{% endif %}>
+      Send Test Email to {{ admin.email }}
+    </button>
+  </form>
+</div>
+
+<!-- Admin password -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin:0 0 6px;font-size:1rem;font-weight:700;color:#1a202c;">
+    🔑 Admin Password
+    {% if has_password %}
+    <span style="background:#dcfce7;color:#15803d;font-size:0.76rem;font-weight:700;padding:2px 10px;border-radius:20px;vertical-align:middle;margin-left:8px;">Set</span>
+    {% else %}
+    <span style="background:#fff7ed;color:#c2410c;font-size:0.76rem;font-weight:700;padding:2px 10px;border-radius:20px;vertical-align:middle;margin-left:8px;">Not set</span>
+    {% endif %}
+  </h3>
+  <p style="color:#64748b;font-size:0.85rem;margin:0 0 18px;">
+    {% if has_password %}Change your admin password. You can also use this password to sign in at <a href="{{ url_for('admin_local_login') }}" style="color:#3b82f6;">/admin/login</a>.{% else %}Set a password to enable direct admin sign-in and password recovery.{% endif %}
+  </p>
+
+  <form method="POST" action="{{ url_for('admin_security_settings') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="set_password">
+
+    {% if has_password %}
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="font-size:0.84rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Current Password</label>
+      <input type="password" name="current_password" required autocomplete="current-password"
+             style="width:100%;max-width:360px;padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;box-sizing:border-box;"
+             placeholder="Enter current password">
+    </div>
+    {% endif %}
+
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="font-size:0.84rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">{% if has_password %}New Password{% else %}Password{% endif %}</label>
+      <input type="password" name="new_password" required autocomplete="new-password" minlength="12"
+             style="width:100%;max-width:360px;padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;box-sizing:border-box;"
+             placeholder="Minimum 12 characters">
+    </div>
+
+    <div class="form-group" style="margin-bottom:18px;">
+      <label style="font-size:0.84rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Confirm Password</label>
+      <input type="password" name="confirm_password" required autocomplete="new-password" minlength="12"
+             style="width:100%;max-width:360px;padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;box-sizing:border-box;"
+             placeholder="Re-enter password">
+    </div>
+
+    <button type="submit" class="btn" style="padding:9px 22px;font-size:0.88rem;font-weight:700;background:#1a202c;color:#fff;border:none;border-radius:8px;cursor:pointer;">
+      {% if has_password %}Change Password{% else %}Set Password{% endif %}
+    </button>
+  </form>
+</div>
+
+<!-- Recovery email -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin:0 0 6px;font-size:1rem;font-weight:700;color:#1a202c;">📬 Recovery Email</h3>
+  <p style="color:#64748b;font-size:0.85rem;margin:0 0 14px;">
+    A verified recovery email lets you reset your password even if you lose access to your primary admin email.
+    It must differ from your primary email and requires your admin password to set.
+  </p>
+
+  <!-- Current status -->
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin-bottom:18px;">
+    <p style="margin:0 0 6px;font-size:0.85rem;"><strong>Primary email:</strong> {{ admin.email }}</p>
+    <p style="margin:0 0 6px;font-size:0.85rem;">
+      <strong>Recovery email:</strong>
+      {% if recovery_email %}
+        <span style="color:#15803d;font-weight:600;">{{ recovery_email }}</span>
+        <span style="background:#dcfce7;color:#15803d;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;">✓ Verified</span>
+      {% else %}
+        <span style="color:#94a3b8;">Not set</span>
+      {% endif %}
+    </p>
+    {% if recovery_pending %}
+    <p style="margin:0;font-size:0.85rem;">
+      <strong>Pending verification:</strong>
+      <span style="color:#d97706;font-weight:600;">{{ recovery_pending }}</span>
+      <span style="background:#fef3c7;color:#d97706;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;">⏳ Check inbox</span>
+    </p>
+    {% endif %}
+  </div>
+
+  {% if not has_password %}
+  <p style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;font-size:0.85rem;margin:0;">
+    ⚠️ Set an admin password above before adding a recovery email.
+  </p>
+  {% else %}
+  <form method="POST" action="{{ url_for('admin_security_settings') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="set_recovery_email">
+
+    <div class="form-group" style="margin-bottom:14px;">
+      <label style="font-size:0.84rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">{% if recovery_email %}New {% endif %}Recovery Email</label>
+      <input type="email" name="recovery_email" required autocomplete="email"
+             style="width:100%;max-width:360px;padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;box-sizing:border-box;"
+             placeholder="recovery@example.com">
+    </div>
+
+    <div class="form-group" style="margin-bottom:18px;">
+      <label style="font-size:0.84rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Confirm with Admin Password</label>
+      <input type="password" name="confirm_password" required autocomplete="current-password"
+             style="width:100%;max-width:360px;padding:9px 13px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.92rem;box-sizing:border-box;"
+             placeholder="Your current admin password">
+    </div>
+
+    <button type="submit" class="btn btn-outline" style="padding:9px 22px;font-size:0.88rem;font-weight:600;">
+      {% if recovery_email %}Update Recovery Email{% else %}Add Recovery Email{% endif %}
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- How recovery works -->
+<div class="card" style="background:#f8fafc;border:1px solid #e2e8f0;">
+  <h3 style="margin:0 0 12px;font-size:0.95rem;font-weight:700;color:#1a202c;">ℹ️ How Admin Recovery Works</h3>
+  <ol style="color:#4a5568;font-size:0.85rem;line-height:1.8;margin:0;padding-left:20px;">
+    <li>Go to <a href="{{ url_for('admin_local_login') }}" style="color:#3b82f6;">/admin/login</a> and click <em>Forgot Password?</em></li>
+    <li>Enter your primary admin email or verified recovery email.</li>
+    <li>Click the link in the email — it expires in 30 minutes and is single-use.</li>
+    <li>Set a new password. All existing local-password sessions are immediately invalidated.</li>
+    <li>Confirmation emails are sent to both your primary and recovery address.</li>
+  </ol>
+  <p style="color:#94a3b8;font-size:0.8rem;margin:12px 0 0;">SMS is never used. Recovery is email-only.</p>
+</div>
+
+{% endblock %}

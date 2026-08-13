@@ -5,64 +5,69 @@
             <a href="{{ url_for('admin_dashboard') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_dashboard' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_dashboard' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                ⚙ Dashboard
+                &#9881; Dashboard
             </a>
             <a href="{{ url_for('admin_listings') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint in ['admin_listings','admin_listing_detail'] %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint in ['admin_listings','admin_listing_detail'] %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint in ['admin_listings','admin_listing_detail'] %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint in ['admin_listings','admin_listing_detail'] %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                📋 Listings
+                &#128203; Listings
             </a>
             <a href="{{ url_for('admin_users') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_users' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_users' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_users' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_users' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                👥 Users
+                &#128101; Users
             </a>
             <a href="{{ url_for('admin_reports') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_reports' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_reports' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_reports' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;position:relative;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_reports' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                🚩 Reports{% if reported_listings is defined and reported_listings > 0 %}<span style="background:#ef4444;color:#fff;font-size:0.68rem;font-weight:800;padding:1px 5px;border-radius:10px;margin-left:3px;">{{ reported_listings }}</span>{% endif %}
+                &#128681; Reports{% if reported_listings is defined and reported_listings > 0 %}<span style="background:#ef4444;color:#fff;font-size:0.68rem;font-weight:800;padding:1px 5px;border-radius:10px;margin-left:3px;">{{ reported_listings }}</span>{% endif %}
             </a>
             <a href="{{ url_for('admin_user_reports') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint in ['admin_user_reports','admin_user_detail'] %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint in ['admin_user_reports','admin_user_detail'] %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint in ['admin_user_reports','admin_user_detail'] %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">
-                👤 User Reports
+                &#128100; User Reports
             </a>
             <a href="{{ url_for('admin_categories') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_categories' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_categories' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_categories' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_categories' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                🗂 Categories
+                &#128450; Categories
             </a>
             <a href="{{ url_for('admin_gallery') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_gallery' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_gallery' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_gallery' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_gallery' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                📸 Gallery
+                &#128248; Gallery
             </a>
             <a href="{{ url_for('admin_analytics') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_analytics' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_analytics' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_analytics' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_analytics' %}#60a5fa{% else %}#94a3b8{% endif %}'">
-                📊 Analytics
+                &#128202; Analytics
             </a>
             <a href="{{ url_for('admin_sms_settings') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if 'admin_sms' in request.endpoint or 'admin_notification' in request.endpoint %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:500;font-size:0.88rem;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">
-                ⚙ Settings
+                &#9881; Settings
+            </a>
+            <a href="{{ url_for('admin_security_settings') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_security_settings' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_security_settings' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_security_settings' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">
+                &#128272; Security
             </a>
         </nav>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0;">
             <a href="{{ url_for('marketplace') }}"
                style="display:flex;align-items:center;gap:5px;color:#64748b;font-size:0.82rem;text-decoration:none;white-space:nowrap;padding:6px 10px;border-radius:6px;"
                onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
-                ← Marketplace
+                &larr; Marketplace
             </a>
             <a href="{{ url_for('auth.switch_account') }}"
                style="display:flex;align-items:center;gap:5px;color:#94a3b8;font-size:0.82rem;text-decoration:none;white-space:nowrap;padding:6px 10px;border-radius:6px;border:1px solid #334155;"
                onmouseover="this.style.background='#1e3a5f';this.style.color='#e2e8f0'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                🔄 Switch
+                &#128260; Switch
             </a>
             <a href="{{ url_for('auth.logout') }}"
                style="display:flex;align-items:center;gap:5px;color:#fca5a5;font-size:0.82rem;font-weight:600;text-decoration:none;white-space:nowrap;padding:6px 12px;border-radius:6px;background:#450a0a;border:1px solid #7f1d1d;"
                onmouseover="this.style.background='#7f1d1d';this.style.color='#fecaca'" onmouseout="this.style.background='#450a0a';this.style.color='#fca5a5'">
-                🚪 Sign Out
+                &#128682; Sign Out
             </a>
         </div>
     </div>

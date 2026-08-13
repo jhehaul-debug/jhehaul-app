@@ -3,6 +3,8 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+# ── Admin security email helpers (used by routes.py admin security routes) ──
+
 _ADMIN_EMAIL = None
 _APP_URL = "https://jhehaul.com"
 
@@ -1063,4 +1065,138 @@ def notify_customer_deposit_confirmed(customer_email, job_id, service_type, esti
         _html("You're All Set! 🎉", "Your service is scheduled. We'll be in touch soon.",
               "✅ Confirmed", body),
         'customer_deposit_confirmed'
+    )
+
+
+# ── ADMIN SECURITY EMAILS ─────────────────────────────────────────────────────
+
+def notify_admin_password_reset_request(to_email, reset_link):
+    """Send a password-reset link to the admin (primary or recovery email)."""
+    body = f"""
+    <div class="info-box">
+      <p>A password reset was requested for the JHE Haul admin account.</p>
+      <p>This link expires in <strong>30 minutes</strong> and is single-use.</p>
+      <p>If you did not request this, your account is still secure — ignore this email.</p>
+    </div>
+    <a href="{reset_link}" class="btn">Reset Admin Password &rarr;</a>
+    <p style="margin-top:16px;font-size:0.82rem;color:#718096;">
+      If the button does not work, copy and paste this link:<br>
+      <code style="word-break:break-all;font-size:0.78rem;">{reset_link}</code>
+    </p>"""
+    return send_email(
+        to_email,
+        "[JHE Haul] Admin Password Reset Request",
+        _html("Admin Password Reset", "Reset your JHE Haul admin password.",
+              "🔐 Password Reset Requested", body),
+        'admin_security'
+    )
+
+
+def notify_admin_password_changed(admin_email):
+    """Notify admin that their password was successfully changed."""
+    body = f"""
+    <div class="info-box">
+      <p>Your JHE Haul admin password was successfully changed.</p>
+      <p>If you did not make this change, secure your admin account immediately and contact your host provider.</p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">Go to Admin Dashboard &rarr;</a>"""
+    return send_email(
+        admin_email,
+        "[JHE Haul] Admin Password Changed",
+        _html("Admin Password Changed", "Your admin password was updated.",
+              "🔑 Password Changed", body),
+        'admin_security'
+    )
+
+
+def notify_admin_recovery_email_verify(recovery_email, verify_link):
+    """Send verification link to the new recovery email address."""
+    body = f"""
+    <div class="info-box">
+      <p>This email address is being added as the recovery email for the JHE Haul admin account.</p>
+      <p>Click the button below to verify this address. The link expires in <strong>24 hours</strong>.</p>
+      <p>If you did not request this, ignore this email — no changes will be made.</p>
+    </div>
+    <a href="{verify_link}" class="btn">Verify Recovery Email &rarr;</a>
+    <p style="margin-top:16px;font-size:0.82rem;color:#718096;">
+      If the button does not work, copy and paste:<br>
+      <code style="word-break:break-all;font-size:0.78rem;">{verify_link}</code>
+    </p>"""
+    return send_email(
+        recovery_email,
+        "[JHE Haul] Verify Your Admin Recovery Email",
+        _html("Verify Recovery Email", "Confirm your JHE Haul admin recovery address.",
+              "📧 Verify Recovery Email", body),
+        'admin_security'
+    )
+
+
+def notify_admin_recovery_email_changed(admin_email, masked_recovery):
+    """Security notice to primary admin email when recovery email is changed."""
+    body = f"""
+    <div class="info-box">
+      <p>A new recovery email (<strong>{masked_recovery}</strong>) was added to the JHE Haul admin account.</p>
+      <p>The new address must be verified before it becomes active.</p>
+      <p>If you did not make this change, secure your admin account immediately.</p>
+    </div>
+    <a href="{_APP_URL}/admin/security" class="btn">Review Admin Security &rarr;</a>"""
+    return send_email(
+        admin_email,
+        "[JHE Haul] Admin Recovery Email Changed",
+        _html("Recovery Email Changed", "A new recovery email address was set.",
+              "🔔 Security Notice", body),
+        'admin_security'
+    )
+
+
+def notify_admin_recovery_email_verified(admin_email, masked_recovery):
+    """Notify admin that their recovery email is now verified and active."""
+    body = f"""
+    <div class="info-box">
+      <p>The recovery email <strong>{masked_recovery}</strong> has been verified and is now active on your JHE Haul admin account.</p>
+      <p>You can now use this address to recover your admin account if you forget your password.</p>
+    </div>
+    <a href="{_APP_URL}/admin/security" class="btn">View Admin Security &rarr;</a>"""
+    return send_email(
+        admin_email,
+        "[JHE Haul] Admin Recovery Email Verified",
+        _html("Recovery Email Verified", "Your admin recovery email is now active.",
+              "✅ Recovery Email Verified", body),
+        'admin_security'
+    )
+
+
+def notify_admin_login_alert(admin_email, ip_address, attempts):
+    """Alert admin of repeated failed login attempts and temporary lockout."""
+    body = f"""
+    <div class="info-box">
+      <p><strong>Failed attempts:</strong> {attempts}</p>
+      <p><strong>IP address:</strong> {ip_address}</p>
+      <p>The admin login has been temporarily locked for 15 minutes.</p>
+    </div>
+    <a href="{_APP_URL}/admin/forgot-password" class="btn">Reset Password &rarr;</a>"""
+    return send_email(
+        admin_email,
+        "[JHE Haul] \u26a0\ufe0f Repeated Failed Admin Login Attempts",
+        _html("Suspicious Login Activity",
+              "Multiple failed admin login attempts detected.",
+              "🚨 Security Alert", body),
+        'admin_security'
+    )
+
+
+def notify_admin_successful_recovery(admin_email):
+    """Confirm a completed admin password reset."""
+    body = f"""
+    <div class="info-box">
+      <p>A password reset was successfully completed for the JHE Haul admin account.</p>
+      <p>If you did not perform this reset, contact your host provider immediately.</p>
+    </div>
+    <a href="{_APP_URL}/admin" class="btn">Go to Admin Dashboard &rarr;</a>"""
+    return send_email(
+        admin_email,
+        "[JHE Haul] Admin Password Successfully Reset",
+        _html("Password Reset Complete", "Your admin password has been reset.",
+              "✅ Password Reset Complete", body),
+        'admin_security'
     )

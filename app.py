@@ -376,6 +376,31 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users safety early) skipped: %s", _e)
 
+    # ── Admin security columns (must run BEFORE any User query below) ────────
+    try:
+        from sqlalchemy import text as _text
+        _admin_sec_cols = [
+            ('admin_password_hash',           'VARCHAR(256)'),
+            ('admin_recovery_email',          'VARCHAR(256)'),
+            ('admin_recovery_email_pending',  'VARCHAR(256)'),
+            ('admin_recovery_email_token',    'VARCHAR(128)'),
+            ('admin_recovery_email_token_at', 'TIMESTAMP'),
+            ('admin_reset_token',             'VARCHAR(128)'),
+            ('admin_reset_token_at',          'TIMESTAMP'),
+            ('admin_login_attempts',          'INTEGER DEFAULT 0'),
+            ('admin_lockout_until',           'TIMESTAMP'),
+            ('admin_session_version',         'INTEGER DEFAULT 0'),
+        ]
+        for _col, _defn in _admin_sec_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: admin security columns ensured (early)")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (admin security early) skipped: %s", _e)
+
     try:
         from models import User
         admin_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")

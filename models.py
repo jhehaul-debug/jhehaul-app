@@ -44,6 +44,18 @@ class User(UserMixin, db.Model):
     profile_nudge_dismissed = db.Column(db.Boolean, default=False)
     notify_listing_status_changes = db.Column(db.Boolean, default=True)  # email when a saved listing is reserved/sold
 
+    # Admin security fields (only meaningful on is_admin=True accounts)
+    admin_password_hash          = db.Column(db.String(256), nullable=True)
+    admin_recovery_email         = db.Column(db.String(256), nullable=True)   # verified recovery address
+    admin_recovery_email_pending = db.Column(db.String(256), nullable=True)   # awaiting verification
+    admin_recovery_email_token   = db.Column(db.String(128), nullable=True)   # sha256 hash of verify token
+    admin_recovery_email_token_at= db.Column(db.DateTime,   nullable=True)
+    admin_reset_token            = db.Column(db.String(128), nullable=True)   # sha256 hash of reset token
+    admin_reset_token_at         = db.Column(db.DateTime,   nullable=True)
+    admin_login_attempts         = db.Column(db.Integer,    default=0)
+    admin_lockout_until          = db.Column(db.DateTime,   nullable=True)
+    admin_session_version        = db.Column(db.Integer,    default=0)
+
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')
 

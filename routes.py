@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import wraps
 from flask import session, redirect, url_for, request, send_from_directory, render_template, flash, make_response, g, abort, jsonify
 from werkzeug.utils import secure_filename
-from flask_login import current_user
+from flask_login import current_user, login_user, logout_user
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
@@ -98,8 +98,30 @@ def require_admin(f):
             return redirect(url_for('auth.login'))
         if not current_user.is_admin:
             return render_template('403.html'), 403
+        # Session-version check: only enforced for local-password admin sessions.
+        # OAuth sessions never set '_admin_sv', so they pass through untouched.
+        sess_ver = session.get('_admin_sv')
+        if sess_ver is not None:
+            db_ver = current_user.admin_session_version or 0
+            if sess_ver != db_ver:
+                logout_user()
+                session.clear()
+                flash("Your admin session has expired. Please sign in again.", "info")
+                return redirect(url_for('admin_local_login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+def _mask_email(email):
+    """Partially mask an email for display: j*****@example.com"""
+    if not email or '@' not in email:
+        return email or ''
+    local, domain = email.split('@', 1)
+    if len(local) <= 1:
+        masked_local = local
+    else:
+        masked_local = local[0] + '*' * min(len(local) - 1, 5)
+    return f"{masked_local}@{domain}"
 
 @app.context_processor
 def inject_globals():
@@ -170,6 +192,9 @@ _AGE_GATE_EXEMPT = {
     'listing_photo_reorder',
     'listing_video_upload', 'listing_video_delete',
     'csrf_refresh',  # token refresh endpoint
+    # Admin local-auth routes — accessible without age confirmation
+    'admin_local_login', 'admin_forgot_password', 'admin_reset_password',
+    'admin_verify_recovery_email',
 }
 
 @app.before_request
@@ -5896,6 +5921,301 @@ def admin_listing_toggle_featured(listing_id):
 def admin_listing_detail(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     return render_template('admin_listing_detail.html', listing=listing)
+
+
+# ── Admin: Security (local password login, forgot/reset, recovery email) ─────
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_local_login():
+    """Local email+password admin login — alternative to OAuth."""
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+
+    error = None
+    if request.method == "POST":
+        _check_listing_csrf()
+        email    = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        admin = User.query.filter_by(email=email, is_admin=True).first()
+
+        # Generic failure path (don't reveal whether email exists)
+        if not admin or not admin.admin_password_hash:
+            error = "Invalid credentials."
+        else:
+            if admin.admin_lockout_until and admin.admin_lockout_until > datetime.now():
+                mins = max(1, int((admin.admin_lockout_until - datetime.now()).total_seconds() // 60) + 1)
+                error = f"Account temporarily locked. Try again in {mins} minute(s)."
+            else:
+                from werkzeug.security import check_password_hash
+                if check_password_hash(admin.admin_password_hash, password):
+                    admin.admin_login_attempts = 0
+                    admin.admin_lockout_until  = None
+                    db.session.commit()
+                    login_user(admin)
+                    session['_admin_sv'] = admin.admin_session_version or 0
+                    next_url = session.pop("next_url", None)
+                    return redirect(next_url or url_for('admin_dashboard'))
+                else:
+                    admin.admin_login_attempts = (admin.admin_login_attempts or 0) + 1
+                    if admin.admin_login_attempts >= 5:
+                        from datetime import timedelta
+                        admin.admin_lockout_until = datetime.now() + timedelta(minutes=15)
+                        db.session.commit()
+                        try:
+                            from email_service import notify_admin_login_alert
+                            ip = (request.headers.get('X-Forwarded-For', '')
+                                  or request.remote_addr or 'unknown').split(',')[0].strip()
+                            notify_admin_login_alert(admin.email, ip, admin.admin_login_attempts)
+                        except Exception:
+                            pass
+                        error = "Too many failed attempts. Account locked for 15 minutes."
+                    else:
+                        db.session.commit()
+                        remaining = 5 - admin.admin_login_attempts
+                        error = f"Invalid credentials. {remaining} attempt(s) remaining before lockout."
+
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin/forgot-password", methods=["GET", "POST"])
+def admin_forgot_password():
+    """Step 1 of password recovery: request a reset link by email."""
+    sent = False
+    if request.method == "POST":
+        _check_listing_csrf()
+        email = request.form.get("email", "").strip().lower()
+        sent  = True   # always show generic confirmation
+
+        admin = User.query.filter(
+            User.is_admin == True,
+            db.or_(
+                db.func.lower(User.email) == email,
+                db.func.lower(User.admin_recovery_email) == email
+            )
+        ).first()
+
+        if admin:
+            import secrets, hashlib
+            from datetime import timedelta
+            raw_token  = secrets.token_urlsafe(32)
+            token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+            admin.admin_reset_token    = token_hash
+            admin.admin_reset_token_at = datetime.now()
+            db.session.commit()
+            reset_link = url_for('admin_reset_password', token=raw_token, _external=True)
+            try:
+                from email_service import notify_admin_password_reset_request
+                notify_admin_password_reset_request(email, reset_link)
+            except Exception as _e:
+                app.logger.warning("admin_forgot_password: email failed: %s", _e)
+
+    return render_template("admin_forgot_password.html", sent=sent)
+
+
+@app.route("/admin/reset-password/<token>", methods=["GET", "POST"])
+def admin_reset_password(token):
+    """Step 2 of password recovery: set a new password via the token link."""
+    import hashlib
+    from datetime import timedelta
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    now        = datetime.now()
+
+    admin = User.query.filter(
+        User.is_admin == True,
+        User.admin_reset_token == token_hash,
+        User.admin_reset_token_at != None
+    ).first()
+
+    expired = admin is not None and (now - admin.admin_reset_token_at) > timedelta(minutes=30)
+    invalid = admin is None or expired
+
+    if invalid:
+        return render_template("admin_reset_password.html", invalid=True, expired=expired, error=None)
+
+    error = None
+    if request.method == "POST":
+        _check_listing_csrf()
+        new_pw  = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+
+        if len(new_pw) < 12:
+            error = "Password must be at least 12 characters."
+        elif new_pw != confirm:
+            error = "Passwords do not match."
+        else:
+            from werkzeug.security import generate_password_hash
+            admin.admin_password_hash   = generate_password_hash(new_pw)
+            admin.admin_reset_token     = None
+            admin.admin_reset_token_at  = None
+            admin.admin_session_version = (admin.admin_session_version or 0) + 1
+            admin.admin_login_attempts  = 0
+            admin.admin_lockout_until   = None
+            db.session.commit()
+            if current_user.is_authenticated:
+                logout_user()
+            try:
+                from email_service import (notify_admin_successful_recovery,
+                                           notify_admin_password_changed)
+                notify_admin_successful_recovery(admin.email)
+                if admin.admin_recovery_email:
+                    notify_admin_password_changed(admin.admin_recovery_email)
+            except Exception as _e:
+                app.logger.warning("admin_reset_password: notify failed: %s", _e)
+            flash("Password reset successfully. Please sign in.", "success")
+            return redirect(url_for('admin_local_login'))
+
+    return render_template("admin_reset_password.html", invalid=False, expired=False, error=error)
+
+
+@app.route("/admin/security", methods=["GET", "POST"])
+@require_admin
+def admin_security_settings():
+    """Admin security settings: set/change password, set/verify recovery email, test email."""
+    import secrets, hashlib
+    from datetime import timedelta
+
+    admin = User.query.get(current_user.id)
+    error   = None
+    success = None
+
+    if request.method == "POST":
+        _check_listing_csrf()
+        action = request.form.get("action", "")
+
+        if action == "set_password":
+            new_pw     = request.form.get("new_password", "")
+            confirm_pw = request.form.get("confirm_password", "")
+            current_pw = request.form.get("current_password", "")
+
+            if len(new_pw) < 12:
+                error = "Password must be at least 12 characters."
+            elif new_pw != confirm_pw:
+                error = "Passwords do not match."
+            elif admin.admin_password_hash:
+                from werkzeug.security import check_password_hash
+                if not check_password_hash(admin.admin_password_hash, current_pw):
+                    error = "Current password is incorrect."
+
+            if not error:
+                from werkzeug.security import generate_password_hash
+                admin.admin_password_hash   = generate_password_hash(new_pw)
+                admin.admin_session_version = (admin.admin_session_version or 0) + 1
+                db.session.commit()
+                # Keep the current OAuth session alive (update version in session)
+                session['_admin_sv'] = admin.admin_session_version
+                try:
+                    from email_service import notify_admin_password_changed
+                    notify_admin_password_changed(admin.email)
+                    if admin.admin_recovery_email:
+                        notify_admin_password_changed(admin.admin_recovery_email)
+                except Exception as _e:
+                    app.logger.warning("admin_security set_password notify: %s", _e)
+                success = "Admin password set successfully. A confirmation email has been sent."
+
+        elif action == "set_recovery_email":
+            new_recovery = request.form.get("recovery_email", "").strip().lower()
+            confirm_pw   = request.form.get("confirm_password", "")
+
+            if not new_recovery or '@' not in new_recovery:
+                error = "Please enter a valid email address."
+            elif admin.email and new_recovery == admin.email.lower():
+                error = "Recovery email must differ from your primary email."
+            elif not admin.admin_password_hash:
+                error = "Set an admin password before adding a recovery email."
+            else:
+                from werkzeug.security import check_password_hash
+                if not check_password_hash(admin.admin_password_hash, confirm_pw):
+                    error = "Incorrect admin password."
+
+            if not error:
+                raw_token  = secrets.token_urlsafe(32)
+                token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+                admin.admin_recovery_email_pending  = new_recovery
+                admin.admin_recovery_email_token    = token_hash
+                admin.admin_recovery_email_token_at = datetime.now()
+                db.session.commit()
+                verify_link = url_for('admin_verify_recovery_email', token=raw_token, _external=True)
+                masked = _mask_email(new_recovery)
+                try:
+                    from email_service import (notify_admin_recovery_email_verify,
+                                               notify_admin_recovery_email_changed)
+                    notify_admin_recovery_email_verify(new_recovery, verify_link)
+                    notify_admin_recovery_email_changed(admin.email, masked)
+                except Exception as _e:
+                    app.logger.warning("admin_security set_recovery_email notify: %s", _e)
+                success = f"Verification email sent to {masked}. Click the link in that email to activate it."
+
+        elif action == "send_test_email":
+            try:
+                from email_service import send_email, _html
+                body = "<p>Your JHE Haul email system is configured and working.</p>"
+                ok = send_email(
+                    admin.email,
+                    "JHE Haul Email Test",
+                    _html("Email Test", "Sent from JHE Haul admin.", "✅ Email Test", body),
+                    'admin_security'
+                )
+                success = "Test email sent — check your inbox." if ok \
+                    else "Failed to send. SENDGRID_API_KEY may not be configured on the server."
+            except Exception as _e:
+                error = f"Email test error: {_e}"
+
+    return render_template(
+        "admin_security.html",
+        admin=admin,
+        has_password=bool(admin.admin_password_hash),
+        recovery_email=_mask_email(admin.admin_recovery_email) if admin.admin_recovery_email else None,
+        recovery_pending=_mask_email(admin.admin_recovery_email_pending) if admin.admin_recovery_email_pending else None,
+        sendgrid_ok=bool(os.environ.get("SENDGRID_API_KEY")),
+        error=error,
+        success=success,
+    )
+
+
+@app.route("/admin/verify-recovery-email/<token>")
+def admin_verify_recovery_email(token):
+    """Clicked from the verification email sent to the new recovery address."""
+    import hashlib
+    from datetime import timedelta
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    now        = datetime.now()
+
+    admin = User.query.filter(
+        User.is_admin == True,
+        User.admin_recovery_email_token == token_hash,
+        User.admin_recovery_email_token_at != None
+    ).first()
+
+    if not admin or (now - admin.admin_recovery_email_token_at) > timedelta(hours=24):
+        flash("This verification link is invalid or has expired. "
+              "Please request a new one from Admin Security settings.", "error")
+        dest = (url_for('admin_security_settings')
+                if current_user.is_authenticated and current_user.is_admin
+                else url_for('admin_local_login'))
+        return redirect(dest)
+
+    new_recovery = admin.admin_recovery_email_pending
+    admin.admin_recovery_email         = new_recovery
+    admin.admin_recovery_email_pending = None
+    admin.admin_recovery_email_token   = None
+    admin.admin_recovery_email_token_at= None
+    db.session.commit()
+
+    masked = _mask_email(new_recovery)
+    try:
+        from email_service import notify_admin_recovery_email_verified
+        notify_admin_recovery_email_verified(admin.email, masked)
+    except Exception as _e:
+        app.logger.warning("admin_verify_recovery_email: notify failed: %s", _e)
+
+    flash(f"Recovery email {masked} verified and activated.", "success")
+    dest = (url_for('admin_security_settings')
+            if current_user.is_authenticated and current_user.is_admin
+            else url_for('admin_local_login'))
+    return redirect(dest)
 
 
 # ── Admin: Users ───────────────────────────────────────────────────────────
