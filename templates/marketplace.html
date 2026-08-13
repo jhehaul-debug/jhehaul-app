@@ -703,7 +703,7 @@ function dismissProfileNudge() {
     </button>
 
     {% if _has_filters %}
-    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill" style="color:#ef4444;border-color:#fca5a5;">✕ Clear</a>
+    <a href="/marketplace?city_zip={{ '' }}{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-pill" style="color:#ef4444;border-color:#fca5a5;">✕ Clear</a>
     {% endif %}
 </div>
 
@@ -752,7 +752,7 @@ function dismissProfileNudge() {
                 </select>
             </div>
             <button type="submit" class="mp-panel-submit">Apply</button>
-            {% if city_zip_filter or hide_sold %}<a href="/marketplace{{ ('?' ~ _ptype ~ _pcat ~ 'q=' ~ _q_val) if _q_val else ('?' ~ _ptype ~ _pcat).rstrip('?&') }}" class="mp-panel-clear">✕ Clear</a>{% endif %}
+            {% if city_zip_filter or hide_sold %}<a href="/marketplace?city_zip={{ '' }}{{ ('&listing_type=' ~ listing_type_filter) if listing_type_filter else '' }}{{ ('&category=' ~ active_category.slug) if active_category else '' }}{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>{% endif %}
         </div>
     </form>
 </div>

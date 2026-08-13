@@ -545,7 +545,19 @@ def marketplace():
     listing_type_filter= request.args.get('listing_type', '').strip()
     no_vehicles_filter = request.args.get('no_vehicles',  '').strip()
     area_filter        = request.args.get('area',         '').strip()
+    _city_zip_in_url   = 'city_zip' in request.args
     city_zip_filter    = request.args.get('city_zip',     '').strip()
+    # Persist buyer's preferred area in session so it pre-fills on future visits.
+    # Only update the session when city_zip was explicitly present in this request
+    # (including an empty value, which means the buyer cleared it).
+    if _city_zip_in_url:
+        if city_zip_filter:
+            session['city_zip_pref'] = city_zip_filter
+        else:
+            session.pop('city_zip_pref', None)
+    else:
+        # Not in URL — restore from saved preference so the filter pre-fills
+        city_zip_filter = session.get('city_zip_pref', '')
     min_price_raw      = request.args.get('min_price',    '').strip()
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
