@@ -1,0 +1,489 @@
+Please perform a full navigation and functionality audit of the JHE Haul website, especially the Marketplace, category pages, delivery pages, and empty-state buttons.
+
+The site still has multiple sections where buttons say things like Browse Marketplace even though that is not what the page should be doing.
+
+I do NOT want another one-off fix.
+
+I want you to go through the entire application and verify that every button, category, tab, link, empty-state action, and navigation control does what its label and page purpose say it should do.
+
+MAIN GOAL
+
+For every page and section:
+
+* Check what the page is supposed to do.
+* Check every visible button/link.
+* Confirm it navigates to the correct destination or performs the correct action.
+* Remove or replace misleading duplicate Browse Marketplace buttons where Browse is not the proper next step.
+* Fix dead buttons.
+* Fix buttons that navigate to the wrong page.
+* Fix sections that remain open when another section is selected.
+* Fix controls that appear selected when they should not be.
+
+Do NOT redesign unrelated parts of the site.
+
+This is a functionality/navigation audit first.
+
+⸻
+
+1. Marketplace Main Navigation
+
+Check:
+
+All
+Items
+For Sale
+Rentals
+Categories
+Search
+Filters
+
+Verify that each one does exactly what it is supposed to do.
+
+Only ONE main marketplace mode should be active at a time.
+
+Examples:
+
+All → For Sale
+
+* All deactivates
+* For Sale activates
+* Correct For Sale controls/results appear
+
+For Sale → Rentals
+
+* For Sale closes
+* Rentals opens
+
+Rentals → Category
+
+* Rentals closes
+* Category opens
+
+No overlapping active panels.
+
+⸻
+
+2. Every Marketplace Category
+
+Go through every category supported by the site, including existing categories such as:
+
+* Vehicles
+* Furniture
+* Appliances
+* Electronics
+* Auto Parts
+* Tools
+* Home & Garden
+* Clothing & Accessories
+* Restaurant Equipment
+* Business Equipment
+* Kids & Baby
+* Sports & Outdoors
+* Collectibles
+* Free Items
+* Housing & Real Estate
+* Other
+* Any additional category currently in the database
+
+For EACH category:
+
+* Tap/open it.
+* Confirm the correct listings/results page opens.
+* Confirm category-specific filters make sense.
+* Confirm Search still works.
+* Confirm Clear/reset works.
+* Confirm empty states make sense.
+* Confirm buttons do not incorrectly send users to Browse when another action is expected.
+* Confirm Back/close behavior is correct.
+* Confirm it works on mobile and desktop.
+
+⸻
+
+3. For Sale
+
+Audit the full For Sale workflow.
+
+Check:
+
+* Browse For Sale listings
+* Property filters
+* View all For Sale listings
+* Individual property listing
+* Seller actions
+* Buyer actions
+* Media gallery
+* Message Seller
+* Location
+* Empty states
+
+If there are no listings, the page should not show buttons that lead somewhere unrelated.
+
+Any empty-state button should match the purpose of the page.
+
+⸻
+
+4. Rentals
+
+Audit the full Rentals workflow.
+
+Check:
+
+* Browse rentals
+* Rental filters
+* Individual rental listing
+* Media
+* Message seller/landlord
+* Empty states
+* Category switching
+* Search
+
+Make sure Rentals does not remain open when the user selects another main marketplace section.
+
+⸻
+
+5. Vehicles
+
+Audit Vehicles separately.
+
+Check:
+
+* Vehicle category opens correctly
+* Make/model filtering
+* Vehicle search
+* Listing cards
+* Listing details
+* Photo gallery
+* Up to 20 photos where applicable
+* 1 video up to 60 seconds where supported
+* Price formatting
+* Message Seller
+* Vehicle details
+* Status badges
+
+Make sure vehicle listings do not get sent to unrelated Browse pages.
+
+⸻
+
+6. My Messages
+
+Audit My Messages.
+
+This page should be for conversations.
+
+When there are no conversations:
+
+Show the empty-state message only.
+
+Do NOT show unnecessary duplicate:
+
+* Browse Marketplace buttons
+* Sell Something links
+
+The permanent bottom navigation is enough.
+
+When conversations exist:
+
+* List conversations
+* Open conversation
+* Reply
+* Return to messages list
+
+⸻
+
+7. My Deliveries
+
+Audit My Deliveries.
+
+This page should be for:
+
+* Requesting delivery
+* Getting a quote from JHE Haul
+* Tracking delivery requests
+
+It should NOT use Browse Marketplace as the main action.
+
+Correct empty-state action:
+
+Request Delivery / Get a Quote
+
+Verify:
+
+* Request form opens
+* Form submits
+* Request saves
+* Request appears under My Deliveries
+* Status works
+* JHE Haul/Admin can review
+* Quote can be provided
+* Customer can see quote/status
+
+⸻
+
+8. Sell
+
+Audit the entire Sell flow.
+
+Check every listing type.
+
+Examples:
+
+* Regular item
+* Vehicle
+* Property For Sale
+* Rental
+* Other supported listing types
+
+Verify:
+
+* Correct form opens
+* Correct fields display
+* Photos upload
+* Videos upload where supported
+* Draft works
+* Continue works
+* Preview works
+* Publish works
+* Edit works
+* Pending works
+* Reserved works
+* Sold works
+* Delete works
+
+Do not allow Sell pages to redirect to Browse when they should continue the listing workflow.
+
+⸻
+
+9. Search
+
+Audit Marketplace Search.
+
+Verify:
+
+* Search button works
+* Enter/Return works
+* Search results open
+* Search term remains visible
+* Suggestions/typeahead appear
+* Clicking a suggestion actually works
+
+Test searches including:
+
+* Chevrolet
+* Honda Accord
+* car
+* apartment
+* house
+* refrigerator
+* washer
+* couch
+* TV
+* drill
+* tools
+* rental
+* vehicle
+* appliance
+
+Search suggestions should include relevant templates/categories.
+
+⸻
+
+10. Account
+
+Audit Account.
+
+Verify:
+
+* Profile fields save
+* Phone field works without SMS verification
+* SMS sections remain removed
+* Logout works
+* Switch account works if supported
+* My Listings works
+* My Deliveries works
+* Messages works
+
+Do not reintroduce SMS verification.
+
+⸻
+
+11. Bottom Navigation
+
+Audit mobile bottom navigation:
+
+Home | Browse | Sell | Messages | Account
+
+Every button must go to the correct page.
+
+Make sure there are no broken routes or duplicated page actions.
+
+⸻
+
+12. Desktop Navigation
+
+Audit desktop navigation as well.
+
+Check:
+
+* Home
+* Marketplace
+* Sell
+* Request Service
+* Messages
+* Notifications
+* Account
+
+Make sure desktop routes match the mobile app behavior where appropriate.
+
+⸻
+
+13. Empty-State Buttons
+
+This is especially important.
+
+Search the entire codebase for empty-state buttons and links such as:
+
+Browse Marketplace
+Browse All
+View All
+Sell Something
+Back to Home
+Request Service
+Request Delivery
+Get a Quote
+
+For each one, ask:
+
+Does this button actually make sense for this page?
+
+If not, replace it with the correct action.
+
+Examples:
+
+My Deliveries:
+Wrong:
+Browse Marketplace
+
+Correct:
+Request Delivery
+
+My Messages:
+Do not show unnecessary Browse/Sell actions.
+
+Category with no results:
+A reasonable action can be:
+Clear Filters
+or
+View All Listings
+
+Do not use one generic Browse button everywhere.
+
+⸻
+
+14. Dead Buttons
+
+Search for all buttons/links that:
+
+* Do nothing
+* Have empty href
+* Use “#”
+* Have missing click handlers
+* Point to obsolete routes
+* Point to staging/old routes
+* Reference removed components
+
+Fix them.
+
+⸻
+
+15. Route Audit
+
+Review the frontend routes and backend endpoints.
+
+Make sure:
+
+* No old hauling routes are incorrectly used by Marketplace
+* Marketplace pages use the correct marketplace routes
+* Delivery pages use delivery routes
+* Messages use message routes
+* Account uses account routes
+* Sell uses listing routes
+
+Remove or correct obsolete navigation references only when safe.
+
+⸻
+
+16. Mobile Testing
+
+Test on iPhone/mobile view.
+
+Verify:
+
+* Buttons fit
+* No horizontal overflow
+* Panels close correctly
+* Tabs behave correctly
+* Search works
+* Forms work
+* Swipe galleries work
+* Bottom navigation works
+* No button is hidden behind the Safari toolbar or bottom nav
+
+⸻
+
+17. Desktop Testing
+
+Test desktop separately.
+
+Do not assume mobile fixes automatically work on desktop.
+
+⸻
+
+18. Do Not Change Anything Unrelated
+
+This is extremely important.
+
+Do NOT:
+
+* Redesign the site unnecessarily
+* Change branding
+* Change colors
+* Change fonts
+* Change unrelated layouts
+* Change working database structure without need
+* Remove working features
+* Modify unrelated business logic
+* Refactor large sections just for style
+
+Make the smallest safe changes necessary to correct navigation and functionality.
+
+Preserve everything that is currently working.
+
+⸻
+
+19. Create a Final Audit Report
+
+Before marking complete, provide a short report showing:
+
+* Pages checked
+* Buttons/links checked
+* Broken items found
+* What was fixed
+* Any remaining issue
+* Production deployment status
+
+Do not just say “done.”
+
+⸻
+
+20. Production Verification
+
+After fixes:
+
+1. Commit all changes.
+2. Push to the production branch.
+3. Confirm DigitalOcean deployment succeeds.
+4. Open the LIVE jhehaul.com site.
+5. Test the main flows again on production.
+6. Do not mark complete until the live site actually behaves correctly.
+
+This should be treated as a full navigation/functionality QA pass, not another single-button patch.
