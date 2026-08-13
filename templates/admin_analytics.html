@@ -2,9 +2,10 @@
 {% block title %}Analytics - JHE Haul Admin{% endblock %}
 {% block content %}
 
+{% include 'admin_nav.html' %}
+
 <div class="page-header" style="flex-wrap:wrap;gap:10px;">
     <div style="display:flex;align-items:center;gap:12px;">
-        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
         <h2 class="page-title" style="margin:0;">📊 Analytics Dashboard</h2>
     </div>
     <a href="{{ url_for('admin_analytics_export') }}" class="btn btn-outline btn-sm">⬇ Export CSV</a>
