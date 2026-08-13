@@ -1,0 +1,73 @@
+Please fix these two issues in the JHE Haul Marketplace vehicle listings.
+
+1. Fix uploaded photos not displaying
+
+I created a vehicle listing with 16 photos, but some of the uploaded photos are not opening/displaying correctly.
+
+Please investigate and fix the entire photo upload/display flow.
+
+Make sure:
+
+* ALL successfully uploaded photos are saved.
+* ALL photos load when viewing the listing.
+* The seller can swipe/scroll through every uploaded photo.
+* Photo thumbnails and the full-size photos both work.
+* Photos continue working after the listing is published and the page is refreshed.
+* Photos do not disappear because of temporary/local image URLs.
+* Image URLs/paths are being stored correctly in the database.
+* Mobile iPhone photos, including HEIC/HEIF images if uploaded, are handled correctly or converted to a web-compatible format.
+* If an upload fails, tell the user which photo failed instead of showing it as successfully uploaded.
+* The displayed photo count must match the number of photos that can actually be opened.
+
+Do NOT delete or damage existing listing photos while fixing this.
+
+2. Format prices with commas
+
+Prices are currently displaying like:
+
+$10000
+
+and on the listing preview:
+
+$10000.00
+
+Change the marketplace display format to:
+
+$10,000
+
+For normal whole-dollar listing prices, DO NOT display unnecessary .00.
+
+Examples:
+
+* 1000 → $1,000
+* 2500 → $2,500
+* 10000 → $10,000
+* 12500 → $12,500
+* 100000 → $100,000
+
+Apply this formatting consistently everywhere a listing price appears, including:
+
+* Seller’s listings
+* Browse page
+* Search results
+* Listing details
+* Listing preview before publishing
+* Favorites/saved listings
+* Messages/offers where the listing price is displayed
+* Admin pages where applicable
+
+Use one shared price-formatting function/component so the price doesn’t appear differently on different pages.
+
+3. Test the existing Chevrolet Volt listing
+
+Use the existing 2014 Chevrolet Volt listing as a test.
+
+Verify:
+
+* Price displays as $10,000
+* All 16 successfully uploaded photos can be opened/viewed
+* Photo count is correct
+* Listing still works after refresh
+* Listing works correctly on mobile/iPhone
+
+After fixing and testing everything, commit and push all changes to the production branch so the live JHE Haul Marketplace is updated.
