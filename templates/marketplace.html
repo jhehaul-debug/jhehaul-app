@@ -1036,6 +1036,11 @@ function dismissProfileNudge() {
     </div>
 
 
+    {%- if zip_radius_fallback is defined and zip_radius_fallback %}
+    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:0.9rem;color:#92400e;">
+        &#x2139;&#xfe0f; ZIP code <strong>{{ city_zip_filter }}</strong> wasn&apos;t found in our location database &mdash; showing exact matches only. Try a nearby ZIP or enter a city name instead.
+    </div>
+    {%- endif %}
     {% if search_results %}
     <div class="mp-grid" style="position:relative">
         {% for listing in search_results %}

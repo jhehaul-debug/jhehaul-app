@@ -1,5 +1,5 @@
 """
-Task 76 validation: City / ZIP marketplace filter.
+Task 76 / 125 validation: City / ZIP marketplace filter — including radius search.
 
 Run with:  python tests/test_city_zip_filter.py
 
@@ -8,6 +8,8 @@ Verifies (against the configured DB):
 - City name partial match — listing appears when partial city token used
 - City name no-match — listing for a different city is excluded
 - ZIP exact match — listing appears when searching by exact ZIP code
+- ZIP radius search — listing with an adjacent ZIP appears when searching centre ZIP
+- ZIP not in ZipCode table — falls back to exact match, shows notice, returns 200
 - ZIP no-match — unknown ZIP returns 0 results (no 500 / silent error)
 - filter value is echoed back into the rendered form after submission
 """
@@ -20,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import flask_login.utils as _flu
 from app import app
 import routes  # noqa: F401 — registers routes on the app
-from models import db, User, Listing
+from models import db, User, Listing, ZipCode
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -122,13 +124,55 @@ with app.app_context():
         check("route returns 200 for ZIP search", r.status_code == 200)
         check("ZIP exact match: correct listing appears", lst_zip.title in html)
 
-        # Listing with a different ZIP must not appear
+        # Listing with a distant ZIP (Rochester, ~80 mi away) must not appear
         check(
-            "ZIP exact match: different-ZIP listing excluded",
-            lst_eagan.title not in html,
+            "ZIP radius: Rochester listing (55901, ~80 mi away) excluded from 55431 search",
+            lst_rochester.title not in html,
         )
 
-        # ── 5. Unknown ZIP → 0 results, no server error ───────────────────
+        # ── 5. ZIP radius search ───────────────────────────────────────────
+        # 55431 (Bloomington) and 55430 (also Bloomington) are adjacent ZIPs.
+        # Both must be in the ZipCode table for this test to be meaningful.
+        # If either is missing, we skip rather than fail.
+        _zc_center = ZipCode.query.get("55431")
+        _zc_nearby = ZipCode.query.get("55430")
+        if _zc_center and _zc_nearby:
+            lst_nearby_zip = make_listing("zip-radius-nearby", "Bloomington", "55430")
+            r = client.get("/marketplace?city_zip=55431")
+            html = r.data.decode()
+            check(
+                "ZIP radius: adjacent-ZIP listing (55430) appears when searching 55431",
+                lst_nearby_zip.title in html,
+            )
+            # Clean up the extra listing
+            db.session.delete(db.session.get(Listing, lst_nearby_zip.id))
+            created_ids.remove(lst_nearby_zip.id)
+            db.session.commit()
+        else:
+            check(
+                "ZIP radius: skipped (55430/55431 not in ZipCode table)",
+                True,  # not a failure — just missing seed data
+            )
+
+        # ── 6. ZIP not in ZipCode table → exact fallback + notice ─────────
+        # "00001" is not a real ZIP and should not be in the ZipCode table.
+        _missing_zip = "00001"
+        assert not ZipCode.query.get(_missing_zip), \
+            f"{_missing_zip} unexpectedly present in ZipCode table"
+        lst_fallback = make_listing("zip-fallback", "FakeCity", _missing_zip)
+        r = client.get(f"/marketplace?city_zip={_missing_zip}")
+        html = r.data.decode()
+        check("ZIP fallback: returns 200 when ZIP not in table", r.status_code == 200)
+        check(
+            "ZIP fallback: listing with exact ZIP still appears",
+            lst_fallback.title in html,
+        )
+        check(
+            "ZIP fallback: fallback notice shown in HTML",
+            "wasn" in html and _missing_zip in html,
+        )
+
+        # ── 7. Unknown ZIP → 0 results, no server error ───────────────────
         # "99999" is not a real ZIP assigned to any listing
         r = client.get("/marketplace?city_zip=99999")
         html = r.data.decode()

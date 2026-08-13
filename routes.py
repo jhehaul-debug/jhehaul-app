@@ -1,5 +1,6 @@
 import os
 import uuid
+import math
 import stripe
 from datetime import datetime
 from functools import wraps
@@ -688,12 +689,31 @@ def marketplace():
             qobj = qobj.filter(Listing.open_house_dt >= _now_dt.utcnow())
 
         # City / ZIP filter — applies to any listing type
+        zip_radius_fallback = False
+        _ZIP_RADIUS_MI = 25  # configurable search radius in miles
         if city_zip_filter:
             _czf = city_zip_filter.strip()
             _is_zip = _czf.isdigit() and len(_czf) == 5
             if _is_zip:
-                # Exact ZIP match only (buyers expect precise neighborhood results)
-                qobj = qobj.filter(Listing.zip_code == _czf)
+                from models import ZipCode as _ZipCode
+                _center = _ZipCode.query.get(_czf)
+                if _center:
+                    # Bounding-box radius lookup (1° lat ≈ 69 mi; lon shrinks by cos(lat))
+                    _dlat = _ZIP_RADIUS_MI / 69.0
+                    _dlon = _ZIP_RADIUS_MI / (69.0 * abs(math.cos(math.radians(_center.lat))) + 1e-9)
+                    _nearby_zips = [
+                        row[0] for row in _ZipCode.query.filter(
+                            _ZipCode.lat >= _center.lat - _dlat,
+                            _ZipCode.lat <= _center.lat + _dlat,
+                            _ZipCode.lon >= _center.lon - _dlon,
+                            _ZipCode.lon <= _center.lon + _dlon,
+                        ).with_entities(_ZipCode.zip).all()
+                    ]
+                    qobj = qobj.filter(Listing.zip_code.in_(_nearby_zips))
+                else:
+                    # ZIP not in our database — fall back to exact match with a notice
+                    zip_radius_fallback = True
+                    qobj = qobj.filter(Listing.zip_code == _czf)
             else:
                 # City name search (case-insensitive partial match)
                 qobj = qobj.filter(Listing.city.ilike(f'%{_czf}%'))
@@ -730,6 +750,7 @@ def marketplace():
                                saved_listing_ids=_saved_listing_ids(),
                                show_welcome=False,
                                show_profile_nudge=_mp_show_nudge,
+                               zip_radius_fallback=zip_radius_fallback,
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
