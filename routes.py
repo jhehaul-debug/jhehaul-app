@@ -6587,7 +6587,44 @@ def _run_health_checks():
         except ImportError as exc:
             errors.append(f"missing package {pkg}: {exc}")
 
-    # 2. Verify database is reachable with a cheap query
+    # 2. Verify required environment variables are set
+    # These must be present for the site to function correctly in production.
+    strictly_required = [
+        "DATABASE_URL",
+        "APP_BASE_URL",
+        "STRIPE_SECRET_KEY",
+        "SENDGRID_API_KEY",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        # Stripe payment-link tiers — missing any tier breaks payment for that price range
+        "PAY_LINK_UNDER_150",
+        "PAY_LINK_150_300",
+        "PAY_LINK_300_500",
+        "PAY_LINK_OVER_500",
+    ]
+    for var in strictly_required:
+        if not os.environ.get(var):
+            errors.append(f"missing required environment variable: {var}")
+
+    # Session secret: app accepts either SESSION_SECRET or the legacy SECRET_KEY alias
+    if not (os.environ.get("SESSION_SECRET") or os.environ.get("SECRET_KEY")):
+        errors.append("missing required environment variable: SESSION_SECRET (or SECRET_KEY)")
+
+    # Twilio is optional (SMS disabled when not configured). But if TWILIO_ACCOUNT_SID
+    # is set, the remaining credentials must also be present.
+    if os.environ.get("TWILIO_ACCOUNT_SID"):
+        if not os.environ.get("TWILIO_AUTH_TOKEN"):
+            errors.append(
+                "missing required environment variable: TWILIO_AUTH_TOKEN "
+                "(required when TWILIO_ACCOUNT_SID is set)"
+            )
+        if not (os.environ.get("TWILIO_PHONE_NUMBER") or os.environ.get("TWILIO_FROM_NUMBER")):
+            errors.append(
+                "missing required environment variable: TWILIO_PHONE_NUMBER or TWILIO_FROM_NUMBER "
+                "(required when TWILIO_ACCOUNT_SID is set)"
+            )
+
+    # 3. Verify database is reachable with a cheap query
     try:
         from sqlalchemy import text as _text
         db.session.execute(_text("SELECT 1"))
