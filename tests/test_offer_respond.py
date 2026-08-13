@@ -460,6 +460,50 @@ with app.app_context():
               ListingOffer.query.filter_by(listing_id=9009, status='accepted').count() == 1,
               f"count={ListingOffer.query.filter_by(listing_id=9009, status='accepted').count()}")
 
+        # ── 17: seller POSTing to an expired offer → 302, status stays 'expired' ─
+        # Task 149: verify the time-based expiry guard in offer_seller_respond.
+        from datetime import datetime as _dt
+        listing_exp_s = _make_listing(9010, 't90-seller')
+        offer_exp_s = _make_offer(9960, 9010, 't90-buyer', 't90-seller', status='pending', amount=120.0)
+        # Backdate expires_at to force the expiry guard to trigger
+        offer_exp_s.expires_at = _dt(2020, 1, 1)
+        db.session.commit()
+        _flu._get_user = lambda: seller
+
+        with patch('email_service.send_email'):
+            r = client.post(
+                f'/listing/9010/offer/9960/respond',
+                data={'action': 'accept'},
+                follow_redirects=False,
+            )
+
+        check('seller expired offer: redirects (302)', r.status_code == 302, f'status={r.status_code}')
+        offer_exp_s = db.session.get(ListingOffer, 9960)
+        check('seller expired offer: status is expired (not accepted)',
+              offer_exp_s.status == 'expired', f'status={offer_exp_s.status!r}')
+
+        # ── 18: buyer POSTing to an expired offer → 302, status stays 'expired' ─
+        # Task 149: verify the time-based expiry guard in offer_buyer_respond.
+        listing_exp_b = _make_listing(9011, 't90-seller')
+        offer_exp_b = _make_offer(9961, 9011, 't90-buyer', 't90-seller', status='countered', amount=100.0)
+        offer_exp_b.counter_amount = 130.0
+        # Backdate expires_at to force the expiry guard to trigger
+        offer_exp_b.expires_at = _dt(2020, 1, 1)
+        db.session.commit()
+        _flu._get_user = lambda: buyer
+
+        with patch('email_service.send_email'):
+            r = client.post(
+                f'/listing/9011/offer/9961/buyer-respond',
+                data={'action': 'accept_counter'},
+                follow_redirects=False,
+            )
+
+        check('buyer expired offer: redirects (302)', r.status_code == 302, f'status={r.status_code}')
+        offer_exp_b = db.session.get(ListingOffer, 9961)
+        check('buyer expired offer: status is expired (not accepted)',
+              offer_exp_b.status == 'expired', f'status={offer_exp_b.status!r}')
+
 
 # ---------------------------------------------------------------------------
 # Summary
