@@ -1003,8 +1003,8 @@ function dismissProfileNudge() {
     <div class="mp-empty">
         <div class="mp-empty-icon">🔍</div>
         <h3>No listings found</h3>
-        <p>Try adjusting your filters or browse all listings.</p>
-        <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">Browse All Listings</a>
+        <p>Try adjusting your search or filters.</p>
+        <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">Clear Filters</a>
     </div>
     {% endif %}
 </div>
@@ -1168,9 +1168,12 @@ function mpTogglePanel(id, btn) {
         if (willOpen) {
             btn.classList.add('active');
         } else {
-            // Panel closed without selecting — restore server-side active pill if unfiltered
+            // Panel collapsed — keep btn active so the current filter mode stays visually selected.
+            // If there is no active server-side filter, fall back to the All pill instead.
             var anyFilter = !!({{ '1' if listing_type_filter else '0' }} || {{ '1' if active_category else '0' }});
-            if (!anyFilter) {
+            if (anyFilter) {
+                btn.classList.add('active');
+            } else {
                 var allPill = document.querySelector('.mp-pill-nav');
                 if (allPill) allPill.classList.add('active');
             }
