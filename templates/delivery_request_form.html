@@ -20,7 +20,7 @@
   <div>
     <div style="font-weight:700;font-size:1rem;">{{ listing.title }}</div>
     <div style="color:#718096;font-size:0.85rem;">Seller: {{ listing.seller.first_name or '' }} {{ (listing.seller.last_name or '')[:1] }}{% if listing.seller.last_name %}.{% endif %}</div>
-    {% if listing.price %}<div style="color:#16a34a;font-weight:700;">${{ "%.0f"|format(listing.price) }}</div>{% endif %}
+    {% if listing.price %}<div style="color:#16a34a;font-weight:700;">${{ listing.price|fmt_price }}</div>{% endif %}
   </div>
 </div>
 

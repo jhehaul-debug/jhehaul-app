@@ -120,7 +120,7 @@
                         {% if listing.price_type == 'free' or not listing.price %}
                         <span style="color:#16a34a;">FREE</span>
                         {% else %}
-                        ${{ "%.2f"|format(listing.price) }}{% if listing.price_type == 'negotiable' %} <span style="color:#64748b;font-weight:400;font-size:0.78rem;">OBO</span>{% endif %}
+                        ${{ listing.price|fmt_price }}{% if listing.price_type == 'negotiable' %} <span style="color:#64748b;font-weight:400;font-size:0.78rem;">OBO</span>{% endif %}
                         {% endif %}
                     </td>
                 </tr>

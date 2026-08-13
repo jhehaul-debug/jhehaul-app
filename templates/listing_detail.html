@@ -163,6 +163,7 @@
 .s-active   { background: #dcfce7; color: #15803d; }
 .s-sold     { background: #e0e7ff; color: #3730a3; }
 .s-reserved { background: #fce7f3; color: #9d174d; }
+.s-pending  { background: #fef3c7; color: #b45309; }
 .s-draft    { background: #fef3c7; color: #92400e; }
 .s-removed  { background: #fee2e2; color: #dc2626; }
 
@@ -779,6 +780,8 @@
             <span class="ld-status-badge s-sold">Sold</span>
           {% elif listing.status == 'reserved' %}
             <span class="ld-status-badge s-reserved">Reserved</span>
+          {% elif listing.status == 'pending' %}
+            <span class="ld-status-badge s-pending">⏳ Pending Sale</span>
           {% elif listing.status == 'draft' %}
             <span class="ld-status-badge s-draft">Draft</span>
           {% elif listing.status == 'removed' %}
@@ -800,7 +803,7 @@
           {% if listing.price_type == 'free' %}
             <span class="ld-price free">Free</span>
           {% elif listing.price is not none %}
-            <span class="ld-price">${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.8rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
+            <span class="ld-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.8rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
             {% if listing.price_type == 'negotiable' %}
               <span class="ld-badge-offer">Negotiable</span>
             {% endif %}
@@ -1039,9 +1042,9 @@
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
                 <div>
                   <div style="font-weight:700;font-size:.95rem;color:#1a202c;">
-                    ${{ "%.0f"|format(offer.amount) }}
+                    ${{ offer.amount|fmt_price }}
                     {% if offer.status == 'countered' and offer.counter_amount %}
-                    <span style="font-size:.74rem;color:#5b21b6;font-weight:400;margin-left:4px;">counter: ${{ "%.0f"|format(offer.counter_amount) }}</span>
+                    <span style="font-size:.74rem;color:#5b21b6;font-weight:400;margin-left:4px;">counter: ${{ offer.counter_amount|fmt_price }}</span>
                     {% endif %}
                   </div>
                   <div style="font-size:.77rem;color:#6b7280;margin-top:2px;">
@@ -1107,34 +1110,34 @@
               {% if buyer_offer and buyer_offer.status == 'pending' %}
                 <div class="offer-status-box offer-pending">
                   <div class="offer-status-label">⏳ Offer Pending</div>
-                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">Sent {{ buyer_offer.created_at.strftime('%-m/%-d/%Y') }} · Waiting for seller</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Update offer</button>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'accepted' %}
                 <div class="offer-status-box offer-accepted">
                   <div class="offer-status-label">✅ Offer Accepted!</div>
-                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">Contact the seller to complete your purchase.</div>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'declined' %}
                 <div class="offer-status-box offer-declined">
                   <div class="offer-status-label">❌ Offer Declined</div>
-                  <div class="offer-status-amount">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">The seller passed on this offer.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'countered' and buyer_offer.counter_amount %}
                 <div style="background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:10px;padding:16px;text-align:center;margin-top:4px;">
                   <div style="font-size:.82rem;font-weight:700;color:#5b21b6;margin-bottom:6px;">🔄 Counteroffer Received</div>
-                  <div style="font-size:1.5rem;font-weight:800;color:#4c1d95;">${{ "%.0f"|format(buyer_offer.counter_amount) }}</div>
-                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ "%.0f"|format(buyer_offer.amount) }} · Seller countered at ${{ "%.0f"|format(buyer_offer.counter_amount) }}</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:#4c1d95;">${{ buyer_offer.counter_amount|fmt_price }}</div>
+                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ buyer_offer.amount|fmt_price }} · Seller countered at ${{ buyer_offer.counter_amount|fmt_price }}</div>
                   <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=buyer_offer.id) }}"
                         style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" name="action" value="accept_counter"
                             style="padding:9px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;"
-                            onclick="return confirm('Accept the ${{ "%.0f"|format(buyer_offer.counter_amount) }} counteroffer?')">✅ Accept ${{ "%.0f"|format(buyer_offer.counter_amount) }}</button>
+                            onclick="return confirm('Accept the ${{ buyer_offer.counter_amount|fmt_price }} counteroffer?')">✅ Accept ${{ buyer_offer.counter_amount|fmt_price }}</button>
                     <button type="submit" name="action" value="decline_counter"
                             style="padding:9px 14px;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;">❌ Decline</button>
                     <button type="submit" name="action" value="withdraw"
@@ -1151,7 +1154,7 @@
               {% elif buyer_offer and buyer_offer.status == 'expired' %}
                 <div class="offer-status-box" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;">
                   <div class="offer-status-label" style="color:#92400e;">⏰ Offer Expired</div>
-                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub" style="color:#9a3412;">This offer expired without a response from the seller.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
@@ -1272,7 +1275,7 @@
             {% if sim.price_type == 'free' %}
               <span style="color:#2b6cb0;font-weight:800">Free</span>
             {% elif sim.price %}
-              ${{ "%.0f"|format(sim.price) }}{% if sim.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}
+              ${{ sim.price|fmt_price }}{% if sim.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}
             {% else %}
               Contact
             {% endif %}
@@ -1305,7 +1308,7 @@
   <div class="modal-box" onclick="event.stopPropagation()">
     <h3>💰 Make an Offer</h3>
     {% if listing.price is not none %}
-    <div class="offer-modal-price-hint">Listed price: <strong>${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}</strong></div>
+    <div class="offer-modal-price-hint">Listed price: <strong>${{ listing.price|fmt_price }}</strong></div>
     {% endif %}
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:9px 13px;margin-bottom:14px;font-size:0.81rem;color:#92400e;line-height:1.5;">
       🛡️ Never share passwords, banking details, or verification codes with sellers.

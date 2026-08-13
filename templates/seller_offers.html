@@ -121,15 +121,15 @@
           <!-- Amount row -->
           <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
             <span style="font-size:.9rem;color:#374151;">
-              Offer: <strong style="font-size:1.05rem;color:#1a1a2e;">${{ "%.0f"|format(offer.amount) }}</strong>
+              Offer: <strong style="font-size:1.05rem;color:#1a1a2e;">${{ offer.amount|fmt_price }}</strong>
             </span>
             {% if offer.status == 'countered' and offer.counter_amount %}
             <span style="font-size:.85rem;color:#5b21b6;">
-              Your counter: <strong>${{ "%.0f"|format(offer.counter_amount) }}</strong>
+              Your counter: <strong>${{ offer.counter_amount|fmt_price }}</strong>
             </span>
             {% endif %}
             {% if listing and listing.price %}
-            <span style="font-size:.78rem;color:#9ca3af;">Listed: ${{ "%.0f"|format(listing.price) }}</span>
+            <span style="font-size:.78rem;color:#9ca3af;">Listed: ${{ listing.price|fmt_price }}</span>
             {% endif %}
           </div>
 
@@ -149,8 +149,8 @@
           <input type="hidden" name="next" value="{{ url_for('seller_offers') }}">
           <button type="submit" name="action" value="accept"
                   style="background:#16a34a;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
-                  onclick="return confirm('Accept this ${{ "%.0f"|format(offer.amount) }} offer?')">
-            ✅ Accept ${{ "%.0f"|format(offer.amount) }}
+                  onclick="return confirm('Accept this ${{ offer.amount|fmt_price }} offer?')">
+            ✅ Accept ${{ offer.amount|fmt_price }}
           </button>
         </form>
 

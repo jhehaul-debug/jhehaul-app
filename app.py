@@ -92,6 +92,21 @@ def _to_central(dt, fmt='%b %d, %Y'):
 app.jinja_env.filters['ct'] = _to_central
 
 
+def _fmt_price(value):
+    """Format a listing price: commas, no trailing .00 for whole-dollar amounts.
+    Examples: 1000 → '1,000'  12500 → '12,500'  9.99 → '9.99'
+    """
+    if value is None:
+        return ''
+    try:
+        f = float(value)
+        return f'{int(f):,}' if f == int(f) else f'{f:,.2f}'
+    except (ValueError, TypeError):
+        return str(value)
+
+app.jinja_env.filters['fmt_price'] = _fmt_price
+
+
 # ---- Startup checks ----
 _sendgrid_key = os.environ.get("SENDGRID_API_KEY")
 if not _sendgrid_key:

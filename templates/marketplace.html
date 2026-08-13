@@ -310,6 +310,9 @@
 }
 .mp-status-banner.sold     { background: rgba(127,29,29,.85); color: #fff; }
 .mp-status-banner.reserved { background: rgba(109,40,217,.85); color: #fff; }
+.mp-status-banner.pending  { background: rgba(180,83,9,.82);  color: #fff; }
+.mp-card.mp-card--pending  { opacity: .85; }
+.mp-card.mp-card--pending:hover { opacity: 1; }
 /* Hide-sold toggle button */
 .mp-hide-sold-btn {
     display: inline-flex; align-items: center; gap: 6px;
@@ -561,9 +564,10 @@ function dismissProfileNudge() {
 {% macro listing_card(listing, placeholder='📦') %}
 {% set is_sold     = listing.status == 'sold' %}
 {% set is_reserved = listing.status == 'reserved' %}
+{% set is_pending  = listing.status == 'pending' %}
 {% set is_saved    = listing.id in (saved_listing_ids or []) %}
 <div class="mp-card-wrap">
-<a href="/listing/{{ listing.id }}" class="mp-card{% if is_sold %} mp-card--sold{% elif is_reserved %} mp-card--reserved{% endif %}">
+<a href="/listing/{{ listing.id }}" class="mp-card{% if is_sold %} mp-card--sold{% elif is_reserved %} mp-card--reserved{% elif is_pending %} mp-card--pending{% endif %}">
     {% set photo = listing.primary_photo %}
     {% if photo %}
         <img class="mp-card-img" src="{{ photo.storage_url or url_for('serve_listing_photo', photo_id=photo.id) }}" alt="{{ listing.title }}" loading="lazy">
@@ -582,6 +586,10 @@ function dismissProfileNudge() {
         <div class="mp-status-overlay">
             <div class="mp-status-banner reserved">🔒 RESERVED</div>
         </div>
+    {% elif is_pending %}
+        <div class="mp-status-overlay">
+            <div class="mp-status-banner pending">⏳ PENDING</div>
+        </div>
     {% endif %}
     {% if listing.is_property %}
         {# Property type badge overlay (only shown when not sold/reserved to avoid clutter) #}
@@ -599,7 +607,7 @@ function dismissProfileNudge() {
             {% if listing.price_type == 'free' %}
                 <span class="mp-card-price free">FREE</span>
             {% elif listing.price %}
-                <span class="mp-card-price">${{ "%.0f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
+                <span class="mp-card-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
             {% else %}
                 <span class="mp-card-price">{{ 'Contact' if listing.is_property else 'Make offer' }}</span>
             {% endif %}

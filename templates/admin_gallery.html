@@ -121,7 +121,7 @@
                 {% if p.item_type == 'listing' and p.listing_rel %}
                 <div style="font-size:0.78rem;color:#6b7280;margin-bottom:8px;">
                     {% if p.listing_rel.price_type == 'free' %}Free
-                    {% elif p.listing_rel.price %}${{ '{:,.0f}'.format(p.listing_rel.price) }}{% if p.listing_rel.listing_type == 'rental' %}/mo{% endif %}
+                    {% elif p.listing_rel.price %}${{ p.listing_rel.price|fmt_price }}{% if p.listing_rel.listing_type == 'rental' %}/mo{% endif %}
                     {% endif %}
                     {% if p.listing_rel.city %} · 📍 {{ p.listing_rel.city }}{% endif %}
                 </div>

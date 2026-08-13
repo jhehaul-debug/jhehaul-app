@@ -59,12 +59,12 @@
 
         <!-- Amount info -->
         <div style="margin-top:8px;">
-          <span style="font-size:.85rem;color:#374151;">Your offer: <strong>${{ "%.0f"|format(offer.amount) }}</strong></span>
+          <span style="font-size:.85rem;color:#374151;">Your offer: <strong>${{ offer.amount|fmt_price }}</strong></span>
           {% if status == 'countered' and offer.counter_amount %}
-          <span style="font-size:.85rem;color:#5b21b6;margin-left:10px;">Seller counter: <strong>${{ "%.0f"|format(offer.counter_amount) }}</strong></span>
+          <span style="font-size:.85rem;color:#5b21b6;margin-left:10px;">Seller counter: <strong>${{ offer.counter_amount|fmt_price }}</strong></span>
           {% endif %}
           {% if listing and listing.price %}
-          <span style="font-size:.78rem;color:#9ca3af;margin-left:10px;">Listed: ${{ "%.0f"|format(listing.price) }}</span>
+          <span style="font-size:.78rem;color:#9ca3af;margin-left:10px;">Listed: ${{ listing.price|fmt_price }}</span>
           {% endif %}
         </div>
 
@@ -84,7 +84,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" name="action" value="accept_counter" class="btn btn-sm"
                 style="background:#16a34a;color:#fff;border:none;"
-                onclick="return confirm('Accept the ${{ "%.0f"|format(offer.counter_amount) }} counteroffer?')">✅ Accept ${{ "%.0f"|format(offer.counter_amount) }}</button>
+                onclick="return confirm('Accept the ${{ offer.counter_amount|fmt_price }} counteroffer?')">✅ Accept ${{ offer.counter_amount|fmt_price }}</button>
         <button type="submit" name="action" value="decline_counter" class="btn btn-outline btn-sm"
                 style="color:#dc2626;border-color:#fca5a5;"
                 onclick="return confirm('Decline this counteroffer?')">❌ Decline</button>

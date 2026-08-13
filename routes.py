@@ -268,11 +268,33 @@ _PHOTO_CONTENT_TYPES = {
 }
 
 def _read_photo_bytes(file_obj, ext):
-    """Read photo bytes from an uploaded file; rewind stream for subsequent save."""
+    """Read photo bytes from an uploaded file; convert HEIC/HEIF to JPEG for browser compatibility."""
     ct = _PHOTO_CONTENT_TYPES.get(ext.lstrip('.').lower(), 'image/jpeg')
     file_obj.stream.seek(0)
     data = file_obj.stream.read()
     file_obj.stream.seek(0)
+
+    # Convert HEIC/HEIF (iPhone format) → JPEG so all browsers can display it
+    if ext.lower() in ('.heic', '.heif'):
+        try:
+            try:
+                import pillow_heif as _ph
+                _ph.register_heif_opener()
+            except ImportError:
+                pass
+            from PIL import Image as _PILImage
+            import io as _io
+            img = _PILImage.open(_io.BytesIO(data))
+            buf = _io.BytesIO()
+            img.convert('RGB').save(buf, format='JPEG', quality=90)
+            converted = buf.getvalue()
+            if converted:
+                data = converted
+                ct = 'image/jpeg'
+                file_obj.stream = _io.BytesIO(data)  # so upload_file gets JPEG too
+        except Exception as _conv_err:
+            app.logger.warning("HEIC/HEIF→JPEG conversion failed (%s); storing original bytes", _conv_err)
+
     return data, ct
 
 
@@ -427,7 +449,7 @@ def _marketplace_homepage_ctx(hide_sold=False):
     """Build context dict for the marketplace homepage (no active filters)."""
     from models import Listing
     _base = Listing.query.filter(
-        Listing.status.in_(['active', 'sold', 'reserved']),
+        Listing.status.in_(['active', 'sold', 'reserved', 'pending']),
         Listing.moderation_status == 'approved'
     )
     _active = Listing.query.filter_by(status='active', moderation_status='approved')
@@ -549,7 +571,7 @@ def marketplace():
             qobj = Listing.query.filter_by(status='active', moderation_status='approved')
         else:
             qobj = Listing.query.filter(
-                Listing.status.in_(['active', 'sold', 'reserved']),
+                Listing.status.in_(['active', 'sold', 'reserved', 'pending']),
                 Listing.moderation_status == 'approved'
             )
 
@@ -1541,16 +1563,16 @@ def listing_set_status(listing_id):
     import datetime
     listing = _listing_owner_or_403(listing_id)
     new_status = request.form.get('status', '').strip()
-    allowed = ('sold', 'reserved', 'active')
+    allowed = ('sold', 'reserved', 'active', 'pending')
     if new_status not in allowed:
         flash("Invalid status.", "error")
         return redirect(url_for('my_listings'))
     # Only allow transitioning from sensible states
-    if new_status == 'active' and listing.status not in ('sold', 'reserved', 'expired'):
-        flash("Cannot reactivate a listing that is not sold, reserved, or expired.", "error")
+    if new_status == 'active' and listing.status not in ('sold', 'reserved', 'expired', 'pending'):
+        flash("Cannot reactivate a listing that is not sold, reserved, pending, or expired.", "error")
         return redirect(url_for('my_listings'))
-    if new_status in ('sold', 'reserved') and listing.status not in ('active', 'reserved', 'sold'):
-        flash("Only active or sold/reserved listings can be updated.", "error")
+    if new_status in ('sold', 'reserved', 'pending') and listing.status not in ('active', 'reserved', 'sold', 'pending'):
+        flash("Only active or sold/reserved/pending listings can be updated.", "error")
         return redirect(url_for('my_listings'))
     prior_status = listing.status   # capture before overwriting
     listing.status = new_status
@@ -1575,7 +1597,7 @@ def listing_set_status(listing_id):
     elif new_status == 'reserved':
         expire_pending_offers(listing_id)
     db.session.commit()
-    labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
+    labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.', 'pending': 'Listing marked as pending sale.'}
     flash(labels[new_status], "success")
     # Notify buyers watching this listing when it transitions to reserved
     if new_status == 'reserved' and prior_status != 'reserved':
@@ -1636,7 +1658,7 @@ def listing_detail(listing_id):
     # Seller and admin can see any status.
     is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
     is_admin = current_user.is_authenticated and current_user.is_admin
-    is_public = (listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved')
+    is_public = (listing.status in ('active', 'sold', 'reserved', 'pending') and listing.moderation_status == 'approved')
     if not (is_public or is_owner or is_admin):
         abort(404)
 
@@ -1786,7 +1808,7 @@ def listing_favorite_toggle(listing_id):
     # listing is no longer publicly visible — otherwise stuck entries pile up.
     # Only enforce visibility when *adding* a new favorite.
     if not existing:
-        is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
+        is_public = listing.status in ('active', 'sold', 'reserved', 'pending') and listing.moderation_status == 'approved'
         is_owner  = current_user.id == listing.seller_id
         if not (is_public or is_owner or current_user.is_admin):
             abort(404)
@@ -1826,7 +1848,7 @@ def listing_report(listing_id):
     listing = Listing.query.get_or_404(listing_id)
 
     # Enforce the same visibility rule as listing_detail
-    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
+    is_public = listing.status in ('active', 'sold', 'reserved', 'pending') and listing.moderation_status == 'approved'
     is_owner  = current_user.id == listing.seller_id
     if not (is_public or is_owner or current_user.is_admin):
         abort(404)
@@ -2559,7 +2581,7 @@ def serve_listing_photo(photo_id):
     if not listing:
         return "", 404
 
-    is_public = (listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved')
+    is_public = (listing.status in ('active', 'sold', 'reserved', 'pending') and listing.moderation_status == 'approved')
     is_owner = current_user.is_authenticated and current_user.id == listing.seller_id
     is_admin = current_user.is_authenticated and current_user.is_admin
     if not (is_public or is_owner or is_admin):
@@ -3691,7 +3713,7 @@ def listing_request_delivery(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     if listing.is_property:
         abort(404)
-    is_public = listing.status in ('active', 'sold', 'reserved') and listing.moderation_status == 'approved'
+    is_public = listing.status in ('active', 'sold', 'reserved', 'pending') and listing.moderation_status == 'approved'
     if not is_public:
         abort(404)
     if current_user.id == listing.seller_id:
@@ -4874,8 +4896,10 @@ def admin_listings():
 def admin_listing_approve(listing_id):
     _check_listing_csrf()
     listing = Listing.query.get_or_404(listing_id)
+    was_moderation_pending = (listing.moderation_status == 'pending')
     listing.moderation_status = 'approved'
-    if listing.status == 'pending':
+    # Only auto-activate if the listing was genuinely awaiting moderation review
+    if listing.status == 'pending' and was_moderation_pending:
         listing.status = 'active'
     db.session.commit()
     flash(f'Listing "{listing.title}" approved.', 'success')

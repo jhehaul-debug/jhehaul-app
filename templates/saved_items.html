@@ -101,7 +101,7 @@
           {% if listing.price_type == 'free' %}
             <span class="saved-price free">FREE</span>
           {% elif listing.price %}
-            <span class="saved-price">${{ "%.0f"|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
+            <span class="saved-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}</span>
           {% else %}
             <span class="saved-price" style="color:#6b7280;">{{ 'Contact' if listing.is_property else 'Make offer' }}</span>
           {% endif %}

@@ -421,7 +421,7 @@
         <div style="position:relative">
           <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-weight:700">$</span>
           <input class="form-control" style="padding-left:28px" type="number" name="price" id="priceInput"
-            value="{{ '%.0f'|format(listing.price) if listing.price is not none else '' }}"
+            value="{{ listing.price|fmt_price if listing.price is not none else '' }}"
             min="0" step="1" placeholder="0">
         </div>
         {% if listing.listing_type == 'rental' %}
@@ -650,7 +650,7 @@
         {% if listing.price_type == 'free' %}
           <div class="prop-preview-price" style="color:#16a34a">Contact for Pricing</div>
         {% elif listing.price is not none %}
-          <div class="prop-preview-price">${{ '{:,.0f}'.format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:0.8rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:0.8rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+          <div class="prop-preview-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:0.8rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:0.8rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
         {% else %}
           <div class="prop-preview-price" style="color:#6b7280">Price not set</div>
         {% endif %}

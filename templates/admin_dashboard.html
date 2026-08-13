@@ -124,7 +124,7 @@
             {% if l.price_type == 'free' or not l.price %}
             <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:2px 9px;border-radius:20px;">FREE</span>
             {% else %}
-            <span style="font-weight:700;color:#1a202c;font-size:0.9rem;">${{ "%.0f"|format(l.price) }}</span>
+            <span style="font-weight:700;color:#1a202c;font-size:0.9rem;">${{ l.price|fmt_price }}</span>
             {% endif %}
             {% set s = l.status %}
             <span style="background:{% if s=='active' %}#dcfce7;color:#15803d{% elif s=='pending' %}#fef3c7;color:#d97706{% elif s=='sold' %}#dbeafe;color:#1d4ed8{% else %}#f1f5f9;color:#64748b{% endif %};font-size:0.76rem;font-weight:700;padding:2px 9px;border-radius:20px;">{{ s.title() }}</span>
@@ -195,7 +195,7 @@
             <div style="font-weight:600;font-size:0.9rem;color:#4a5568;">{{ l.title }}</div>
             <div style="font-size:0.78rem;color:#a0aec0;margin-top:2px;">
                 {% if l.seller %}{{ ((l.seller.first_name or '') ~ ' ' ~ (l.seller.last_name or '')).strip() or l.seller.email }}{% endif %}
-                {% if l.price %} · ${{ "%.0f"|format(l.price) }}{% endif %}
+                {% if l.price %} · ${{ l.price|fmt_price }}{% endif %}
                 {% if l.sold_at %} · sold {{ l.sold_at | ct('%b %d') or '' }}{% endif %}
             </div>
         </div>

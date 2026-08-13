@@ -133,7 +133,7 @@
       <div class="msg-listing-title">{{ listing.title }}</div>
       <div class="msg-listing-price {% if listing.price_type == 'free' %}free{% endif %}">
         {% if listing.price_type == 'free' %}Free
-        {% elif listing.price is not none %}${{ "%.0f"|format(listing.price) if listing.price == listing.price|int else "%.2f"|format(listing.price) }}
+        {% elif listing.price is not none %}${{ listing.price|fmt_price if listing.price == listing.price|int else listing.price|fmt_price }}
         {% else %}Contact for price{% endif %}
         {% if listing.price_type == 'negotiable' %}<span style="font-size:0.78rem;font-weight:600;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:10px;margin-left:6px;">Make Offer</span>{% endif %}
       </div>

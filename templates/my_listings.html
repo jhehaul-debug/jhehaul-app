@@ -35,8 +35,9 @@
   .status-draft   { background: #fef3c7; color: #92400e; }
   .status-sold    { background: #e0e7ff; color: #3730a3; }
   .status-reserved{ background: #fce7f3; color: #9d174d; }
-  .status-expired { background: #f3f4f6; color: #6b7280; }
-  .status-removed { background: #fee2e2; color: #dc2626; }
+  .status-expired  { background: #f3f4f6; color: #6b7280; }
+  .status-removed  { background: #fee2e2; color: #dc2626; }
+  .status-pending  { background: #fef3c7; color: #b45309; }
 
   .listing-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
   .btn-edit { font-size: 0.82rem; font-weight: 600; color: #2563eb; border: 1.5px solid #bfdbfe; background: #eff6ff; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
@@ -121,7 +122,7 @@
       {% if listing.price_type == 'free' %}
         <div class="listing-price free">Free</div>
       {% elif listing.price is not none %}
-        <div class="listing-price">${{ '%.0f'|format(listing.price) }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+        <div class="listing-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
       {% else %}
         <div class="listing-price" style="color:#6b7280;">—</div>
       {% endif %}
@@ -142,6 +143,7 @@
           {% elif listing.status == 'draft' %}✏️ Draft
           {% elif listing.status == 'sold' %}✓ Sold
           {% elif listing.status == 'reserved' %}⏸ Reserved
+          {% elif listing.status == 'pending' %}⏳ Pending
           {% elif listing.status == 'expired' %}⏰ Expired
           {% elif listing.status == 'removed' %}✕ Removed
           {% else %}{{ listing.status | title }}{% endif %}
@@ -179,13 +181,29 @@
         {% if listing.status == 'active' %}
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="status" value="sold">
-            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
+            <input type="hidden" name="status" value="pending">
+            <button type="submit" class="btn-reserved" style="color:#b45309;border-color:#fde68a;background:#fffbeb" title="Mark as pending sale — sale in progress">⏳ Pending</button>
           </form>
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="reserved">
             <button type="submit" class="btn-reserved" title="Mark as reserved">⏸ Reserved</button>
+          </form>
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="sold">
+            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
+          </form>
+        {% elif listing.status == 'pending' %}
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="active">
+            <button type="submit" class="btn-reactivate" title="Sale fell through — reactivate listing">↺ Reactivate</button>
+          </form>
+          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="sold">
+            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
           </form>
         {% elif listing.status in ('sold', 'reserved') %}
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">

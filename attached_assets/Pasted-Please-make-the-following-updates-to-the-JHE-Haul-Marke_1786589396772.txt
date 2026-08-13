@@ -1,0 +1,134 @@
+Please make the following updates to the JHE Haul Marketplace.
+
+1. Fix Uploaded Photos Not Displaying
+
+I created a vehicle listing with 16 photos, but some of the uploaded photos are not opening/displaying correctly.
+
+Please investigate and fix the entire photo upload and display flow.
+
+Make sure:
+
+* ALL successfully uploaded photos are saved.
+* ALL uploaded photos can be viewed from the listing.
+* Users can swipe/scroll through every photo on mobile.
+* Thumbnails and full-size photos both work.
+* Photos continue working after publishing and refreshing the page.
+* Photos are not dependent on temporary/local image URLs that later expire.
+* Image URLs/paths are stored correctly in the database.
+* iPhone photos, including HEIC/HEIF when applicable, are properly handled or converted to a web-compatible format.
+* If an individual photo upload fails, clearly tell the seller which photo failed instead of treating it as successfully uploaded.
+* The displayed photo count must match the number of photos that can actually be viewed.
+* Do NOT delete or damage existing listing photos while implementing the fix.
+
+Test this specifically using the existing 2014 Chevrolet Volt listing that shows 16 photos.
+
+⸻
+
+2. Fix Price Formatting
+
+Marketplace prices are currently displaying like:
+
+$10000
+
+and in some places:
+
+$10000.00
+
+Change the display format to:
+
+$10,000
+
+For normal whole-dollar listing prices, do NOT display unnecessary .00.
+
+Examples:
+
+* 1000 → $1,000
+* 2500 → $2,500
+* 10000 → $10,000
+* 12500 → $12,500
+* 100000 → $100,000
+
+Apply this consistently everywhere a listing price appears, including:
+
+* Seller’s listings
+* Browse
+* Search results
+* Listing details
+* Listing preview before publishing
+* Favorites/saved listings
+* Messages/offers where listing prices appear
+* Admin area where applicable
+
+Use one shared price-formatting function/component so prices cannot appear differently on different pages.
+
+For the existing 2014 Chevrolet Volt, the price should display as:
+
+$10,000
+
+not $10000 or $10000.00.
+
+⸻
+
+3. Add a Pending Sale Status
+
+The seller currently has listing status options such as:
+
+Active | Sold | Reserved
+
+Add another option:
+
+Pending
+
+Pending means the seller has a potential buyer and the sale is currently being completed, but the item has NOT officially sold yet.
+
+Pending behavior
+
+When a seller marks a listing Pending:
+
+* Display a clear Pending badge on the listing.
+* Keep the listing visible to marketplace users.
+* Clearly indicate that the sale is currently pending.
+* Do NOT automatically mark the listing Sold.
+* Allow the seller to change Pending → Sold when the transaction is completed.
+* Allow the seller to change Pending → Active if the sale falls through.
+* Seller must still be able to edit the listing while it is Pending.
+
+The seller should have these listing statuses available:
+
+Active | Reserved | Pending | Sold
+
+Do NOT force the seller to follow a particular sequence. The seller should be able to select whichever status accurately represents the listing.
+
+Make sure Pending works for ALL marketplace categories, not just vehicles.
+
+Update Pending everywhere necessary, including:
+
+* Database/status validation
+* Backend/API
+* Seller listing controls
+* Listing cards
+* Listing detail pages
+* Browse/Search
+* Account/My Listings
+* Admin area
+
+Do not break existing Active, Reserved, or Sold listings.
+
+⸻
+
+4. Test Everything Before Deployment
+
+Test the existing 2014 Chevrolet Volt listing and verify:
+
+* Price displays as $10,000
+* All 16 successfully uploaded photos can be opened/viewed
+* Photo count is accurate
+* Photos remain available after page refresh
+* Photos work correctly on mobile/iPhone
+* Pending can be selected
+* Pending badge appears correctly
+* Pending can be changed back to Active
+* Pending can be changed to Sold
+* Existing Active, Reserved, and Sold functionality still works
+
+After completing and testing ALL changes, commit and push everything to the production branch so the live JHE Haul Marketplace is updated.
