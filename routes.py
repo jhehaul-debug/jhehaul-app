@@ -495,6 +495,9 @@ def home():
                               not getattr(current_user, 'profile_nudge_dismissed', False))
         return render_template('marketplace.html', categories=categories, is_search=False,
                                hide_sold='1' if hide_sold_pref else '',
+                               no_vehicles_filter='',
+                               listing_type_filter='', active_category=None,
+                               city_zip_filter='', area_filter='',
                                show_welcome=show_welcome,
                                show_profile_nudge=show_profile_nudge,
                                gallery_photos=_gallery_photos(active_only=True),
@@ -538,6 +541,7 @@ def marketplace():
     price_type_filter  = request.args.get('price_type',   '').strip()
     featured_filter    = request.args.get('featured',     '').strip()
     listing_type_filter= request.args.get('listing_type', '').strip()
+    no_vehicles_filter = request.args.get('no_vehicles',  '').strip()
     area_filter        = request.args.get('area',         '').strip()
     city_zip_filter    = request.args.get('city_zip',     '').strip()
     min_price_raw      = request.args.get('min_price',    '').strip()
@@ -618,6 +622,23 @@ def marketplace():
         elif listing_type_filter in ('item', 'property_sale', 'rental'):
             qobj = qobj.filter(Listing.listing_type == listing_type_filter)
 
+        # no_vehicles=1 with listing_type=item → exclude the Vehicles category
+        if no_vehicles_filter and listing_type_filter == 'item':
+            _vcats = Category.query.filter(
+                db.or_(Category.slug == 'vehicles', Category.name.ilike('vehicle%'))
+            ).all()
+            _excl_ids = []
+            for _vc in _vcats:
+                _excl_ids.append(_vc.id)
+                _excl_ids.extend([c.id for c in _vc.subcategories])
+            if _excl_ids:
+                qobj = qobj.filter(
+                    db.or_(Listing.category_id.is_(None),
+                           Listing.category_id.notin_(_excl_ids))
+                )
+            else:
+                qobj = qobj.filter(Listing.vehicle_make.is_(None))
+
         # Twin Cities area filter — radius-based (40 mi from Minneapolis centre)
         if area_filter == 'twin-cities':
             _TC_LAT, _TC_LON = 44.9778, -93.2650
@@ -684,6 +705,7 @@ def marketplace():
                                price_type_filter=price_type_filter,
                                featured_filter=featured_filter,
                                listing_type_filter=listing_type_filter,
+                               no_vehicles_filter=no_vehicles_filter,
                                area_filter=area_filter,
                                city_zip_filter=city_zip_filter,
                                min_price=min_price, max_price=max_price,
@@ -2358,34 +2380,202 @@ def api_search_suggestions():
     if not q or len(q) < 2:
         return jsonify(suggestions=[])
 
+    ql = q.lower()
     suggestions = []
     seen_text = set()
 
     def _add(text, stype, url):
         key = text.lower()
-        if key not in seen_text:
+        if key not in seen_text and len(suggestions) < 8:
             seen_text.add(key)
             suggestions.append({'text': text, 'type': stype, 'url': url})
 
-    # 1. Matching categories
-    cats = Category.query.filter(
-        Category.name.ilike(f'%{q}%'),
-        Category.is_active == True,
-        Category.parent_id == None
-    ).limit(3).all()
-    for c in cats:
-        _add(c.name, 'category', f'/marketplace?category={c.slug}')
+    # ── 1. Synonym / keyword map ─────────────────────────────────────
+    # Each entry: (set_of_trigger_words_or_prefixes, [(label, type, url), ...])
+    # A suggestion fires when any trigger word starts with ql OR ql starts with it (min 2 chars).
+    _SYNONYM_MAP = [
+        ({'car','cars','auto','autos','automobile','automobiles','vehicle','vehicles'}, [
+            ('Cars & Trucks',       'category', '/marketplace?category=vehicles'),
+            ('Vehicles',            'category', '/marketplace?category=vehicles'),
+            ('Auto Parts',          'category', '/marketplace?category=auto-parts'),
+        ]),
+        ({'truck','trucks','pickup','pickups'}, [
+            ('Trucks & Pickups',    'category', '/marketplace?q=truck&category=vehicles'),
+            ('Cars & Trucks',       'category', '/marketplace?category=vehicles'),
+        ]),
+        ({'van','vans','minivan','minivans'}, [
+            ('Vans & Minivans',     'category', '/marketplace?q=van&category=vehicles'),
+            ('Cars & Trucks',       'category', '/marketplace?category=vehicles'),
+        ]),
+        ({'suv','crossover','crossovers','4wd','awd'}, [
+            ('SUVs & Crossovers',   'category', '/marketplace?q=suv&category=vehicles'),
+            ('Cars & Trucks',       'category', '/marketplace?category=vehicles'),
+        ]),
+        ({'part','parts','autopart','autoparts'}, [
+            ('Auto Parts',          'category', '/marketplace?category=auto-parts'),
+            ('Cars & Trucks',       'category', '/marketplace?category=vehicles'),
+        ]),
+        ({'apartment','apartments','apt','studio','studios','flat','flats'}, [
+            ('Apartments for Rent', 'housing',  '/marketplace?listing_type=rental&q=apartment'),
+            ('Rentals',             'housing',  '/marketplace?listing_type=rental'),
+            ('Housing & Real Estate','housing', '/marketplace?category=housing'),
+        ]),
+        ({'house','houses','home','homes','residential'}, [
+            ('Homes for Sale',      'housing',  '/marketplace?listing_type=property_sale'),
+            ('Houses for Rent',     'housing',  '/marketplace?listing_type=rental&q=house'),
+            ('Housing & Real Estate','housing', '/marketplace?category=housing'),
+        ]),
+        ({'rent','rental','rentals','renting','lease','leasing','tenant'}, [
+            ('Rentals',             'housing',  '/marketplace?listing_type=rental'),
+            ('Apartments for Rent', 'housing',  '/marketplace?listing_type=rental&q=apartment'),
+            ('Houses for Rent',     'housing',  '/marketplace?listing_type=rental&q=house'),
+        ]),
+        ({'condo','condos','townhome','townhomes','townhouse','townhouses','duplex'}, [
+            ('Condos & Townhomes',  'housing',  '/marketplace?listing_type=property_sale&q=condo'),
+            ('Homes for Sale',      'housing',  '/marketplace?listing_type=property_sale'),
+        ]),
+        ({'property','properties','realestate','realty','forsale','for sale'}, [
+            ('Homes for Sale',      'housing',  '/marketplace?listing_type=property_sale'),
+            ('Housing & Real Estate','housing', '/marketplace?category=housing'),
+            ('Rentals',             'housing',  '/marketplace?listing_type=rental'),
+        ]),
+        ({'refrigerator','refrigerators','fridge','fridges','freezer','freezers'}, [
+            ('Refrigerators',       'category', '/marketplace?q=refrigerator'),
+            ('Appliances',          'category', '/marketplace?category=appliances'),
+        ]),
+        ({'washer','washers','dryer','dryers','laundry'}, [
+            ('Washers & Dryers',    'category', '/marketplace?q=washer+dryer'),
+            ('Appliances',          'category', '/marketplace?category=appliances'),
+        ]),
+        ({'stove','stoves','oven','ovens','range','ranges','microwave','microwaves','dishwasher','dishwashers'}, [
+            ('Kitchen Appliances',  'category', '/marketplace?q=kitchen+appliances'),
+            ('Appliances',          'category', '/marketplace?category=appliances'),
+        ]),
+        ({'appliance','appliances'}, [
+            ('Appliances',          'category', '/marketplace?category=appliances'),
+            ('Refrigerators',       'category', '/marketplace?q=refrigerator'),
+            ('Washers & Dryers',    'category', '/marketplace?q=washer+dryer'),
+        ]),
+        ({'couch','couches','sofa','sofas','loveseat','loveseats','sectional','sectionals'}, [
+            ('Sofas & Couches',     'category', '/marketplace?q=couch+sofa'),
+            ('Furniture',           'category', '/marketplace?category=furniture'),
+        ]),
+        ({'furniture','chair','chairs','table','tables','desk','desks','dresser','dressers','bed','beds','mattress'}, [
+            ('Furniture',           'category', '/marketplace?category=furniture'),
+            ('Sofas & Couches',     'category', '/marketplace?q=couch+sofa'),
+        ]),
+        ({'tv','television','televisions','monitor','monitors','screen'}, [
+            ('TVs & Monitors',      'category', '/marketplace?q=tv+television'),
+            ('Electronics',         'category', '/marketplace?category=electronics'),
+        ]),
+        ({'phone','phones','iphone','android','smartphone','smartphones','tablet','tablets','laptop','laptops','computer','computers'}, [
+            ('Electronics',         'category', '/marketplace?category=electronics'),
+            ('Phones & Tablets',    'category', '/marketplace?q=phone+tablet'),
+        ]),
+        ({'electronic','electronics','gaming','game','games','console','consoles'}, [
+            ('Electronics',         'category', '/marketplace?category=electronics'),
+        ]),
+        ({'drill','drills','saw','saws','hammer','hammers','wrench','wrenches','screwdriver'}, [
+            ('Power Tools',         'category', '/marketplace?q=power+tools'),
+            ('Tools',               'category', '/marketplace?category=tools'),
+        ]),
+        ({'tool','tools','toolbox','toolboxes','equipment'}, [
+            ('Tools',               'category', '/marketplace?category=tools'),
+            ('Power Tools',         'category', '/marketplace?q=power+tools'),
+        ]),
+        ({'clothing','clothes','shirt','shirts','pants','jacket','jackets','shoes','boots','dress','dresses','coat','coats'}, [
+            ('Clothing & Accessories','category','/marketplace?category=clothing'),
+        ]),
+        ({'sport','sports','outdoor','outdoors','bicycle','bicycles','bike','bikes','gym','fitness','exercise'}, [
+            ('Sports & Outdoors',   'category', '/marketplace?category=sports-outdoors'),
+        ]),
+        ({'kid','kids','baby','babies','toy','toys','stroller','strollers','crib','cribs'}, [
+            ('Kids & Baby',         'category', '/marketplace?category=kids-baby'),
+        ]),
+        ({'garden','gardening','lawn','lawnmower','patio','outdoor furniture'}, [
+            ('Home & Garden',       'category', '/marketplace?category=home-garden'),
+        ]),
+        ({'restaurant','commercial kitchen','industrial'}, [
+            ('Restaurant Equipment','category', '/marketplace?category=restaurant-equipment'),
+        ]),
+        ({'business','office','commercial'}, [
+            ('Business Equipment',  'category', '/marketplace?category=business-equipment'),
+        ]),
+        ({'free','freebie','freebies','giveaway'}, [
+            ('Free Items',          'category', '/marketplace?category=free-items'),
+        ]),
+        ({'collectible','collectibles','antique','antiques','vintage','comic','coins'}, [
+            ('Collectibles',        'category', '/marketplace?category=collectibles'),
+        ]),
+    ]
 
-    # 2. Vehicle makes that start with the query
+    for triggers, labels in _SYNONYM_MAP:
+        matched = any(
+            t.startswith(ql) or ql.startswith(t)
+            for t in triggers
+            if len(t) >= 2
+        )
+        if matched:
+            for label, stype, url in labels:
+                _add(label, stype, url)
+            if len(suggestions) >= 5:
+                break
+
+    # ── 2. Vehicle makes (with common nicknames/aliases) ────────────
     _MAKES = ['Acura','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler',
               'Dodge','Ford','GMC','Honda','Hyundai','Infiniti','Jeep','Kia',
               'Lexus','Lincoln','Mazda','Mercedes-Benz','Mitsubishi','Nissan',
               'Pontiac','RAM','Subaru','Tesla','Toyota','Volkswagen','Volvo']
-    for make in _MAKES:
-        if make.lower().startswith(q.lower()):
-            _add(make, 'vehicle', f'/marketplace?q={make}')
+    _MAKE_ALIASES = {
+        'chevy':'Chevrolet','chev':'Chevrolet',
+        'vw':'Volkswagen','merc':'Mercedes-Benz','benz':'Mercedes-Benz',
+        'mercedesbenz':'Mercedes-Benz','mercedes':'Mercedes-Benz',
+        'beemer':'BMW','beamer':'BMW',
+        'mopar':'Dodge','ram':'RAM',
+        'caddy':'Cadillac','lincoln':'Lincoln',
+    }
+    # Check aliases first
+    for alias, make in _MAKE_ALIASES.items():
+        if alias.startswith(ql) or ql.startswith(alias):
+            _add(make + ' vehicles', 'vehicle',
+                 f'/marketplace?category=vehicles&q={make}')
 
-    # 3. Distinct vehicle make+model combos from live listings
+    # Standard make prefix match
+    for make in _MAKES:
+        if make.lower().startswith(ql):
+            _add(make + ' vehicles', 'vehicle',
+                 f'/marketplace?category=vehicles&q={make}')
+
+    # Multi-word query: try "make model" pattern (e.g. "honda accord")
+    _parts = ql.split()
+    if len(_parts) >= 2:
+        _first = _parts[0]
+        _rest  = ' '.join(_parts[1:])
+        # Resolve alias for first word
+        _resolved_make = _MAKE_ALIASES.get(_first)
+        if not _resolved_make:
+            for make in _MAKES:
+                if make.lower().startswith(_first):
+                    _resolved_make = make
+                    break
+        if _resolved_make:
+            _add(f'{_resolved_make} {_rest.title()} vehicles', 'vehicle',
+                 f'/marketplace?category=vehicles&q={_resolved_make}+{_rest}')
+            _add(f'{_resolved_make} vehicles', 'vehicle',
+                 f'/marketplace?category=vehicles&q={_resolved_make}')
+
+    # ── 3. Matching DB categories (name contains query) ──────────────
+    if len(suggestions) < 5:
+        cats = Category.query.filter(
+            Category.name.ilike(f'%{q}%'),
+            Category.is_active == True
+        ).order_by(Category.parent_id.asc().nullsfirst()).limit(4).all()
+        for c in cats:
+            _add(c.name, 'category',
+                 f'/marketplace?category={c.slug}' if c.parent_id is None
+                 else f'/marketplace?category={c.parent.slug if c.parent else c.slug}')
+
+    # ── 4. Vehicle make+model combos from live listings ──────────────
     if len(suggestions) < 6:
         vm_rows = (Listing.query
             .with_entities(Listing.vehicle_make, Listing.vehicle_model)
@@ -2398,16 +2588,17 @@ def api_search_suggestions():
                     Listing.vehicle_model.ilike(f'%{q}%'),
                 )
             )
-            .distinct()
-            .limit(6).all())
+            .distinct().limit(5).all())
         for make, model in vm_rows:
             if make and model:
-                _add(f'{make} {model}', 'vehicle', f'/marketplace?q={make}+{model}')
+                _add(f'{make} {model}', 'vehicle',
+                     f'/marketplace?category=vehicles&q={make}+{model}')
             elif make:
-                _add(make, 'vehicle', f'/marketplace?q={make}')
+                _add(make, 'vehicle',
+                     f'/marketplace?category=vehicles&q={make}')
 
-    # 4. Active listing titles that contain the query
-    if len(suggestions) < 8:
+    # ── 5. Active listing titles that contain the query ──────────────
+    if len(suggestions) < 7:
         listings = (Listing.query
             .filter(
                 Listing.status == 'active',
@@ -2415,9 +2606,13 @@ def api_search_suggestions():
                 Listing.title.ilike(f'%{q}%')
             )
             .order_by(Listing.created_at.desc())
-            .limit(6).all())
+            .limit(4).all())
         for l in listings:
             _add(l.title, 'listing', f'/listing/{l.id}')
+
+    # ── 6. Always end with "Search 'X' in all Marketplace" ──────────
+    _add(f'Search "{q}" in all Marketplace', 'search_all',
+         f'/marketplace?q={q}')
 
     return jsonify(suggestions=suggestions[:8])
 

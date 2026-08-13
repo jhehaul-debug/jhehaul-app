@@ -620,25 +620,50 @@ function dismissProfileNudge() {
 </div>
 
 {# ── Pill filter row ── #}
-{% set _has_filters = listing_type_filter or (active_category and active_category.id) or city_zip_filter or area_filter %}
+{% set _no_veh = no_vehicles_filter if no_vehicles_filter is defined else '' %}
+{% set _has_filters = listing_type_filter or (active_category and active_category.id) or city_zip_filter or area_filter or _no_veh %}
 {% set _q_val = (search_query if search_query is defined and search_query else request.args.get('q', '')) %}
 {% set _pq = ('?q=' ~ _q_val ~ '&') if _q_val else '?' %}
-{% set _pcat = ('category=' ~ active_category.slug ~ '&') if active_category else '' %}
 {% set _pcity = ('city_zip=' ~ city_zip_filter ~ '&') if city_zip_filter else '' %}
-{% set _ptype = ('listing_type=' ~ listing_type_filter ~ '&') if listing_type_filter else '' %}
+{# Determine active states for pills #}
+{% set _items_active = listing_type_filter == 'item' and not active_category %}
+{% set _vehicles_active = active_category and active_category.slug == 'vehicles' %}
 <div class="mp-pill-row">
-    {# "All" is only active when no type, no category, no search — purely browsing everything #}
-    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if not listing_type_filter and not active_category }}">All</a>
-    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=item' }}" class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if listing_type_filter == 'item' }}">📦 Items</a>
-    <button type="button" class="mp-pill mp-pill-main {{ 'active' if listing_type_filter == 'property_sale' }}" onclick="mpTogglePanel('mp-forsale-panel', this)">🏠 For Sale ▾</button>
-    <button type="button" class="mp-pill mp-pill-main {{ 'active' if listing_type_filter == 'rental' }}" onclick="mpTogglePanel('mp-rental-panel', this)">🔑 Rentals ▾</button>
-    <button type="button" class="mp-pill mp-pill-main {{ 'active' if active_category }}" onclick="mpTogglePanel('mp-cat-panel', this)">
-        {{ active_category.name if active_category else 'Category' }} ▾
-    </button>
-    {# Filters ▾ is NOT part of the single-select group — it can be active alongside any mode #}
-    <button type="button" class="mp-pill {{ 'active' if city_zip_filter or hide_sold }}" onclick="mpTogglePanel('mp-filters-panel', this)">
+    {# ALL — everything, no filters #}
+    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}"
+       class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if not listing_type_filter and not active_category }}">All</a>
+
+    {# ITEMS — physical merchandise only, excludes vehicles/property/rentals #}
+    <a href="/marketplace{{ _pq ~ _pcity ~ 'listing_type=item&no_vehicles=1' }}"
+       class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if _items_active and _no_veh }}">📦 Items</a>
+
+    {# VEHICLES — vehicles category #}
+    <a href="/marketplace{{ _pq ~ _pcity ~ 'category=vehicles' }}"
+       class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if _vehicles_active }}">🚗 Vehicles</a>
+
+    {# FOR SALE — real estate for sale #}
+    <button type="button" class="mp-pill mp-pill-main {{ 'active' if listing_type_filter == 'property_sale' }}"
+            onclick="mpTogglePanel('mp-forsale-panel', this)">🏠 For Sale ▾</button>
+
+    {# RENTALS — rental properties #}
+    <button type="button" class="mp-pill mp-pill-main {{ 'active' if listing_type_filter == 'rental' }}"
+            onclick="mpTogglePanel('mp-rental-panel', this)">🔑 Rentals ▾</button>
+
+    {# CATEGORY panel opener — shows when a non-vehicle category is active #}
+    {% if active_category and active_category.slug != 'vehicles' %}
+    <button type="button" class="mp-pill mp-pill-main active"
+            onclick="mpTogglePanel('mp-cat-panel', this)">{{ active_category.name }} ▾</button>
+    {% else %}
+    <button type="button" class="mp-pill mp-pill-main"
+            onclick="mpTogglePanel('mp-cat-panel', this)">Category ▾</button>
+    {% endif %}
+
+    {# FILTERS — not single-select; can be active alongside any mode #}
+    <button type="button" class="mp-pill {{ 'active' if city_zip_filter or hide_sold }}"
+            onclick="mpTogglePanel('mp-filters-panel', this)">
         Filters{% if city_zip_filter %}: {{ city_zip_filter }}{% endif %} ▾
     </button>
+
     {% if _has_filters %}
     <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill" style="color:#ef4444;border-color:#fca5a5;">✕ Clear</a>
     {% endif %}
@@ -1162,74 +1187,139 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// ── Search suggestions ────────────────────────────────────────
+// ── Search suggestions (desktop + mobile) ────────────────────
 (function() {
-    var inp  = document.getElementById('mp-q');
-    var box  = document.getElementById('mp-suggestions');
-    var form = document.getElementById('mp-search-form');
-    if (!inp || !box || !form) return;
+    var POPULAR = [
+        { text: 'Vehicles',           type: 'category', url: '/marketplace?category=vehicles' },
+        { text: 'Apartments for Rent',type: 'housing',  url: '/marketplace?listing_type=rental&q=apartment' },
+        { text: 'Homes for Sale',     type: 'housing',  url: '/marketplace?listing_type=property_sale' },
+        { text: 'Furniture',          type: 'category', url: '/marketplace?category=furniture' },
+        { text: 'Appliances',         type: 'category', url: '/marketplace?category=appliances' },
+        { text: 'Electronics',        type: 'category', url: '/marketplace?category=electronics' },
+        { text: 'Tools',              type: 'category', url: '/marketplace?category=tools' },
+        { text: 'Free Items',         type: 'category', url: '/marketplace?category=free-items' },
+    ];
 
-    var timer, focusIdx = -1;
+    var ICONS = {
+        category:   '🏷️',
+        vehicle:    '🚗',
+        housing:    '🏠',
+        listing:    '📦',
+        search_all: '🔍',
+    };
 
-    function renderSuggestions(items) {
-        if (!items.length) { box.classList.remove('open'); return; }
-        var icons = { category: '🏷️', vehicle: '🚗', listing: '📦' };
-        box.innerHTML = items.map(function(s, i) {
-            return '<div class="mp-suggestion-item" data-idx="' + i + '" data-text="' + s.text.replace(/"/g, '&quot;') + '" data-url="' + s.url + '">' +
-                   '<span class="mp-suggestion-icon">' + (icons[s.type] || '🔍') + '</span>' +
-                   '<span>' + s.text + '</span></div>';
-        }).join('');
-        focusIdx = -1;
-        box.classList.add('open');
-        box.querySelectorAll('.mp-suggestion-item').forEach(function(el) {
-            el.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                inp.value = el.getAttribute('data-text');
-                box.classList.remove('open');
-                form.submit();
+    function initSearch(inpId, boxId, formId) {
+        var inp  = document.getElementById(inpId);
+        var box  = document.getElementById(boxId);
+        var form = document.getElementById(formId);
+        if (!inp || !box) return;
+
+        var timer, focusIdx = -1;
+
+        function navigate(url) {
+            window.location.href = url;
+        }
+
+        function renderSuggestions(items, isPopular) {
+            if (!items.length) { box.classList.remove('open'); return; }
+            box.innerHTML = (isPopular
+                ? '<div style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;padding:8px 16px 4px;">Popular searches</div>'
+                : ''
+            ) + items.map(function(s, i) {
+                var icon = ICONS[s.type] || '🔍';
+                return '<div class="mp-suggestion-item" data-idx="' + i +
+                       '" data-url="' + s.url.replace(/"/g, '&quot;') +
+                       '" data-type="' + s.type +
+                       '" data-text="' + s.text.replace(/"/g, '&quot;') + '">' +
+                       '<span class="mp-suggestion-icon">' + icon + '</span>' +
+                       '<span>' + s.text + '</span></div>';
+            }).join('');
+            focusIdx = -1;
+            box.classList.add('open');
+            box.querySelectorAll('.mp-suggestion-item').forEach(function(el) {
+                el.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    box.classList.remove('open');
+                    var stype = el.getAttribute('data-type');
+                    var url   = el.getAttribute('data-url');
+                    var text  = el.getAttribute('data-text');
+                    if (stype === 'search_all' || stype === 'listing') {
+                        // Text search: set input and submit form
+                        inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');
+                        if (form) { form.submit(); } else { navigate(url); }
+                    } else {
+                        // Category / housing / vehicle: navigate directly
+                        navigate(url);
+                    }
+                });
             });
+        }
+
+        function showPopular() {
+            renderSuggestions(POPULAR, true);
+        }
+
+        function fetchSuggestions(q) {
+            fetch('/api/search-suggestions?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(d) { renderSuggestions(d.suggestions || [], false); })
+                .catch(function() {});
+        }
+
+        inp.addEventListener('focus', function() {
+            if (!inp.value.trim()) showPopular();
+        });
+
+        inp.addEventListener('input', function() {
+            clearTimeout(timer);
+            var q = inp.value.trim();
+            if (!q) { showPopular(); return; }
+            if (q.length < 2) { box.classList.remove('open'); return; }
+            timer = setTimeout(function() { fetchSuggestions(q); }, 200);
+        });
+
+        // Keyboard navigation
+        inp.addEventListener('keydown', function(e) {
+            var items = box.querySelectorAll('.mp-suggestion-item');
+            if (!box.classList.contains('open') || !items.length) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                focusIdx = Math.min(focusIdx + 1, items.length - 1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                focusIdx = Math.max(focusIdx - 1, -1);
+            } else if (e.key === 'Escape') {
+                box.classList.remove('open'); return;
+            } else if (e.key === 'Enter' && focusIdx >= 0) {
+                e.preventDefault();
+                var el   = items[focusIdx];
+                var stype = el.getAttribute('data-type');
+                var url   = el.getAttribute('data-url');
+                var text  = el.getAttribute('data-text');
+                box.classList.remove('open');
+                if (stype === 'search_all' || stype === 'listing') {
+                    inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');
+                    if (form) { form.submit(); } else { navigate(url); }
+                } else {
+                    navigate(url);
+                }
+                return;
+            } else { return; }
+            items.forEach(function(el, i) { el.classList.toggle('focused', i === focusIdx); });
+            if (focusIdx >= 0) items[focusIdx].scrollIntoView({ block: 'nearest' });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!inp.contains(e.target) && !box.contains(e.target)) {
+                box.classList.remove('open');
+            }
         });
     }
 
-    function fetchSuggestions(q) {
-        fetch('/api/search-suggestions?q=' + encodeURIComponent(q))
-            .then(function(r) { return r.json(); })
-            .then(function(d) { renderSuggestions(d.suggestions || []); })
-            .catch(function() {});
-    }
-
-    inp.addEventListener('input', function() {
-        clearTimeout(timer);
-        var q = inp.value.trim();
-        if (q.length < 2) { box.classList.remove('open'); return; }
-        timer = setTimeout(function() { fetchSuggestions(q); }, 220);
-    });
-
-    // Keyboard navigation within dropdown
-    inp.addEventListener('keydown', function(e) {
-        var items = box.querySelectorAll('.mp-suggestion-item');
-        if (!box.classList.contains('open') || !items.length) return;
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            focusIdx = Math.min(focusIdx + 1, items.length - 1);
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            focusIdx = Math.max(focusIdx - 1, -1);
-        } else if (e.key === 'Escape') {
-            box.classList.remove('open'); return;
-        } else if (e.key === 'Enter' && focusIdx >= 0) {
-            e.preventDefault();
-            inp.value = items[focusIdx].getAttribute('data-text');
-            box.classList.remove('open');
-            form.submit(); return;
-        } else { return; }
-        items.forEach(function(el, i) { el.classList.toggle('focused', i === focusIdx); });
-        if (focusIdx >= 0) items[focusIdx].scrollIntoView({ block: 'nearest' });
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!inp.contains(e.target) && !box.contains(e.target)) box.classList.remove('open');
-    });
+    // Wire up desktop search
+    initSearch('mp-q', 'mp-suggestions', 'mp-search-form');
+    // Wire up mobile search
+    initSearch('mp-q-mobile', 'mp-suggestions-mobile', 'mp-search-form-mobile');
 })();
 </script>
 

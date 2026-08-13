@@ -1,0 +1,212 @@
+Please make two additional corrections to JHE Marketplace.
+
+1. Fix Marketplace Search Suggestions / Templates
+
+The Marketplace search box still is NOT providing useful suggestions/templates when a user starts typing.
+
+I want the search to behave like a modern marketplace search with type-ahead suggestions.
+
+As the user types, show a dropdown directly underneath the search field with relevant suggestions.
+
+Examples:
+
+User types:
+
+car
+Suggestions could include:
+
+* Cars & Trucks
+* Vehicles
+* Car Parts
+* Search “car” in all Marketplace
+
+User types:
+
+Chevy
+Suggestions could include:
+
+* Chevrolet vehicles
+* Chevrolet auto parts
+* Search “Chevy” in all Marketplace
+
+User types:
+
+apartment
+Suggestions:
+
+* Apartments for Rent
+* Houses for Rent
+* Rentals
+* Search “apartment” in all Marketplace
+
+User types:
+
+house
+Suggestions:
+
+* Homes for Sale
+* Houses for Rent
+* Housing & Real Estate
+* Search “house” in all Marketplace
+
+User types:
+
+refrigerator
+Suggestions:
+
+* Refrigerators
+* Appliances
+* Search “refrigerator” in all Marketplace
+
+User types:
+
+washer
+Suggestions:
+
+* Washers & Dryers
+* Appliances
+* Search “washer” in all Marketplace
+
+User types:
+
+couch
+Suggestions:
+
+* Sofas & Couches
+* Furniture
+* Search “couch” in all Marketplace
+
+User types:
+
+drill
+Suggestions:
+
+* Power Tools
+* Tools
+* Search “drill” in all Marketplace
+
+These should NOT just be decorative suggestions.
+
+Clicking a suggestion must actually perform the appropriate search/filter and display matching listings.
+
+Search should recognize:
+
+* singular/plural words
+* common synonyms
+* vehicle makes/models
+* housing/rental terms
+* appliance types
+* furniture types
+* electronics
+* tools
+* auto parts
+* other marketplace categories
+
+Also show recent/popular search templates when the user taps an empty search box, such as:
+
+Vehicles
+Apartments for Rent
+Homes for Sale
+Furniture
+Appliances
+Electronics
+Tools
+
+Do not hard-code the system in a way that prevents users from searching arbitrary listing titles/descriptions. Users must still be able to type any search term.
+
+2. Correct the Difference Between “All” and “Items”
+
+Right now All and Items appear to do basically the same thing.
+
+They need clearly different behavior.
+
+ALL
+
+All means ALL Marketplace listings.
+
+It should include:
+
+* Regular merchandise/items
+* Vehicles
+* Homes/real estate for sale
+* Rentals
+
+ITEMS
+
+Items means physical merchandise only.
+
+It should include categories such as:
+
+* Furniture
+* Appliances
+* Electronics
+* Tools
+* Auto Parts
+* Home & Garden
+* Clothing & Accessories
+* Restaurant Equipment
+* Business Equipment
+* Kids & Baby
+* Sports & Outdoors
+* Collectibles
+* Free Items
+* Other physical merchandise
+
+Items should NOT include:
+
+* Vehicles
+* Homes/real estate
+* Apartments
+* Houses for rent
+* Other rental/property listings
+
+Vehicles should have their own category/filter.
+
+Real estate should be handled through For Sale.
+
+Rental properties should be handled through Rentals.
+
+3. Navigation must remain single-select
+
+Only ONE main marketplace selection should be active at a time.
+
+If I tap:
+All → Items
+
+All must immediately deactivate.
+
+If I tap:
+Items → Vehicles
+
+Items must deactivate.
+
+If I tap:
+Vehicles → For Sale
+
+Vehicles must deactivate.
+
+Do not leave multiple main sections highlighted/open at the same time.
+
+4. Test before marking complete
+
+Test searches for:
+
+car
+Chevrolet
+Honda Accord
+apartment
+house
+refrigerator
+washer
+couch
+TV
+drill
+auto parts
+
+Verify the suggestions appear while typing AND clicking each suggestion actually navigates/filters correctly.
+
+Also verify that All shows everything while Items excludes vehicles, real estate, and rentals.
+
+Test on mobile Safari and desktop.
+
+After testing, commit the changes, push them to production, confirm the DigitalOcean deployment succeeds, and verify everything on the LIVE jhehaul.com site.
