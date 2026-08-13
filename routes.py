@@ -2222,6 +2222,11 @@ def offer_seller_respond(listing_id, offer_id):
         offer.status = 'accepted'
         offer.updated_at = datetime.now()
 
+        # Mark the listing as reserved immediately so other buyers see the
+        # correct status and cannot submit new offers.
+        prior_listing_status = listing.status
+        listing.status = 'reserved'
+
         # Auto-decline all other open offers on the same listing so no
         # second buyer is left waiting on a deal that won't happen.
         other_open = ListingOffer.query.filter(
@@ -2229,6 +2234,8 @@ def offer_seller_respond(listing_id, offer_id):
             ListingOffer.id != offer_id,
             ListingOffer.status.in_(['pending', 'countered']),
         ).all()
+        # Capture declined buyer info before the commit for notifications below.
+        _declined_buyers = [(o.id, o.buyer_id, o.buyer, o.amount) for o in other_open]
         _now = datetime.now()
         for _other in other_open:
             _other.status = 'declined'
@@ -2260,7 +2267,35 @@ def offer_seller_respond(listing_id, offer_id):
                  offer_id=offer.id)
         except Exception:
             pass
-        flash("Offer accepted! The buyer has been notified.", "success")
+
+        # Notify each auto-declined buyer (email + in-app)
+        for _oid, _bid, _obuyer, _oamount in _declined_buyers:
+            try:
+                from email_service import notify_buyer_offer_declined as _ebod_auto
+                if _obuyer and _obuyer.email:
+                    _ebod_auto(_obuyer.email, listing.title, listing_id, _oamount)
+            except Exception as _e:
+                app.logger.warning("auto-decline email failed offer=%s: %s", _oid, _e)
+            try:
+                from notification_service import notify_offer_declined as _nod_auto
+                _nod_auto(buyer_id=_bid,
+                          listing_title=listing.title,
+                          listing_id=listing_id,
+                          offer_id=_oid)
+            except Exception as _e:
+                app.logger.warning("auto-decline in-app notif failed offer=%s: %s", _oid, _e)
+
+        # Notify listing watchers (saved / favorited) that the listing is now reserved.
+        if prior_listing_status != 'reserved':
+            try:
+                from notification_service import notify_listing_reserved_to_watchers
+                _declined_buyer_ids = [str(_bid) for _, _bid, _, _ in _declined_buyers]
+                notify_listing_reserved_to_watchers(listing_id, listing.title,
+                                                    offer_buyer_ids=_declined_buyer_ids)
+            except Exception as _notif_err:
+                app.logger.warning("offer accept: reserved watcher notification failed: %s", _notif_err)
+
+        flash("Offer accepted! The buyer has been notified and your listing is now marked as reserved.", "success")
 
     elif action == 'decline':
         offer.status = 'declined'
