@@ -1,0 +1,62 @@
+The live JHE Haul Admin Email Test failed with this exact error:
+
+Failed to send to jhehaul@gmail.com. SENDGRID_API_KEY may not be set — check Notification Log for details.
+
+DigitalOcean already shows existing environment variables for SendGrid, including a SendGrid API key variable and SENDGRID_FROM_EMAIL.
+
+Fix ONLY this SendGrid production configuration problem.
+
+IMPORTANT:
+
+* Do not change anything else.
+* Do not break any other working features.
+* Keep all unrelated functionality exactly as it is.
+* Do NOT create a new SendGrid API key unless the existing key is confirmed invalid.
+* Do NOT expose, print, log, or commit any API key or secret.
+* Do NOT remove the existing notification system.
+
+Diagnose the exact problem
+
+1. Check the exact environment-variable name the application code expects.
+2. Confirm it is exactly:
+    SENDGRID_API_KEY
+3. Check the DigitalOcean production configuration and confirm the existing SendGrid API key is assigned to the actual production web service/component running JHE Haul.
+4. Check whether the variable is available at runtime to the backend.
+5. Check the Notification Log and DigitalOcean runtime logs for the exact SendGrid failure.
+6. Do NOT display the actual API key. Only report whether it is present/missing.
+7. Verify SENDGRID_FROM_EMAIL is also available to the backend.
+
+Fix
+
+If the DigitalOcean variable name does not exactly match SENDGRID_API_KEY, correct the configuration/code so the production backend reads the proper existing secret.
+
+If the variable exists but is scoped incorrectly, fix its scope so the production web service can access it.
+
+Do not hard-code the API key into the source code or GitHub.
+
+Redeploy and test
+
+After correcting the issue:
+
+1. Commit only code changes if code changes are actually necessary.
+2. Push any necessary code changes to the correct GitHub production branch.
+3. Trigger a NEW DigitalOcean production deployment/redeploy so the environment-variable configuration is loaded.
+4. Verify the deployment completes successfully.
+5. Use the Admin Email System Test to send a test email to the configured test address.
+6. Confirm whether SendGrid accepts the message.
+7. Check production logs for errors.
+
+Report back:
+
+* Exact cause of the problem
+* Whether SENDGRID_API_KEY is now detected at runtime (DO NOT show its value)
+* Whether SENDGRID_FROM_EMAIL is detected
+* Whether a new GitHub commit was necessary
+* GitHub commit hash if applicable
+* DigitalOcean deployment status
+* Whether the test email was successfully sent
+* Any remaining SendGrid error
+
+DO NOT CHANGE ANYTHING ELSE.
+DO NOT BREAK ANY OTHER WORKING FEATURES.
+KEEP ALL UNRELATED FUNCTIONALITY EXACTLY AS IT IS.
