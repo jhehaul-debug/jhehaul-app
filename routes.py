@@ -1702,6 +1702,7 @@ def listing_detail(listing_id):
 
     # Similar active listings (sold/reserved pages only, shown to non-owners)
     similar_listings = []
+    similar_fallback = False
     if listing.status in ('sold', 'reserved'):
         from models import Listing as _SL
         sim_q = _SL.query.filter(
@@ -1709,10 +1710,14 @@ def listing_detail(listing_id):
             _SL.status == 'active',
             _SL.moderation_status == 'approved',
         )
+        similar_fallback = False
         if listing.category_id:
             sim_q = sim_q.filter(_SL.category_id == listing.category_id)
         elif listing.is_property:
             sim_q = sim_q.filter(_SL.listing_type == listing.listing_type)
+        else:
+            # No category set and not a property — fall back to recent sitewide items
+            similar_fallback = True
         similar_listings = sim_q.order_by(_SL.created_at.desc()).limit(6).all()
 
     return render_template(
@@ -1727,6 +1732,7 @@ def listing_detail(listing_id):
         buyer_offer=buyer_offer,
         seller_offers=seller_offers,
         similar_listings=similar_listings,
+        similar_fallback=similar_fallback,
     )
 
 

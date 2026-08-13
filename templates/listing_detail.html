@@ -1248,7 +1248,7 @@
   {% if similar_listings and not is_owner %}
   <div class="sim-section">
     <div class="sim-head">
-      <h2>Similar listings you might like</h2>
+      <h2>{% if similar_fallback %}Other active listings{% else %}Similar listings you might like{% endif %}</h2>
       {% if listing.category %}
         <a href="/marketplace?category={{ listing.category.slug }}">Browse more →</a>
       {% elif listing.is_property %}
