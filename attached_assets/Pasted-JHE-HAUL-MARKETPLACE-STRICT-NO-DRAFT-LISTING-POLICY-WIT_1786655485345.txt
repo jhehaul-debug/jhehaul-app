@@ -1,0 +1,338 @@
+JHE HAUL MARKETPLACE — STRICT NO-DRAFT LISTING POLICY WITH USER WARNING
+
+Update the marketplace Sell/Create Listing flow so unfinished listings are NEVER saved for later.
+
+IMPORTANT:
+
+I want this to be strict.
+
+If a seller starts creating a listing but does NOT complete the full listing process and publish it, all unfinished listing data should be discarded and the seller must start over next time.
+
+Do not allow users to save drafts.
+Do not allow users to resume unfinished listings.
+Do not allow unfinished listings to remain in Admin or listing counts.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. DISPLAY A CLEAR WARNING BEFORE LISTING CREATION
+==================================================
+
+At the beginning of the Sell/Create Listing process, display a visible notice such as:
+
+IMPORTANT:
+
+“Your listing must be completed and published in one session. If you leave or close the listing process before publishing, your photos, video, and listing information will be deleted and you will have to start over.”
+
+Make the warning clear but not overly alarming.
+
+Also add a shorter reminder near the navigation/buttons:
+
+“Unpublished listings are not saved.”
+
+==================================================
+2. OPTIONAL ACKNOWLEDGEMENT
+==================================================
+
+Before beginning the Sell flow, require the seller to acknowledge:
+
+“I understand that unfinished listings are not saved and I will have to start over if I leave before publishing.”
+
+Use an unchecked checkbox or confirmation button.
+
+Do not pre-check it.
+
+==================================================
+3. NO SAVED DRAFTS
+==================================================
+
+Remove or disable:
+
+- Save Draft
+- Resume Draft
+- Continue Later
+- My Drafts
+- Draft recovery
+
+Users should NOT be able to return later and continue an unfinished marketplace listing.
+
+==================================================
+4. PUBLISH OR DISCARD
+==================================================
+
+The listing flow should work as:
+
+Start Listing
+→ Photos/Video
+→ Details
+→ Price
+→ Location
+→ Delivery
+→ Publish
+
+If Publish is successfully completed:
+→ Save listing permanently
+→ Status becomes Active
+
+If user exits before Publish:
+→ Discard all unfinished listing data
+
+==================================================
+5. CANCEL / LEAVE
+==================================================
+
+If seller presses:
+
+Cancel
+
+Back to Home
+
+Browse
+
+Account
+
+Messages
+
+or otherwise intentionally exits the Sell flow before publishing:
+
+Discard the unfinished listing.
+
+Delete temporary listing data.
+
+Delete temporary uploaded media.
+
+The next time the user selects Sell:
+→ Start a brand-new blank listing.
+
+==================================================
+6. BROWSER CLOSE / PAGE ABANDONMENT
+==================================================
+
+Use the safest available implementation for the current Flask/DigitalOcean architecture so abandoned temporary listing records do not remain permanently in the database.
+
+If temporary server-side records are technically required during the wizard, they must be:
+
+- marked temporary
+- hidden from Admin listing counts
+- hidden from marketplace inventory
+- cleaned up when the flow is abandoned
+
+Do not allow abandoned temporary records to become permanent drafts.
+
+==================================================
+7. USER WARNING WHEN LEAVING
+==================================================
+
+If technically reliable, when the user has already entered listing information and attempts to leave the Sell flow, show a confirmation such as:
+
+“Leave this listing?”
+
+“You have not published this listing. If you leave now, your photos, video, and listing information will be deleted and you will have to start over.”
+
+Buttons:
+
+STAY AND FINISH
+
+LEAVE AND DELETE
+
+If the user chooses:
+
+STAY AND FINISH
+→ remain in the Sell flow
+
+If user chooses:
+
+LEAVE AND DELETE
+→ immediately discard temporary listing data and media
+
+Do not rely solely on browser unload warnings for the cleanup logic.
+
+==================================================
+8. TEMPORARY MEDIA CLEANUP
+==================================================
+
+If the seller uploaded:
+
+- Photos
+- Video
+
+but never publishes the listing:
+
+Delete those temporary files safely.
+
+Do not leave abandoned uploads consuming DigitalOcean/storage space.
+
+Do not delete media belonging to published listings.
+
+==================================================
+9. ADMIN CLEANUP
+==================================================
+
+Admin should NOT see abandoned/unpublished listings as normal listings.
+
+Do not count them in:
+
+- Total marketplace listings
+- Seller listing counts
+- Recent Listings
+- Active listings
+- Marketplace inventory
+
+If temporary records must exist technically, keep them separate from normal marketplace/admin listing data and automatically remove them after abandonment.
+
+==================================================
+10. CLEAN EXISTING ABANDONED DRAFTS
+==================================================
+
+Inspect the current database and remove existing unpublished/abandoned draft listings.
+
+Preserve valid:
+
+- Active listings
+- Reserved listings
+- Sold listings
+- Expired listings
+- Moderation records
+- Other legitimate marketplace data
+
+Do not delete the legitimate 2014 Chevrolet Volt listing.
+
+Report how many abandoned drafts were removed.
+
+==================================================
+11. REGISTRATION / INCOMPLETE ACCOUNT WARNING
+==================================================
+
+For incomplete account registration, also make the rule clear.
+
+Display:
+
+“Your account must be fully created before you can use the marketplace. If you leave before completing registration, your incomplete registration information may be discarded and you may need to start over.”
+
+Do not delete a completed account.
+
+Do not delete accounts with legitimate marketplace activity.
+
+==================================================
+12. STRICT RULE SUMMARY
+==================================================
+
+Marketplace listing rule:
+
+NO DRAFTS.
+
+NO SAVE FOR LATER.
+
+NO RESUME LATER.
+
+If listing is not published:
+DELETE unfinished listing data.
+
+If seller returns later:
+START OVER.
+
+==================================================
+13. TESTING
+==================================================
+
+Test:
+
+Start listing → enter nothing → leave
+→ no listing saved
+
+Start listing → upload photos → leave
+→ photos removed
+→ no listing saved
+
+Start listing → upload video → leave
+→ video removed
+→ no listing saved
+
+Start listing → complete Details/Price/Location → leave
+→ all unfinished data removed
+
+Return to Sell
+→ new blank listing starts
+
+Complete entire wizard → Publish
+→ listing saved as Active
+
+Published listing
+→ remains intact
+
+Admin
+→ no abandoned listing clutter
+
+Seller listing count
+→ counts only real listings
+
+==================================================
+14. DO NOT BREAK ANYTHING ELSE
+==================================================
+
+Do not change anything else.
+
+Do not break:
+
+- 20-photo maximum
+- 1-video maximum
+- 60-second video maximum
+- Vehicle fields
+- Messaging
+- Offers
+- Favorites
+- In-app notifications
+- Email notifications
+- SMS-disabled configuration
+- Hauler delivery workflow
+- Admin
+- User management
+- Authentication
+- Stripe
+- Existing marketplace data
+
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+15. PUSH / DEPLOY
+==================================================
+
+After implementation:
+
+1. Run tests.
+2. Run production build.
+3. Verify abandoned listing cleanup.
+4. Verify temporary media cleanup.
+5. Verify no saved Draft feature remains.
+6. Verify published listings still work.
+7. Commit changes.
+8. PUSH to the EXISTING GitHub production branch.
+9. Confirm Local and GitHub HEAD match.
+10. Trigger/verify a NEW DigitalOcean deployment.
+11. Test LIVE jhehaul.com.
+
+Report:
+
+- User warning added YES/NO
+- No-draft policy active YES/NO
+- Existing abandoned drafts removed
+- Temporary media cleanup status
+- Current listing count
+- Files changed
+- Tests
+- Git commit SHA
+- GitHub push status
+- DigitalOcean deployment status
+- Live production verification
+
+CRITICAL:
+
+The user must clearly understand:
+
+IF THE LISTING IS NOT COMPLETED AND PUBLISHED, ALL UNFINISHED LISTING DATA WILL BE LOST AND THEY WILL HAVE TO START OVER.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
