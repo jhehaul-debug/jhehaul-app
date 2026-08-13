@@ -497,15 +497,20 @@ def home():
         show_profile_nudge = (profile_incomplete and
                               not getattr(current_user, 'profile_nudge_dismissed', False) and
                               not show_welcome)
-        return render_template('marketplace.html', categories=categories, is_search=False,
-                               hide_sold='1' if hide_sold_pref else '',
-                               no_vehicles_filter='',
-                               listing_type_filter='', active_category=None,
-                               city_zip_filter='', area_filter='',
-                               show_welcome=show_welcome,
-                               show_profile_nudge=show_profile_nudge,
-                               gallery_photos=_gallery_photos(active_only=True),
-                               saved_listing_ids=_saved_listing_ids(), **ctx)
+        _home_resp = make_response(render_template(
+            'marketplace.html', categories=categories, is_search=False,
+            hide_sold='1' if hide_sold_pref else '',
+            no_vehicles_filter='',
+            listing_type_filter='', active_category=None,
+            city_zip_filter='', area_filter='',
+            show_welcome=show_welcome,
+            show_profile_nudge=show_profile_nudge,
+            gallery_photos=_gallery_photos(active_only=True),
+            saved_listing_ids=_saved_listing_ids(), **ctx))
+        # Prevent browser back-button from replaying a cached response that still
+        # contains the welcome banner HTML (the session flag is already consumed).
+        _home_resp.headers['Cache-Control'] = 'no-store'
+        return _home_resp
     # Logged-out visitors see the marketing landing page
     return redirect(url_for('landing'))
 
@@ -771,12 +776,17 @@ def marketplace():
         _mp_show_nudge = (_mp_profile_incomplete and
                           not getattr(current_user, 'profile_nudge_dismissed', False) and
                           not show_welcome)
-        return render_template('marketplace.html', categories=categories, is_search=False,
-                               listing_type_filter='', area_filter='', city_zip_filter='',
-                               hide_sold='1' if hide_sold_pref else '',
-                               show_welcome=show_welcome,
-                               show_profile_nudge=_mp_show_nudge,
-                               saved_listing_ids=_saved_listing_ids(), **ctx)
+        _mp_resp = make_response(render_template(
+            'marketplace.html', categories=categories, is_search=False,
+            listing_type_filter='', area_filter='', city_zip_filter='',
+            hide_sold='1' if hide_sold_pref else '',
+            show_welcome=show_welcome,
+            show_profile_nudge=_mp_show_nudge,
+            saved_listing_ids=_saved_listing_ids(), **ctx))
+        # Prevent browser back-button from replaying a cached response that still
+        # contains the welcome banner HTML (the session flag is already consumed).
+        _mp_resp.headers['Cache-Control'] = 'no-store'
+        return _mp_resp
 
 
 @app.route("/sell")

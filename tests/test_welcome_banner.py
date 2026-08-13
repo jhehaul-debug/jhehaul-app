@@ -143,6 +143,48 @@ with app.app_context():
           b'welcome-banner' not in r6b.data,
           'banner persisted to / after being consumed on /marketplace')
 
+    # ── 7: Cache-Control: no-store prevents back-button replay ────────────────
+    # Both / and /marketplace must set Cache-Control: no-store so the browser
+    # never serves a stale cached response that still contains the banner HTML.
+    # These checks apply even when the flag is absent (the header must always
+    # be present on the homepage path, not only when the banner fires).
+    cache_user = _make_user('t85-cache-user', user_type='customer')
+    _flu._get_user = lambda: cache_user
+
+    with client.session_transaction() as sess:
+        sess.pop('new_member', None)  # no flag — normal returning user
+
+    r7a = client.get('/marketplace')
+    cc_mp = r7a.headers.get('Cache-Control', '')
+    check('cache-control: /marketplace has no-store header',
+          'no-store' in cc_mp,
+          f'Cache-Control was: {cc_mp!r}')
+
+    r7b = client.get('/')
+    cc_home = r7b.headers.get('Cache-Control', '')
+    check('cache-control: / has no-store header',
+          'no-store' in cc_home,
+          f'Cache-Control was: {cc_home!r}')
+
+    # Also verify the header is present when the banner DOES fire (flag set).
+    with client.session_transaction() as sess:
+        sess['new_member'] = True
+
+    r7c = client.get('/marketplace')
+    cc_mp_banner = r7c.headers.get('Cache-Control', '')
+    check('cache-control: /marketplace has no-store when banner fires',
+          'no-store' in cc_mp_banner,
+          f'Cache-Control was: {cc_mp_banner!r}')
+
+    with client.session_transaction() as sess:
+        sess['new_member'] = True
+
+    r7d = client.get('/')
+    cc_home_banner = r7d.headers.get('Cache-Control', '')
+    check('cache-control: / has no-store when banner fires',
+          'no-store' in cc_home_banner,
+          f'Cache-Control was: {cc_home_banner!r}')
+
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 failed = [r for r in results if not r[1]]
