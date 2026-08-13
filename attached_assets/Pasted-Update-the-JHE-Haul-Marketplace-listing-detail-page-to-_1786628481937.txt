@@ -1,0 +1,63 @@
+Update the JHE Haul Marketplace listing detail page to add a Description section.
+
+Listing page
+
+Keep the current listing layout exactly as it is.
+
+Add a new section:
+
+DESCRIPTION
+
+Place it directly below Vehicle Details and above Delivery Options.
+
+Display the full description entered by the seller when the listing was created.
+
+Example layout:
+
+DESCRIPTION
+
+Runs and drives great. Clean interior, 73,000 miles, good tires, cold A/C, and everything works as it should. Contact me through JHE Haul if interested.
+
+The description should:
+
+* Wrap naturally on mobile screens.
+* Support multiple sentences and paragraphs.
+* Match the same font, spacing, section heading style, and overall design already being used on the listing page.
+* Display only the description saved for that specific listing.
+
+Create/Edit Listing
+
+Make sure sellers have a Description field when creating or editing a listing.
+
+Use a larger multiline text box labeled:
+
+Description
+
+Placeholder:
+
+Describe the item, condition, features, and anything a buyer should know…
+
+The description must save to the database and appear correctly on the public listing detail page.
+
+If an older listing does not have a description, do not display an empty Description section.
+
+IMPORTANT
+
+Do not redesign the listing page. I like the current layout and want it kept exactly as it is.
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+After completing the change, test:
+
+1. Creating a listing with a description.
+2. Opening the listing and verifying the description displays.
+3. Editing the description and verifying the updated description appears.
+4. Existing listings without descriptions still open normally.
+5. Photos, videos, messages, seller information, vehicle details, delivery options, location, edit listing, remove listing, navigation, and all other marketplace functions still work.
+
+Push the completed changes to the production deployment so they appear on jhehaul.com.
+:::
