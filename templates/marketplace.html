@@ -117,37 +117,63 @@
 }
 .mp-btn-browse:hover { border-color: #a0aec0; color: #fff; text-decoration: none; }
 
-/* ── Category Chips ── */
-.mp-cats {
+/* ── Compact filter bar ── */
+.mp-filter-bar {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 28px;
-    padding: 4px 0;
-}
-.mp-cat-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding: 14px 16px;
     background: #fff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 24px;
-    padding: 6px 16px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #4a5568;
-    cursor: pointer;
-    text-decoration: none;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+.mp-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.mp-filter-group label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .05em;
     white-space: nowrap;
 }
-.mp-cat-chip:hover {
-    border-color: #38a169;
-    background: #f0fff4;
-    color: #276749;
-    text-decoration: none;
+.mp-filter-group select,
+.mp-filter-city-input {
+    padding: 7px 10px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    font-size: .88rem;
+    color: #1a202c;
+    background: #f9fafb;
+    min-width: 130px;
 }
-.mp-cat-chip .cat-icon { font-size: 1rem; }
+.mp-filter-group select:focus,
+.mp-filter-city-input:focus { outline: none; border-color: #38a169; background: #fff; }
+.mp-filter-city-input { width: 148px; }
+.mp-filter-btn {
+    background: #38a169; color: #fff; border: none;
+    padding: 8px 20px; border-radius: 7px; font-weight: 700;
+    font-size: .88rem; cursor: pointer; height: 36px; align-self: flex-end;
+}
+.mp-filter-btn:hover { background: #2f855a; }
+.mp-filter-clear {
+    align-self: flex-end; font-size: .82rem; color: #9ca3af;
+    text-decoration: none; line-height: 2.35; white-space: nowrap;
+}
+.mp-filter-clear:hover { color: #ef4444; }
+@media (max-width: 600px) {
+    .mp-filter-bar { gap: 8px; padding: 12px; }
+    .mp-filter-group { flex: 1 1 calc(50% - 8px); }
+    .mp-filter-group select,
+    .mp-filter-city-input { min-width: 0; width: 100%; }
+    .mp-filter-btn { flex: 1 1 100%; }
+}
 
 /* ── Section headings ── */
 .mp-section { margin-bottom: 32px; }
@@ -458,7 +484,8 @@ function dismissProfileNudge() {
             <div class="mp-suggestions" id="mp-suggestions"></div>
         </div>
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
-        {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+        {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
         <button type="submit">Search</button>
     </form>
 
@@ -468,57 +495,50 @@ function dismissProfileNudge() {
     </div>
 </div>
 
-{# ── Type Filter Tabs ── #}
-{# Preserve city_zip value across tab switches #}
-{% set _czp = ('&city_zip=' ~ city_zip_filter) if city_zip_filter else '' %}
-<div class="mp-cats" style="border-bottom:1px solid #f0f0f0;padding-bottom:10px;margin-bottom:2px;">
-    <a href="/marketplace{{ ('?city_zip=' ~ city_zip_filter) if city_zip_filter else '' }}" class="mp-cat-chip {{ 'active' if not listing_type_filter and not area_filter }}">
-        <span class="cat-icon">🏷️</span> All
-    </a>
-    <a href="/marketplace?listing_type=item{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'item' }}">
-        <span class="cat-icon">📦</span> Items
-    </a>
-    <a href="/marketplace?listing_type=property_sale{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'property_sale' }}">
-        <span class="cat-icon">🏠</span> For Sale
-    </a>
-    <a href="/marketplace?listing_type=rental{{ _czp }}" class="mp-cat-chip {{ 'active' if listing_type_filter == 'rental' }}">
-        <span class="cat-icon">🔑</span> Rentals
-    </a>
-    <a href="/marketplace?area=twin-cities{{ _czp }}" class="mp-cat-chip {{ 'active' if area_filter == 'twin-cities' }}">
-        <span class="cat-icon">📍</span> Twin Cities
-    </a>
-</div>
-
-{# ── Category Chips (items only, hidden when browsing properties) ── #}
-{% if categories and listing_type_filter not in ('property_sale', 'rental', 'housing') %}
-<div class="mp-cats">
-    {% for cat in categories %}
-    <a href="/marketplace?category={{ cat.slug }}" class="mp-cat-chip {{ 'active' if active_category and active_category.id == cat.id else '' }}">
-        {% if cat.icon %}<span class="cat-icon">{{ cat.icon }}</span> {% endif %}{{ cat.name }}
-    </a>
-    {% endfor %}
-</div>
-{% endif %}
-
-{# ── City / ZIP filter — always visible for All, Items, and Twin Cities tabs ── #}
-{% if listing_type_filter not in ('property_sale', 'rental', 'housing') %}
-<form method="get" action="/marketplace" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end">
-    {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
-    {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
-    {% if search_query is defined and search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+{# ── Unified compact filter bar ── #}
+{% set _has_filters = listing_type_filter or (active_category and active_category.id) or city_zip_filter or area_filter %}
+{% set _q_val = (search_query if search_query is defined and search_query else request.args.get('q', '')) %}
+<form method="get" action="/marketplace" class="mp-filter-bar">
+    {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
     {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
-    <div>
-        <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">City or ZIP</label>
-        <input type="text" name="city_zip" value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" style="width:160px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem" autocomplete="off">
+
+    {# Category dropdown #}
+    <div class="mp-filter-group">
+        <label for="mp-cat-sel">Category</label>
+        <select name="category" id="mp-cat-sel">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.slug }}" {{ 'selected' if active_category and active_category.id == cat.id }}>
+                {{ (cat.icon ~ ' ') if cat.icon else '' }}{{ cat.name }}
+            </option>
+            {% endfor %}
+        </select>
     </div>
-    <button type="submit" style="background:#38a169;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;height:34px;margin-top:16px">Filter</button>
-    {% if city_zip_filter %}
-    {% if area_filter %}<a href="/marketplace?area={{ area_filter }}" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>
-    {% elif listing_type_filter %}<a href="/marketplace?listing_type={{ listing_type_filter }}" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>
-    {% else %}<a href="/marketplace" style="align-self:flex-end;font-size:.82rem;color:#9ca3af;text-decoration:none;margin-bottom:8px;line-height:2">✕ Clear</a>{% endif %}
+
+    {# Listing type dropdown #}
+    <div class="mp-filter-group">
+        <label for="mp-type-sel">Type</label>
+        <select name="listing_type" id="mp-type-sel">
+            <option value="" {{ 'selected' if not listing_type_filter }}>All Types</option>
+            <option value="item" {{ 'selected' if listing_type_filter == 'item' }}>📦 Items</option>
+            <option value="property_sale" {{ 'selected' if listing_type_filter == 'property_sale' }}>🏠 For Sale</option>
+            <option value="rental" {{ 'selected' if listing_type_filter == 'rental' }}>🔑 Rentals</option>
+        </select>
+    </div>
+
+    {# City / ZIP #}
+    <div class="mp-filter-group">
+        <label for="mp-city-inp">City or ZIP</label>
+        <input type="text" name="city_zip" id="mp-city-inp" class="mp-filter-city-input"
+               value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" autocomplete="off">
+    </div>
+
+    <button type="submit" class="mp-filter-btn">Filter</button>
+
+    {% if _has_filters %}
+    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-filter-clear">✕ Clear filters</a>
     {% endif %}
 </form>
-{% endif %}
 
 {# ── Featured Listings (curated by admin, shown only on homepage) ── #}
 {% if not is_search and gallery_photos %}
