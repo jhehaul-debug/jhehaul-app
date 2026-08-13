@@ -27,6 +27,7 @@ from email_service import (
     notify_customer_deposit_confirmed,
     notify_customer_appointment_confirmed,
     notify_admin_new_request,
+    notify_buyer_offer_expired,
 )
 from sms_service import (
     notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms,
@@ -365,6 +366,33 @@ def uploaded_file(filename):
     response = send_from_directory(UPLOAD_FOLDER, filename)
     response.headers["Cache-Control"] = "no-cache, max-age=0"
     return response
+
+def _expire_offers_and_notify(listing_id, listing_title=None):
+    """Expire pending/countered offers on a listing and email each affected buyer.
+
+    Must be called BEFORE db.session.commit() so the offer rows can be queried
+    while still in their current state.
+    """
+    from models import ListingOffer
+    # Fetch affected offers (with buyer email) before the bulk-update wipes the status
+    affected = (ListingOffer.query
+                .filter(
+                    ListingOffer.listing_id == listing_id,
+                    ListingOffer.status.in_(['pending', 'countered'])
+                )
+                .join(User, ListingOffer.buyer_id == User.id)
+                .with_entities(ListingOffer.amount, User.email)
+                .all())
+    # Perform the bulk status update
+    expire_pending_offers(listing_id)
+    # Send an email to each buyer (silently swallow errors so they don't break the route)
+    for offer_amount, buyer_email in affected:
+        if buyer_email:
+            try:
+                notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amount)
+            except Exception as _e:
+                app.logger.warning("notify_buyer_offer_expired failed for listing %s: %s", listing_id, _e)
+
 
 def _marketplace_categories():
     from models import Category
@@ -1445,12 +1473,29 @@ def listing_edit(listing_id):
 def listing_delete(listing_id):
     """Delete a listing and all its photos (DB rows + stored files)."""
     _check_listing_csrf()
-    from models import Listing, ListingPhoto
+    from models import Listing, ListingPhoto, ListingOffer
     listing = _listing_owner_or_403(listing_id)
+    # Capture pending-offer buyers BEFORE cascade-delete wipes the rows
+    _saved_title = listing.title
+    _pending_buyers = (ListingOffer.query
+                       .filter(
+                           ListingOffer.listing_id == listing_id,
+                           ListingOffer.status.in_(['pending', 'countered'])
+                       )
+                       .join(User, ListingOffer.buyer_id == User.id)
+                       .with_entities(ListingOffer.amount, User.email)
+                       .all())
     # Collect filenames before cascade-delete removes them from the session
     filenames = [p.filename for p in listing.photos if p.filename]
     db.session.delete(listing)
     db.session.commit()
+    # Notify affected buyers now that the listing is gone
+    for _offer_amount, _buyer_email in _pending_buyers:
+        if _buyer_email:
+            try:
+                notify_buyer_offer_expired(_buyer_email, _saved_title, listing_id, _offer_amount)
+            except Exception as _e:
+                app.logger.warning("listing_delete: notify_buyer_offer_expired failed: %s", _e)
     # Delete stored files after DB commit
     try:
         from storage import delete_file as _delete_file
@@ -1500,8 +1545,12 @@ def listing_set_status(listing_id):
             # Reactivating from sold/reserved with no valid future expiry — reset to 30 days
             listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
             listing.expiry_reminder_sent = False  # new expiry cycle — reset reminder
-    # Expire any open offers when the listing is no longer available
-    if new_status in ('sold', 'reserved'):
+    # Expire any open offers when the listing is no longer available.
+    # For sold, also email buyers ("no longer available").
+    # For reserved, expire silently — the watcher notification below handles buyer comms.
+    if new_status == 'sold':
+        _expire_offers_and_notify(listing_id, listing.title)
+    elif new_status == 'reserved':
         expire_pending_offers(listing_id)
     db.session.commit()
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.'}
@@ -4812,7 +4861,7 @@ def admin_listing_hide(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'flagged'
     listing.status = 'removed'
-    expire_pending_offers(listing.id)
+    _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
     flash(f'Listing "{listing.title}" hidden.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4825,7 +4874,7 @@ def admin_listing_remove(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.moderation_status = 'removed'
     listing.status = 'removed'
-    expire_pending_offers(listing.id)
+    _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
     flash(f'Listing "{listing.title}" removed.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4838,7 +4887,7 @@ def admin_listing_mark_sold(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     listing.status = 'sold'
     listing.sold_at = datetime.now()
-    expire_pending_offers(listing.id)
+    _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
     flash(f'Listing "{listing.title}" marked as sold.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
@@ -4995,7 +5044,7 @@ def admin_report_remove_listing(report_id):
     if listing:
         listing.status = 'removed'
         listing.moderation_status = 'removed'
-        expire_pending_offers(listing.id)
+        _expire_offers_and_notify(listing.id, listing.title)
     report.status = 'resolved'
     db.session.commit()
     flash("Listing removed and report resolved.", "success")

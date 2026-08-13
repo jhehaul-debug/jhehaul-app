@@ -885,6 +885,36 @@ def notify_customer_quote_withdrawn(customer_email, job_id, service_type, withdr
     )
 
 
+def notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when their pending offer expires because the listing was sold or removed."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    browse_url = f"{_APP_URL}/marketplace"
+    body = f"""
+    <p>Unfortunately, the listing you made an offer on is <strong>no longer available</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">No Longer Available</span></p>
+    </div>
+    <p>The listing was sold or removed before your offer could be acted on. Browse the
+       marketplace to find similar items — great deals are posted every day!</p>
+    <a href="{browse_url}" class="btn">Browse Similar Items →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your offer on \"{subject_title}\" is no longer active",
+        _html(
+            "This Listing Is No Longer Available",
+            "The item was sold or removed — browse for something similar.",
+            "🚫 Offer Expired",
+            body,
+        ),
+        'buyer_offer_expired',
+    )
+
+
 def notify_customer_deposit_confirmed(customer_email, job_id, service_type, estimated_completion=None):
     service_label = service_type or 'Service'
     est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'
