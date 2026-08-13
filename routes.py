@@ -1718,9 +1718,19 @@ def listing_set_status(listing_id):
     # Expire any open offers when the listing is no longer available.
     # For sold, also email buyers ("no longer available").
     # For reserved, expire silently — the watcher notification below handles buyer comms.
+    # Capture open offer buyers BEFORE expiring so we can notify them afterwards.
+    offer_buyer_ids: list = []
     if new_status == 'sold':
         _expire_offers_and_notify(listing_id, listing.title)
     elif new_status == 'reserved':
+        from models import ListingOffer as _LO
+        offer_buyer_ids = [
+            str(o.buyer_id)
+            for o in _LO.query.filter(
+                _LO.listing_id == listing_id,
+                _LO.status.in_(['pending', 'countered'])
+            ).all()
+        ]
         expire_pending_offers(listing_id)
     db.session.commit()
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.', 'pending': 'Listing marked as pending sale.'}
@@ -1729,7 +1739,8 @@ def listing_set_status(listing_id):
     if new_status == 'reserved' and prior_status != 'reserved':
         try:
             from notification_service import notify_listing_reserved_to_watchers
-            notify_listing_reserved_to_watchers(listing_id, listing.title)
+            notify_listing_reserved_to_watchers(listing_id, listing.title,
+                                                offer_buyer_ids=offer_buyer_ids)
         except Exception as _notif_err:
             app.logger.warning("listing_set_status: reserved notification failed: %s", _notif_err)
     return redirect(url_for('my_listings'))

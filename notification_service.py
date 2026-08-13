@@ -284,10 +284,11 @@ def notify_admin_notice(user_id, title, message=None, action_url=None):
     )
 
 
-def notify_listing_reserved_to_watchers(listing_id, listing_title):
+def notify_listing_reserved_to_watchers(listing_id, listing_title, offer_buyer_ids=None):
     """Send in-app notifications (and emails) to users watching a listing when it is marked Reserved.
 
-    Watchers = users who saved/favorited the listing  +  buyers with an active conversation.
+    Watchers = users who saved/favorited the listing  +  buyers with an active conversation
+               +  buyers whose offer was just expired by the reservation (offer_buyer_ids).
     Deduplicates so no buyer gets two notifications.
     Never raises — notification failure must not break the caller.
     """
@@ -299,14 +300,11 @@ def notify_listing_reserved_to_watchers(listing_id, listing_title):
         action_url = f"/listing/{listing_id}"
         notified_ids: set = set()
 
-        # ── Saved / favorited buyers ──────────────────────────────────────────
-        favorites = (ListingFavorite.query
-                     .filter_by(listing_id=listing_id)
-                     .all())
-        for fav in favorites:
-            uid = str(fav.user_id)
+        def _notify_buyer(uid, related_conversation_id=None):
+            """Create in-app notification + email for one buyer (dedup-safe)."""
+            uid = str(uid)
             if uid in notified_ids:
-                continue
+                return
             notified_ids.add(uid)
             create_notification(
                 user_id=uid,
@@ -315,8 +313,8 @@ def notify_listing_reserved_to_watchers(listing_id, listing_title):
                 message="This item may still become available. Check back or contact the seller.",
                 action_url=action_url,
                 related_listing_id=listing_id,
+                related_conversation_id=related_conversation_id,
             )
-            # Also send an email if the user has one
             user = User.query.get(uid)
             if user and user.email:
                 try:
@@ -324,30 +322,23 @@ def notify_listing_reserved_to_watchers(listing_id, listing_title):
                 except Exception as _email_err:
                     _log.warning("Reserved email failed for user %s: %s", uid, _email_err)
 
+        # ── Buyers with open offers that were just expired ────────────────────
+        for uid in (offer_buyer_ids or []):
+            _notify_buyer(uid)
+
+        # ── Saved / favorited buyers ──────────────────────────────────────────
+        favorites = (ListingFavorite.query
+                     .filter_by(listing_id=listing_id)
+                     .all())
+        for fav in favorites:
+            _notify_buyer(fav.user_id)
+
         # ── Buyers with active conversations ──────────────────────────────────
         convos = (ListingConversation.query
                   .filter_by(listing_id=listing_id)
                   .all())
         for convo in convos:
-            uid = str(convo.buyer_id)
-            if uid in notified_ids:
-                continue
-            notified_ids.add(uid)
-            create_notification(
-                user_id=uid,
-                notif_type='listing_reserved',
-                title=f'"{safe_title}" is now Reserved',
-                message="This item may still become available. Check back or contact the seller.",
-                action_url=action_url,
-                related_listing_id=listing_id,
-                related_conversation_id=convo.id,
-            )
-            user = User.query.get(uid)
-            if user and user.email:
-                try:
-                    notify_buyer_listing_reserved(user.email, safe_title, listing_id)
-                except Exception as _email_err:
-                    _log.warning("Reserved email failed for user %s: %s", uid, _email_err)
+            _notify_buyer(convo.buyer_id, related_conversation_id=convo.id)
 
         _log.info(
             "notify_listing_reserved_to_watchers: listing=%s notified=%d buyers",
