@@ -1,0 +1,320 @@
+Please fix the Property For Sale and Rental Property sections on JHE Haul.
+
+There are still several property features missing or not working correctly.
+
+This is a targeted property fix only.
+
+1. Fix the Property Filter Apply Button
+
+The Apply button in the For Sale and Rental property filters must work.
+
+When a user enters things such as:
+
+* City or ZIP
+* Minimum price
+* Maximum price
+* Minimum bedrooms
+* Open House
+
+and presses Apply, the listings should immediately update to show matching results.
+
+Required behavior
+
+For For Sale:
+
+* Apply only For Sale property filters.
+* Update the listing results.
+* Keep the entered values visible.
+* Show “No listings found” only if there truly are no matches.
+
+For Rentals:
+
+* Apply only Rental filters.
+* Do not mix Rental and For Sale results.
+
+The Clear control should also properly reset the filters.
+
+⸻
+
+2. Restore Property Photo Upload
+
+Both:
+
+* Property For Sale
+* Rental Property
+
+must allow:
+
+Up to 20 photos per listing
+
+Users should be able to:
+
+* Upload multiple photos
+* Preview photos
+* Remove individual photos
+* Select/use a cover photo
+* See upload failures
+* Swipe through photos after publishing
+
+If more than 20 photos are selected, show:
+
+Maximum 20 photos per listing.
+
+⸻
+
+3. Restore Property Video Upload
+
+Both property types must allow:
+
+1 video maximum
+
+Maximum length:
+
+60 seconds
+
+If the video is longer than 60 seconds, show:
+
+Video must be 60 seconds or less.
+
+If a second video is attempted, show:
+
+Only 1 video is allowed per listing.
+
+The video must remain permanently attached to the published listing and play correctly in the property media gallery.
+
+⸻
+
+4. Add Bathrooms Field
+
+The Bathrooms feature still has NOT been updated.
+
+Add a Bathrooms field to BOTH:
+
+* Property For Sale
+* Rental Property
+
+Allow half-bath values.
+
+Examples:
+
+* 1
+* 1.5
+* 2
+* 2.5
+* 3
+* 3.5
+* 4
+* 4.5
+* 5+
+
+Do not force bathrooms to whole numbers.
+
+Display the bathroom count on the published property listing.
+
+Example:
+
+Bedrooms: 4
+Bathrooms: 2.5
+
+⸻
+
+5. Add Garage Size
+
+Add a property field labeled:
+
+Garage
+
+or:
+
+Garage Size
+
+to BOTH:
+
+* Property For Sale
+* Rental Property
+
+Allow selections such as:
+
+* No Garage
+* 1-Car Garage
+* 1.5-Car Garage
+* 2-Car Garage
+* 2.5-Car Garage
+* 3-Car Garage
+* 3.5-Car Garage
+* 4+ Car Garage
+
+The user should not have to type this manually.
+
+Use a dropdown/select control.
+
+Display the selected garage size on the published property listing.
+
+Example:
+
+Garage: 2.5-Car Garage
+
+⸻
+
+6. Keep Bedrooms
+
+Do not remove or break the existing Bedrooms field.
+
+Property details should be able to show:
+
+Bedrooms: 3
+Bathrooms: 2.5
+Garage: 2-Car Garage
+
+⸻
+
+7. Add / Keep Property Description
+
+Both Property For Sale and Rental Property must have a proper multi-line:
+
+Description
+
+field.
+
+The seller/landlord should be able to enter information such as:
+
+* Property condition
+* Updates/remodeling
+* Appliances
+* Garage information
+* Parking
+* Yard
+* Utilities
+* Pet policy
+* Lease information
+* Amenities
+* Neighborhood
+* Other important information
+
+The published property listing should have a clear:
+
+Description
+
+section.
+
+If the description is long, use:
+
+See more
+
+to expand it.
+
+⸻
+
+8. Published Property Details
+
+Property For Sale and Rental listings should display applicable details including:
+
+* Price or monthly rent
+* City/location
+* Property type
+* Bedrooms
+* Bathrooms
+* Garage size
+* Description
+* Photos
+* Video
+* Other existing working property fields
+
+Do not remove any existing working property information.
+
+⸻
+
+9. Test Property For Sale
+
+Create a test For Sale property with:
+
+* 20 photos
+* 1 video up to 60 seconds
+* Bedrooms
+* Bathrooms: 2.5
+* Garage: 2.5-Car Garage
+* Description
+
+Verify:
+
+* Preview works
+* Publish works
+* Listing appears under For Sale
+* Photos work
+* Video works
+* Bathrooms display correctly
+* Garage displays correctly
+* Description displays correctly
+
+⸻
+
+10. Test Rental Property
+
+Create a Rental Property with:
+
+* 20 photos
+* 1 video up to 60 seconds
+* Bedrooms
+* Bathrooms
+* Garage
+* Description
+
+Verify everything saves, publishes, and displays properly.
+
+⸻
+
+CRITICAL — DO NOT CHANGE OR BREAK ANYTHING ELSE
+
+This is a targeted property bug fix and field addition only.
+
+Do not change anything else.
+
+Do NOT:
+
+* Redesign the Marketplace
+* Change navigation
+* Change All / Items / Vehicles
+* Change Search
+* Change regular item listings
+* Change vehicle listings
+* Change Messages
+* Change My Deliveries
+* Change Saved Items
+* Change My Offers
+* Change Account
+* Change bottom navigation
+* Change desktop navigation
+* Change colors
+* Change fonts
+* Change unrelated layouts
+* Remove working features
+* Refactor unrelated code
+* Modify unrelated database functionality
+
+Do not break anything else that currently works.
+
+Keep all unrelated functionality exactly as it is.
+
+Make the smallest safe changes necessary to fix only:
+
+1. Property filter Apply/Clear behavior
+2. 20-photo upload
+3. 1 video up to 60 seconds
+4. Bathrooms
+5. Garage size
+6. Description
+
+Before deployment, confirm that unrelated Marketplace functionality still works exactly as it did before.
+
+Then:
+
+1. Commit the targeted changes.
+2. Push to the production branch.
+3. Confirm DigitalOcean deployment succeeds.
+4. Test the LIVE jhehaul.com site.
+5. Verify Property For Sale works.
+6. Verify Rental Property works.
+7. Verify Bathrooms works.
+8. Verify Garage Size works.
+9. Verify photo/video uploads work.
+10. Do not mark complete until these changes are visible and working on production.
