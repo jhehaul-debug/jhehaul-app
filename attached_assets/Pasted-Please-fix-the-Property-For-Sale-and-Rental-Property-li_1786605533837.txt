@@ -1,0 +1,266 @@
+Please fix the Property For Sale and Rental Property listing forms on JHE Haul.
+
+The photo/video upload section is missing again, and I also need the property forms to include bathrooms and a proper description field.
+
+This is a targeted property-listing fix only.
+
+1. Restore Photo Uploads
+
+Both Property For Sale and Rental Property listings must allow:
+
+Up to 20 photos per listing
+
+Users should be able to:
+
+* Upload multiple photos at once
+* Preview uploaded photos before publishing
+* Remove individual photos
+* Select/use a primary cover photo
+* Reorder photos if already supported
+* See upload progress/errors
+* Know which specific photo failed if an upload fails
+* Swipe left/right through all photos after publishing
+
+If the user tries to upload more than 20 photos, show:
+
+Maximum 20 photos per listing.
+
+Do not silently remove or ignore extra photos.
+
+The displayed photo count must match the number of successfully uploaded and viewable photos.
+
+2. Restore Video Upload
+
+Both property listing types must allow:
+
+Maximum: 1 video
+
+Maximum video length: 60 seconds
+
+If the user uploads a video longer than 60 seconds, reject it and show:
+
+Video must be 60 seconds or less.
+
+If the user already uploaded one video and attempts another, show:
+
+Only 1 video is allowed per listing.
+
+The published listing should show the video in the same media gallery as the photos with a clear play button.
+
+The video should NOT autoplay with sound.
+
+3. Add Bathrooms
+
+Add a Bathrooms field to BOTH:
+
+* Property For Sale
+* Rental Property
+
+Allow half-bath values.
+
+Examples:
+
+* 1
+* 1.5
+* 2
+* 2.5
+* 3
+* 3.5
+* 4
+* 4.5
+* 5+
+
+Do not restrict bathrooms to whole numbers only.
+
+The published listing should clearly show the bathroom count.
+
+Example:
+
+Bedrooms: 3
+Bathrooms: 2.5
+
+4. Keep Bedrooms
+
+Do not remove the existing Bedrooms field.
+
+If it already works, leave its current functionality intact.
+
+5. Add a Property Description Field
+
+Add a proper multi-line Description field to BOTH:
+
+* Property For Sale
+* Rental Property
+
+The seller/landlord should be able to describe things such as:
+
+* Property condition
+* Recent updates
+* Appliances included
+* Parking
+* Utilities
+* Pet policy
+* Lease terms
+* Amenities
+* Yard
+* Garage
+* Neighborhood
+* Special features
+* Other important information
+
+Do not limit the description to a short one-line input.
+
+6. Published Listing Description
+
+On the published property listing, include a clear:
+
+Description
+
+section.
+
+If the description is long, initially show a shortened version and provide:
+
+See more
+
+When tapped, expand the complete description.
+
+7. Property Details
+
+For Sale and Rental listings should display applicable property information cleanly, including:
+
+* Price or monthly rent
+* City/location
+* Property type
+* Bedrooms
+* Bathrooms
+* Description
+* Photos
+* Video
+* Any other property fields that already exist and currently work
+
+Do NOT remove existing property information while adding these fields.
+
+8. Media Must Be Permanently Stored
+
+Do not use temporary browser/blob URLs as permanent listing media.
+
+Property photos and video must continue working after:
+
+* Page refresh
+* Browser restart
+* Logout/login
+* Another user views the listing
+* Application/server restart
+* Production deployment
+
+Make sure the database and permanent media storage contain the correct references.
+
+9. Mobile/iPhone Support
+
+Test the property media uploader on iPhone/Safari.
+
+Make sure users can select photos and a video directly from their phone.
+
+Handle common iPhone photo/video formats correctly or convert them when necessary.
+
+10. Published Media Gallery
+
+For both For Sale and Rental property listings, the published gallery should support:
+
+Up to 20 photos + 1 video up to 60 seconds
+
+Users should be able to:
+
+* Swipe horizontally through photos
+* See photo position/count
+* Tap/enlarge photos
+* Play the video
+* Move through all media without broken images or links
+
+11. Test Property For Sale
+
+Create a Property For Sale test listing with:
+
+* 20 photos
+* 1 video up to 60 seconds
+* Bedrooms
+* Bathrooms using a half-bath value such as 2.5
+* Full description
+
+Publish it and verify everything saves and displays correctly.
+
+Also test:
+
+* Attempting a 21st photo
+* Attempting a second video
+* Attempting a video longer than 60 seconds
+
+12. Test Rental Property
+
+Create a Rental Property test listing with:
+
+* 20 photos
+* 1 video up to 60 seconds
+* Bedrooms
+* Bathrooms
+* Full description
+
+Publish it and verify everything saves and displays correctly.
+
+Also test the media limits and error messages.
+
+CRITICAL — DO NOT CHANGE OR BREAK ANYTHING ELSE
+
+This is a targeted fix only.
+
+Only make the changes specifically requested above for the Property For Sale and Rental Property forms and their property-detail display.
+
+Do NOT change anything else.
+
+Do NOT:
+
+* Redesign the Marketplace
+* Change the Marketplace navigation
+* Change Browse
+* Change Search
+* Change categories
+* Change Vehicles
+* Change regular item listings
+* Change Messages
+* Change Saved Items
+* Change My Offers
+* Change My Deliveries
+* Change Account
+* Change Request Service
+* Change the bottom navigation
+* Change desktop navigation
+* Change colors
+* Change fonts
+* Change spacing/layout outside the affected property forms/details
+* Remove any working feature
+* Modify unrelated database functionality
+* Refactor unrelated code
+* Reintroduce SMS verification
+* Break any existing working feature
+
+Keep every unrelated feature exactly as it currently works.
+
+Make the smallest safe code changes necessary to accomplish this request.
+
+Before deployment, verify that existing Marketplace functionality still works and that nothing unrelated was changed or broken.
+
+After completing the targeted changes:
+
+1. Test Property For Sale.
+2. Test Rental Property.
+3. Test 20-photo limit.
+4. Test 1-video/60-second limit.
+5. Test bedrooms and bathrooms.
+6. Test description and See More.
+7. Test on iPhone/mobile.
+8. Test desktop.
+9. Commit the changes.
+10. Push to the production branch.
+11. Confirm DigitalOcean deployment succeeds.
+12. Verify the changes on the LIVE jhehaul.com site.
+13. Do not mark the task complete until the requested changes are working and all unrelated existing functionality remains unchanged.
