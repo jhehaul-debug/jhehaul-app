@@ -42,7 +42,6 @@
 
 <div class="mp-msg-header">
     <h2>💬 My Messages</h2>
-    <a href="{{ url_for('marketplace') }}" class="btn btn-sm">Browse Marketplace</a>
 </div>
 
 {% if buying_convos or selling_convos %}
@@ -158,11 +157,8 @@
 <div class="empty-state">
     <div style="font-size:3rem;margin-bottom:12px;">💬</div>
     <h3>No conversations yet</h3>
-    <p>Browse the marketplace and message sellers, or post a listing and hear from buyers.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <a href="{{ url_for('marketplace') }}" class="btn btn-success">Browse Marketplace</a>
-        <a href="/sell" class="btn">Sell Something</a>
-    </div>
+    <p>When you contact a seller or a buyer messages you about your listing, your conversations will appear here.</p>
+    <a href="{{ url_for('marketplace') }}" class="btn btn-success">Browse Marketplace</a>
 </div>
 {% endif %}
 

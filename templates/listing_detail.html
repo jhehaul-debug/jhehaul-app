@@ -89,6 +89,19 @@
 .ld-thumb:hover { opacity: 0.85; }
 .ld-thumb.active { border-color: #2563eb; }
 
+/* ── Main photo prev/next arrows ── */
+.ld-main-wrap { position: relative; }
+.ld-main-prev, .ld-main-next {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.38); color: #fff; border: none;
+  font-size: 1.8rem; line-height: 1; cursor: pointer;
+  border-radius: 7px; padding: 6px 13px; opacity: 0.82;
+  z-index: 2; transition: opacity .15s, background .15s;
+}
+.ld-main-prev { left: 10px; }
+.ld-main-next { right: 10px; }
+.ld-main-prev:hover, .ld-main-next:hover { opacity: 1; background: rgba(0,0,0,0.58); }
+
 /* ── Lightbox ── */
 .ld-lightbox {
   display: none;
@@ -722,6 +735,7 @@
       <div class="ld-gallery">
         {% if photos %}
           {# Main display: photo (default) or video #}
+          <div class="ld-main-wrap">
           <img
             id="ld-main-img"
             class="ld-main-photo"
@@ -738,6 +752,11 @@
             {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
           </video>
           {% endif %}
+          {% if photos|length > 1 %}
+          <button class="ld-main-prev" onclick="galleryNav(-1, event)" aria-label="Previous photo">‹</button>
+          <button class="ld-main-next" onclick="galleryNav(1, event)" aria-label="Next photo">›</button>
+          {% endif %}
+          </div>
 
           {% if (photos|length > 1) or listing.videos %}
           <div class="ld-thumbs">
@@ -1443,6 +1462,48 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowRight') lbNav(1, null);
   if (e.key === 'ArrowLeft')  lbNav(-1, null);
 });
+
+// ── Navigate main gallery (used by prev/next arrows and swipe) ────
+function galleryNav(dir, e) {
+  e && e.stopPropagation();
+  if (!photoUrls.length) return;
+  currentIdx = (currentIdx + dir + photoUrls.length) % photoUrls.length;
+  const src = photoUrls[currentIdx];
+  const mainImg = document.getElementById('ld-main-img');
+  const vidEl   = document.getElementById('ld-main-video');
+  // ensure photo is visible (may have been showing video)
+  if (vidEl) { vidEl.pause(); vidEl.style.display = 'none'; }
+  if (mainImg) {
+    mainImg.style.display = '';
+    mainImg.src = src;
+    mainImg.onclick = () => openLightbox(currentIdx);
+  }
+  document.querySelectorAll('.ld-thumb').forEach((t, i) => t.classList.toggle('active', i === currentIdx));
+}
+
+// ── Touch / swipe support ─────────────────────────────────────
+(function() {
+  // Swipe on main gallery wrap
+  var wrap = document.querySelector('.ld-main-wrap');
+  if (wrap) {
+    var sx = 0;
+    wrap.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener('touchend', function(e) {
+      var dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) galleryNav(dx < 0 ? 1 : -1, null);
+    });
+  }
+  // Swipe on lightbox
+  var lb = document.getElementById('lightbox');
+  if (lb) {
+    var lbsx = 0;
+    lb.addEventListener('touchstart', function(e) { lbsx = e.touches[0].clientX; }, { passive: true });
+    lb.addEventListener('touchend', function(e) {
+      var dx = e.changedTouches[0].clientX - lbsx;
+      if (Math.abs(dx) > 40) lbNav(dx < 0 ? 1 : -1, null);
+    });
+  }
+})();
 
 // ── Share ─────────────────────────────────────────────────────
 function shareListing() {
