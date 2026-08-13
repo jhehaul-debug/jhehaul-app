@@ -694,7 +694,9 @@
 </div>
 
 {# ─── beforeunload: warn seller when navigating away mid-property-wizard ─── #}
-{% if step < 6 %}
+{# Only show when the draft has no title yet — once a title is saved the seller #}
+{# has committed enough that a stray navigation is less catastrophic.           #}
+{% if step < 6 and not listing.title %}
 <script>
 (function () {
   var _wizardSubmitting = false;
