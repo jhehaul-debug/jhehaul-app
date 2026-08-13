@@ -331,7 +331,8 @@ def notify_customer_quote_withdrawn_sms(phone, job_id, service_type, withdrawal_
     if not is_sms_enabled('customer_quote_withdrawn'):
         return False
     service_label = service_type or 'your service'
-    note_part = f' Note: {withdrawal_note[:120]}' if withdrawal_note else ''
+    _note = (withdrawal_note or '').strip()
+    note_part = f' Note: {_note[:120]}' if _note else ''
     msg = (f"JHE Haul: The quote for {service_label} (Request #{job_id}) has been withdrawn.{note_part} "
            f"Our team will follow up soon. View details: {_APP_URL}/customer/request/{job_id}")
     return send_sms(phone, msg, 'customer_quote_withdrawn')
