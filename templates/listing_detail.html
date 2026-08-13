@@ -1109,6 +1109,13 @@
                   <div class="offer-status-sub">You withdrew your previous offer.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
+              {% elif buyer_offer and buyer_offer.status == 'expired' %}
+                <div class="offer-status-box" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;">
+                  <div class="offer-status-label" style="color:#92400e;">⏰ Offer Expired</div>
+                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ "%.0f"|format(buyer_offer.amount) if buyer_offer.amount == buyer_offer.amount|int else "%.2f"|format(buyer_offer.amount) }}</div>
+                  <div class="offer-status-sub" style="color:#9a3412;">This offer expired without a response from the seller.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
               {% else %}
                 <button type="button" class="btn-make-offer" onclick="openOfferModal()">💰 Make an Offer</button>
               {% endif %}

@@ -39,6 +39,17 @@ def _run_checks(app):
 
         now = datetime.now()
 
+        # ── ListingOffer time-based expiry ────────────────────────────────────
+        try:
+            from models import expire_stale_timed_offers
+            expired_offers = expire_stale_timed_offers()
+            if expired_offers:
+                db.session.commit()
+                log.info("Offer expiry run: expired=%d stale pending/countered offers", expired_offers)
+        except Exception as e:
+            log.error("Offer expiry sweep error: %s", e)
+            db.session.rollback()
+
         # ── Listing auto-expiry ───────────────────────────────────────────────
         expired_listings = Listing.query.filter(
             Listing.status.in_(['active', 'reserved']),

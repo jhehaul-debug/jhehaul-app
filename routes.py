@@ -11,7 +11,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, expire_pending_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -1514,11 +1514,29 @@ def listing_detail(listing_id):
                        .filter_by(listing_id=listing_id, buyer_id=current_user.id)
                        .order_by(ListingOffer.created_at.desc())
                        .first())
+        # On-read expiry check: mark stale pending/countered offers as expired
+        if (buyer_offer
+                and buyer_offer.status in ('pending', 'countered')
+                and buyer_offer.expires_at
+                and buyer_offer.expires_at < datetime.now()):
+            buyer_offer.status = 'expired'
+            buyer_offer.updated_at = datetime.now()
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     # Seller's incoming offers (owner view only, negotiable listings)
     seller_offers = []
     if is_owner and listing.price_type == 'negotiable':
         from models import ListingOffer
+        # Sweep time-expired offers before rendering so the seller sees accurate statuses
+        try:
+            swept = expire_stale_timed_offers()
+            if swept:
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         seller_offers = (ListingOffer.query
                          .filter_by(listing_id=listing_id)
                          .filter(ListingOffer.status.in_(['pending', 'countered', 'accepted']))
@@ -1703,6 +1721,7 @@ def listing_make_offer(listing_id):
         existing.updated_at = datetime.now()
         offer = existing
     else:
+        from datetime import timedelta as _offer_td
         offer = ListingOffer(
             listing_id=listing_id,
             buyer_id=current_user.id,
@@ -1710,6 +1729,7 @@ def listing_make_offer(listing_id):
             amount=amount,
             message=message or None,
             status='pending',
+            expires_at=datetime.now() + _offer_td(days=7),
         )
         db.session.add(offer)
 
@@ -1760,6 +1780,19 @@ def offer_seller_respond(listing_id, offer_id):
 
     if listing.id != listing_id or str(current_user.id) != str(listing.seller_id):
         abort(403)
+
+    # Enforce time-based expiry before any action
+    if (offer.status in ('pending', 'countered')
+            and offer.expires_at and offer.expires_at < datetime.now()):
+        offer.status = 'expired'
+        offer.updated_at = datetime.now()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        flash("This offer has expired and can no longer be accepted, declined, or countered.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
     if offer.status not in ('pending', 'countered'):
         flash("This offer is no longer open.", "error")
         return redirect(url_for('listing_detail', listing_id=listing_id))
@@ -1895,6 +1928,18 @@ def offer_buyer_respond(listing_id, offer_id):
 
     action = request.form.get('action', '').strip()
 
+    # Enforce time-based expiry before any action
+    if (offer.status in ('pending', 'countered')
+            and offer.expires_at and offer.expires_at < datetime.now()):
+        offer.status = 'expired'
+        offer.updated_at = datetime.now()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        flash("This offer has expired. You can make a fresh offer if the listing is still active.", "error")
+        return redirect(url_for('listing_detail', listing_id=listing_id))
+
     if action == 'accept_counter':
         if offer.status != 'countered' or not offer.counter_amount:
             flash("No active counteroffer to accept.", "error")
@@ -1966,6 +2011,13 @@ def my_offers():
 def seller_offers():
     """Seller's aggregated inbox — all incoming offers across all their listings."""
     from models import ListingOffer
+    # Sweep time-expired offers before rendering so counts are accurate
+    try:
+        swept = expire_stale_timed_offers()
+        if swept:
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
     offers = (ListingOffer.query
               .filter_by(seller_id=current_user.id)
               .order_by(ListingOffer.updated_at.desc())

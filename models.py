@@ -685,3 +685,21 @@ def expire_pending_offers(listing_id):
      )
      .update({'status': 'expired', 'updated_at': datetime.now()},
              synchronize_session=False))
+
+
+def expire_stale_timed_offers():
+    """Bulk-expire all pending/countered offers whose expires_at has passed.
+
+    Called from the background expiry thread and from seller/buyer action
+    endpoints so time-based expiry is enforced even when no page is visited.
+    Returns the count of rows updated.
+    """
+    count = (ListingOffer.query
+             .filter(
+                 ListingOffer.status.in_(['pending', 'countered']),
+                 ListingOffer.expires_at != None,   # noqa: E711
+                 ListingOffer.expires_at <= datetime.now(),
+             )
+             .update({'status': 'expired', 'updated_at': datetime.now()},
+                     synchronize_session=False))
+    return count
