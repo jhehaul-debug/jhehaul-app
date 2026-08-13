@@ -10,16 +10,41 @@
     </div>
 </div>
 
-<!-- Search -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}
+<div class="alert alert-{{ cat }}" style="margin-bottom:12px;">{{ msg }}</div>
+{% endfor %}
+{% endwith %}
+
+<!-- Search & Filters -->
 <div class="card" style="padding:14px 16px;margin-bottom:14px;">
     <form method="GET" action="{{ url_for('admin_users') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;" class="form-group" style="margin:0;">
-            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Search users</label>
-            <input type="text" name="q" value="{{ q }}" placeholder="Name or email…" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;">
+        <div style="flex:2;min-width:180px;">
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:4px;display:block;">Search</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="Name, email, or user ID…"
+                   style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;box-sizing:border-box;">
+        </div>
+        <div style="min-width:140px;">
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:4px;display:block;">Status</label>
+            <select name="status" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.87rem;background:#fff;">
+                <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                <option value="banned" {% if status_filter == 'banned' %}selected{% endif %}>Banned</option>
+            </select>
+        </div>
+        <div style="min-width:140px;">
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:4px;display:block;">Type</label>
+            <select name="type" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.87rem;background:#fff;">
+                <option value="" {% if not type_filter %}selected{% endif %}>All types</option>
+                <option value="customer" {% if type_filter == 'customer' %}selected{% endif %}>Customer</option>
+                <option value="hauler" {% if type_filter == 'hauler' %}selected{% endif %}>Hauler</option>
+                <option value="admin" {% if type_filter == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
         </div>
         <div style="display:flex;gap:8px;align-items:flex-end;">
             <button type="submit" class="btn btn-primary" style="padding:8px 18px;">Search</button>
-            {% if q %}
+            {% if q or status_filter or type_filter %}
             <a href="{{ url_for('admin_users') }}" class="btn btn-outline" style="padding:8px 14px;">Clear</a>
             {% endif %}
         </div>
@@ -29,7 +54,7 @@
 {% if users %}
 <div class="card" style="padding:0;overflow:hidden;">
     <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.86rem;min-width:680px;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.86rem;min-width:720px;">
             <thead>
                 <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
                     <th style="text-align:left;padding:11px 14px;color:#64748b;font-weight:600;">User</th>
@@ -42,7 +67,7 @@
             </thead>
             <tbody>
             {% for u in users %}
-            <tr style="border-bottom:1px solid #f1f5f9;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+            <tr style="border-bottom:1px solid #f1f5f9;{% if u.is_banned %}background:#fff5f5;{% elif u.is_suspended %}background:#fffbeb;{% elif loop.index is odd %}background:#fafafa;{% endif %}">
                 <td style="padding:10px 14px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                         {% if u.profile_image_url %}
@@ -55,14 +80,21 @@
                         </div>
                         {% endif %}
                         <div>
-                            <div style="font-weight:600;color:#1a202c;">{{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
-                                {% if u.is_admin %}<span style="color:#e74c3c;font-size:0.72rem;"> (Admin)</span>{% endif %}
+                            <div style="font-weight:600;color:#1a202c;">
+                                {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or '—' }}
+                                {% if u.is_admin %}<span style="color:#7c3aed;font-size:0.7rem;font-weight:700;"> (Admin)</span>{% endif %}
                             </div>
-                            {% if u.phone %}<div style="font-size:0.76rem;color:#94a3b8;">{{ u.phone_formatted }}</div>{% endif %}
+                            <div style="font-size:0.75rem;color:#94a3b8;">
+                                {{ u.user_type or 'customer' }}
+                                {% if u.user_type == 'hauler' and u.hauler_status %}· {{ u.hauler_status }}{% endif %}
+                                {% if u.marketplace_warning_count and u.marketplace_warning_count > 0 %}
+                                <span style="background:#fef3c7;color:#b45309;font-weight:700;padding:0 5px;border-radius:8px;margin-left:3px;">⚠ {{ u.marketplace_warning_count }}w</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td style="padding:10px 14px;color:#4a5568;word-break:break-all;">{{ u.email or '—' }}</td>
+                <td style="padding:10px 14px;color:#4a5568;word-break:break-all;font-size:0.84rem;">{{ u.email or '—' }}</td>
                 <td style="padding:10px 14px;text-align:center;">
                     {% set lcount = listing_counts.get(u.id, 0) %}
                     {% if lcount > 0 %}
@@ -77,27 +109,34 @@
                 <td style="padding:10px 14px;text-align:center;">
                     {% if u.is_admin %}
                     <span style="background:#ede9fe;color:#7c3aed;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Admin</span>
+                    {% elif u.is_banned %}
+                    <span style="background:#fee2e2;color:#991b1b;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Banned</span>
                     {% elif u.is_suspended %}
-                    <span style="background:#fee2e2;color:#dc2626;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Suspended</span>
+                    <span style="background:#fef3c7;color:#92400e;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;">Suspended</span>
                     {% else %}
                     <span style="background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">Active</span>
                     {% endif %}
                 </td>
                 <td style="padding:10px 14px;text-align:right;">
                     {% if not u.is_admin %}
-                    <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;">
-                        {% if u.is_suspended %}
+                    <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;align-items:center;">
+                        <a href="{{ url_for('admin_user_detail', user_id=u.id) }}"
+                           class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:0.78rem;white-space:nowrap;">View</a>
+                        {% if u.is_suspended or u.is_banned %}
                         <form method="POST" action="{{ url_for('admin_user_restore', user_id=u.id) }}" style="margin:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Restore</button>
                         </form>
                         {% else %}
                         <form method="POST" action="{{ url_for('admin_user_suspend', user_id=u.id) }}" style="margin:0;"
                               onsubmit="return confirm('Suspend {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }}?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#d97706;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">Suspend</button>
                         </form>
                         {% endif %}
                         <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="margin:0;"
-                              onsubmit="return confirm('Permanently delete this user and all their data?');">
+                              onsubmit="return confirm('Permanently delete {{ ((u.first_name or '') ~ ' ' ~ (u.last_name or '')).strip() or u.email }} and all their data? This cannot be undone.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px;font-size:0.78rem;">Delete</button>
                         </form>
                     </div>
@@ -115,8 +154,8 @@
 <div class="card">
     <div class="empty-state">
         <div class="empty-icon">👥</div>
-        <p>No users found{% if q %} matching "{{ q }}"{% endif %}.</p>
-        {% if q %}<a href="{{ url_for('admin_users') }}" class="btn btn-outline">Clear search</a>{% endif %}
+        <p>No users found{% if q %} matching "{{ q }}"{% endif %}{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+        {% if q or status_filter or type_filter %}<a href="{{ url_for('admin_users') }}" class="btn btn-outline">Clear filters</a>{% endif %}
     </div>
 </div>
 {% endif %}

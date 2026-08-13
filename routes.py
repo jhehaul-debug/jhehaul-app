@@ -5802,20 +5802,36 @@ def admin_listing_detail(listing_id):
 @require_admin
 def admin_users():
     q = request.args.get('q', '').strip()
+    status_filter = request.args.get('status', '')
+    type_filter = request.args.get('type', '')
     query = User.query
     if q:
         query = query.filter(
             db.or_(
                 User.first_name.ilike(f'%{q}%'),
                 User.last_name.ilike(f'%{q}%'),
-                User.email.ilike(f'%{q}%')
+                User.email.ilike(f'%{q}%'),
+                User.id.ilike(f'%{q}%'),
             )
         )
+    if status_filter == 'suspended':
+        query = query.filter(User.is_suspended == True, User.is_banned == False)
+    elif status_filter == 'banned':
+        query = query.filter(User.is_banned == True)
+    elif status_filter == 'active':
+        query = query.filter(User.is_suspended == False, User.is_banned == False)
+    if type_filter == 'admin':
+        query = query.filter(User.is_admin == True)
+    elif type_filter == 'hauler':
+        query = query.filter(User.user_type == 'hauler')
+    elif type_filter == 'customer':
+        query = query.filter(User.user_type == 'customer', User.is_admin == False)
     users = query.order_by(User.created_at.desc()).all()
     listing_counts = {u.id: Listing.query.filter_by(seller_id=u.id).count() for u in users}
     total = len(users)
     return render_template('admin_users.html', users=users, total=total,
-                           listing_counts=listing_counts, q=q)
+                           listing_counts=listing_counts, q=q,
+                           status_filter=status_filter, type_filter=type_filter)
 
 
 @app.route("/admin/users/<string:user_id>/suspend", methods=["POST"])
@@ -5826,10 +5842,12 @@ def admin_user_suspend(user_id):
         flash("Admin accounts cannot be suspended.", "error")
         return redirect(url_for('admin_users'))
     user.is_suspended = True
+    _notes = request.form.get('notes', '').strip() or f'Suspended by admin {current_user.email}'
+    _log_mod_action('suspend', 'user', user_id, notes=_notes)
     db.session.commit()
     name = ((user.first_name or '') + ' ' + (user.last_name or '')).strip() or user.email
     flash(f"{name}'s account suspended.", "success")
-    return redirect(url_for('admin_users'))
+    return redirect(request.referrer or url_for('admin_users'))
 
 
 @app.route("/admin/users/<string:user_id>/restore", methods=["POST"])
@@ -5837,17 +5855,45 @@ def admin_user_suspend(user_id):
 def admin_user_restore(user_id):
     user = User.query.get_or_404(user_id)
     user.is_suspended = False
+    _log_mod_action('unsuspend', 'user', user_id,
+                    notes=f'Unsuspended by admin {current_user.email}')
     db.session.commit()
     name = ((user.first_name or '') + ' ' + (user.last_name or '')).strip() or user.email
     flash(f"{name}'s account restored.", "success")
-    return redirect(url_for('admin_users'))
+    return redirect(request.referrer or url_for('admin_users'))
+
+
+@app.route("/admin/listings/<int:listing_id>/moderate", methods=["POST"])
+@require_admin
+def admin_listing_moderate(listing_id):
+    """Remove or restore a listing from admin user-detail page."""
+    _check_listing_csrf()
+    listing = Listing.query.get_or_404(listing_id)
+    action = request.form.get('action', '')
+    if action == 'remove':
+        listing.status = 'removed'
+        listing.moderation_status = 'removed'
+        _log_mod_action('remove_listing', 'listing', listing_id,
+                        notes=f'Removed by {current_user.email}')
+        db.session.commit()
+        flash(f'Listing "{listing.title}" removed.', 'success')
+    elif action == 'restore':
+        listing.status = 'active'
+        listing.moderation_status = 'approved'
+        _log_mod_action('restore_listing', 'listing', listing_id,
+                        notes=f'Restored by {current_user.email}')
+        db.session.commit()
+        flash(f'Listing "{listing.title}" restored.', 'success')
+    else:
+        flash('Unknown action.', 'error')
+    return redirect(request.referrer or url_for('admin_users'))
 
 
 @app.route("/admin/users/<user_id>/detail")
 @require_admin
 def admin_user_detail(user_id):
-    """Admin: view a single user's profile, listings, and reports."""
-    from models import Listing as _L, UserReport, ListingReport
+    """Admin: view a single user's profile, listings, reports, and moderation log."""
+    from models import Listing as _L, UserReport, ListingReport, ModerationAuditLog
     seller = User.query.get_or_404(user_id)
     listings = _L.query.filter_by(seller_id=user_id).order_by(_L.created_at.desc()).all()
     user_reports = (UserReport.query
@@ -5859,11 +5905,22 @@ def admin_user_detail(user_id):
                        .filter(_L.seller_id == user_id)
                        .order_by(ListingReport.created_at.desc())
                        .all())
+    mod_logs = (ModerationAuditLog.query
+                .filter(
+                    ModerationAuditLog.target_type == 'user',
+                    ModerationAuditLog.target_id == str(user_id)
+                )
+                .order_by(ModerationAuditLog.created_at.desc())
+                .limit(50).all())
+    _admin_ids = {log.admin_id for log in mod_logs if log.admin_id}
+    admin_map = {a.id: a for a in User.query.filter(User.id.in_(_admin_ids)).all()} if _admin_ids else {}
     return render_template('admin_user_detail.html',
                            seller=seller,
                            listings=listings,
                            user_reports=user_reports,
-                           listing_reports=listing_reports)
+                           listing_reports=listing_reports,
+                           mod_logs=mod_logs,
+                           admin_map=admin_map)
 
 
 # ── Admin: Reports ─────────────────────────────────────────────────────────
