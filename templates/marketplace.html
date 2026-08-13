@@ -1161,15 +1161,19 @@ function mpTogglePanel(id, btn) {
     });
     var willOpen = !panel.classList.contains('open');
     panel.classList.toggle('open');
-    // Single-select: strip active from every main pill, then mark this one
-    document.querySelectorAll('.mp-pill-main').forEach(function(p) { p.classList.remove('active'); });
-    if (willOpen) btn.classList.add('active');
-    // If closed by re-tapping, restore "All" as active only if truly no filter is applied
-    if (!willOpen) {
-        var anyFilter = !!({{ '1' if listing_type_filter else '0' }} || {{ '1' if active_category else '0' }});
-        if (!anyFilter) {
-            var allPill = document.querySelector('.mp-pill-nav');
-            if (allPill) allPill.classList.add('active');
+    // Only sync the single-select main group when the calling button belongs to it.
+    // The Filters button is intentionally NOT mp-pill-main so it stays independent.
+    if (btn.classList.contains('mp-pill-main')) {
+        document.querySelectorAll('.mp-pill-main').forEach(function(p) { p.classList.remove('active'); });
+        if (willOpen) {
+            btn.classList.add('active');
+        } else {
+            // Panel closed without selecting — restore server-side active pill if unfiltered
+            var anyFilter = !!({{ '1' if listing_type_filter else '0' }} || {{ '1' if active_category else '0' }});
+            if (!anyFilter) {
+                var allPill = document.querySelector('.mp-pill-nav');
+                if (allPill) allPill.classList.add('active');
+            }
         }
     }
 }
