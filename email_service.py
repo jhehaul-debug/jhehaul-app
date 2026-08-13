@@ -591,6 +591,43 @@ def notify_buyer_listing_reserved(buyer_email, listing_title, listing_id):
     )
 
 
+def notify_buyer_offer_expired_listing(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when their offer expired because the listing itself auto-expired.
+
+    This is intentionally distinct from the time-based offer-expiry notification
+    (offer ran out its own timer). The messaging here explains that the *listing*
+    expired underneath the offer, not that the offer window closed.
+    """
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    marketplace_url = f"{_APP_URL}/marketplace"
+    body = f"""
+    <p>Your offer of <span class="pill pill-orange">${offer_amount:,.2f}</span> on
+       <strong>{safe_title}</strong> has expired because the listing itself
+       has expired and is no longer available in the marketplace.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Reason:</strong> The listing expired before the seller could respond.</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Offer Expired</span></p>
+    </div>
+    <p>Browse the marketplace to find other great items — new listings are added every day!</p>
+    <a href="{marketplace_url}" class="btn">Browse the Marketplace →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your offer expired — \"{subject_title}\" is no longer available",
+        _html(
+            "Your Offer Has Expired",
+            "The listing expired before the seller could respond to your offer.",
+            "⏰ Offer Expired",
+            body,
+        ),
+        'buyer_offer_expired_listing',
+    )
+
+
 def notify_seller_listing_expired(seller_email, listing_id, title):
     """Notify the seller that their listing has auto-expired."""
     safe_title = title or f"Listing #{listing_id}"

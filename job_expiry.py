@@ -31,6 +31,7 @@ def _run_checks(app):
             notify_customer_appointment_reminder,
             notify_seller_listing_expired,
             notify_seller_listing_expiring_soon,
+            notify_buyer_offer_expired_listing,
         )
         from sms_service import (
             notify_customer_appointment_reminder_sms,
@@ -62,7 +63,7 @@ def _run_checks(app):
             try:
                 lst.status = 'expired'
                 lst.expired_at = now
-                expire_pending_offers(lst.id)
+                buyer_targets = expire_pending_offers(lst.id)
                 db.session.commit()
                 listing_expired_count += 1
                 log.info("Listing #%s auto-expired (expires_at: %s)", lst.id, lst.expires_at)
@@ -79,6 +80,32 @@ def _run_checks(app):
                         notify_seller_listing_expired_sms(seller.phone, lst.id, lst.title)
                     except Exception as e:
                         log.error("Listing expired SMS failed (listing #%s): %s", lst.id, e)
+
+                # Notify each buyer whose pending/countered offer was killed by the expiry.
+                # This is distinct from the time-based offer-expiry notification: the
+                # listing expired underneath the offer, not the offer's own timer.
+                for target in buyer_targets:
+                    buyer_email = target.get('buyer_email')
+                    if not buyer_email:
+                        continue
+                    try:
+                        notify_buyer_offer_expired_listing(
+                            buyer_email,
+                            lst.title,
+                            lst.id,
+                            target['offer_amount'],
+                        )
+                        log.info(
+                            "Buyer offer-expired-listing email sent "
+                            "(listing #%s, offer #%s, buyer %s)",
+                            lst.id, target['offer_id'], target['buyer_id'],
+                        )
+                    except Exception as e:
+                        log.error(
+                            "Buyer offer-expired-listing email failed "
+                            "(listing #%s, offer #%s): %s",
+                            lst.id, target['offer_id'], e,
+                        )
 
             except Exception as e:
                 log.error("Listing expiry error for listing #%s: %s", lst.id, e)

@@ -712,14 +712,32 @@ def expire_pending_offers(listing_id):
     sold, reserved, expired, or removed so buyers don't see stale 'pending'
     offers. Safe to call from both routes.py and background threads in
     job_expiry.py without introducing import cycles.
+
+    Returns a list of dicts with buyer notification info for each expired offer:
+        [{'buyer_id': ..., 'buyer_email': ..., 'offer_amount': ..., 'offer_id': ...}]
+    Callers that send notifications (e.g. job_expiry.py listing auto-expiry) should
+    iterate this list after the commit and send emails/in-app notices.
     """
-    (ListingOffer.query
-     .filter(
-         ListingOffer.listing_id == listing_id,
-         ListingOffer.status.in_(['pending', 'countered'])
-     )
-     .update({'status': 'expired', 'updated_at': datetime.now()},
-             synchronize_session=False))
+    affected = (ListingOffer.query
+                .filter(
+                    ListingOffer.listing_id == listing_id,
+                    ListingOffer.status.in_(['pending', 'countered'])
+                )
+                .all())
+
+    notification_targets = []
+    for offer in affected:
+        buyer = offer.buyer  # already loaded via relationship
+        notification_targets.append({
+            'offer_id': offer.id,
+            'buyer_id': offer.buyer_id,
+            'buyer_email': buyer.email if buyer else None,
+            'offer_amount': offer.amount,
+        })
+        offer.status = 'expired'
+        offer.updated_at = datetime.now()
+
+    return notification_targets
 
 
 def expire_stale_timed_offers():
