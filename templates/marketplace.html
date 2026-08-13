@@ -486,6 +486,7 @@ function dismissProfileNudge() {
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
         {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
         {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
         <button type="submit">Search</button>
     </form>
 
@@ -501,6 +502,7 @@ function dismissProfileNudge() {
 <form method="get" action="/marketplace" class="mp-filter-bar">
     {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
     {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
+    {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
 
     {# Category dropdown #}
     <div class="mp-filter-group">

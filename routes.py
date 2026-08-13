@@ -1537,6 +1537,9 @@ def listing_delete(listing_id):
                        .all())
     # Collect filenames before cascade-delete removes them from the session
     filenames = [p.filename for p in listing.photos if p.filename]
+    # Remove any gallery pins pointing to this listing before deleting it
+    from models import GalleryPhoto
+    GalleryPhoto.query.filter_by(item_type='listing', listing_id=listing_id).delete(synchronize_session=False)
     db.session.delete(listing)
     db.session.commit()
     # Notify affected buyers now that the listing is gone
@@ -4323,7 +4326,10 @@ def delete_account():
 
     # ── Marketplace data cleanup ─────────────────────────────────────────────
     # Seller listings (cascade: photos, favorites, offers, conversations, reports)
+    from models import GalleryPhoto as _GalleryPhoto
     for listing in Listing.query.filter_by(seller_id=user_id).all():
+        # Remove any gallery pins for this listing before deleting it
+        _GalleryPhoto.query.filter_by(item_type='listing', listing_id=listing.id).delete(synchronize_session=False)
         db.session.delete(listing)
     db.session.flush()  # run cascades before buyer-side deletes
 
