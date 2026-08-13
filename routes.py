@@ -7106,10 +7106,24 @@ def admin_gallery_upload():
 def landing():
     """Public marketing landing page — featured listings for the homepage."""
     from models import Listing
+    _active_approved = Listing.query.filter_by(status='active', moderation_status='approved')
     preview_listings = (
-        Listing.query
-        .filter_by(status='active', moderation_status='approved')
+        _active_approved
         .filter(Listing.listing_type == 'item')
+        .order_by(Listing.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    for_sale_listings = (
+        _active_approved
+        .filter(Listing.listing_type == 'property_sale')
+        .order_by(Listing.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    rental_listings = (
+        _active_approved
+        .filter(Listing.listing_type == 'rental')
         .order_by(Listing.created_at.desc())
         .limit(6)
         .all()
@@ -7118,6 +7132,8 @@ def landing():
         'landing.html',
         gallery_photos=_gallery_photos(active_only=True),
         preview_listings=preview_listings,
+        for_sale_listings=for_sale_listings,
+        rental_listings=rental_listings,
     )
 
 @app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
