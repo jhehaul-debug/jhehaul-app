@@ -1,0 +1,318 @@
+Please fix the For Sale / Rentals / Category navigation behavior on the JHE Haul Marketplace AND update the property media upload system.
+
+1. Only ONE Browse/Filter Panel Can Be Open at a Time
+
+Right now, when I select For Sale and then select another option such as Rentals or Category, multiple sections remain open on the screen.
+
+This needs to be fixed.
+
+The controls should behave like tabs/accordion navigation where only ONE panel is expanded at a time.
+
+Required behavior
+
+If user taps For Sale:
+
+* Open the For Sale/property filters.
+* Close Rentals.
+* Close Category.
+* Close any other expanded filter panel.
+
+If user taps Rentals:
+
+* Open Rental filters.
+* Close For Sale.
+* Close Category.
+* Close any other expanded filter panel.
+
+If user taps Category:
+
+* Open the Category selector.
+* Close For Sale.
+* Close Rentals.
+* Close any other expanded filter panel.
+
+If another filter/category is opened:
+
+Automatically close whatever panel was previously open.
+
+Do NOT leave multiple large filter sections stacked on the screen.
+
+The currently selected option can remain highlighted so the user knows what they are viewing.
+
+⸻
+
+2. Switching Between For Sale and Rentals
+
+The user should NOT have to manually clear one section before selecting another.
+
+Example:
+
+For Sale → Rentals
+
+should automatically:
+
+1. Close For Sale.
+2. Activate Rentals.
+3. Open Rental filters/results.
+
+Likewise:
+
+Rentals → For Sale
+
+should automatically switch to For Sale.
+
+The same applies to:
+
+For Sale → Category
+
+Rentals → Category
+
+Category → For Sale
+
+Category → Rentals
+
+Only the newly selected panel should remain open.
+
+⸻
+
+3. Keep the Browse Page Compact
+
+On mobile, the Marketplace Browse page should remain compact.
+
+The top can contain something similar to:
+
+Marketplace
+
+🔍 Search Marketplace
+
+All | Items | For Sale | Rentals | Category ▼ | Filters ▼
+
+Only the selected filter panel should open underneath.
+
+The user should NOT have to scroll through several open filter sections before reaching marketplace listings.
+
+⸻
+
+4. Property For Sale — Add Photos & Video Upload
+
+When someone creates a Property For Sale listing, allow:
+
+Photos
+
+Maximum: 20 photos
+
+Video
+
+Maximum: 1 video
+
+Video Length
+
+Maximum: 60 seconds
+
+These are hard limits for each property listing.
+
+⸻
+
+5. Rental Properties — Add Photos & Video Upload
+
+Rental property listings should have the SAME media limits:
+
+Photos
+
+Maximum: 20 photos
+
+Video
+
+Maximum: 1 video
+
+Video Length
+
+Maximum: 60 seconds
+
+This applies to houses, apartments and other rental-property listings supported by the marketplace.
+
+⸻
+
+6. Photo Upload Experience
+
+For both Property For Sale and Rentals, users should be able to:
+
+* Upload multiple photos at once.
+* Upload up to 20 photos.
+* Preview photos before publishing.
+* Remove individual photos.
+* Reorder photos if supported.
+* Select/use a primary cover photo.
+* See which photos successfully uploaded.
+* Receive a clear error if an individual photo fails.
+* Swipe through the photos on mobile after publishing.
+
+If the seller attempts to upload more than 20 photos, show:
+
+Maximum 20 photos per listing.
+
+Do NOT silently discard additional photos.
+
+The displayed photo count must match the number of successfully stored/viewable photos.
+
+⸻
+
+7. Video Upload Experience
+
+Allow exactly:
+
+1 video per property listing
+
+Maximum duration:
+
+60 seconds
+
+If the user attempts to upload a video longer than 60 seconds, reject it and display:
+
+Video must be 60 seconds or less.
+
+If the user already uploaded a video and attempts to upload another, display:
+
+Only 1 video is allowed per listing.
+
+The video should:
+
+* Have a visible play button.
+* Play properly on mobile and desktop.
+* NOT automatically start playing with sound.
+* Be included in the property’s media gallery.
+
+⸻
+
+8. Published Property Gallery
+
+A published Property For Sale or Rental listing should support:
+
+Up to 20 photos + 1 video
+
+Users should be able to:
+
+* Swipe left/right through photos on mobile.
+* Tap photos to view them larger.
+* See the total photo count.
+* Play the property’s video.
+* Move through the listing media without broken images.
+
+Use the seller’s primary/cover photo as the Browse-page image.
+
+⸻
+
+9. Media Must Be Permanently Stored
+
+Do NOT use temporary browser/blob URLs as permanent listing media.
+
+Photos and videos must continue working after:
+
+* Page refresh
+* Browser restart
+* Logout/login
+* Another user opens the listing
+* Server/application restart
+* New production deployment
+
+Verify that the database and permanent file/object storage contain the correct references.
+
+⸻
+
+10. iPhone/Mobile Support
+
+This marketplace is being used heavily from mobile devices, so test the entire process from an iPhone.
+
+Make sure common iPhone photo/video formats are supported or properly converted when necessary.
+
+The seller should be able to select media from their phone and successfully publish the property listing.
+
+⸻
+
+11. Keep Property Forms Separate
+
+When the seller presses Sell:
+
+Property For Sale
+
+Open the Property For Sale form with the appropriate property-sale fields and media uploader.
+
+Rental Property
+
+Open the Rental form with the appropriate rental fields and media uploader.
+
+Do NOT display both forms together.
+
+They may share backend/components, but the user interface should only show the form relevant to the selected listing type.
+
+⸻
+
+12. Test These Exact Navigation Scenarios
+
+Test:
+
+For Sale → Rentals
+
+* For Sale closes.
+* Rentals opens.
+
+Rentals → For Sale
+
+* Rentals closes.
+* For Sale opens.
+
+For Sale → Category
+
+* For Sale closes.
+* Category opens.
+
+Category → Rentals
+
+* Category closes.
+* Rentals opens.
+
+Rentals → Category
+
+* Rentals closes.
+* Category opens.
+
+At NO point should two large filter panels remain expanded together.
+
+⸻
+
+13. Test Media Limits
+
+Create a test Property For Sale listing with:
+
+20 photos + one 60-second video
+
+Verify everything uploads, publishes and can be viewed.
+
+Then create a test Rental listing with:
+
+20 photos + one 60-second video
+
+Verify everything uploads, publishes and can be viewed.
+
+Also test:
+
+* Attempting a 21st photo.
+* Attempting a second video.
+* Attempting a video longer than 60 seconds.
+* Removing a photo before publishing.
+* Refreshing the published listing.
+* Viewing the listing from another account/device.
+* Mobile photo swiping.
+* Video playback.
+
+Do not mark this complete simply because the code was changed.
+
+After completing everything:
+
+1. Commit all changes.
+2. Push to the production branch.
+3. Confirm the DigitalOcean production deployment succeeds.
+4. Open the LIVE jhehaul.com website.
+5. Test the changes on mobile/iPhone and desktop.
+6. Verify only ONE filter panel opens at a time.
+7. Verify Property For Sale and Rental listings both support up to 20 photos and one 60-second video before marking the work complete.

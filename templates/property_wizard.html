@@ -87,6 +87,19 @@
   .upload-spinner { display: none; font-size: 0.85rem; color: #7c3aed; }
   .reorder-hint { font-size: 0.8rem; color: #6b7280; margin-bottom: 10px; }
 
+  /* Video upload */
+  .video-section-head { font-size: 1rem; font-weight: 700; color: #1a202c; margin: 24px 0 3px; }
+  .video-section-hint { font-size: 0.82rem; color: #6b7280; margin: 0 0 10px; }
+  .video-upload-zone { border: 2px dashed #93c5fd; border-radius: 12px; padding: 28px; text-align: center; background: #eff6ff; cursor: pointer; transition: border-color .15s, background .15s; }
+  .video-upload-zone:hover, .video-upload-zone.drag-over { border-color: #2563eb; background: #dbeafe; }
+  .video-upload-zone input[type=file] { display: none; }
+  .video-preview-wrap { margin-top: 10px; background: #000; border-radius: 10px; overflow: hidden; }
+  .video-preview-wrap video { width: 100%; max-height: 260px; display: block; }
+  .video-preview-actions { display: flex; gap: 8px; padding: 8px; background: rgba(0,0,0,.65); }
+  .video-del-btn { background: rgba(239,68,68,.85); color: #fff; border: none; padding: 5px 14px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+  .video-del-btn:hover { background: #dc2626; }
+  .video-upload-spinner { display: none; font-size: 0.85rem; color: #2563eb; margin-top: 8px; }
+
   /* Preview */
   .prop-preview { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
   .prop-preview-photo { width: 100%; aspect-ratio: 16/9; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; overflow: hidden; }
@@ -189,6 +202,39 @@
     </div>
     {% endif %}
     <div class="upload-spinner" id="uploadSpinner">⏳ Uploading…</div>
+
+    {# ── Video upload ── #}
+    <div class="video-section-head">🎬 Add a Video Tour <span style="font-size:.8rem;font-weight:400;color:#9ca3af">(optional)</span></div>
+    <p class="video-section-hint">1 video · max 60 seconds · MP4, MOV, or WebM · max 150 MB</p>
+    {% if listing.videos %}
+    {% set _wvid = listing.videos[0] %}
+    <div id="videoPreviewWrap" class="video-preview-wrap" data-video-id="{{ _wvid.id }}">
+        <video controls preload="metadata" playsinline muted>
+            <source src="{{ _wvid.storage_url or '' }}" type="{{ _wvid.content_type or 'video/mp4' }}">
+            Your browser does not support video playback.
+        </video>
+        <div class="video-preview-actions">
+            <button type="button" class="video-del-btn" onclick="deleteVideo({{ _wvid.id }})">✕ Remove video</button>
+            {% if _wvid.duration_seconds %}<span style="color:#d1fae5;font-size:.8rem;align-self:center">{{ '%d:%02d'|format((_wvid.duration_seconds|int)//60, (_wvid.duration_seconds|int)%60) }}</span>{% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div id="videoPreviewWrap" class="video-preview-wrap" style="display:none">
+        <video id="videoPreviewEl" controls preload="metadata" playsinline muted style="width:100%;max-height:260px;display:block;"></video>
+        <div class="video-preview-actions">
+            <button type="button" class="video-del-btn" onclick="removeVideoPreview()">✕ Remove video</button>
+        </div>
+    </div>
+    <div class="video-upload-zone" id="videoZone">
+        <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm">
+        <div style="font-size:2rem;margin-bottom:8px">🎬</div>
+        <p style="margin-bottom:6px">Tap to select a video</p>
+        <span style="display:inline-block;background:#2563eb;color:#fff;padding:7px 18px;border-radius:8px;font-weight:600;font-size:.88rem">Browse Video</span>
+        <p style="font-size:.77rem;margin-top:8px;color:#6b7280">MP4, MOV, WebM — max 60 s — max 150 MB</p>
+    </div>
+    {% endif %}
+    <div class="video-upload-spinner" id="videoSpinner">⏳ Uploading video…</div>
+
     <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="wizard-nav">
@@ -234,6 +280,95 @@
   if(uploadZone){ uploadZone.addEventListener('click',()=>photoInput.click()); photoInput.addEventListener('change',()=>uploadFiles(photoInput.files)); uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag-over');}); uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag-over')); uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag-over');uploadFiles(e.dataTransfer.files);}); }
   async function deletePhoto(id) { if(!confirm('Remove this photo?'))return; const res=await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`,{method:'POST',headers:{'X-CSRFToken':csrfToken}}); if(res.ok){document.getElementById('thumb-'+id)?.remove();currentCount=Math.max(0,currentCount-1);updateCount();} }
   async function setPrimary(id) { const res=await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`,{method:'POST',headers:{'X-CSRFToken':csrfToken}}); if(res.ok){document.querySelectorAll('.photo-thumb').forEach(t=>{t.classList.remove('is-primary');t.querySelector('.primary-badge')?.remove();}); const el=document.getElementById('thumb-'+id); if(el){el.classList.add('is-primary');el.insertAdjacentHTML('afterbegin','<div class="primary-badge">⭐ Cover</div>');}} }
+
+  // ── Video upload ──────────────────────────────────────────────
+  const videoZone    = document.getElementById('videoZone');
+  const videoInput   = document.getElementById('videoInput');
+  const videoSpinner = document.getElementById('videoSpinner');
+  const videoPrevWrap= document.getElementById('videoPreviewWrap');
+  const videoPrevEl  = document.getElementById('videoPreviewEl');
+
+  if (videoInput) {
+    videoInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      // client-side duration check via hidden <video>
+      const blobUrl = URL.createObjectURL(file);
+      const probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.onloadedmetadata = function() {
+        URL.revokeObjectURL(blobUrl);
+        if (probe.duration > 60) {
+          alert('Video must be 60 seconds or less.');
+          videoInput.value = '';
+          return;
+        }
+        uploadVideo(file, probe.duration);
+      };
+      probe.onerror = function() { URL.revokeObjectURL(blobUrl); uploadVideo(file, null); };
+      probe.src = blobUrl;
+    });
+    if (videoZone) {
+      videoZone.addEventListener('click', () => videoInput.click());
+      videoZone.addEventListener('dragover', e => { e.preventDefault(); videoZone.classList.add('drag-over'); });
+      videoZone.addEventListener('dragleave', () => videoZone.classList.remove('drag-over'));
+      videoZone.addEventListener('drop', e => {
+        e.preventDefault(); videoZone.classList.remove('drag-over');
+        const f = e.dataTransfer.files[0]; if (f) { videoInput.files = e.dataTransfer.files; videoInput.dispatchEvent(new Event('change')); }
+      });
+    }
+  }
+
+  async function uploadVideo(file, duration) {
+    if (videoSpinner) videoSpinner.style.display = 'block';
+    if (videoZone)    videoZone.style.display = 'none';
+    const fd = new FormData();
+    fd.append('video', file);
+    if (duration != null) fd.append('duration_seconds', duration);
+    try {
+      const res  = await fetch(`/listing/${LISTING_ID}/video/upload`, { method:'POST', headers:{'X-CSRFToken':csrfToken}, body:fd });
+      const data = await res.json();
+      if (res.ok) {
+        if (videoPrevWrap) {
+          videoPrevWrap.dataset.videoId = data.id;
+          if (videoPrevEl) {
+            videoPrevEl.src = data.url || URL.createObjectURL(file);
+            videoPrevEl.load();
+          }
+          videoPrevWrap.style.display = '';
+        }
+      } else {
+        alert(data.error || 'Video upload failed.');
+        if (videoZone) videoZone.style.display = '';
+        videoInput.value = '';
+      }
+    } catch(e) {
+      alert('Video upload error: ' + e);
+      if (videoZone) videoZone.style.display = '';
+    }
+    if (videoSpinner) videoSpinner.style.display = 'none';
+  }
+
+  async function deleteVideo(id) {
+    if (!confirm('Remove this video?')) return;
+    const res = await fetch(`/listing/${LISTING_ID}/video/${id}/delete`, { method:'POST', headers:{'X-CSRFToken':csrfToken} });
+    if (res.ok) {
+      if (videoPrevWrap) { videoPrevWrap.style.display = 'none'; if (videoPrevEl) videoPrevEl.src = ''; }
+      if (videoZone)    videoZone.style.display = '';
+      if (videoInput)   videoInput.value = '';
+    } else {
+      const d = await res.json(); alert(d.error || 'Delete failed.');
+    }
+  }
+
+  function removeVideoPreview() {
+    const vid_id = videoPrevWrap && videoPrevWrap.dataset.videoId;
+    if (vid_id) { deleteVideo(parseInt(vid_id)); return; }
+    if (videoPrevWrap) videoPrevWrap.style.display = 'none';
+    if (videoPrevEl)   videoPrevEl.src = '';
+    if (videoZone)     videoZone.style.display = '';
+    if (videoInput)    videoInput.value = '';
+  }
   </script>
 
   {# ── STEP 2: PROPERTY DETAILS ── #}

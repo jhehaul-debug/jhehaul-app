@@ -629,8 +629,8 @@ function dismissProfileNudge() {
 <div class="mp-pill-row">
     <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill {{ 'active' if not listing_type_filter }}">All</a>
     <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=item' }}" class="mp-pill {{ 'active' if listing_type_filter == 'item' }}">📦 Items</a>
-    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=property_sale' }}" class="mp-pill {{ 'active' if listing_type_filter == 'property_sale' }}">🏠 For Sale</a>
-    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=rental' }}" class="mp-pill {{ 'active' if listing_type_filter == 'rental' }}">🔑 Rentals</a>
+    <button type="button" class="mp-pill {{ 'active' if listing_type_filter == 'property_sale' }}" onclick="mpTogglePanel('mp-forsale-panel', this)">🏠 For Sale ▾</button>
+    <button type="button" class="mp-pill {{ 'active' if listing_type_filter == 'rental' }}" onclick="mpTogglePanel('mp-rental-panel', this)">🔑 Rentals ▾</button>
     <button type="button" class="mp-pill {{ 'active' if active_category }}" onclick="mpTogglePanel('mp-cat-panel', this)">
         {{ active_category.name if active_category else 'Category' }} ▾
     </button>
@@ -688,6 +688,92 @@ function dismissProfileNudge() {
             </div>
             <button type="submit" class="mp-panel-submit">Apply</button>
             {% if city_zip_filter or hide_sold %}<a href="/marketplace{{ ('?' ~ _ptype ~ _pcat ~ 'q=' ~ _q_val) if _q_val else ('?' ~ _ptype ~ _pcat).rstrip('?&') }}" class="mp-panel-clear">✕ Clear</a>{% endif %}
+        </div>
+    </form>
+</div>
+
+{# For Sale panel (auto-opens when listing_type_filter == property_sale) #}
+<div id="mp-forsale-panel" class="mp-filter-panel {{ 'open' if listing_type_filter == 'property_sale' }}">
+    <form method="get" action="/marketplace">
+        {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
+        <input type="hidden" name="listing_type" value="property_sale">
+        <div style="margin-bottom:10px">
+            <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ _q_val) if _q_val else '' }}" style="font-size:.82rem;color:#7c3aed;font-weight:600;text-decoration:none;">View all For Sale listings →</a>
+        </div>
+        <div class="mp-filter-panel-inner">
+            <div class="mp-panel-group">
+                <label>City or ZIP</label>
+                <input type="text" name="city_zip" class="mp-panel-text-input"
+                       value="{{ city_zip_filter if listing_type_filter == 'property_sale' else '' }}"
+                       placeholder="e.g. Edina or 55416" autocomplete="off">
+            </div>
+            <div class="mp-panel-group">
+                <label>Min Price</label>
+                <input type="number" name="min_price" class="mp-panel-text-input" style="width:90px"
+                       value="{{ request.args.get('min_price','') if listing_type_filter == 'property_sale' else '' }}" placeholder="$0">
+            </div>
+            <div class="mp-panel-group">
+                <label>Max Price</label>
+                <input type="number" name="max_price" class="mp-panel-text-input" style="width:90px"
+                       value="{{ request.args.get('max_price','') if listing_type_filter == 'property_sale' else '' }}" placeholder="Any">
+            </div>
+            <div class="mp-panel-group">
+                <label>Min Beds</label>
+                <select name="min_beds">
+                    <option value="">Any</option>
+                    {% for b in [1,2,3,4,5] %}
+                    <option value="{{ b }}" {{ 'selected' if listing_type_filter == 'property_sale' and request.args.get('min_beds','') == b|string }}>{{ b }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mp-panel-group">
+                <label>Open House</label>
+                <select name="open_house">
+                    <option value="">Any</option>
+                    <option value="1" {{ 'selected' if listing_type_filter == 'property_sale' and request.args.get('open_house') }}>Has open house</option>
+                </select>
+            </div>
+            <button type="submit" class="mp-panel-submit">Apply</button>
+            {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds')) %}
+            <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{# Rentals panel (auto-opens when listing_type_filter == rental) #}
+<div id="mp-rental-panel" class="mp-filter-panel {{ 'open' if listing_type_filter == 'rental' }}">
+    <form method="get" action="/marketplace">
+        {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
+        <input type="hidden" name="listing_type" value="rental">
+        <div style="margin-bottom:10px">
+            <a href="/marketplace?listing_type=rental{{ ('&q=' ~ _q_val) if _q_val else '' }}" style="font-size:.82rem;color:#7c3aed;font-weight:600;text-decoration:none;">View all Rentals →</a>
+        </div>
+        <div class="mp-filter-panel-inner">
+            <div class="mp-panel-group">
+                <label>City or ZIP</label>
+                <input type="text" name="city_zip" class="mp-panel-text-input"
+                       value="{{ city_zip_filter if listing_type_filter == 'rental' else '' }}"
+                       placeholder="e.g. Edina or 55416" autocomplete="off">
+            </div>
+            <div class="mp-panel-group">
+                <label>Max Rent /mo</label>
+                <input type="number" name="max_price" class="mp-panel-text-input" style="width:110px"
+                       value="{{ request.args.get('max_price','') if listing_type_filter == 'rental' else '' }}" placeholder="Any">
+            </div>
+            <div class="mp-panel-group">
+                <label>Min Beds</label>
+                <select name="min_beds">
+                    <option value="">Any</option>
+                    {% for b in [1,2,3,4,5] %}
+                    <option value="{{ b }}" {{ 'selected' if listing_type_filter == 'rental' and request.args.get('min_beds','') == b|string }}>{{ b }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="mp-panel-submit">Apply</button>
+            {% if listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds')) %}
+            <a href="/marketplace?listing_type=rental{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>
+            {% endif %}
         </div>
     </form>
 </div>
@@ -869,44 +955,6 @@ function dismissProfileNudge() {
         </div>
     </div>
 
-    {# Property-specific filter bar #}
-    {% if listing_type_filter in ('property_sale', 'rental', 'housing') %}
-    <form method="get" action="/marketplace" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:flex-end">
-        <input type="hidden" name="listing_type" value="{{ listing_type_filter }}">
-        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
-        <div>
-            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">City or ZIP</label>
-            <input type="text" name="city_zip" value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" style="width:140px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem" autocomplete="off">
-        </div>
-        <div>
-            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Min Price</label>
-            <input type="number" name="min_price" value="{{ request.args.get('min_price','') }}" placeholder="$0" style="width:90px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
-        </div>
-        <div>
-            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Max Price</label>
-            <input type="number" name="max_price" value="{{ request.args.get('max_price','') }}" placeholder="Any" style="width:90px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
-        </div>
-        <div>
-            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Min Beds</label>
-            <select name="min_beds" style="padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
-                <option value="">Any</option>
-                {% for b in [1,2,3,4,5] %}
-                <option value="{{ b }}" {{ 'selected' if request.args.get('min_beds','') == b|string }}>{{ b }}+</option>
-                {% endfor %}
-            </select>
-        </div>
-        {% if listing_type_filter == 'property_sale' %}
-        <div>
-            <label style="font-size:.78rem;font-weight:600;color:#6b7280;display:block;margin-bottom:2px">Open House</label>
-            <select name="open_house" style="padding:6px 8px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.85rem">
-                <option value="">Any</option>
-                <option value="1" {{ 'selected' if request.args.get('open_house') }}>Has open house</option>
-            </select>
-        </div>
-        {% endif %}
-        <button type="submit" style="background:#7c3aed;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;height:34px;margin-top:16px">Filter</button>
-    </form>
-    {% endif %}
 
     {% if search_results %}
     <div class="mp-grid" style="position:relative">
