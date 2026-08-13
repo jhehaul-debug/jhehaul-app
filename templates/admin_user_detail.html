@@ -161,4 +161,44 @@
 {% endfor %}
 {% endif %}
 
+<!-- Send Notice -->
+<h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:18px;">
+  Send Notice
+</h3>
+<div class="card" style="padding:18px 20px;margin-bottom:14px;">
+  <p style="font-size:.84rem;color:#6b7280;margin-bottom:14px;">
+    Send an in-app notification to <strong>{{ full_name }}</strong>. It will appear immediately on their <em>/notifications</em> page under the Account filter.
+  </p>
+  <form method="POST" action="{{ url_for('admin_send_notice', user_id=seller.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="margin-bottom:12px;">
+      <label for="notice_title" style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
+        Title <span style="color:#ef4444;">*</span>
+      </label>
+      <input type="text" id="notice_title" name="notice_title" required maxlength="200"
+             placeholder="e.g. Your listing has been reviewed"
+             style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.875rem;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label for="notice_message" style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
+        Message <span style="color:#94a3b8;font-weight:400;">(optional)</span>
+      </label>
+      <textarea id="notice_message" name="notice_message" rows="3" maxlength="1000"
+                placeholder="Additional detail shown in the notification body…"
+                style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.875rem;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label for="notice_url" style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
+        Link URL <span style="color:#94a3b8;font-weight:400;">(optional)</span>
+      </label>
+      <input type="url" id="notice_url" name="notice_url" maxlength="500"
+             placeholder="https://… (user taps the notice to go here)"
+             style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.875rem;box-sizing:border-box;">
+    </div>
+    <button type="submit" class="btn btn-sm" style="background:#2563eb;color:#fff;border:none;">
+      📣 Send Notice
+    </button>
+  </form>
+</div>
+
 {% endblock %}
