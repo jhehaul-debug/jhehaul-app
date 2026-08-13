@@ -1073,6 +1073,7 @@
             {% if listing.price_type == 'negotiable' %}
             <a href="{{ url_for('auth.login') }}" class="btn-make-offer">💰 Make an Offer</a>
             {% endif %}
+            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% elif listing.status == 'sold' %}
           <div style="text-align:center;padding:12px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🏷️ This item has been sold.</div>
@@ -1084,6 +1085,8 @@
               <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
             </button>
           </form>
+          {% elif not is_owner %}
+          <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% elif listing.status == 'reserved' %}
           <div style="text-align:center;padding:12px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🔒 This item is currently reserved.</div>
@@ -1095,6 +1098,8 @@
               <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
             </button>
           </form>
+          {% elif not is_owner %}
+          <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% endif %}
       </div><!-- /mobile CTA -->
@@ -1520,6 +1525,7 @@
             {% if listing.price_type == 'negotiable' %}
             <a href="{{ url_for('auth.login') }}" class="btn-make-offer">💰 Make an Offer</a>
             {% endif %}
+            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% elif listing.status == 'sold' %}
           <div style="text-align:center;padding:14px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🏷️ This item has been sold.</div>
@@ -1531,6 +1537,8 @@
               <span id="fav-label-desktop">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
             </button>
           </form>
+          {% elif not is_owner %}
+          <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% elif listing.status == 'reserved' %}
           <div style="text-align:center;padding:14px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🔒 This item is currently reserved.</div>
@@ -1542,6 +1550,8 @@
               <span id="fav-label-desktop">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
             </button>
           </form>
+          {% elif not is_owner %}
+          <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
         {% endif %}
       </div>
@@ -1809,7 +1819,7 @@ window.ldToggleExtra = function(tbodyId, btnId) {
 function shareListing() {
   var url = window.location.href;
   if (navigator.share) {
-    navigator.share({ title: '{{ listing.title | replace("'", "\\'") }}', url: url }).catch(function(){});
+    navigator.share({ title: {{ listing.title | tojson }}, url: url }).catch(function(){});
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(function() {
       var toast = document.getElementById('copy-toast');

@@ -137,6 +137,31 @@ else:
                  os.environ.get("SPACES_BUCKET", "unknown"))
 
 
+def backfill_housing_category_ids(Category, Listing):
+    """Set category_id=housing on property listings that have NULL category_id.
+
+    Exposed as a module-level function so tests can call the real production
+    implementation rather than duplicating the logic.  Must be called inside
+    an active app context.  Returns the number of rows updated.
+    """
+    housing_cat = Category.query.filter_by(slug='housing').first()
+    if not housing_cat:
+        logging.info("Backfill: housing category not found yet, skipping")
+        return 0
+    updated = (Listing.query
+               .filter(Listing.listing_type.in_(['property_sale', 'rental']),
+                       Listing.category_id.is_(None))
+               .update({'category_id': housing_cat.id},
+                       synchronize_session=False))
+    db.session.commit()
+    if updated:
+        logging.info("Backfill: set category_id=%d (housing) on %d existing property listings",
+                     housing_cat.id, updated)
+    else:
+        logging.info("Backfill: no property listings needed category_id update")
+    return updated
+
+
 # ---- Initialize tables and load ZIP codes ----
 with app.app_context():
     import models as _models  # noqa: F401
@@ -978,21 +1003,7 @@ with app.app_context():
     # Set it now so the admin /admin/listings category filter finds them correctly.
     try:
         from models import Category as _BHC, Listing as _BL
-        _housing_cat = _BHC.query.filter_by(slug='housing').first()
-        if _housing_cat:
-            updated = (_BL.query
-                       .filter(_BL.listing_type.in_(['property_sale', 'rental']),
-                               _BL.category_id.is_(None))
-                       .update({'category_id': _housing_cat.id},
-                               synchronize_session=False))
-            db.session.commit()
-            if updated:
-                logging.info("Backfill: set category_id=%d (housing) on %d existing property listings",
-                             _housing_cat.id, updated)
-            else:
-                logging.info("Backfill: no property listings needed category_id update")
-        else:
-            logging.info("Backfill: housing category not found yet, skipping")
+        backfill_housing_category_ids(_BHC, _BL)
     except Exception as _e:
         db.session.rollback()
         logging.info("Backfill (housing category_id) skipped: %s", _e)
