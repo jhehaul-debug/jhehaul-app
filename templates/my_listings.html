@@ -212,9 +212,8 @@
             <button type="submit" class="btn-reactivate" title="Reactivate listing">↺ Reactivate</button>
           </form>
         {% elif listing.status == 'expired' %}
-          <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+          <form action="{{ url_for('listing_renew', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="status" value="active">
             <button type="submit" class="btn-reactivate" title="Renew this listing for 30 more days" style="background:#f59e0b;border-color:#f59e0b;color:#fff">🔄 Renew</button>
           </form>
         {% endif %}

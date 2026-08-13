@@ -1609,6 +1609,25 @@ def listing_set_status(listing_id):
     return redirect(url_for('my_listings'))
 
 
+@app.route("/listing/<int:listing_id>/renew", methods=["POST"])
+@require_login
+def listing_renew(listing_id):
+    """Allow a seller to renew an expired listing, resetting its expiry to 30 days from now."""
+    _check_listing_csrf()
+    import datetime
+    listing = _listing_owner_or_403(listing_id)
+    if listing.status != 'expired':
+        flash("Only expired listings can be renewed.", "error")
+        return redirect(url_for('my_listings'))
+    listing.status = 'active'
+    listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
+    listing.expired_at = None
+    listing.expiry_reminder_sent = False  # start a fresh expiry cycle
+    db.session.commit()
+    flash("Your listing has been renewed and is active for 30 more days.", "success")
+    return redirect(url_for('my_listings'))
+
+
 @app.route("/my-listings")
 @require_login
 def my_listings():
