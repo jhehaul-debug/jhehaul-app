@@ -4778,7 +4778,8 @@ def profile():
     invite_url = request.host_url.rstrip('/') + '/invite'
     return render_template('profile.html',
                            listing_count=listing_count,
-                           invite_url=invite_url)
+                           invite_url=invite_url,
+                           is_primary_admin=_is_primary_admin(current_user))
 
 @app.route("/hauler/service-zips/add", methods=["POST"])
 def hauler_service_zip_add():
@@ -4822,6 +4823,13 @@ def profile_update():
     flash("Profile updated successfully!", "success")
     return redirect(url_for('profile'))
 
+def _is_primary_admin(user):
+    """Return True if user is the designated primary admin (is_admin + configured ADMIN_EMAIL)."""
+    primary_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
+    return bool(user and user.is_admin and user.email and
+                user.email.strip().lower() == primary_email.strip().lower())
+
+
 @app.route("/account/delete", methods=["POST"])
 @require_login
 def delete_account():
@@ -4831,6 +4839,17 @@ def delete_account():
                         UserBlock, ListingReport)
     user_id   = current_user.id
     user_type = current_user.user_type
+
+    # ── Primary Admin and last-admin protection ──────────────────────────────
+    if current_user.is_admin:
+        if _is_primary_admin(current_user):
+            flash("The primary admin account cannot be deleted.", "error")
+            return redirect(url_for('profile'))
+        # Block deletion if this is the last active admin account
+        remaining_admins = User.query.filter_by(is_admin=True).count()
+        if remaining_admins <= 1:
+            flash("Cannot delete the last active admin account.", "error")
+            return redirect(url_for('profile'))
 
     # Confirm typed "DELETE" from the form
     if request.form.get("confirm_delete", "").strip().upper() != "DELETE":
@@ -5053,12 +5072,18 @@ def admin_dashboard():
     sold_items = Listing.query.filter_by(status='sold').count()
     reported_listings = ListingReport.query.filter_by(status='pending').count()
     total_listings = Listing.query.count()
+    draft_listings = Listing.query.filter_by(status='draft').count()
+    reserved_listings = Listing.query.filter_by(status='reserved').count()
+    expired_listings = Listing.query.filter_by(status='expired').count()
+    removed_listings = Listing.query.filter_by(status='removed').count()
     homes_for_sale = Listing.query.filter_by(listing_type='property_sale').count()
     rental_listings = Listing.query.filter_by(listing_type='rental').count()
     housing_listings = homes_for_sale + rental_listings
 
-    # Recent activity
-    recent_listings = Listing.query.order_by(Listing.created_at.desc()).limit(8).all()
+    # Recent activity — exclude drafts so empty/abandoned drafts don't clutter the feed
+    recent_listings = (Listing.query
+                       .filter(Listing.status != 'draft')
+                       .order_by(Listing.created_at.desc()).limit(8).all())
     recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
     recent_sold = (Listing.query.filter_by(status='sold')
                    .order_by(Listing.sold_at.desc()).limit(5).all())
@@ -5108,6 +5133,10 @@ def admin_dashboard():
                            sold_items=sold_items,
                            reported_listings=reported_listings,
                            total_listings=total_listings,
+                           draft_listings=draft_listings,
+                           reserved_listings=reserved_listings,
+                           expired_listings=expired_listings,
+                           removed_listings=removed_listings,
                            homes_for_sale=homes_for_sale,
                            rental_listings=rental_listings,
                            housing_listings=housing_listings,
@@ -5628,6 +5657,15 @@ def admin_reactivate_job(job_id):
 def admin_delete_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.is_admin:
+        # Extra guard: never allow deleting the primary admin via this route
+        if _is_primary_admin(user):
+            flash("The primary admin account cannot be deleted.", "error")
+            return redirect(url_for('admin_user_detail', user_id=user_id))
+        # Never allow deleting the last admin account
+        remaining_admins = User.query.filter_by(is_admin=True).count()
+        if remaining_admins <= 1:
+            flash("Cannot delete the last active admin account.", "error")
+            return redirect(url_for('admin_user_detail', user_id=user_id))
         flash("Admin accounts cannot be deleted.", "error")
         return redirect(url_for('admin_dashboard'))
     from models import OAuth, JobPhoto, CompletionPhoto
@@ -5838,7 +5876,10 @@ def admin_users():
     elif type_filter == 'customer':
         query = query.filter(User.user_type == 'customer', User.is_admin == False)
     users = query.order_by(User.created_at.desc()).all()
-    listing_counts = {u.id: Listing.query.filter_by(seller_id=u.id).count() for u in users}
+    listing_counts = {
+        u.id: Listing.query.filter_by(seller_id=u.id).filter(Listing.status != 'draft').count()
+        for u in users
+    }
     total = len(users)
     return render_template('admin_users.html', users=users, total=total,
                            listing_counts=listing_counts, q=q,

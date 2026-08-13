@@ -81,10 +81,38 @@
             <div class="stat-label">Rental Listings</div>
         </div>
     </a>
+    <a href="{{ url_for('admin_listings') }}?status=reserved" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);border-left:4px solid #f97316;cursor:pointer;">
+            <div class="stat-icon">🔒</div>
+            <div class="stat-value" style="color:#c2410c;">{{ reserved_listings }}</div>
+            <div class="stat-label">Reserved</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_listings') }}?status=expired" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#f9fafb,#f3f4f6);border-left:4px solid #9ca3af;cursor:pointer;">
+            <div class="stat-icon">⌛</div>
+            <div class="stat-value" style="color:#6b7280;">{{ expired_listings }}</div>
+            <div class="stat-label">Expired</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_listings') }}?status=removed" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fff1f2,#fee2e2);border-left:4px solid #ef4444;cursor:pointer;">
+            <div class="stat-icon">🗑</div>
+            <div class="stat-value" style="color:#dc2626;">{{ removed_listings }}</div>
+            <div class="stat-label">Removed</div>
+        </div>
+    </a>
+    <a href="{{ url_for('admin_listings') }}?status=draft" style="text-decoration:none;">
+        <div class="stat-card" style="background:linear-gradient(135deg,#fefce8,#fef08a);border-left:4px solid #eab308;cursor:pointer;">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value" style="color:#a16207;">{{ draft_listings }}</div>
+            <div class="stat-label">Drafts</div>
+        </div>
+    </a>
     <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #14b8a6;">
         <div class="stat-icon">📋</div>
         <div class="stat-value" style="color:#0f766e;">{{ total_listings }}</div>
-        <div class="stat-label">Total Listings</div>
+        <div class="stat-label">Total (incl. drafts)</div>
     </div>
 </div>
 

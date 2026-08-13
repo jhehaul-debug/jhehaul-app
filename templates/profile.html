@@ -235,6 +235,14 @@
 
 
 <!-- ── Delete Account ────────────────────────────────────────────────────── -->
+{% if is_primary_admin %}
+<div class="card" style="border:1px solid #e2e8f0;background:#f8fafc;">
+  <h3 style="margin-bottom:8px;color:#475569;">🔒 Primary Admin Account</h3>
+  <p style="color:#64748b;font-size:.91rem;margin:0;">
+    This account controls JHE Haul administration and cannot be deleted through standard account settings.
+  </p>
+</div>
+{% else %}
 <div class="card" style="border:1px solid #fce4ec;">
   <h3 style="margin-bottom:8px;color:#c62828;">Delete Account</h3>
   <p style="color:#718096;margin-bottom:16px;font-size:.91rem;">
@@ -262,6 +270,7 @@
     Delete My Account
   </button>
 </div>
+{% endif %}
 
 </div><!-- /max-width wrapper -->
 

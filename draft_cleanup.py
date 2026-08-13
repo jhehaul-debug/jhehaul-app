@@ -147,6 +147,64 @@ def send_draft_reminders(app):
         return sent
 
 
+FAST_CLEANUP_HOURS = 1   # discard shell drafts with NO content after this long
+
+
+def purge_shell_drafts(app):
+    """
+    Delete draft listings that are completely empty:
+      • no title (None or '')
+      • no description
+      • no price
+      • no photos
+    after FAST_CLEANUP_HOURS.  These are created when a seller opens the Sell
+    wizard, clicks Next without entering anything, and then abandons the page.
+    Returns the number deleted.
+    """
+    with app.app_context():
+        from models import db, Listing, ListingPhoto
+        from sqlalchemy import text as _text
+
+        cutoff = datetime.now() - timedelta(hours=FAST_CLEANUP_HOURS)
+
+        # Listings with zero photos (subquery)
+        has_photo = db.session.query(ListingPhoto.listing_id).subquery()
+
+        candidates = (
+            Listing.query
+            .filter(
+                Listing.status == 'draft',
+                Listing.created_at < cutoff,
+                db.or_(Listing.title == None, Listing.title == ''),
+                db.or_(Listing.description == None, Listing.description == ''),
+                db.or_(Listing.price == None),
+                ~Listing.id.in_(
+                    db.session.query(ListingPhoto.listing_id)
+                )
+            )
+            .all()
+        )
+
+        deleted = 0
+        for listing in candidates:
+            try:
+                db.session.delete(listing)
+                db.session.commit()
+                deleted += 1
+                log.info("Purged shell draft listing #%s (created %s, no content)",
+                         listing.id, listing.created_at)
+            except Exception as exc:
+                db.session.rollback()
+                log.error("Failed to delete shell draft listing #%s: %s", listing.id, exc)
+
+        if deleted:
+            log.info("Shell-draft cleanup: purged %d record(s)", deleted)
+        else:
+            log.debug("Shell-draft cleanup: nothing to purge")
+
+        return deleted
+
+
 def purge_abandoned_drafts(app):
     """
     Delete abandoned draft listings inside an app context.
@@ -206,6 +264,10 @@ def start_draft_cleanup_thread(app):
     def _loop():
         time.sleep(90)  # Let the app fully start before first run
         while True:
+            try:
+                purge_shell_drafts(app)
+            except Exception as exc:
+                log.error("Shell-draft cleanup loop error: %s", exc)
             try:
                 send_draft_reminders(app)
             except Exception as exc:
