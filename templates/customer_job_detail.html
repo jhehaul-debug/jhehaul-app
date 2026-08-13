@@ -236,6 +236,21 @@
         </div>
         {% endif %}
 
+        {# Withdrawn quotes — show each withdrawn quote with its reason #}
+        {% for q in quotes if q.status == 'withdrawn' %}
+        <div class="dcard" style="border-left:4px solid #e53e3e;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:{% if q.withdrawal_note %}10px{% else %}0{% endif %};">
+                <span style="background:#fee2e2;color:#991b1b;font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.03em;">&#10006; Quote Withdrawn</span>
+                <span style="color:#718096;font-size:0.85rem;">${{ "%.2f"|format(q.price) }}</span>
+            </div>
+            {% if q.withdrawal_note %}
+            <div style="font-size:0.9rem;color:#4a5568;">
+                <strong>Reason:</strong> {{ q.withdrawal_note }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
         {# Request details card #}
         <div class="dcard">
             <h3>Request Details</h3>
