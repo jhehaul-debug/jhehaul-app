@@ -1,0 +1,110 @@
+The Marketplace navigation still has a selection-state problem.
+
+Right now All and Items can remain active/highlighted when I select another section such as For Sale, Rentals, or another category.
+
+This is incorrect.
+
+Make the Main Marketplace Navigation Single-Select
+
+These top marketplace choices must behave like ONE selection group:
+
+All | Items | For Sale | Rentals | Category
+
+Only ONE of these can be active at a time.
+
+Required behavior
+
+If user taps All:
+
+* All becomes active.
+* Items becomes inactive.
+* For Sale becomes inactive.
+* Rentals becomes inactive.
+* Category closes/inactivates.
+* Any expanded filter panel closes unless it belongs to All.
+
+If user taps Items:
+
+* Items becomes active.
+* All becomes inactive.
+* For Sale becomes inactive.
+* Rentals becomes inactive.
+* Category closes/inactivates.
+
+If user taps For Sale:
+
+* For Sale becomes active.
+* All becomes inactive.
+* Items becomes inactive.
+* Rentals becomes inactive.
+* Category closes.
+* Open only the For Sale filter panel.
+
+If user taps Rentals:
+
+* Rentals becomes active.
+* All becomes inactive.
+* Items becomes inactive.
+* For Sale becomes inactive.
+* Category closes.
+* Open only the Rental filter panel.
+
+If user taps Category:
+
+* Category becomes active/open.
+* All becomes inactive.
+* Items becomes inactive.
+* For Sale becomes inactive.
+* Rentals becomes inactive.
+* Close any For Sale or Rental filter panel.
+
+Important
+
+Do NOT allow combinations like:
+
+All + For Sale
+
+Items + For Sale
+
+Items + Rentals
+
+For Sale + Category
+
+or any other situation where two main navigation choices appear active at the same time.
+
+The page should always have ONE clearly selected marketplace mode.
+
+Visual State
+
+Only the active choice should have the selected/highlighted border/background.
+
+All inactive choices should return to their normal unselected appearance.
+
+Test These Exact Scenarios
+
+Test:
+
+All → Items
+
+Items → For Sale
+
+For Sale → Rentals
+
+Rentals → Category
+
+Category → All
+
+All → For Sale
+
+Items → Rentals
+
+In every case:
+
+* Previous selection becomes inactive
+* Previous panel closes
+* New selection becomes active
+* Only ONE main selection remains highlighted
+
+Test this on the LIVE mobile site before marking complete.
+
+Then commit, push to production, confirm DigitalOcean deployment, and verify the behavior on live jhehaul.com.
