@@ -1,0 +1,38 @@
+Analytics is STILL not showing anywhere in the Admin dashboard. Do not just tell me it was restored — physically verify why it is not rendering in the live Admin UI and fix it.
+
+Please inspect the current production Admin dashboard and trace this issue from the visible UI backward.
+
+You must check all of these
+
+1. Confirm the Analytics navigation item is actually included in the Admin menu/sidebar component that production is using.
+2. Check for any conditional code such as:
+    * role checks
+    * admin permission checks
+    * feature flags
+    * hidden menu arrays
+    * mobile/desktop menu differences
+    * route guards
+    * environment variables
+    * CSS hiding the item
+3. Confirm the Analytics page/component is imported correctly and the route is registered in the actual production router.
+4. Search the project for every reference to:
+    * Analytics
+    * analytics
+    * /analytics
+    * admin navigation/menu definitions
+5. Compare the current code against the last version where Analytics was visible and restore the missing navigation/page wiring from that working version.
+6. Preserve and reconnect the existing analytics data and historical records. Do not create a blank replacement dashboard.
+7. Test with the same Admin role/account type used on the live app.
+8. Test both the normal Admin dashboard and any mobile Admin menu because I am accessing the app from a phone.
+9. Make sure Analytics is not buried behind a submenu, three-dot menu, collapsed sidebar, or hidden responsive layout.
+10. After fixing it, verify that the word Analytics is visibly displayed in the Admin interface and that tapping it opens the analytics dashboard with the existing data.
+11. Commit, push, and deploy the actual fix to production.
+12. After deployment, verify the live production build — not just the local preview or development environment.
+
+Do not mark this complete until this exact test passes:
+
+Log into the live production app as Admin → open the Admin dashboard → Analytics is visibly shown → tap Analytics → existing analytics dashboard and historical data load successfully.
+
+If Analytics still does not appear after deployment, continue debugging until you identify the exact component, route, permission, responsive-layout, or deployment issue causing it.
+
+IMPORTANT: Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is. Do not delete, reset, or overwrite any existing analytics data.
