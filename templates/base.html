@@ -107,6 +107,7 @@
             {% endif %}
             {% if current_user.is_admin %}
             <a href="{{ url_for('admin_dashboard') }}" class="nav-admin">⚙ Admin{% if admin_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ admin_unread_count }}</span>{% endif %}</a>
+            <a href="{{ url_for('admin_analytics') }}" class="nav-admin">📊 Analytics</a>
             {% endif %}
             <a href="{{ url_for('auth.logout') }}" class="nav-signout">⬅ Sign Out</a>
         {% else %}

@@ -1,7 +1,7 @@
 {# Admin navigation bar — include at top of every admin page #}
 <div style="background:#1e293b;color:#fff;padding:0;margin-bottom:20px;border-radius:10px;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0;min-height:48px;">
-        <nav style="display:flex;align-items:stretch;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:0;min-height:48px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <nav style="display:flex;align-items:stretch;flex-wrap:nowrap;flex-shrink:0;">
             <a href="{{ url_for('admin_dashboard') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_dashboard' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_dashboard' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_dashboard' %}#60a5fa{% else %}#94a3b8{% endif %}'">
