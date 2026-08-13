@@ -1078,14 +1078,28 @@ function dismissProfileNudge() {
                     No rentals listed yet
                 {% endif %}
             {% else %}
-                No listings found
+                {% if city_zip_filter %}
+                    No listings found near "{{ city_zip_filter }}"
+                {% elif search_query %}
+                    No results for "{{ search_query }}"
+                {% else %}
+                    No listings found
+                {% endif %}
             {% endif %}
         </h3>
         <p>
             {% if listing_type_filter in ('property_sale', 'rental') and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
-                Try widening your search or removing some filters.
+                {% if city_zip_filter %}
+                    No listings in that area match your filters. Double-check the spelling — for example, try "Saint Paul" instead of "St Paul" — or remove the location filter to see all results.
+                {% else %}
+                    Try widening your search or removing some filters.
+                {% endif %}
             {% elif listing_type_filter in ('property_sale', 'rental') %}
                 Be the first to list one — it only takes a couple of minutes.
+            {% elif city_zip_filter %}
+                Double-check the spelling — for example, try "Saint Paul" instead of "St Paul" — or clear the location filter to browse all listings.
+            {% elif search_query %}
+                Try different keywords, or clear the search to browse all listings.
             {% else %}
                 Try adjusting your search or filters.
             {% endif %}
@@ -1094,6 +1108,15 @@ function dismissProfileNudge() {
         <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ search_query) if search_query else '' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;margin-bottom:8px;">✕ Clear Filters</a>
         {% elif listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds')) %}
         <a href="/marketplace?listing_type=rental{{ ('&q=' ~ search_query) if search_query else '' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;margin-bottom:8px;">✕ Clear Filters</a>
+        {% elif city_zip_filter %}
+        {# Keep all active filters but drop city_zip so buyer can broaden to all areas #}
+        {% set _czclr = '/marketplace?' %}
+        {% if search_query %}{% set _czclr = _czclr ~ 'q=' ~ search_query ~ '&' %}{% endif %}
+        {% if listing_type_filter %}{% set _czclr = _czclr ~ 'listing_type=' ~ listing_type_filter ~ '&' %}{% endif %}
+        {% if active_category %}{% set _czclr = _czclr ~ 'category=' ~ active_category.slug ~ '&' %}{% endif %}
+        {% if price_type_filter %}{% set _czclr = _czclr ~ 'price_type=' ~ price_type_filter ~ '&' %}{% endif %}
+        {% if hide_sold %}{% set _czclr = _czclr ~ 'hide_sold=1&' %}{% endif %}
+        <a href="{{ _czclr.rstrip('&?') or '/marketplace' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">✕ Clear Location Filter</a>
         {% else %}
         <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">← Back to Marketplace</a>
         {% endif %}
