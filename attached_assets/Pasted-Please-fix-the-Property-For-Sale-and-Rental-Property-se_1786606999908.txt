@@ -1,0 +1,388 @@
+Please fix the Property For Sale and Rental Property sections on JHE Haul.
+
+There are THREE problems that are still not fixed:
+
+1. The Apply button does not properly take the user to the filtered results.
+2. The page is displaying “No listings found” incorrectly.
+3. The photo and video upload is STILL missing from the Property For Sale and Rental posting forms.
+
+Also make sure the previously requested Bathrooms, Garage Size, and Description fields are actually implemented.
+
+This is a targeted fix only.
+
+1. FIX THE APPLY BUTTON
+
+When a user opens For Sale or Rentals, enters filters, and presses:
+
+Apply
+
+the button must actually work.
+
+For example:
+
+ZIP: 55109
+Min Price: $150,000
+Max Price: $200,000
+Min Beds: 3+
+Open House: Any
+
+When Apply is pressed:
+
+1. Read the selected filters.
+2. Apply the filters.
+3. Close/collapse the filter panel.
+4. Move/navigate/scroll the user directly to the results.
+5. Display the matching listings.
+6. Keep the filters active.
+7. Do not leave the user sitting on the filter form.
+8. Do not require the user to press Apply twice.
+
+For Sale filters must only search For Sale properties.
+
+Rental filters must only search Rental properties.
+
+Do not mix the two.
+
+2. FIX THE INCORRECT “NO LISTINGS FOUND”
+
+Look at the current live mobile page.
+
+It is displaying:
+
+🔍 No listings found
+
+under the property section.
+
+Do NOT automatically display “No listings found” just because the user opened the For Sale/Rental filter panel or entered filter values.
+
+The system needs to distinguish between:
+
+A. Filters have not been applied yet
+
+and
+
+B. Filters were actually applied and returned zero matching listings.
+
+Only display:
+
+No listings found
+
+AFTER a real search/filter has been executed and the database actually returns zero matching listings.
+
+If there are existing matching listings, they MUST appear.
+
+Do not hide existing listings because the filter state, category state, query parameters, or URL is incorrect.
+
+Check the backend/database query as well as the frontend state.
+
+Do not simply hide the “No listings found” message with CSS.
+
+Fix the actual cause.
+
+3. RESTORE PHOTO UPLOAD — STILL MISSING
+
+The Property For Sale and Rental Property posting forms STILL do not have the requested photo uploader.
+
+This must be restored.
+
+Go to:
+
+Sell → Property For Sale
+
+and:
+
+Sell → Rental Property
+
+Both forms must have a clearly visible:
+
+Add Photos
+
+section.
+
+Allow:
+
+Maximum 20 photos
+
+Users must be able to:
+
+* Select photos from an iPhone/photo library
+* Upload multiple photos
+* Upload up to 20 photos
+* Preview photos before publishing
+* Remove individual photos
+* Choose/use a cover photo
+* See failed uploads
+* Publish all successfully uploaded photos
+* Swipe horizontally through the photos on the finished listing
+
+Display something similar to:
+
+Photos — 0/20
+
+If the user attempts more than 20:
+
+Maximum 20 photos per listing.
+
+The photo uploader must be clearly visible in the property creation form. Do not hide it behind an unrelated menu.
+
+4. RESTORE VIDEO UPLOAD — STILL MISSING
+
+Directly below/near the photo uploader, provide:
+
+Add Video
+
+Allow:
+
+1 video maximum
+
+60 seconds maximum
+
+The user must be able to select a video from their phone.
+
+If longer than 60 seconds:
+
+Video must be 60 seconds or less.
+
+If a second video is attempted:
+
+Only 1 video is allowed per listing.
+
+The published property listing must display the video in its media gallery with a play button.
+
+5. MAKE SURE MEDIA ACTUALLY SAVES
+
+Do not only add the buttons visually.
+
+The photo/video upload must be connected through the complete system:
+
+Form → Upload → Permanent Storage → Database → Published Listing → Media Gallery
+
+Photos and video must remain available after:
+
+* Refresh
+* Closing Safari
+* Logging out/in
+* Another user opens the listing
+* Server restart
+* DigitalOcean deployment
+
+Do not use temporary blob URLs as permanent listing media.
+
+6. BATHROOMS — STILL REQUIRED
+
+Make sure BOTH property forms have:
+
+Bathrooms
+
+Allow:
+
+* 1
+* 1.5
+* 2
+* 2.5
+* 3
+* 3.5
+* 4
+* 4.5
+* 5+
+
+Half bathrooms must work.
+
+Display on the finished listing.
+
+Example:
+
+Bedrooms: 3
+Bathrooms: 2.5
+
+7. GARAGE SIZE — STILL REQUIRED
+
+Add a dropdown to BOTH property forms:
+
+Garage Size
+
+Options:
+
+* No Garage
+* 1-Car Garage
+* 1.5-Car Garage
+* 2-Car Garage
+* 2.5-Car Garage
+* 3-Car Garage
+* 3.5-Car Garage
+* 4+ Car Garage
+
+Display it on the finished property listing.
+
+Example:
+
+Garage: 2.5-Car Garage
+
+8. DESCRIPTION — STILL REQUIRED
+
+Both property forms need a multi-line:
+
+Description
+
+field.
+
+The seller/landlord must be able to enter a full property description.
+
+On the finished listing show:
+
+Description
+
+and if the description is long, provide:
+
+See more
+
+to expand it.
+
+9. COMPLETE PROPERTY POSTING FORM
+
+At minimum, the appropriate Property For Sale/Rental form should now support:
+
+* Property type
+* Price / monthly rent
+* Location
+* Bedrooms
+* Bathrooms
+* Garage Size
+* Description
+* Up to 20 photos
+* 1 video up to 60 seconds
+* Existing property fields already implemented
+
+Do not remove existing working fields.
+
+10. TEST THE ENTIRE FLOW — DO NOT JUST CHECK THE CODE
+
+On the LIVE site, test:
+
+Sell → Property For Sale
+
+Create a listing using:
+
+* Multiple photos
+* 1 video
+* Bedrooms: 3
+* Bathrooms: 2.5
+* Garage: 2.5-Car Garage
+* Description
+* Price
+* Location
+
+Publish it.
+
+Verify the listing actually appears under For Sale and that all media/details display.
+
+Then repeat with:
+
+Sell → Rental Property
+
+11. TEST FILTERING AGAINST THE CREATED LISTINGS
+
+After publishing the test properties:
+
+Open For Sale.
+
+Enter filters that SHOULD match the test listing.
+
+Press Apply.
+
+The listing must appear.
+
+Then enter filters that definitely do NOT match.
+
+Press Apply.
+
+Only then should:
+
+No listings found
+
+appear.
+
+Repeat the same test for Rentals.
+
+This will verify that both the listing creation and filtering systems are connected correctly.
+
+12. FIX CLEAR
+
+Pressing:
+
+× Clear
+
+must:
+
+* Remove City/ZIP
+* Remove Min Price
+* Remove Max Price
+* Reset Bedrooms
+* Reset Open House
+* Restore the normal property results
+
+It must not leave the page stuck on No listings found.
+
+CRITICAL — DO NOT CHANGE OR BREAK ANYTHING ELSE
+
+This is extremely important.
+
+DO NOT CHANGE ANYTHING ELSE.
+
+DO NOT BREAK ANYTHING ELSE THAT IS ALREADY WORKING.
+
+Only fix the specific Property For Sale/Rental issues described above.
+
+Do NOT:
+
+* Redesign Marketplace
+* Change Marketplace navigation
+* Change All
+* Change Items
+* Change Vehicles
+* Change general Search
+* Change regular item listings
+* Change vehicle listings
+* Change Messages
+* Change My Deliveries
+* Change Saved Items
+* Change My Offers
+* Change Account
+* Change bottom navigation
+* Change desktop navigation
+* Change colors
+* Change fonts
+* Change unrelated layouts
+* Remove any working feature
+* Refactor unrelated code
+* Modify unrelated database tables or functionality
+
+Keep every unrelated feature exactly as it currently works.
+
+Use the smallest and safest code changes possible.
+
+Do not fix one feature by breaking another feature.
+
+Before deployment, run regression checks to make sure existing working Marketplace functions still work.
+
+After the fixes:
+
+1. Test For Sale posting.
+2. Test Rental posting.
+3. Confirm 20-photo uploader is VISIBLE and WORKING.
+4. Confirm 1-video/60-second uploader is VISIBLE and WORKING.
+5. Confirm Bathrooms works.
+6. Confirm Garage Size works.
+7. Confirm Description works.
+8. Confirm publishing works.
+9. Confirm Apply works.
+10. Confirm Clear works.
+11. Confirm “No listings found” appears ONLY when appropriate.
+12. Test on iPhone/mobile.
+13. Test desktop.
+14. Commit only the targeted changes.
+15. Push to production.
+16. Confirm DigitalOcean deployment succeeds.
+17. Open the LIVE jhehaul.com production site and verify everything above.
+
+Do not mark this task complete based only on the code. Verify these features are actually visible and functioning on the live production website.
