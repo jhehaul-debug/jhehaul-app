@@ -522,7 +522,15 @@ def marketplace():
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
     open_house_only    = request.args.get('open_house',   '').strip()
-    hide_sold          = request.args.get('hide_sold',    '').strip()
+    _hide_sold_param   = request.args.get('hide_sold',    None)
+    # Persist the hide_sold choice to session so it stays in sync with the homepage toggle.
+    # Normalise to '1' / '' so Jinja truthiness works correctly (avoid '0' being truthy).
+    if _hide_sold_param is not None:
+        _hs_bool = bool(_hide_sold_param and _hide_sold_param.strip() != '0')
+        session['hide_sold'] = _hs_bool
+        hide_sold = '1' if _hs_bool else ''
+    else:
+        hide_sold = ''
 
     try: min_price = float(min_price_raw) if min_price_raw else None
     except ValueError: min_price = None
