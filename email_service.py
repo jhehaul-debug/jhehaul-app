@@ -915,6 +915,71 @@ def notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amo
     )
 
 
+def notify_seller_new_message(seller_email, listing_title, listing_id, buyer_name, conversation_id):
+    """Email the seller when a buyer sends their first message in a conversation."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    safe_buyer = _html_mod.escape(buyer_name or 'A buyer')
+    convo_url = f"{_APP_URL}/listing/{listing_id}/message/{conversation_id}"
+    body = f"""
+    <p><strong>{safe_buyer}</strong> just sent you a message about your listing
+       <strong>{safe_title}</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>From:</strong> {safe_buyer}</p>
+    </div>
+    <p>Log in to read their message and reply — buyers who get fast responses are much
+       more likely to complete a purchase!</p>
+    <a href="{convo_url}" class="btn">Read &amp; Reply →</a>"""
+    return send_email(
+        seller_email,
+        f"New message about your listing — \"{subject_title}\"",
+        _html(
+            "You Have a New Message!",
+            "A buyer reached out about your listing.",
+            "💬 New Message",
+            body,
+        ),
+        'seller_new_message',
+    )
+
+
+def notify_buyer_delivery_quote_ready(buyer_email, listing_title, dr_id, quote_amount):
+    """Email the buyer when admin has set a delivery quote and it's ready to review."""
+    import html as _html_mod
+    raw_title = listing_title or 'your item'
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    dr_url = f"{_APP_URL}/delivery/{dr_id}"
+    amount_html = (
+        f'<span class="pill pill-blue">${quote_amount:,.2f}</span>'
+        if quote_amount is not None
+        else '<span class="pill pill-orange">See details</span>'
+    )
+    body = f"""
+    <p>Your delivery quote for <strong>{safe_title}</strong> is ready!</p>
+    <div class="info-box">
+      <p><strong>Item:</strong> {safe_title}</p>
+      <p><strong>Delivery Quote:</strong> {amount_html}</p>
+      <p><strong>Status:</strong> <span class="pill pill-blue">Quote Ready</span></p>
+    </div>
+    <p>Log in to review the quote and confirm your delivery.</p>
+    <a href="{dr_url}" class="btn">Review Delivery Quote →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your delivery quote is ready — \"{subject_title}\"",
+        _html(
+            "Your Delivery Quote Is Ready!",
+            "Review the quote and confirm your delivery.",
+            "🚚 Quote Ready",
+            body,
+        ),
+        'buyer_delivery_quote_ready',
+    )
+
+
 def notify_customer_deposit_confirmed(customer_email, job_id, service_type, estimated_completion=None):
     service_label = service_type or 'Service'
     est_html = (f'<p><strong>Estimated Completion:</strong> {estimated_completion}</p>'

@@ -28,6 +28,8 @@ from email_service import (
     notify_customer_appointment_confirmed,
     notify_admin_new_request,
     notify_buyer_offer_expired,
+    notify_seller_new_message,
+    notify_buyer_delivery_quote_ready,
 )
 from sms_service import (
     notify_hauler_new_job_sms, notify_hauler_bid_accepted_sms,
@@ -2795,6 +2797,9 @@ def listing_message(listing_id, convo_id=None):
             _check_listing_csrf()
             body = request.form.get('body', '').strip()
             if body:
+                # Check first-message condition BEFORE adding the new message
+                _is_buyer_sender = not is_seller_view
+                _existing_count = len(convo.messages) if _is_buyer_sender else 1
                 msg = ListingMessage(
                     conversation_id=convo.id,
                     sender_id=current_user.id,
@@ -2803,6 +2808,18 @@ def listing_message(listing_id, convo_id=None):
                 db.session.add(msg)
                 convo.updated_at = datetime.now()
                 db.session.commit()
+                # Email seller on buyer's first message in this conversation
+                if _is_buyer_sender and _existing_count == 0:
+                    try:
+                        seller = User.query.get(convo.seller_id)
+                        if seller and seller.email:
+                            buyer_name = (current_user.first_name or
+                                          current_user.email or 'A buyer')
+                            notify_seller_new_message(
+                                seller.email, listing.title, listing_id,
+                                buyer_name, convo.id)
+                    except Exception:
+                        pass
                 # In-app notification → the other participant
                 try:
                     from notification_service import notify_new_message as _nnm
@@ -2875,6 +2892,8 @@ def listing_message(listing_id, convo_id=None):
         _check_listing_csrf()
         body = request.form.get('body', '').strip()
         if body:
+            # Check first-message condition BEFORE adding the new message
+            _is_first_buyer_msg = len(convo.messages) == 0
             msg = ListingMessage(
                 conversation_id=convo.id,
                 sender_id=current_user.id,
@@ -2882,7 +2901,21 @@ def listing_message(listing_id, convo_id=None):
             )
             db.session.add(msg)
             convo.updated_at = datetime.now()
-        db.session.commit()
+            db.session.commit()
+            # Email seller on buyer's first message in this conversation
+            if _is_first_buyer_msg:
+                try:
+                    seller = User.query.get(listing.seller_id)
+                    if seller and seller.email:
+                        buyer_name = (current_user.first_name or
+                                      current_user.email or 'A buyer')
+                        notify_seller_new_message(
+                            seller.email, listing.title, listing_id,
+                            buyer_name, convo.id)
+                except Exception:
+                    pass
+        else:
+            db.session.commit()
         if body:
             flash("Message sent!", "success")
         return redirect(url_for('listing_message', listing_id=listing_id))
@@ -4362,6 +4395,18 @@ def delivery_update_status(dr_id):
                   amount=dr.quote_amount)
     except Exception:
         pass
+    # Email buyer when a delivery quote is ready
+    if new_status == 'quoted' and is_admin:
+        try:
+            buyer = User.query.get(dr.buyer_id)
+            if buyer and buyer.email:
+                from models import Listing as _QL
+                _ql = _QL.query.get(dr.listing_id) if dr.listing_id else None
+                _qtitle = _ql.title if _ql else 'your item'
+                notify_buyer_delivery_quote_ready(
+                    buyer.email, _qtitle, dr_id, dr.quote_amount)
+        except Exception:
+            pass
 
     _buyer_msgs = {
         'scheduled':  "Your delivery is scheduled.",
