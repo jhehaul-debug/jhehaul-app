@@ -1,0 +1,83 @@
+URGENT BUG FIX — JHE HAUL MARKETPLACE SELL FLOW
+
+The live production site jhehaul.com has a CSRF failure in the marketplace listing wizard.
+
+CURRENT BUG:
+1. User goes to Sell.
+2. User uploads listing photos and/or the new video.
+3. User presses "Next: Details".
+4. Instead of advancing to Step 2, production returns:
+
+Bad Request
+CSRF validation failed.
+
+This started after the recent marketplace media-upload changes.
+
+FIX THIS COMPLETELY.
+
+Investigate the entire Sell/Create Listing multi-step form, especially Step 1 Photos/Video → Step 2 Details.
+
+Requirements:
+
+1. Make sure the Step 1 form contains a valid CSRF token.
+
+2. Make sure photo/video uploads do NOT invalidate, overwrite, remove, or consume the CSRF token.
+
+3. Make sure AJAX/fetch requests used for photo or video uploads include the required CSRF token/header.
+
+4. Make sure pressing "Next: Details" submits or navigates using the current valid CSRF token.
+
+5. Check Flask-WTF / CSRFProtect configuration, session handling, cookies, form methods, JavaScript fetch requests, and multipart/form-data handling.
+
+6. Do NOT disable CSRF protection globally just to make the error disappear.
+
+7. Preserve the new marketplace limits:
+   - Maximum 20 photos per listing
+   - Maximum 1 video per listing
+   - Maximum video length 60 seconds
+
+8. Test all of these flows:
+   - photos only → Next: Details
+   - video only → Next: Details
+   - photos + video → Next: Details
+   - no media → Next: Details
+   - iPhone/Safari mobile flow
+
+9. The user must be able to complete the ENTIRE listing wizard:
+   Photos/Video → Details → Price → Location → Delivery → Publish
+
+10. Check production/session configuration so CSRF tokens remain valid across every step.
+
+11. Add graceful error handling. A user should never be dumped onto a plain white "Bad Request — CSRF validation failed" page during normal listing creation.
+
+IMPORTANT:
+Do not only fix this locally.
+
+After fixing:
+- run tests
+- commit ALL pending JHE Haul changes
+- push to the EXISTING GitHub production repository/branch
+- confirm GitHub remote HEAD matches local HEAD
+- trigger/confirm a NEW DigitalOcean production deployment
+- confirm DigitalOcean deployed the NEW commit
+- test the LIVE https://jhehaul.com site
+
+Also verify that ALL changes requested today are included in production, including:
+- 18+ account requirement
+- marketplace fraud/scam/criminal-activity safety warnings
+- 20-photo listing limit
+- 1-video listing limit
+- 60-second video maximum
+- marketplace notification changes
+
+DO NOT report success based only on the local Replit preview.
+
+Report back with:
+1. Root cause of the CSRF failure
+2. Files changed
+3. Tests performed
+4. Local commit SHA
+5. GitHub remote SHA
+6. DigitalOcean deployment status
+7. Confirmation that the LIVE Sell wizard successfully advances from Photos/Video to Details
+8. Confirmation that a complete listing can be published on production
