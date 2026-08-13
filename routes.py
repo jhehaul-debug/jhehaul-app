@@ -1680,6 +1680,38 @@ def listing_delete(listing_id):
     return redirect(url_for('my_listings'))
 
 
+@app.route("/listing/<int:listing_id>/discard", methods=["POST"])
+@require_login
+def listing_discard(listing_id):
+    """Immediately discard an in-progress draft listing, deleting all stored media."""
+    _check_listing_csrf()
+    from models import Listing
+    listing = Listing.query.filter_by(id=listing_id, seller_id=current_user.id,
+                                     status='draft').first()
+    if not listing:
+        # Not found or not a draft — silently redirect to sell chooser
+        return redirect(url_for('sell'))
+    try:
+        from storage import delete_file as _delete_file
+        for photo in list(listing.photos):
+            if photo.filename:
+                try:
+                    _delete_file(photo.filename)
+                except Exception as _pe:
+                    app.logger.warning("listing_discard: photo %s: %s", photo.filename, _pe)
+        for video in list(getattr(listing, 'videos', [])):
+            if video.filename:
+                try:
+                    _delete_file(video.filename)
+                except Exception as _ve:
+                    app.logger.warning("listing_discard: video %s: %s", video.filename, _ve)
+    except Exception as _se:
+        app.logger.warning("listing_discard: storage import failed: %s", _se)
+    db.session.delete(listing)
+    db.session.commit()
+    return redirect(url_for('sell'))
+
+
 @app.route("/listing/<int:listing_id>/status", methods=["POST"])
 @require_login
 def listing_set_status(listing_id):
@@ -1773,23 +1805,13 @@ def my_listings():
 
     DRAFT_DISPLAY_CAP = 10  # show at most this many draft entries
 
-    # Non-draft listings: show all
-    non_drafts = (Listing.query
-                  .filter(Listing.seller_id == current_user.id,
-                          Listing.status != 'draft')
-                  .order_by(Listing.created_at.desc())
-                  .all())
-
-    # Drafts: cap to the most recent N, track how many are hidden
-    all_drafts = (Listing.query
-                  .filter_by(seller_id=current_user.id, status='draft')
-                  .order_by(Listing.created_at.desc())
-                  .all())
-    hidden_draft_count = max(0, len(all_drafts) - DRAFT_DISPLAY_CAP)
-    visible_drafts = all_drafts[:DRAFT_DISPLAY_CAP]
-
-    # Interleave: drafts first (most recent work-in-progress), then the rest
-    listings = visible_drafts + non_drafts
+    # No-draft policy: only show published/completed listings — drafts are
+    # temporary session records and are not surfaced to the seller.
+    listings = (Listing.query
+                .filter(Listing.seller_id == current_user.id,
+                        Listing.status != 'draft')
+                .order_by(Listing.created_at.desc())
+                .all())
 
     from datetime import datetime as _dt
     from models import ListingOffer
@@ -1798,7 +1820,7 @@ def my_listings():
                             .filter(ListingOffer.status.in_(['pending', 'countered']))
                             .count())
     return render_template('my_listings.html', listings=listings,
-                           hidden_draft_count=hidden_draft_count,
+                           hidden_draft_count=0,
                            pending_offers_count=pending_offers_count,
                            now=_dt.now())
 

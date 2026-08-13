@@ -157,14 +157,24 @@
     </div>
   </div>
 
-  {# Draft-expiry warning: shown on steps 1–5 for untitled property/rental drafts #}
-  {% if step < 6 and not listing.title %}
+  {# Session-only notice: shown on all wizard steps #}
+  {% if step < 6 %}
   <div class="draft-expiry-banner">
-    <span class="banner-icon">⏳</span>
+    <span class="banner-icon">⚠️</span>
     <span>
-      <strong>Unsaved draft</strong> — this listing will be automatically deleted if you leave it unfinished for more than 48 hours.
-      Complete at least the title to keep it safe.
+      <strong>Unpublished listings are not saved.</strong>
+      If you leave before publishing, all photos, video, and listing information will be deleted.
     </span>
+  </div>
+  {% endif %}
+
+  {# "Cancel Listing" link — steps 2-5 #}
+  {% if step > 1 and step < 6 %}
+  <div style="text-align:right;margin-bottom:8px;">
+    <button type="button" onclick="triggerLeaveModal('{{ url_for('sell') }}')"
+            style="background:none;border:none;color:#9ca3af;font-size:.82rem;cursor:pointer;padding:0;text-decoration:underline;">
+      ✕ Cancel Listing
+    </button>
   </div>
   {% endif %}
 
@@ -238,7 +248,7 @@
     <form method="POST" action="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" data-wizard-nav>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="wizard-nav">
-        <a href="{{ url_for('sell') }}" class="btn-back">← Back</a>
+        <button type="button" class="btn-back" onclick="triggerLeaveModal('{{ url_for('sell') }}')">✕ Cancel</button>
         <button type="submit" class="btn-next">Next: Details →</button>
       </div>
     </form>
@@ -833,21 +843,68 @@
   {% endif %}
 </div>
 
-{# ─── beforeunload: warn seller when navigating away mid-property-wizard ─── #}
-{# Only show when the draft has no title yet — once a title is saved the seller #}
-{# has committed enough that a stray navigation is less catastrophic.           #}
-{% if step < 6 and not listing.title %}
+{# ─── Leave-confirmation modal + interceptor ─── #}
+{% if step < 6 %}
+<!-- Leave modal -->
+<div id="leaveWizardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 10px;color:#1a202c;font-size:1.1rem;">Leave this listing?</h3>
+    <p style="color:#4a5568;font-size:.88rem;margin:0 0 20px;line-height:1.6;">
+      You have not published this listing.<br>
+      If you leave now, your photos, video, and listing information will be
+      <strong>permanently deleted</strong> and you will have to start over.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="leaveStayBtn" style="background:#7c3aed;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:700;font-size:.95rem;cursor:pointer;width:100%;">Stay and Finish</button>
+      <button id="leaveDeleteBtn" style="background:#fff;color:#dc2626;border:1.5px solid #fca5a5;padding:11px;border-radius:8px;font-weight:700;font-size:.9rem;cursor:pointer;width:100%;">Leave and Delete</button>
+    </div>
+  </div>
+</div>
 <script>
 (function () {
+  var DISCARD_URL = '{{ url_for('listing_discard', listing_id=listing.id) }}';
+  var CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
   var _wizardSubmitting = false;
+  var _leaveDest = null;
+
   document.querySelectorAll('form[data-wizard-nav]').forEach(function(f) {
     f.addEventListener('submit', function() { _wizardSubmitting = true; });
   });
+
   window.addEventListener('beforeunload', function(e) {
     if (!_wizardSubmitting) {
       e.preventDefault();
       e.returnValue = '';
     }
+  });
+
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    if ('wizardNav' in link.dataset || link.closest('form[data-wizard-nav]')) return;
+    var href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+    e.preventDefault();
+    triggerLeaveModal(href);
+  });
+
+  window.triggerLeaveModal = function(dest) {
+    _leaveDest = dest || '{{ url_for('sell') }}';
+    document.getElementById('leaveWizardModal').style.display = 'flex';
+  };
+
+  document.getElementById('leaveStayBtn').addEventListener('click', function() {
+    document.getElementById('leaveWizardModal').style.display = 'none';
+  });
+
+  document.getElementById('leaveDeleteBtn').addEventListener('click', function() {
+    _wizardSubmitting = true;
+    var dest = _leaveDest || '{{ url_for('sell') }}';
+    fetch(DISCARD_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'csrf_token=' + encodeURIComponent(CSRF)
+    }).finally(function() { window.location.href = dest; });
   });
 })();
 </script>

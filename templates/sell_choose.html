@@ -30,55 +30,88 @@
   <h1>What would you like to list?</h1>
   <p class="sub">Choose a listing type to get started — it's free.</p>
 
-  <a href="{{ url_for('listing_new') }}?type=item" class="sell-card">
-    <div class="sell-card-icon">📦</div>
-    <div class="sell-card-body">
-      <h2>Sell an Item</h2>
-      <p>Furniture, appliances, electronics, tools, clothing, collectibles, and more.</p>
-      <div class="sell-tags">
-        <div class="sell-card-tags">
-          <span class="sell-tag">🛋️ Furniture</span>
-          <span class="sell-tag">📱 Electronics</span>
-          <span class="sell-tag">🔨 Tools</span>
-          <span class="sell-tag">🎁 Free Items</span>
+  <!-- ── No-draft policy notice ── -->
+  <div id="noDraftNotice" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+    <p style="font-weight:700;color:#9a3412;margin:0 0 6px;font-size:.95rem;">⚠️ Important — Please Read Before You Begin</p>
+    <p style="color:#7c2d12;font-size:.88rem;margin:0 0 14px;line-height:1.6;">
+      Your listing must be <strong>completed and published in one session.</strong>
+      If you leave or close the listing process before publishing, your photos, video, and all listing information will be <strong>deleted</strong> and you will have to start over.
+    </p>
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+      <input type="checkbox" id="ackCheck" style="margin-top:2px;width:17px;height:17px;accent-color:#ea580c;flex-shrink:0;">
+      <span style="font-size:.88rem;color:#7c2d12;line-height:1.5;">
+        I understand that unfinished listings are not saved and I will have to start over if I leave before publishing.
+      </span>
+    </label>
+  </div>
+
+  <!-- Listing-type cards — disabled until acknowledgement is checked -->
+  <div id="sellCards" style="opacity:.45;pointer-events:none;transition:opacity .2s;">
+    <a href="{{ url_for('listing_new') }}?type=item" class="sell-card">
+      <div class="sell-card-icon">📦</div>
+      <div class="sell-card-body">
+        <h2>Sell an Item</h2>
+        <p>Furniture, appliances, electronics, tools, clothing, collectibles, and more.</p>
+        <div class="sell-tags">
+          <div class="sell-card-tags">
+            <span class="sell-tag">🛋️ Furniture</span>
+            <span class="sell-tag">📱 Electronics</span>
+            <span class="sell-tag">🔨 Tools</span>
+            <span class="sell-tag">🎁 Free Items</span>
+          </div>
         </div>
       </div>
-    </div>
-  </a>
+    </a>
 
-  <div class="sell-divider">— HOUSING —</div>
+    <div class="sell-divider">— HOUSING —</div>
 
-  <a href="{{ url_for('listing_new') }}?type=property_sale" class="sell-card blue">
-    <div class="sell-card-icon">🏠</div>
-    <div class="sell-card-body">
-      <h2>List a Property for Sale</h2>
-      <p>Sell a house, condo, townhome, land, commercial property, or other real estate.</p>
-      <div class="sell-card-tags">
-        <span class="sell-tag">🏡 Houses</span>
-        <span class="sell-tag">🏢 Condos</span>
-        <span class="sell-tag">🌾 Land</span>
-        <span class="sell-tag">🏗️ Multi-Family</span>
+    <a href="{{ url_for('listing_new') }}?type=property_sale" class="sell-card blue">
+      <div class="sell-card-icon">🏠</div>
+      <div class="sell-card-body">
+        <h2>List a Property for Sale</h2>
+        <p>Sell a house, condo, townhome, land, commercial property, or other real estate.</p>
+        <div class="sell-card-tags">
+          <span class="sell-tag">🏡 Houses</span>
+          <span class="sell-tag">🏢 Condos</span>
+          <span class="sell-tag">🌾 Land</span>
+          <span class="sell-tag">🏗️ Multi-Family</span>
+        </div>
       </div>
-    </div>
-  </a>
+    </a>
 
-  <a href="{{ url_for('listing_new') }}?type=rental" class="sell-card green">
-    <div class="sell-card-icon">🔑</div>
-    <div class="sell-card-body">
-      <h2>List a Rental</h2>
-      <p>List an apartment, house, room, commercial space, or short-term rental.</p>
-      <div class="sell-card-tags">
-        <span class="sell-tag">🏠 Houses</span>
-        <span class="sell-tag">🏢 Apartments</span>
-        <span class="sell-tag">🛏️ Rooms</span>
-        <span class="sell-tag">🌴 Short-term</span>
+    <a href="{{ url_for('listing_new') }}?type=rental" class="sell-card green">
+      <div class="sell-card-icon">🔑</div>
+      <div class="sell-card-body">
+        <h2>List a Rental</h2>
+        <p>List an apartment, house, room, commercial space, or short-term rental.</p>
+        <div class="sell-card-tags">
+          <span class="sell-tag">🏠 Houses</span>
+          <span class="sell-tag">🏢 Apartments</span>
+          <span class="sell-tag">🛏️ Rooms</span>
+          <span class="sell-tag">🌴 Short-term</span>
+        </div>
       </div>
-    </div>
-  </a>
+    </a>
+  </div>
 
   <p style="text-align:center;font-size:0.82rem;color:#a0aec0;margin-top:24px;">
     JHE Haul is a listing and communication platform — not a brokerage, lender, or escrow service.
     We do not process real estate payments.
   </p>
 </div>
+<script>
+(function() {
+  var ack = document.getElementById('ackCheck');
+  var cards = document.getElementById('sellCards');
+  ack.addEventListener('change', function() {
+    if (this.checked) {
+      cards.style.opacity = '1';
+      cards.style.pointerEvents = 'auto';
+    } else {
+      cards.style.opacity = '.45';
+      cards.style.pointerEvents = 'none';
+    }
+  });
+})();
+</script>
 {% endblock %}
