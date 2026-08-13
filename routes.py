@@ -4183,11 +4183,6 @@ def profile_update():
     current_user.phone      = phone or None
     current_user.city       = city_raw
 
-    # If phone was cleared, reset verification
-    if not phone:
-        current_user.phone_verified = False
-        current_user.phone_verify_code = None
-
     # ZIP validation — uses existing ZipCode service-area table
     if zip_raw:
         if not _re.match(r'^\d{5}$', zip_raw):
@@ -4201,80 +4196,9 @@ def profile_update():
     else:
         current_user.zip_code = None
 
-    # SMS notifications — available to all users
-    notify_sms = request.form.get("notify_sms") == "1"
-    current_user.notify_sms = notify_sms
-
-    # SMS consent
-    from datetime import datetime as _dt
-    sms_consent_form = request.form.get("sms_consent") == "1"
-    if sms_consent_form and not current_user.sms_consent:
-        current_user.sms_consent = True
-        current_user.sms_consent_at = _dt.now()
-    elif not sms_consent_form:
-        current_user.sms_consent = False
-
     db.session.commit()
     flash("Profile updated successfully!", "success")
     return redirect(url_for('profile'))
-
-# ── Phone verification ────────────────────────────────────────────────────────
-
-@app.route("/profile/send-phone-verify", methods=["POST"])
-@require_login
-def send_phone_verify():
-    from datetime import datetime as _dt, timedelta
-    phone = current_user.phone
-    if not phone:
-        flash("Save your phone number first, then request a verification code.", "error")
-        return redirect(url_for('profile'))
-
-    # Rate limit: one send per 60 seconds
-    if current_user.phone_verify_sent_at:
-        elapsed = (_dt.now() - current_user.phone_verify_sent_at).total_seconds()
-        if elapsed < 60:
-            wait = int(60 - elapsed)
-            flash(f"Please wait {wait} more second{'s' if wait != 1 else ''} before requesting another code.", "error")
-            return redirect(url_for('profile'))
-
-    code, error = send_verification_sms(phone)
-    if code:
-        current_user.phone_verify_code = code
-        current_user.phone_verify_sent_at = _dt.now()
-        db.session.commit()
-        flash("Verification code sent! Check your texts and enter the 6-digit code below.", "success")
-    else:
-        # Show the specific Twilio error so the issue is diagnosable
-        flash(f"Could not send verification SMS — {error}", "error")
-    return redirect(url_for('profile'))
-
-
-@app.route("/profile/verify-phone", methods=["POST"])
-@require_login
-def verify_phone():
-    from datetime import datetime as _dt, timedelta
-    code = request.form.get("verify_code", "").strip()
-    if not current_user.phone_verify_code:
-        flash("No verification code is pending. Please request one first.", "error")
-        return redirect(url_for('profile'))
-    if current_user.phone_verify_sent_at:
-        expires = current_user.phone_verify_sent_at + timedelta(minutes=10)
-        if _dt.now() > expires:
-            current_user.phone_verify_code = None
-            current_user.phone_verify_sent_at = None
-            db.session.commit()
-            flash("That code has expired. Please request a new verification code.", "error")
-            return redirect(url_for('profile'))
-    if code == current_user.phone_verify_code:
-        current_user.phone_verified = True
-        current_user.phone_verify_code = None
-        current_user.phone_verify_sent_at = None
-        db.session.commit()
-        flash("Phone number verified! SMS notifications are now active.", "success")
-    else:
-        flash("Incorrect code — please try again.", "error")
-    return redirect(url_for('profile'))
-
 
 @app.route("/account/delete", methods=["POST"])
 @require_login
