@@ -155,10 +155,19 @@
   {% set existing_photos = listing.photos if listing else [] %}
   <div class="step-card">
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:9px 13px;margin-bottom:16px;font-size:0.82rem;color:#92400e;line-height:1.5;">
-      🛡️ <strong>Stay safe.</strong> Use accurate photos of the real item. Never ask for payment before a buyer has seen it in person.
+      🛡️ <strong>Stay safe.</strong>
+      {% if listing_type in ('property_sale', 'rental') %}
+        Use accurate, current photos of the actual property.
+      {% else %}
+        Use accurate photos of the real item. Never ask for payment before a buyer has seen it in person.
+      {% endif %}
       <a href="{{ url_for('safety') }}" style="color:#b45309;margin-left:6px;">Marketplace Safety →</a>
     </div>
-    <h2>📸 Add Photos</h2>
+    <h2>
+      {% if listing_type == 'property_sale' %}🏠 Add Property Photos
+      {% elif listing_type == 'rental' %}🔑 Add Rental Photos
+      {% else %}📸 Add Photos{% endif %}
+    </h2>
     <p class="hint">Upload up to 20 photos and 1 video (maximum 60 seconds). Drag thumbnails to reorder. The starred photo is the cover image.</p>
 
     <div class="photo-count" id="photoCount">{{ existing_photos|length }} / 20 photos</div>
@@ -187,7 +196,11 @@
     {% if existing_photos|length < 20 %}
     <div class="photo-upload-zone" id="uploadZone">
       <input type="file" id="photoInput" accept="image/*" multiple>
-      <div class="upload-icon">🖼️</div>
+      <div class="upload-icon">
+        {% if listing_type == 'property_sale' %}🏠
+        {% elif listing_type == 'rental' %}🔑
+        {% else %}🖼️{% endif %}
+      </div>
       <p>Drag photos here or</p>
       <span class="upload-btn">Browse Photos</span>
       <p style="margin-top:8px;font-size:0.78rem">JPG, PNG, WebP — up to 15 MB each</p>

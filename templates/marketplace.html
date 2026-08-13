@@ -997,7 +997,7 @@ function dismissProfileNudge() {
 
 {# ── Search Results View ── #}
 {% if is_search %}
-<div class="mp-section">
+<div class="mp-section" id="mp-results">
     <div class="mp-section-head">
         <h2>
             {% if search_query %}Results for "{{ search_query }}" <span style="color:#718096;font-size:0.85rem;font-weight:400;">({{ search_results | length }} listing{{ 's' if search_results | length != 1 else '' }})</span>
@@ -1054,10 +1054,47 @@ function dismissProfileNudge() {
     {% endif %}
     {% else %}
     <div class="mp-empty">
-        <div class="mp-empty-icon">🔍</div>
-        <h3>No listings found</h3>
-        <p>Try adjusting your search or filters.</p>
-        <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">Clear Filters</a>
+        <div class="mp-empty-icon">
+            {% if listing_type_filter == 'property_sale' %}🏠
+            {% elif listing_type_filter == 'rental' %}🔑
+            {% else %}🔍{% endif %}
+        </div>
+        <h3>
+            {% if listing_type_filter == 'property_sale' %}
+                {% if city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house') %}
+                    No properties match your filters
+                {% else %}
+                    No properties for sale yet
+                {% endif %}
+            {% elif listing_type_filter == 'rental' %}
+                {% if city_zip_filter or request.args.get('max_price') or request.args.get('min_beds') %}
+                    No rentals match your filters
+                {% else %}
+                    No rentals listed yet
+                {% endif %}
+            {% else %}
+                No listings found
+            {% endif %}
+        </h3>
+        <p>
+            {% if listing_type_filter in ('property_sale', 'rental') and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
+                Try widening your search or removing some filters.
+            {% elif listing_type_filter in ('property_sale', 'rental') %}
+                Be the first to list one — it only takes a couple of minutes.
+            {% else %}
+                Try adjusting your search or filters.
+            {% endif %}
+        </p>
+        {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
+        <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ search_query) if search_query else '' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;margin-bottom:8px;">✕ Clear Filters</a>
+        {% elif listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds')) %}
+        <a href="/marketplace?listing_type=rental{{ ('&q=' ~ search_query) if search_query else '' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;margin-bottom:8px;">✕ Clear Filters</a>
+        {% else %}
+        <a href="/marketplace" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;">← Back to Marketplace</a>
+        {% endif %}
+        {% if listing_type_filter in ('property_sale', 'rental') %}
+        <br><a href="/sell" style="display:inline-block;margin-top:10px;font-size:0.9rem;color:#38a169;font-weight:600;">+ List a Property</a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -1203,6 +1240,49 @@ function mpToggleSave(evt, btn) {
         btn.title = pressed ? 'Saved' : 'Save';
     });
 }
+
+// ── Property filter Apply: scroll to results + collapse panel ─────────────────
+(function () {
+    // Intercept For Sale and Rental Apply buttons so the page scrolls to results
+    // after the GET redirect. HTML GET forms strip URL fragments, so we intercept
+    // and build the URL manually with #mp-results appended.
+    ['mp-forsale-panel', 'mp-rental-panel'].forEach(function (panelId) {
+        var panel = document.getElementById(panelId);
+        if (!panel) return;
+        var form = panel.querySelector('form');
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var params = new URLSearchParams();
+            // Collect non-empty form fields
+            Array.from(new FormData(form).entries()).forEach(function (pair) {
+                if (pair[1] !== '') params.append(pair[0], pair[1]);
+            });
+            window.location.href = '/marketplace?' + params.toString() + '#mp-results';
+        });
+    });
+
+    // On page load: if a property filter was just applied (URL has actual filter
+    // values beyond just listing_type), close the panel and scroll to results.
+    var lt = '{{ listing_type_filter | e }}';
+    var hasFilters = !!(
+        {{ '1' if (request.args.get('city_zip') or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house') or city_zip_filter) else '0' }}
+    );
+    if (hasFilters && (lt === 'property_sale' || lt === 'rental')) {
+        // Close whichever panel is open so results are immediately visible
+        var panel = document.getElementById(lt === 'property_sale' ? 'mp-forsale-panel' : 'mp-rental-panel');
+        if (panel) panel.classList.remove('open');
+    }
+    // Always scroll to results anchor if listing_type is set (whether filtered or not)
+    if (lt === 'property_sale' || lt === 'rental') {
+        var anchor = document.getElementById('mp-results');
+        if (anchor) {
+            setTimeout(function () {
+                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 80);
+        }
+    }
+})();
 
 // ── Pill panel toggle — single-select across the main group ───
 function mpTogglePanel(id, btn) {
