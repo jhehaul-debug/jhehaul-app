@@ -9,13 +9,6 @@
         <span style="background:#dbeafe;color:#1d4ed8;font-size:0.85rem;font-weight:700;padding:3px 12px;border-radius:20px;">{{ total }} total</span>
     </div>
     <div style="display:flex;gap:8px;margin-left:auto;">
-        <form method="POST" action="{{ url_for('admin_purge_removed_listings') }}"
-              onsubmit="return confirm('Permanently delete ALL removed listings and their photos/videos? This cannot be undone.');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline" style="font-size:0.82rem;padding:7px 14px;color:#991b1b;border-color:#fecaca;background:#fff1f2;">
-                🗑 Purge All Removed
-            </button>
-        </form>
         <form method="POST" action="{{ url_for('admin_cleanup_drafts') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline" style="font-size:0.82rem;padding:7px 14px;color:#92400e;border-color:#fde68a;background:#fef9c3;"
@@ -164,11 +157,6 @@
                         <form method="POST" action="{{ url_for('admin_listing_restore', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Restore this listing?');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">↩ Restore</button>
-                        </form>
-                        <form method="POST" action="{{ url_for('admin_listing_permanently_delete', listing_id=l.id) }}" style="margin:0;"
-                              onsubmit="return confirm('Permanently delete this listing and all its photos/videos? This CANNOT be undone.');">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none;padding:4px 10px;cursor:pointer;border-radius:6px;font-size:0.78rem;font-weight:600;">🗑 Delete Forever</button>
                         </form>
                         {% else %}
                         <form method="POST" action="{{ url_for('admin_listing_hide', listing_id=l.id) }}" style="margin:0;" onsubmit="return confirm('Hide this listing?');">

@@ -947,6 +947,68 @@ def notify_seller_new_message(seller_email, listing_title, listing_id, buyer_nam
     )
 
 
+def notify_seller_offer_accepted(seller_email, listing_title, listing_id, offer_amount):
+    """Email the seller when a buyer accepts their counteroffer."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>Great news — the buyer has <strong>accepted</strong> your counteroffer of
+       <span class="pill pill-green">${offer_amount:,.2f}</span>
+       on <strong>{safe_title}</strong>!</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Agreed Amount:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-green">Accepted ✅</span></p>
+    </div>
+    <p>Log in to message the buyer and arrange pickup or delivery.</p>
+    <a href="{listing_url}" class="btn">View Listing &amp; Message Buyer →</a>"""
+    return send_email(
+        seller_email,
+        f"Your counteroffer was accepted — \"{subject_title}\"",
+        _html(
+            "Counteroffer Accepted! 🎉",
+            "The buyer said yes — reach out to arrange the details.",
+            "✅ Counteroffer Accepted",
+            body,
+        ),
+        'seller_offer_accepted',
+    )
+
+
+def notify_seller_offer_declined(seller_email, listing_title, listing_id, offer_amount):
+    """Email the seller when a buyer declines their counteroffer."""
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>The buyer has <strong>declined</strong> your counteroffer of
+       <span class="pill pill-red">${offer_amount:,.2f}</span>
+       on <strong>{safe_title}</strong>.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Counter:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Declined</span></p>
+    </div>
+    <p>Your listing is still active. Other buyers can still make offers.</p>
+    <a href="{listing_url}" class="btn">View Listing →</a>"""
+    return send_email(
+        seller_email,
+        f"Your counteroffer was declined — \"{subject_title}\"",
+        _html(
+            "Counteroffer Declined",
+            "The buyer passed — your listing is still active.",
+            "❌ Counteroffer Declined",
+            body,
+        ),
+        'seller_offer_declined',
+    )
+
+
 def notify_buyer_delivery_quote_ready(buyer_email, listing_title, dr_id, quote_amount):
     """Email the buyer when admin has set a delivery quote and it's ready to review."""
     import html as _html_mod

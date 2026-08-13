@@ -2292,6 +2292,14 @@ def offer_buyer_respond(listing_id, offer_id):
         offer.updated_at = datetime.now()
         db.session.commit()
         # SMS disabled for marketplace — in-app notification used instead
+        # Email notification → seller
+        try:
+            from email_service import notify_seller_offer_accepted as _esoa
+            seller = offer.seller
+            if seller and seller.email:
+                _esoa(seller.email, offer.listing.title, listing_id, offer.amount)
+        except Exception:
+            pass
         # In-app notification → seller
         try:
             from notification_service import notify_counter_accepted as _nca
@@ -2306,9 +2314,20 @@ def offer_buyer_respond(listing_id, offer_id):
         flash("You accepted the counteroffer! Contact the seller to arrange pickup.", "success")
 
     elif action == 'decline_counter':
+        if offer.status != 'countered' or not offer.counter_amount:
+            flash("No active counteroffer to decline.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
         offer.status = 'declined'
         offer.updated_at = datetime.now()
         db.session.commit()
+        # Email notification → seller
+        try:
+            from email_service import notify_seller_offer_declined as _esod
+            seller = offer.seller
+            if seller and seller.email:
+                _esod(seller.email, offer.listing.title, listing_id, offer.counter_amount)
+        except Exception:
+            pass
         flash("Counteroffer declined.", "success")
 
     elif action == 'withdraw':
@@ -5844,88 +5863,6 @@ def admin_listing_restore(listing_id):
     flash(f'Listing "{listing.title}" restored to active.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
-
-def _permanently_delete_listing(listing):
-    """Hard-delete a listing record and all associated files/rows.
-
-    Deletes: gallery pins, photos (DB + storage), videos (DB + storage),
-    offers, favorites, conversations/messages, then the listing itself.
-    Returns the title of the deleted listing for logging.
-    """
-    from models import (GalleryPhoto, ListingPhoto, ListingVideo,
-                        ListingOffer, ListingFavorite,
-                        ListingConversation, ListingMessage)
-    title = listing.title or '(untitled)'
-
-    # Collect filenames before deleting child rows
-    photo_files  = [p.filename for p in listing.photos  if p.filename]
-    video_files  = [v.filename for v in (listing.videos if hasattr(listing, 'videos') else []) if v.filename]
-
-    # Remove gallery pins
-    GalleryPhoto.query.filter_by(item_type='listing', listing_id=listing.id).delete(synchronize_session=False)
-
-    # Remove child rows (cascade would handle most, but be explicit)
-    ListingPhoto.query.filter_by(listing_id=listing.id).delete(synchronize_session=False)
-    ListingVideo.query.filter_by(listing_id=listing.id).delete(synchronize_session=False)
-    ListingOffer.query.filter_by(listing_id=listing.id).delete(synchronize_session=False)
-    ListingFavorite.query.filter_by(listing_id=listing.id).delete(synchronize_session=False)
-
-    # Messages → conversations
-    conv_ids = [c.id for c in ListingConversation.query.filter_by(listing_id=listing.id).all()]
-    if conv_ids:
-        ListingMessage.query.filter(ListingMessage.conversation_id.in_(conv_ids)).delete(synchronize_session=False)
-    ListingConversation.query.filter_by(listing_id=listing.id).delete(synchronize_session=False)
-
-    db.session.delete(listing)
-    db.session.commit()
-
-    # Delete stored files after DB commit
-    try:
-        from storage import delete_file as _delete_file
-        for fname in photo_files + video_files:
-            try:
-                _delete_file(fname)
-            except Exception as _fe:
-                app.logger.warning("permanently_delete_listing: file %s: %s", fname, _fe)
-    except Exception as _se:
-        app.logger.warning("permanently_delete_listing: storage import failed: %s", _se)
-
-    return title
-
-
-@app.route("/admin/listings/<int:listing_id>/permanently-delete", methods=["POST"])
-@require_admin
-def admin_listing_permanently_delete(listing_id):
-    """Permanently hard-delete a single removed listing and all its data."""
-    _check_listing_csrf()
-    listing = Listing.query.get_or_404(listing_id)
-    if listing.status != 'removed':
-        flash('Only removed listings can be permanently deleted.', 'error')
-        return redirect(request.referrer or url_for('admin_listings'))
-    title = _permanently_delete_listing(listing)
-    app.logger.info("admin_listing_permanently_delete: listing '%s' (id=%s) permanently deleted by %s",
-                    title, listing_id, current_user.email)
-    flash(f'Listing "{title}" permanently deleted.', 'success')
-    return redirect(request.referrer or url_for('admin_listings'))
-
-
-@app.route("/admin/listings/purge-removed", methods=["POST"])
-@require_admin
-def admin_purge_removed_listings():
-    """Permanently delete ALL listings with status='removed' and their files."""
-    _check_listing_csrf()
-    removed = Listing.query.filter_by(status='removed').all()
-    if not removed:
-        flash('No removed listings found — nothing to delete.', 'info')
-        return redirect(request.referrer or url_for('admin_listings'))
-    count = len(removed)
-    titles = []
-    for listing in removed:
-        titles.append(_permanently_delete_listing(listing))
-    app.logger.info("admin_purge_removed_listings: permanently deleted %d listing(s) by %s: %s",
-                    count, current_user.email, titles)
-    flash(f'{count} removed listing(s) permanently deleted.', 'success')
-    return redirect(request.referrer or url_for('admin_listings'))
 
 
 @app.route("/admin/listings/cleanup-drafts", methods=["POST"])
