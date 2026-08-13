@@ -69,6 +69,10 @@
       {% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}
       {% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}
       {% set status_icon = '↩️' %}{% set status_label = 'Withdrawn' %}
+    {% elif offer.status == 'expired' %}
+      {% set border_color = '#f97316' %}{% set bg = '#fff7ed' %}
+      {% set badge_bg = '#ffedd5' %}{% set badge_color = '#9a3412' %}
+      {% set status_icon = '⏰' %}{% set status_label = 'Expired' %}
     {% else %}
       {% set border_color = '#d1d5db' %}{% set bg = '#f8fafc' %}
       {% set badge_bg = '#f1f5f9' %}{% set badge_color = '#64748b' %}
