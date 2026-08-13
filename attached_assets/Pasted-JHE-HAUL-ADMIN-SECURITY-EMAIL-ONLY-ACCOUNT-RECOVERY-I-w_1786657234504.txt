@@ -1,0 +1,240 @@
+JHE HAUL — ADMIN SECURITY + EMAIL-ONLY ACCOUNT RECOVERY
+
+I want to strengthen the security of my JHE Haul ADMIN account.
+
+IMPORTANT:
+We are NOT using SMS for admin authentication or account recovery.
+Do NOT add Twilio/SMS authentication.
+Use EMAIL for password recovery and security notifications.
+
+Before changing anything, inspect the existing JHE Haul email configuration and determine whether SendGrid/email sending is already properly configured.
+
+Do not create a second email system if the existing one works.
+
+==================================================
+1. ADMIN FORGOT PASSWORD
+==================================================
+
+Add a "Forgot Password?" option to the ADMIN login.
+
+When used:
+
+1. Admin enters the primary admin email.
+2. Generate a cryptographically secure, single-use password-reset token.
+3. Email a password-reset link.
+4. Token must expire after a short period, preferably 15–30 minutes.
+5. Once used, the token must immediately become invalid.
+6. Never send the existing password by email.
+7. Passwords must remain securely hashed.
+
+After successful password reset:
+- invalidate the reset token
+- invalidate existing admin sessions where appropriate
+- send an email notifying the admin that the password was changed
+
+==================================================
+2. ADMIN RECOVERY EMAIL
+==================================================
+
+Add a separate:
+
+Recovery Email
+
+field for the ADMIN account.
+
+This must be different from simply displaying an email on the profile.
+
+The recovery email should be stored securely and used for account recovery/security purposes.
+
+When a recovery email is added or changed:
+
+1. Send a verification email to the new recovery address.
+2. Do NOT activate it until the verification link is clicked.
+3. Send a security notice to the existing/primary admin email that the recovery email was changed.
+4. Require the current admin password before changing the recovery email.
+
+Do not display the complete recovery email publicly.
+
+Example display:
+
+j*****@example.com
+
+==================================================
+3. RECOVERY OPTIONS
+==================================================
+
+If the admin forgets the password, allow recovery through a VERIFIED:
+
+- Primary admin email
+OR
+- Recovery email
+
+Do NOT use SMS.
+
+Do NOT use a phone number.
+
+Do NOT use Twilio.
+
+==================================================
+4. EMAIL SECURITY
+==================================================
+
+Inspect the existing email/SendGrid implementation.
+
+Determine whether the production application can currently send email successfully.
+
+Check existing environment variables and application configuration WITHOUT exposing secret values.
+
+Never print:
+- API keys
+- passwords
+- tokens
+- SMTP credentials
+- secret values
+
+If SendGrid is already configured, reuse it.
+
+If something is missing, tell me EXACTLY what configuration or credential I need to add rather than silently creating or changing accounts.
+
+Store all email API keys/passwords as encrypted DigitalOcean environment variables/secrets.
+
+NEVER hard-code an email API key into GitHub source code.
+
+==================================================
+5. SEND REAL TEST EMAIL
+==================================================
+
+After checking the configuration, send a real production test email through the SAME email system JHE Haul will use.
+
+Subject:
+
+JHE Haul Email Test
+
+Message:
+
+"Your JHE Haul email system is configured and working."
+
+Confirm whether the provider accepted the message successfully.
+
+Also test the complete Forgot Password email flow.
+
+==================================================
+6. ADMIN LOGIN PROTECTION
+==================================================
+
+Strengthen ADMIN login security without affecting normal marketplace users.
+
+Add:
+
+- Rate limiting for failed admin logins
+- Temporary lockout after repeated failed attempts
+- Secure session cookies
+- CSRF protection
+- Session expiration
+- Session regeneration after successful login
+- Protection against session fixation
+- Secure password hashing
+- Generic forgot-password responses that do not reveal whether an email/account exists
+
+Do not expose whether an admin email exists through the Forgot Password screen.
+
+Example:
+
+"If an account matching that information exists, recovery instructions have been sent."
+
+==================================================
+7. SECURITY EMAIL ALERTS
+==================================================
+
+Send admin security emails for important events including:
+
+- Password changed
+- Recovery email changed
+- Recovery email verified
+- Suspicious/repeated failed login attempts
+- Successful password recovery
+
+Do NOT use SMS for these alerts.
+
+==================================================
+8. ADMIN ACCOUNT PROTECTION
+==================================================
+
+The primary ADMIN account must NOT be deletable through the normal user Delete Account feature.
+
+The Admin account must not accidentally be treated like an ordinary marketplace user.
+
+Normal users can still have their normal account-management functionality.
+
+==================================================
+9. DO NOT BREAK EXISTING EMAIL
+==================================================
+
+If JHE Haul already sends marketplace email notifications, preserve them.
+
+Do not replace or disable working email functionality.
+
+Do not re-enable SMS.
+
+==================================================
+10. PRODUCTION TESTING
+==================================================
+
+Test:
+
+- Admin login
+- Forgot Password
+- Primary email reset
+- Recovery email verification
+- Recovery email reset
+- Expired reset link
+- Reused reset link
+- Invalid reset link
+- Failed-login rate limiting
+- Existing marketplace email notifications
+- Normal user login
+- Admin session security
+
+==================================================
+11. REPORT BEFORE ASKING ME FOR ANYTHING
+==================================================
+
+Report:
+
+EMAIL PROVIDER:
+EMAIL CONFIGURATION FOUND: YES/NO
+OUTGOING EMAIL WORKING: YES/NO
+TEST EMAIL SENT: YES/NO
+PASSWORD RESET EMAIL WORKING: YES/NO
+RECOVERY EMAIL FEATURE: YES/NO
+ADMIN LOGIN RATE LIMITING: YES/NO
+ADMIN ACCOUNT PROTECTED FROM USER DELETION: YES/NO
+
+If something external is required from me, STOP and tell me exactly what I need to obtain or configure.
+
+Never display existing secret values.
+
+==================================================
+12. PUSH AND DEPLOY
+==================================================
+
+After implementation and testing:
+
+- commit changes
+- PUSH to the EXISTING GitHub production branch
+- confirm GitHub and local HEAD match
+- trigger/verify DigitalOcean deployment
+- test LIVE jhehaul.com
+
+Report the commit SHA and deployment status.
+
+CRITICAL:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+Do not change the marketplace listing workflow.
+Do not change payments.
+Do not change delivery.
+Do not change messaging.
+Do not re-enable SMS.
