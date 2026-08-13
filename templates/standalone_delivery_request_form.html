@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Request Delivery — JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <a href="{{ url_for('my_deliveries') }}" style="color:#718096;font-size:0.9rem;">← My Deliveries</a>
+  <h2 class="page-title" style="margin:8px 0 0;">🚚 Request Delivery / Get a Quote</h2>
+</div>
+
+<p style="color:#718096;margin:0 0 20px;font-size:0.92rem;">
+  Fill out the form below and JHE Haul will review your request and send you a quote.
+</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('standalone_request_delivery') }}" style="max-width:640px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <!-- Contact Info -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">👤 Contact Information</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <label class="form-label">Your Name</label>
+        <input class="form-control" type="text" name="contact_name"
+               value="{{ prefill_name }}" placeholder="Full name" required>
+      </div>
+      <div>
+        <label class="form-label">Phone Number</label>
+        <input class="form-control" type="tel" name="contact_phone"
+               value="{{ prefill_phone }}" placeholder="(612) 555-0000">
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Info -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📦 What Needs to Be Delivered?</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Item Description <span style="color:#dc2626;">*</span></label>
+        <textarea class="form-control" name="item_description" rows="2"
+                  placeholder="e.g. 3-piece sectional sofa, refrigerator, moving boxes" required></textarea>
+      </div>
+      <div>
+        <label class="form-label">Approximate Size / Dimensions</label>
+        <input class="form-control" type="text" name="approx_dimensions"
+               placeholder='e.g. "Large sofa, 7ft long"'>
+      </div>
+      <div>
+        <label class="form-label">Approximate Weight</label>
+        <input class="form-control" type="text" name="approx_weight"
+               placeholder='e.g. "~200 lbs" or "Heavy"'>
+      </div>
+      <div>
+        <label class="form-label">Quantity / Number of Items</label>
+        <input class="form-control" type="number" name="item_count" value="1" min="1" max="99">
+      </div>
+    </div>
+  </div>
+
+  <!-- Pickup -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📍 Pickup Location</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private — not shared publicly)</span></label>
+        <input class="form-control" type="text" name="pickup_address" placeholder="123 Main St" required>
+      </div>
+      <div>
+        <label class="form-label">City</label>
+        <input class="form-control" type="text" name="pickup_city" placeholder="Minneapolis" required>
+      </div>
+      <div>
+        <label class="form-label">ZIP Code</label>
+        <input class="form-control" type="text" name="pickup_zip" placeholder="55401" maxlength="5" required>
+      </div>
+      <input type="hidden" name="pickup_state" value="MN">
+    </div>
+    <div style="margin-top:14px;">
+      <label class="form-label">Stairs at pickup?</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="pickup_stairs" value="1"> Yes</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="pickup_stairs" value="0" checked> No</label>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <label class="form-label">Need help loading?</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_loading" value="1"> Yes</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_loading" value="0" checked> No</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">🏁 Drop-off Location</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private — not shared publicly)</span></label>
+        <input class="form-control" type="text" name="delivery_address" placeholder="456 Oak Ave" required>
+      </div>
+      <div>
+        <label class="form-label">City</label>
+        <input class="form-control" type="text" name="delivery_city" placeholder="St. Paul" required>
+      </div>
+      <div>
+        <label class="form-label">ZIP Code</label>
+        <input class="form-control" type="text" name="delivery_zip" placeholder="55102" maxlength="5" required>
+      </div>
+      <input type="hidden" name="delivery_state" value="MN">
+    </div>
+    <div style="margin-top:14px;">
+      <label class="form-label">Stairs at drop-off?</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="delivery_stairs" value="1"> Yes</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="delivery_stairs" value="0" checked> No</label>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <label class="form-label">Need help unloading?</label>
+      <div style="display:flex;gap:16px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_unloading" value="1"> Yes</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_unloading" value="0" checked> No</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduling -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📅 Scheduling</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <label class="form-label">Preferred Pickup Date</label>
+        <input class="form-control" type="date" name="preferred_date">
+      </div>
+      <div>
+        <label class="form-label">Preferred Time</label>
+        <select class="form-control" name="preferred_time">
+          <option value="">Any time</option>
+          <option value="Morning (8am–12pm)">Morning (8am–12pm)</option>
+          <option value="Afternoon (12pm–5pm)">Afternoon (12pm–5pm)</option>
+          <option value="Evening (5pm–8pm)">Evening (5pm–8pm)</option>
+          <option value="Flexible">Flexible</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="form-label">Additional Instructions</label>
+        <textarea class="form-control" name="special_instructions" rows="3"
+                  placeholder="Fragile items, gate code, elevator building, assembly/disassembly needed, etc."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy notice -->
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:0.84rem;color:#1d4ed8;margin-bottom:20px;">
+    🔒 <strong>Privacy:</strong> Your street addresses are kept private and only shared with JHE Haul to prepare your quote. Want to attach photos? You can send them to JHE Haul after submitting your request.
+  </div>
+
+  <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">🚚 Submit Request &amp; Get a Quote</button>
+</form>
+
+<style>
+@media (max-width:600px) {
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+}
+</style>
+{% endblock %}

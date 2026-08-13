@@ -4376,6 +4376,132 @@ def delivery_update_status(dr_id):
     return redirect(url_for('delivery_detail', dr_id=dr_id))
 
 
+@app.route("/request-delivery", methods=["GET", "POST"])
+@require_login
+def standalone_request_delivery():
+    """Standalone delivery request — not tied to a listing."""
+    prefill_name  = ((current_user.first_name or '') + ' ' + (current_user.last_name or '')).strip() or ''
+    prefill_phone = current_user.phone or ''
+
+    if request.method == 'GET':
+        return render_template('standalone_delivery_request_form.html',
+                               prefill_name=prefill_name,
+                               prefill_phone=prefill_phone)
+
+    # ── POST: parse form ──────────────────────────────────────────────────────
+    contact_name    = request.form.get('contact_name', '').strip() or prefill_name
+    contact_phone   = request.form.get('contact_phone', '').strip() or prefill_phone
+    item_description = request.form.get('item_description', '').strip()
+    approx_dimensions = request.form.get('approx_dimensions', '').strip() or None
+    approx_weight   = request.form.get('approx_weight', '').strip() or None
+    item_count      = max(1, int(request.form.get('item_count', 1) or 1))
+    pickup_address  = request.form.get('pickup_address', '').strip()
+    pickup_city     = request.form.get('pickup_city', '').strip()
+    pickup_state    = request.form.get('pickup_state', 'MN').strip()
+    pickup_zip      = request.form.get('pickup_zip', '').strip()
+    delivery_address = request.form.get('delivery_address', '').strip()
+    delivery_city   = request.form.get('delivery_city', '').strip()
+    delivery_state  = request.form.get('delivery_state', 'MN').strip()
+    delivery_zip    = request.form.get('delivery_zip', '').strip()
+    pickup_stairs   = request.form.get('pickup_stairs') == '1'
+    delivery_stairs = request.form.get('delivery_stairs') == '1'
+    need_loading    = request.form.get('need_loading') == '1'
+    need_unloading  = request.form.get('need_unloading') == '1'
+    preferred_date  = request.form.get('preferred_date', '').strip() or None
+    preferred_time  = request.form.get('preferred_time', '').strip() or None
+    special_instructions = request.form.get('special_instructions', '').strip() or None
+
+    if not item_description:
+        flash("Please describe what needs to be delivered.", "error")
+        return render_template('standalone_delivery_request_form.html',
+                               prefill_name=prefill_name, prefill_phone=prefill_phone)
+    if not pickup_zip or not delivery_zip:
+        flash("Pickup and drop-off ZIP codes are required.", "error")
+        return render_template('standalone_delivery_request_form.html',
+                               prefill_name=prefill_name, prefill_phone=prefill_phone)
+
+    # Build public job description (no street addresses)
+    extras = []
+    if approx_dimensions: extras.append(f"Size: {approx_dimensions}")
+    if approx_weight:     extras.append(f"Weight: {approx_weight}")
+    extras.append(f"{item_count} item(s)")
+    if pickup_stairs:   extras.append("stairs at pickup")
+    if delivery_stairs: extras.append("stairs at delivery")
+    if need_loading:    extras.append("loading help needed")
+    if need_unloading:  extras.append("unloading help needed")
+    job_desc = item_description + (" | " + " | ".join(extras) if extras else "")
+    if special_instructions:
+        job_desc += f"\nNotes: {special_instructions}"
+
+    # Combine size + weight for the dimensions field
+    dim_parts = [p for p in [approx_dimensions, (f"~{approx_weight}" if approx_weight else None)] if p]
+    combined_dimensions = " / ".join(dim_parts) if dim_parts else None
+
+    # Create Job so the request surfaces in admin/hauler queues
+    job = Job(
+        customer_id=current_user.id,
+        customer_name=contact_name,
+        customer_phone=contact_phone,
+        pickup_address=f"{pickup_city}, {pickup_state} {pickup_zip}".strip(', '),
+        pickup_zip=pickup_zip,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        job_description=job_desc,
+        service_type='standalone_delivery',
+        status='open',
+    )
+    db.session.add(job)
+    db.session.flush()
+
+    dr = DeliveryRequest(
+        listing_id=None,
+        buyer_id=current_user.id,
+        seller_id=None,
+        pickup_address=pickup_address,
+        pickup_city=pickup_city,
+        pickup_state=pickup_state,
+        pickup_zip=pickup_zip,
+        pickup_stairs=pickup_stairs,
+        delivery_address=delivery_address,
+        delivery_city=delivery_city,
+        delivery_state=delivery_state,
+        delivery_zip=delivery_zip,
+        delivery_stairs=delivery_stairs,
+        item_description=item_description,
+        approx_dimensions=combined_dimensions,
+        item_count=item_count,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        special_instructions=special_instructions,
+        need_loading=need_loading,
+        need_unloading=need_unloading,
+        job_id=job.id,
+        status='requested',
+    )
+    db.session.add(dr)
+    db.session.commit()
+
+    # Notify admin
+    try:
+        notify_admin_new_request_sms(job.id, contact_name, 'standalone_delivery', pickup_zip)
+    except Exception as _e:
+        app.logger.error("Standalone delivery admin notify failed: %s", _e)
+
+    try:
+        from notification_service import notify_delivery_request as _ndr
+        admin_users = User.query.filter_by(is_admin=True).all()
+        for _admin in admin_users:
+            _ndr(admin_user_id=_admin.id,
+                 buyer_name=contact_name,
+                 listing_title=item_description,
+                 dr_id=dr.id)
+    except Exception:
+        pass
+
+    flash("Delivery request submitted! JHE Haul will review your request and send you a quote.", "success")
+    return redirect(url_for('delivery_detail', dr_id=dr.id))
+
+
 @app.route("/my-deliveries")
 @require_login
 def my_deliveries():

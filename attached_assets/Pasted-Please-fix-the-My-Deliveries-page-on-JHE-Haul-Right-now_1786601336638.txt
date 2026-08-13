@@ -1,0 +1,140 @@
+Please fix the My Deliveries page on JHE Haul.
+
+Right now the page shows Browse Marketplace buttons when there are no delivery requests.
+
+That is not the main purpose of this page.
+
+Main Purpose of My Deliveries
+
+This page should allow a user to:
+
+1. Submit a delivery request
+2. Get a quote from JHE Haul
+3. Track their submitted delivery requests and status
+
+Replace Browse Marketplace With Request Delivery
+
+Remove the large Browse Marketplace button from the empty-state card.
+
+Also remove the top-right Browse Marketplace button from this page if it is only there as a duplicate action.
+
+Replace the main action with:
+
+🚚 Request Delivery / Get a Quote
+
+The empty state should say something like:
+
+No delivery requests yet
+
+Need something delivered? Submit a delivery request and JHE Haul will review the details and provide a quote.
+
+Button:
+
+🚚 Request Delivery
+
+Delivery Request Form
+
+When the user presses Request Delivery, open a delivery request form.
+
+Include fields such as:
+
+* Pickup address/location
+* Delivery/drop-off address
+* Pickup city/state/ZIP
+* Drop-off city/state/ZIP
+* What needs to be delivered
+* Item description
+* Approximate size
+* Approximate weight if known
+* Quantity
+* Preferred pickup date
+* Preferred delivery date/time
+* Contact name
+* Contact phone
+* Additional instructions
+
+Allow the customer to upload photos of the item(s) being delivered if needed.
+
+Marketplace Purchase Option
+
+If the delivery request comes from a JHE Marketplace listing, allow the listing information to be attached automatically when possible.
+
+For example:
+
+Request Delivery for This Item
+
+Then prefill:
+
+* Listing title
+* Listing photo
+* Pickup location if available
+* Seller/listing reference
+
+Do NOT expose private seller information that should remain protected.
+
+Quote Workflow
+
+After the customer submits the delivery request:
+
+* Save the request
+* Show it under My Deliveries
+* Set an initial status such as:
+
+Quote Requested
+
+JHE Haul/Admin should then be able to review the request and enter/send a delivery quote.
+
+Suggested delivery statuses:
+
+Quote Requested
+Quote Sent
+Accepted
+Scheduled
+In Progress
+Delivered
+Cancelled
+
+Do not automatically accept or schedule a delivery before JHE Haul provides the quote.
+
+My Deliveries Page
+
+Once requests exist, show them as delivery cards with information such as:
+
+* Request number
+* Pickup area
+* Drop-off area
+* Item/listing
+* Requested date
+* Quote amount when available
+* Current status
+
+The user should be able to tap a request to view the full details.
+
+Important — Do Not Change Anything Else
+
+This is a targeted update to the My Deliveries / delivery-request workflow only.
+
+Do NOT:
+
+* Redesign Marketplace
+* Change Browse
+* Change Sell
+* Change Messages
+* Change Account
+* Change marketplace listing forms
+* Change marketplace navigation
+* Change current colors/layout outside this delivery feature
+* Refactor unrelated code
+* Remove any other working feature
+
+Keep everything else exactly as it is.
+
+After completing the change:
+
+1. Test submitting a new delivery request.
+2. Confirm it appears under My Deliveries.
+3. Confirm admin/JHE Haul can review it and provide a quote.
+4. Test on iPhone/mobile and desktop.
+5. Commit and push to production.
+6. Confirm DigitalOcean deployment succeeds.
+7. Verify the workflow on the LIVE jhehaul.com site before marking complete.
