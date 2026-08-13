@@ -138,6 +138,7 @@
             style="position:absolute;top:16px;right:16px;"
             data-listing-id="{{ listing.id }}"
             data-csrf="{{ csrf_token() }}"
+            {% if not visible %}data-unavailable="1"{% endif %}
             onclick="unsaveItem(this)">✕ Remove</button>
   </div>
   {% endfor %}
@@ -228,11 +229,13 @@
     maybeShowEmptyState();
   }
 
-  function showToast(listingId, csrf, wrapper, btn) {
+  function showToast(listingId, csrf, wrapper, btn, unavailable) {
     // Commit any previously pending removal before replacing the undo slot
     commitPreviousRemoval();
-    _undo = { listingId, csrf, wrapper, btn };
+    _undo = { listingId, csrf, wrapper, btn, unavailable: !!unavailable };
     document.getElementById('unsave-toast').style.display = 'flex';
+    // Show Undo button only for listings that can actually be re-saved
+    document.getElementById('undo-btn').style.display = unavailable ? 'none' : '';
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(closeToast, 5000);
   }
@@ -258,6 +261,8 @@
     const csrf      = btn.dataset.csrf;
     const wrapper   = btn.parentElement;
 
+    const unavailable = btn.dataset.unavailable === '1';
+
     postFavorite(listingId, csrf)
       .then(data => {
         if (!data || data.favorited !== false) {
@@ -281,7 +286,7 @@
           wrapper.style.display = 'none';
         }, 260);
 
-        showToast(listingId, csrf, wrapper, btn);
+        showToast(listingId, csrf, wrapper, btn, unavailable);
       })
       .catch(() => { btn.disabled = false; });
   };
@@ -291,11 +296,20 @@
   document.getElementById('undo-btn').addEventListener('click', function () {
     if (!_undo) return;
 
-    const { listingId, csrf, wrapper, btn } = _undo;
+    const { listingId, csrf, wrapper, btn, unavailable } = _undo;
     _undo = null;
 
-    // Dismiss toast (no empty-state check — we're restoring the card)
     clearTimeout(_toastTimer);
+
+    // Unavailable listings cannot be re-saved — just close the toast and leave
+    // the card hidden. The badge count is already correct from the Remove action.
+    if (unavailable) {
+      document.getElementById('unsave-toast').style.display = 'none';
+      maybeShowEmptyState();
+      return;
+    }
+
+    // Dismiss toast (no empty-state check — we're restoring the card)
     document.getElementById('unsave-toast').style.display = 'none';
 
     // Cancel the per-card animation timer
