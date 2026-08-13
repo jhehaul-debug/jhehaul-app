@@ -684,7 +684,7 @@
           <div class="form-group">
             <label class="form-label">Year <span class="req">*</span></label>
             <input class="form-control" type="number" name="vehicle_year" id="vehicleYear"
-                   value="{{ listing.vehicle_year or '' }}" min="1886" max="2026" placeholder="e.g. 2018">
+                   value="{{ listing.vehicle_year or '' }}" min="1886" max="2030" placeholder="e.g. 2018">
           </div>
           <div class="form-group">
             <label class="form-label">Mileage</label>
@@ -692,32 +692,47 @@
                    value="{{ listing.vehicle_mileage or '' }}" min="0" placeholder="e.g. 45000">
           </div>
         </div>
+
+        {# ── Make (searchable) ── #}
         <div class="form-group">
           <label class="form-label">Make <span class="req">*</span></label>
+          <input type="text" id="makeSearch" class="form-control"
+                 placeholder="🔍 Type to filter makes…" autocomplete="off"
+                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_make" id="vehicleMake">
             <option value="">— Select make —</option>
-            {% set _makes = ['Acura','Alfa Romeo','Audi','BMW','Buick','Cadillac','Chevrolet',
-                             'Chrysler','Dodge','Fiat','Ford','Genesis','GMC','Honda','Hyundai',
-                             'Infiniti','Jaguar','Jeep','Kia','Land Rover','Lexus','Lincoln',
-                             'Mazda','Mercedes-Benz','Mini','Mitsubishi','Nissan','Porsche',
-                             'Ram','Subaru','Tesla','Toyota','Volkswagen','Volvo','Other'] %}
-            {% for m in _makes %}
+            {% for m in VEHICLE_MAKES %}
             <option value="{{ m }}" {{ 'selected' if listing.vehicle_make == m }}>{{ m }}</option>
             {% endfor %}
+            <option value="Other" {{ 'selected' if listing.vehicle_make and listing.vehicle_make not in VEHICLE_MAKES }}>Other / Not Listed</option>
           </select>
         </div>
-        <div class="form-group" id="vehicleMakeOtherGroup" style="display:none">
+        <div class="form-group" id="vehicleMakeOtherGroup"
+             style="display:{{ '' if listing.vehicle_make and listing.vehicle_make not in VEHICLE_MAKES else 'none' }}">
           <label class="form-label">Specify Make</label>
           <input class="form-control" type="text" name="vehicle_make_other" id="vehicleMakeOther"
-                 value="{{ listing.vehicle_make if listing.vehicle_make and listing.vehicle_make not in ['Acura','Alfa Romeo','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler','Dodge','Fiat','Ford','Genesis','GMC','Honda','Hyundai','Infiniti','Jaguar','Jeep','Kia','Land Rover','Lexus','Lincoln','Mazda','Mercedes-Benz','Mini','Mitsubishi','Nissan','Porsche','Ram','Subaru','Tesla','Toyota','Volkswagen','Volvo','Other'] else '' }}"
+                 value="{{ listing.vehicle_make if listing.vehicle_make and listing.vehicle_make not in VEHICLE_MAKES else '' }}"
                  placeholder="Enter make not listed above">
         </div>
+
+        {# ── Model (searchable, dependent on make) ── #}
         <div class="form-group">
           <label class="form-label">Model <span class="req">*</span></label>
-          <input class="form-control" type="text" name="vehicle_model" id="vehicleModel"
-                 value="{{ listing.vehicle_model or '' }}" placeholder="e.g. Camry" list="vehicleModelList" autocomplete="off">
-          <datalist id="vehicleModelList"></datalist>
+          <input type="text" id="modelSearch" class="form-control"
+                 placeholder="🔍 Type to filter models…" autocomplete="off"
+                 style="margin-bottom:5px;border-color:#a5b4fc">
+          <select class="form-control" name="vehicle_model" id="vehicleModel">
+            <option value="">— Select model —</option>
+            <option value="Other">Other / Not Listed</option>
+          </select>
         </div>
+        <div class="form-group" id="vehicleModelOtherGroup" style="display:none">
+          <label class="form-label">Specify Model</label>
+          <input class="form-control" type="text" name="vehicle_model_other" id="vehicleModelOther"
+                 value="" placeholder="Enter model not listed above">
+        </div>
+        {# Carry existing model value for JS restore on page load #}
+        <input type="hidden" id="vehicleModelInit" value="{{ listing.vehicle_model or '' }}">
 
         <details {% if listing.vehicle_trim or listing.vehicle_body_style or listing.vehicle_exterior_color or listing.vehicle_transmission or listing.vehicle_fuel_type or listing.vehicle_drivetrain or listing.vehicle_title_status %}open{% endif %}>
           <summary style="cursor:pointer;font-size:.9rem;font-weight:600;color:#4f46e5;padding:6px 0 12px;user-select:none">More Vehicle Details ▾</summary>
@@ -834,61 +849,99 @@
     toggleVehicleFields(catSelect.value);
   }
 
-  // ── Vehicle models datalist ────────────────────────────────────────────────
-  const VEHICLE_MODELS = {
-    'Acura':         ['ILX','MDX','RDX','TLX','NSX','RLX','TL','TSX','ZDX'],
-    'Audi':          ['A3','A4','A5','A6','A7','A8','Q3','Q5','Q7','Q8','TT','e-tron','R8','S4','S5','RS5'],
-    'BMW':           ['1 Series','2 Series','3 Series','4 Series','5 Series','6 Series','7 Series','8 Series','X1','X2','X3','X4','X5','X6','X7','Z4','M3','M4','M5'],
-    'Buick':         ['Enclave','Encore','Envision','LaCrosse','Verano'],
-    'Cadillac':      ['ATS','CT4','CT5','CT6','Escalade','XT4','XT5','XT6','SRX'],
-    'Chevrolet':     ['Blazer','Camaro','Colorado','Corvette','Equinox','Express','Impala','Malibu','Silverado 1500','Silverado 2500HD','Silverado 3500HD','Suburban','Tahoe','Trailblazer','Traverse','Trax'],
-    'Chrysler':      ['300','Pacifica','Voyager'],
-    'Dodge':         ['Challenger','Charger','Dart','Durango','Grand Caravan','Journey','Ram 1500'],
-    'Ford':          ['Bronco','Bronco Sport','EcoSport','Edge','Escape','Expedition','Explorer','F-150','F-250','F-350','Maverick','Mustang','Mustang Mach-E','Ranger','Transit','Transit Connect'],
-    'Genesis':       ['G70','G80','G90','GV70','GV80'],
-    'GMC':           ['Acadia','Canyon','Envoy','Sierra 1500','Sierra 2500HD','Sierra 3500HD','Terrain','Yukon','Yukon XL'],
-    'Honda':         ['Accord','Civic','CR-V','CR-Z','Element','Fit','HR-V','Insight','Odyssey','Passport','Pilot','Prologue','Ridgeline'],
-    'Hyundai':       ['Accent','Azera','Elantra','IONIQ','IONIQ 5','IONIQ 6','Kona','Palisade','Santa Cruz','Santa Fe','Sonata','Tucson','Venue'],
-    'Infiniti':      ['Q50','Q60','Q70','QX50','QX55','QX60','QX80'],
-    'Jaguar':        ['E-Pace','F-Pace','F-Type','I-Pace','XE','XF','XJ'],
-    'Jeep':          ['Cherokee','Compass','Gladiator','Grand Cherokee','Grand Cherokee L','Renegade','Wagoneer','Wrangler'],
-    'Kia':           ['Carnival','EV6','Forte','K5','Niro','Seltos','Sorento','Soul','Sportage','Stinger','Telluride'],
-    'Land Rover':    ['Defender','Discovery','Discovery Sport','Freelander','Range Rover','Range Rover Evoque','Range Rover Sport','Range Rover Velar'],
-    'Lexus':         ['CT','ES','GS','GX','IS','LC','LS','LX','NX','RC','RX','UX'],
-    'Lincoln':       ['Aviator','Corsair','MKC','MKX','MKZ','Navigator'],
-    'Mazda':         ['CX-3','CX-30','CX-5','CX-50','CX-9','Mazda3','Mazda6','MX-5 Miata','MX-30'],
-    'Mercedes-Benz': ['A-Class','C-Class','CLA','CLS','E-Class','EQB','EQS','G-Class','GLA','GLB','GLC','GLE','GLS','S-Class','SL','AMG GT'],
-    'Mini':          ['Clubman','Convertible','Cooper','Countryman','Paceman'],
-    'Mitsubishi':    ['Eclipse Cross','Galant','Mirage','Outlander','Outlander Sport'],
-    'Nissan':        ['370Z','Altima','Ariya','Armada','Frontier','GT-R','Kicks','LEAF','Maxima','Murano','Pathfinder','Rogue','Rogue Sport','Sentra','Titan','Versa'],
-    'Porsche':       ['718 Boxster','718 Cayman','911','Cayenne','Macan','Panamera','Taycan'],
-    'Ram':           ['1500','2500','3500','ProMaster','ProMaster City'],
-    'Subaru':        ['Ascent','BRZ','Crosstrek','Forester','Impreza','Legacy','Outback','Solterra','WRX'],
-    'Tesla':         ['Cybertruck','Model 3','Model S','Model X','Model Y','Roadster'],
-    'Toyota':        ['4Runner','Avalon','bZ4X','Camry','Corolla','Corolla Cross','FJ Cruiser','GR86','Highlander','Land Cruiser','Mirai','Prius','RAV4','Sequoia','Sienna','Supra','Tacoma','Tundra','Venza'],
-    'Volkswagen':    ['Atlas','Golf','ID.4','Jetta','Passat','Taos','Tiguan','Touareg'],
-    'Volvo':         ['C40 Recharge','S60','S90','V60','V90','XC40','XC60','XC90'],
-  };
+  // ── Vehicle make/model searchable selects ─────────────────────────────────
+  const VEHICLE_MODELS_DATA = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
 
-  function updateModels() {
-    const make = document.getElementById('vehicleMake')?.value || '';
-    const dl = document.getElementById('vehicleModelList');
-    if (!dl) return;
-    dl.innerHTML = '';
-    (VEHICLE_MODELS[make] || []).forEach(m => {
-      const o = document.createElement('option'); o.value = m; dl.appendChild(o);
+  // ── Make: filter-above-select ──────────────────────────────────────────────
+  const makeSearch  = document.getElementById('makeSearch');
+  const makeSelect  = document.getElementById('vehicleMake');
+  let _allMakeOpts  = makeSelect ? Array.from(makeSelect.options) : [];
+
+  makeSearch?.addEventListener('input', () => {
+    const q   = makeSearch.value.toLowerCase();
+    const cur = makeSelect.value;
+    makeSelect.innerHTML = '';
+    _allMakeOpts
+      .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
+      .forEach(o => makeSelect.appendChild(o.cloneNode(true)));
+    if (makeSelect.querySelector(`option[value="${CSS.escape(cur)}"]`)) makeSelect.value = cur;
+  });
+
+  // ── Model: dependent select rebuilt on make change ─────────────────────────
+  const modelSearch = document.getElementById('modelSearch');
+  const modelSelect = document.getElementById('vehicleModel');
+  let _allModelOpts = [];
+
+  function _buildModelOpts(make) {
+    const models = VEHICLE_MODELS_DATA[make] || [];
+    _allModelOpts = [];
+    const blank = document.createElement('option');
+    blank.value = ''; blank.textContent = '— Select model —';
+    _allModelOpts.push(blank);
+    models.forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m;
+      _allModelOpts.push(o);
     });
-    const og = document.getElementById('vehicleMakeOtherGroup');
-    if (og) og.style.display = make === 'Other' ? '' : 'none';
+    const oth = document.createElement('option');
+    oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
+    _allModelOpts.push(oth);
   }
-  document.getElementById('vehicleMake')?.addEventListener('change', () => { updateModels(); updateAutoTitle(); });
-  updateModels();
 
-  // Show "Other make" field on page-load if the stored make was custom
-  if (document.getElementById('vehicleMake')?.value === 'Other') {
-    const og = document.getElementById('vehicleMakeOtherGroup');
-    if (og) og.style.display = '';
+  function _renderModelOpts(filterQ) {
+    if (!modelSelect) return;
+    const q   = (filterQ || '').toLowerCase();
+    const cur = modelSelect.value;
+    modelSelect.innerHTML = '';
+    _allModelOpts
+      .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
+      .forEach(o => modelSelect.appendChild(o.cloneNode(true)));
+    if (modelSelect.querySelector(`option[value="${CSS.escape(cur)}"]`)) modelSelect.value = cur;
   }
+
+  function initModelSelect(make, existingModel) {
+    _buildModelOpts(make);
+    _renderModelOpts('');
+    if (modelSearch) modelSearch.value = '';
+    const og      = document.getElementById('vehicleModelOtherGroup');
+    const otherInp = document.getElementById('vehicleModelOther');
+    if (!existingModel) { if (og) og.style.display = 'none'; return; }
+    const inList = _allModelOpts.some(o => o.value === existingModel && o.value !== 'Other' && o.value !== '');
+    if (inList) {
+      modelSelect.value = existingModel;
+      if (og) og.style.display = 'none';
+    } else {
+      modelSelect.value = 'Other';
+      if (og) og.style.display = '';
+      if (otherInp) otherInp.value = existingModel;
+    }
+  }
+
+  modelSearch?.addEventListener('input', () => _renderModelOpts(modelSearch.value));
+
+  modelSelect?.addEventListener('change', () => {
+    const og = document.getElementById('vehicleModelOtherGroup');
+    if (og) og.style.display = (modelSelect.value === 'Other') ? '' : 'none';
+    updateAutoTitle();
+  });
+
+  // Make change — rebuild models, toggle make-other field
+  function onMakeChange() {
+    const make = makeSelect?.value || '';
+    const og   = document.getElementById('vehicleMakeOtherGroup');
+    if (og) og.style.display = (make === 'Other') ? '' : 'none';
+    initModelSelect(make, '');
+    updateAutoTitle();
+  }
+  makeSelect?.addEventListener('change', onMakeChange);
+
+  // Page-load restore existing make + model
+  (function() {
+    const initMake  = makeSelect?.value || '';
+    const initModel = document.getElementById('vehicleModelInit')?.value || '';
+    const makOg = document.getElementById('vehicleMakeOtherGroup');
+    if (makOg) makOg.style.display = (initMake === 'Other') ? '' : 'none';
+    initModelSelect(initMake, initModel);
+  })();
 
   // ── Auto-title generation ──────────────────────────────────────────────────
   const titleInput = document.querySelector('input[name="title"]');
@@ -902,12 +955,12 @@
   }
 
   function buildVehicleTitle() {
-    const year  = document.getElementById('vehicleYear')?.value.trim() || '';
-    const makeEl = document.getElementById('vehicleMake');
-    let make = makeEl?.value || '';
-    if (make === 'Other') make = document.getElementById('vehicleMakeOther')?.value.trim() || '';
-    const model = document.getElementById('vehicleModel')?.value.trim() || '';
-    const trim  = document.getElementById('vehicleTrim')?.value.trim()  || '';
+    const year = document.getElementById('vehicleYear')?.value.trim() || '';
+    let make   = makeSelect?.value || '';
+    if (make === 'Other')  make  = document.getElementById('vehicleMakeOther')?.value.trim()  || '';
+    let model  = modelSelect?.value || '';
+    if (model === 'Other') model = document.getElementById('vehicleModelOther')?.value.trim() || '';
+    const trim = document.getElementById('vehicleTrim')?.value.trim() || '';
     return [year, make, model, trim].filter(Boolean).join(' ');
   }
 
@@ -917,7 +970,7 @@
     if (gen && titleInput) titleInput.value = gen;
   }
 
-  ['vehicleYear','vehicleMakeOther','vehicleModel','vehicleTrim'].forEach(id => {
+  ['vehicleYear','vehicleMakeOther','vehicleModelOther','vehicleTrim'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateAutoTitle);
   });
   </script>

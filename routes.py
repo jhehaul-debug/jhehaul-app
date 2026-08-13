@@ -142,6 +142,15 @@ def inject_globals():
     return result
 
 
+import json as _json
+from vehicle_data import VEHICLE_MAKES_MODELS as _VMM, VEHICLE_MAKES as _VMAKES
+_VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
+
+@app.context_processor
+def _inject_vehicle_data():
+    return dict(VEHICLE_MAKES=_VMAKES, VEHICLE_MAKES_MODELS_JSON=_VEHICLE_MAKES_MODELS_JSON)
+
+
 @app.before_request
 def make_session_permanent():
     session.permanent = True
@@ -888,7 +897,12 @@ def _apply_vehicle_fields(listing, form):
     else:
         listing.vehicle_make = _make[:50] if _make else None
 
-    listing.vehicle_model          = (form.get('vehicle_model', '').strip()[:100] or None)
+    _vmodel = form.get('vehicle_model', '').strip()
+    if _vmodel == 'Other':
+        _vmodel_other = form.get('vehicle_model_other', '').strip()
+        listing.vehicle_model = _vmodel_other[:100] if _vmodel_other else None
+    else:
+        listing.vehicle_model = _vmodel[:100] if _vmodel else None
     listing.vehicle_trim           = (form.get('vehicle_trim', '').strip()[:100] or None)
     listing.vehicle_body_style     = (form.get('vehicle_body_style', '').strip()[:50] or None)
     listing.vehicle_exterior_color = (form.get('vehicle_exterior_color', '').strip()[:50] or None)

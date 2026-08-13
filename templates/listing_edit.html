@@ -323,7 +323,7 @@
           <div class="form-group">
             <label class="form-label">Year</label>
             <input class="form-control" type="number" name="vehicle_year" id="vehicleYearEdit"
-                   value="{{ listing.vehicle_year or '' }}" min="1886" max="2026" placeholder="e.g. 2018">
+                   value="{{ listing.vehicle_year or '' }}" min="1886" max="2030" placeholder="e.g. 2018">
           </div>
           <div class="form-group">
             <label class="form-label">Mileage</label>
@@ -331,32 +331,46 @@
                    value="{{ listing.vehicle_mileage or '' }}" min="0" placeholder="e.g. 45000">
           </div>
         </div>
+
+        {# ── Make (searchable) ── #}
         <div class="form-group">
           <label class="form-label">Make</label>
+          <input type="text" id="makeSearchEdit" class="form-control"
+                 placeholder="🔍 Type to filter makes…" autocomplete="off"
+                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_make" id="vehicleMakeEdit">
             <option value="">— Select make —</option>
-            {% set _makes_e = ['Acura','Alfa Romeo','Audi','BMW','Buick','Cadillac','Chevrolet',
-                               'Chrysler','Dodge','Fiat','Ford','Genesis','GMC','Honda','Hyundai',
-                               'Infiniti','Jaguar','Jeep','Kia','Land Rover','Lexus','Lincoln',
-                               'Mazda','Mercedes-Benz','Mini','Mitsubishi','Nissan','Porsche',
-                               'Ram','Subaru','Tesla','Toyota','Volkswagen','Volvo','Other'] %}
-            {% for m in _makes_e %}
+            {% for m in VEHICLE_MAKES %}
             <option value="{{ m }}" {{ 'selected' if listing.vehicle_make == m }}>{{ m }}</option>
             {% endfor %}
+            <option value="Other" {{ 'selected' if listing.vehicle_make and listing.vehicle_make not in VEHICLE_MAKES }}>Other / Not Listed</option>
           </select>
         </div>
-        <div class="form-group" id="vehicleMakeOtherGroupEdit" style="display:{{ '' if listing.vehicle_make and listing.vehicle_make not in ['Acura','Alfa Romeo','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler','Dodge','Fiat','Ford','Genesis','GMC','Honda','Hyundai','Infiniti','Jaguar','Jeep','Kia','Land Rover','Lexus','Lincoln','Mazda','Mercedes-Benz','Mini','Mitsubishi','Nissan','Porsche','Ram','Subaru','Tesla','Toyota','Volkswagen','Volvo'] else 'none' }}">
+        <div class="form-group" id="vehicleMakeOtherGroupEdit"
+             style="display:{{ '' if listing.vehicle_make and listing.vehicle_make not in VEHICLE_MAKES else 'none' }}">
           <label class="form-label">Specify Make</label>
           <input class="form-control" type="text" name="vehicle_make_other" id="vehicleMakeOtherEdit"
-                 value="{{ listing.vehicle_make if listing.is_vehicle and listing.vehicle_make not in ['Acura','Alfa Romeo','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler','Dodge','Fiat','Ford','Genesis','GMC','Honda','Hyundai','Infiniti','Jaguar','Jeep','Kia','Land Rover','Lexus','Lincoln','Mazda','Mercedes-Benz','Mini','Mitsubishi','Nissan','Porsche','Ram','Subaru','Tesla','Toyota','Volkswagen','Volvo','Other'] else '' }}"
+                 value="{{ listing.vehicle_make if listing.is_vehicle and listing.vehicle_make not in VEHICLE_MAKES else '' }}"
                  placeholder="Enter make not listed above">
         </div>
+
+        {# ── Model (searchable, dependent on make) ── #}
         <div class="form-group">
           <label class="form-label">Model</label>
-          <input class="form-control" type="text" name="vehicle_model" id="vehicleModelEdit"
-                 value="{{ listing.vehicle_model or '' }}" placeholder="e.g. Camry" list="vehicleModelListEdit" autocomplete="off">
-          <datalist id="vehicleModelListEdit"></datalist>
+          <input type="text" id="modelSearchEdit" class="form-control"
+                 placeholder="🔍 Type to filter models…" autocomplete="off"
+                 style="margin-bottom:5px;border-color:#a5b4fc">
+          <select class="form-control" name="vehicle_model" id="vehicleModelEdit">
+            <option value="">— Select model —</option>
+            <option value="Other">Other / Not Listed</option>
+          </select>
         </div>
+        <div class="form-group" id="vehicleModelOtherGroupEdit" style="display:none">
+          <label class="form-label">Specify Model</label>
+          <input class="form-control" type="text" name="vehicle_model_other" id="vehicleModelOtherEdit"
+                 value="" placeholder="Enter model not listed above">
+        </div>
+        <input type="hidden" id="vehicleModelInitEdit" value="{{ listing.vehicle_model or '' }}">
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Trim</label>
@@ -816,42 +830,89 @@ function toggleVehicleFieldsEdit(catId) {
 }
 if (catSelect?.value) toggleVehicleFieldsEdit(catSelect.value);
 
-/* ─── Vehicle models datalist (edit page) ─── */
-const VEHICLE_MODELS_E = {
-  'Acura':['ILX','MDX','RDX','TLX','NSX','RLX'],'Audi':['A3','A4','A5','A6','Q3','Q5','Q7','Q8','TT','e-tron','R8','S4'],
-  'BMW':['1 Series','2 Series','3 Series','4 Series','5 Series','7 Series','X1','X2','X3','X4','X5','X6','X7','M3','M4','M5'],
-  'Buick':['Enclave','Encore','Envision','LaCrosse'],'Cadillac':['ATS','CT4','CT5','CT6','Escalade','XT4','XT5','XT6'],
-  'Chevrolet':['Blazer','Camaro','Colorado','Corvette','Equinox','Malibu','Silverado 1500','Silverado 2500HD','Suburban','Tahoe','Traverse','Trax'],
-  'Chrysler':['300','Pacifica','Voyager'],'Dodge':['Challenger','Charger','Durango','Grand Caravan','Journey'],
-  'Ford':['Bronco','EcoSport','Edge','Escape','Expedition','Explorer','F-150','F-250','F-350','Maverick','Mustang','Mustang Mach-E','Ranger','Transit'],
-  'Genesis':['G70','G80','G90','GV70','GV80'],'GMC':['Acadia','Canyon','Sierra 1500','Sierra 2500HD','Sierra 3500HD','Terrain','Yukon'],
-  'Honda':['Accord','Civic','CR-V','Fit','HR-V','Odyssey','Passport','Pilot','Ridgeline'],
-  'Hyundai':['Accent','Elantra','IONIQ 5','IONIQ 6','Kona','Palisade','Santa Cruz','Santa Fe','Sonata','Tucson'],
-  'Infiniti':['Q50','Q60','QX50','QX60','QX80'],'Jaguar':['E-Pace','F-Pace','F-Type','I-Pace','XE','XF'],
-  'Jeep':['Cherokee','Compass','Gladiator','Grand Cherokee','Renegade','Wagoneer','Wrangler'],
-  'Kia':['Carnival','EV6','Forte','K5','Niro','Seltos','Sorento','Soul','Sportage','Stinger','Telluride'],
-  'Land Rover':['Defender','Discovery','Discovery Sport','Range Rover','Range Rover Evoque','Range Rover Sport'],
-  'Lexus':['ES','GS','GX','IS','LC','LS','LX','NX','RC','RX','UX'],'Lincoln':['Aviator','Corsair','MKZ','Navigator'],
-  'Mazda':['CX-3','CX-30','CX-5','CX-50','CX-9','Mazda3','Mazda6','MX-5 Miata'],
-  'Mercedes-Benz':['A-Class','C-Class','CLA','CLS','E-Class','G-Class','GLA','GLB','GLC','GLE','GLS','S-Class','SL'],
-  'Mini':['Clubman','Convertible','Cooper','Countryman'],'Mitsubishi':['Eclipse Cross','Mirage','Outlander','Outlander Sport'],
-  'Nissan':['370Z','Altima','Armada','Frontier','Kicks','LEAF','Maxima','Murano','Pathfinder','Rogue','Sentra','Titan','Versa'],
-  'Porsche':['718 Boxster','718 Cayman','911','Cayenne','Macan','Panamera','Taycan'],
-  'Ram':['1500','2500','3500','ProMaster'],'Subaru':['Ascent','BRZ','Crosstrek','Forester','Impreza','Legacy','Outback','WRX'],
-  'Tesla':['Cybertruck','Model 3','Model S','Model X','Model Y'],
-  'Toyota':['4Runner','Avalon','Camry','Corolla','FJ Cruiser','Highlander','Land Cruiser','Prius','RAV4','Sequoia','Sienna','Tacoma','Tundra','Venza'],
-  'Volkswagen':['Atlas','Golf','ID.4','Jetta','Passat','Taos','Tiguan'],'Volvo':['S60','S90','XC40','XC60','XC90'],
-};
-function updateModelsEdit() {
-  const make = document.getElementById('vehicleMakeEdit')?.value || '';
-  const dl = document.getElementById('vehicleModelListEdit');
-  if (!dl) return;
-  dl.innerHTML = '';
-  (VEHICLE_MODELS_E[make] || []).forEach(m => { const o = document.createElement('option'); o.value = m; dl.appendChild(o); });
-  const og = document.getElementById('vehicleMakeOtherGroupEdit');
-  if (og) og.style.display = make === 'Other' ? '' : 'none';
+/* ─── Vehicle make/model searchable selects (edit page) ─── */
+const VMD_E = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+
+// Make search
+const makeSearchEdit = document.getElementById('makeSearchEdit');
+const makeSelectEdit = document.getElementById('vehicleMakeEdit');
+let _allMakeOptsE = makeSelectEdit ? Array.from(makeSelectEdit.options) : [];
+makeSearchEdit?.addEventListener('input', () => {
+  const q = makeSearchEdit.value.toLowerCase();
+  const cur = makeSelectEdit.value;
+  makeSelectEdit.innerHTML = '';
+  _allMakeOptsE
+    .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
+    .forEach(o => makeSelectEdit.appendChild(o.cloneNode(true)));
+  if (makeSelectEdit.querySelector(`option[value="${CSS.escape(cur)}"]`)) makeSelectEdit.value = cur;
+});
+
+// Model select helpers
+const modelSearchEdit  = document.getElementById('modelSearchEdit');
+const modelSelectEdit  = document.getElementById('vehicleModelEdit');
+let _allModelOptsE = [];
+
+function _buildModelOptsE(make) {
+  const models = VMD_E[make] || [];
+  _allModelOptsE = [];
+  const blank = document.createElement('option'); blank.value = ''; blank.textContent = '— Select model —';
+  _allModelOptsE.push(blank);
+  models.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; _allModelOptsE.push(o); });
+  const oth = document.createElement('option'); oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
+  _allModelOptsE.push(oth);
 }
-document.getElementById('vehicleMakeEdit')?.addEventListener('change', updateModelsEdit);
-updateModelsEdit();
+
+function _renderModelOptsE(filterQ) {
+  if (!modelSelectEdit) return;
+  const q = (filterQ || '').toLowerCase();
+  const cur = modelSelectEdit.value;
+  modelSelectEdit.innerHTML = '';
+  _allModelOptsE
+    .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
+    .forEach(o => modelSelectEdit.appendChild(o.cloneNode(true)));
+  if (modelSelectEdit.querySelector(`option[value="${CSS.escape(cur)}"]`)) modelSelectEdit.value = cur;
+}
+
+function initModelSelectE(make, existingModel) {
+  _buildModelOptsE(make);
+  _renderModelOptsE('');
+  if (modelSearchEdit) modelSearchEdit.value = '';
+  const og = document.getElementById('vehicleModelOtherGroupEdit');
+  const otherInp = document.getElementById('vehicleModelOtherEdit');
+  if (!existingModel) { if (og) og.style.display = 'none'; return; }
+  const inList = _allModelOptsE.some(o => o.value === existingModel && o.value !== 'Other' && o.value !== '');
+  if (inList) {
+    modelSelectEdit.value = existingModel;
+    if (og) og.style.display = 'none';
+  } else {
+    modelSelectEdit.value = 'Other';
+    if (og) og.style.display = '';
+    if (otherInp) otherInp.value = existingModel;
+  }
+}
+
+modelSearchEdit?.addEventListener('input', () => _renderModelOptsE(modelSearchEdit.value));
+
+modelSelectEdit?.addEventListener('change', () => {
+  const og = document.getElementById('vehicleModelOtherGroupEdit');
+  if (og) og.style.display = (modelSelectEdit.value === 'Other') ? '' : 'none';
+});
+
+function onMakeChangeEdit() {
+  const make = makeSelectEdit?.value || '';
+  const og   = document.getElementById('vehicleMakeOtherGroupEdit');
+  if (og) og.style.display = (make === 'Other') ? '' : 'none';
+  initModelSelectE(make, '');
+}
+makeSelectEdit?.addEventListener('change', onMakeChangeEdit);
+
+// Page-load restore
+(function() {
+  const initMake  = makeSelectEdit?.value || '';
+  const initModel = document.getElementById('vehicleModelInitEdit')?.value || '';
+  const makOg = document.getElementById('vehicleMakeOtherGroupEdit');
+  if (makOg) makOg.style.display = (initMake === 'Other') ? '' : 'none';
+  initModelSelectE(initMake, initModel);
+})();
 </script>
 {% endblock %}

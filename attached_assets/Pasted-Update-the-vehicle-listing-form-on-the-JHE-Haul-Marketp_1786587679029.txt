@@ -1,0 +1,43 @@
+Update the vehicle listing form on the JHE Haul Marketplace.
+
+Fix the Make & Model Selector
+
+The current vehicle database is incomplete. For example, I tried to list a Chevrolet Volt, but Volt is not available in the Chevrolet model list.
+
+Please make the following changes:
+
+1. Expand the vehicle database
+    * Add all common U.S. vehicle makes and their models.
+    * Include current AND discontinued models that people may still sell used.
+    * Make sure Chevrolet Volt is included.
+    * Include cars, SUVs, pickup trucks, vans, and other normal passenger vehicles.
+2. Dependent Make/Model dropdown
+    * User selects Make first.
+    * The Model dropdown should then show models belonging to that manufacturer.
+    Example:
+    * Make: Chevrolet
+    * Model: Volt
+3. Add “Other / Not Listed”
+    * Add Other / Not Listed at the bottom of BOTH the Make and Model dropdowns.
+    * If selected, display a text field so the seller can manually enter the correct make or model.
+    * Do not prevent a seller from posting a vehicle simply because it isn’t in our database.
+4. Do not remove existing vehicle listing features
+    * Keep year, mileage, price, VIN (if currently available), condition, photos/video, description, seller information, and all other existing fields working.
+5. Searchable dropdowns
+    * If possible, make Make and Model searchable so users can type the first few letters instead of scrolling through a very long list.
+6. Test before deployment
+    Test at minimum:
+    * Chevrolet → Volt
+    * Chevrolet → Silverado 1500
+    * Chevrolet → Malibu
+    * Ford → F-150
+    * Ford → Mustang
+    * Toyota → Camry
+    * Honda → Accord
+    * Mercedes-Benz → GL-Class
+    * Nissan → Versa
+    * Hyundai → Santa Fe
+7. Deploy the change
+    After completing and testing the update, commit and push all changes to the production branch so the live JHE Haul Marketplace is updated.
+
+Do not just patch Chevrolet Volt. Fix the underlying vehicle make/model dataset so we don’t keep discovering missing vehicles one at a time.
