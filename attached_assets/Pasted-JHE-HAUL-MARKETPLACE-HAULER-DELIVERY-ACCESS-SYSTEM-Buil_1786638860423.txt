@@ -1,0 +1,384 @@
+JHE HAUL MARKETPLACE — HAULER DELIVERY ACCESS SYSTEM
+
+Build a dedicated Hauler Delivery workflow for marketplace listings where the seller/buyer chooses:
+
+JHE HAUL DELIVERY
+
+IMPORTANT:
+
+This is for the NEW JHE Haul Marketplace.
+
+Do not change the buyer/seller marketplace flow except where necessary to connect delivery requests.
+
+Do not break anything else.
+Do not change any unrelated working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+
+1. CREATE DELIVERY REQUEST
+    ==================================================
+
+When a buyer chooses JHE Haul Delivery for a marketplace item, create a Delivery Request linked to:
+
+* Marketplace listing
+* Buyer
+* Seller
+* Pickup location
+* Delivery location
+* Item photos
+* Item description
+* Approximate dimensions if provided
+* Number of items
+* Stairs/elevator information
+* Preferred delivery date/time
+* Special instructions
+
+Do not publicly expose exact pickup or drop-off addresses.
+
+==================================================
+2. HAULER ACCESS
+
+Ordinary marketplace users must NOT automatically see delivery jobs.
+
+Create/retain a separate:
+
+HAULER PROFILE
+
+A user must activate or apply for Hauler access before they can see Available Deliveries.
+
+Hauler account status should support:
+
+* Pending
+* Approved
+* Suspended
+* Rejected
+
+Only APPROVED haulers can access Available Deliveries.
+
+==================================================
+3. AVAILABLE DELIVERIES PAGE
+
+Create an:
+
+AVAILABLE DELIVERIES
+
+screen for approved Haulers.
+
+Before a job is accepted, display only limited information such as:
+
+* Item type
+* Item photo
+* Pickup city/general area
+* Drop-off city/general area
+* Approximate distance
+* Approximate item size/weight if known
+* Stairs/elevator information
+* Preferred delivery date
+* Delivery payout/quote
+* Special equipment requirements if any
+
+DO NOT show exact addresses yet.
+
+DO NOT expose buyer/seller private phone numbers or email addresses.
+
+==================================================
+4. ACCEPT DELIVERY
+
+Allow an approved Hauler to select:
+
+ACCEPT DELIVERY
+
+Before acceptance, verify:
+
+* Hauler is approved
+* Delivery is still available
+* Another Hauler has not already accepted it
+* Delivery has not been cancelled
+
+Prevent two Haulers from accepting the same delivery.
+
+Use proper server-side locking/validation where appropriate.
+
+==================================================
+5. REVEAL EXACT DETAILS AFTER ACCEPTANCE
+
+Once the delivery is successfully assigned to a Hauler, reveal the information necessary to complete the job.
+
+Show assigned Hauler:
+
+* Exact pickup address
+* Exact delivery address
+* Seller pickup instructions
+* Buyer delivery instructions
+* Item details/photos
+* Scheduled date/time
+* Contact method available through the app
+
+Exact addresses must remain hidden from all other Haulers.
+
+==================================================
+6. DELIVERY STATUS
+
+Create delivery status progression:
+
+Available
+Accepted
+Scheduled
+Picked Up
+In Transit
+Delivered
+Cancelled
+
+Hauler should be able to update:
+
+PICKED UP
+
+IN TRANSIT
+
+DELIVERED
+
+Buyer and seller should be able to see the current delivery status inside JHE Haul.
+
+==================================================
+7. IN-APP NOTIFICATIONS
+
+Do NOT use SMS for this workflow right now.
+
+Use IN-APP notifications as the primary method.
+
+Use EMAIL for important activity where appropriate.
+
+Examples:
+
+Hauler:
+“New delivery available near you.”
+
+Buyer:
+“Your JHE Haul delivery has been accepted.”
+
+Seller:
+“A JHE Haul driver has been assigned.”
+
+Buyer:
+“Your item has been picked up.”
+
+Buyer:
+“Your delivery is in transit.”
+
+Buyer/Seller:
+“Delivery completed.”
+
+Do NOT send SMS/Twilio notifications.
+
+Preserve Twilio configuration for possible future use, but disable SMS from this workflow.
+
+==================================================
+8. DELIVERY PRIVACY
+
+Before acceptance:
+
+Haulers can see only GENERAL pickup/drop-off areas.
+
+After acceptance:
+
+Only the assigned Hauler can see exact addresses.
+
+Do not expose:
+
+* Exact address to unassigned Haulers
+* Private email
+* Private phone numbers
+* Internal user IDs
+* Payment information
+
+==================================================
+9. HAULER DASHBOARD
+
+Add Hauler dashboard sections:
+
+Available Deliveries
+Accepted Deliveries
+Scheduled
+In Progress
+Completed
+
+Show useful delivery details without exposing unnecessary personal information.
+
+==================================================
+10. ADMIN CONTROL
+
+Admin must be able to:
+
+* Approve Haulers
+* Reject Haulers
+* Suspend Haulers
+* View delivery requests
+* View assigned Hauler
+* Manually assign/reassign delivery
+* Cancel delivery
+* Update delivery quote/payout
+* Review delivery history
+* View delivery status
+* Resolve delivery disputes where appropriate
+
+==================================================
+11. DELIVERY QUOTE / PAYOUT
+
+Keep delivery pricing/admin-controlled for now unless existing working pricing already handles it safely.
+
+Admin should be able to set:
+
+Customer Delivery Quote
+
+and where applicable:
+
+Hauler Payout
+
+Do not automatically calculate pricing unless that existing feature is already functioning and approved.
+
+==================================================
+12. DELIVERY HISTORY
+
+Store complete delivery history including:
+
+* Created
+* Quoted
+* Accepted
+* Assigned Hauler
+* Picked Up
+* In Transit
+* Delivered
+* Cancelled
+* Relevant timestamps
+
+Do not overwrite historical status information.
+
+==================================================
+13. SECURITY
+
+Server-side authorization must verify:
+
+Only approved Haulers can access Available Deliveries.
+
+Only assigned Hauler can access exact delivery addresses.
+
+Only assigned Hauler/Admin can change delivery status.
+
+Ordinary users cannot view another user’s private delivery details.
+
+==================================================
+14. TESTING
+
+Test:
+
+Ordinary buyer account
+→ Cannot access Available Deliveries
+
+Pending Hauler
+→ Cannot access Available Deliveries
+
+Approved Hauler
+→ Can access Available Deliveries
+
+Unassigned Hauler
+→ Cannot see exact addresses
+
+Approved Hauler accepts job
+→ Delivery becomes unavailable to other Haulers
+
+Assigned Hauler
+→ Exact addresses become visible
+
+Second Hauler attempts to accept same delivery
+→ Rejected
+
+Hauler marks Picked Up
+→ Buyer/seller see status
+
+Hauler marks In Transit
+→ Buyer/seller see status
+
+Hauler marks Delivered
+→ Buyer/seller see completed status
+
+SMS
+→ No SMS sent
+
+In-app notifications
+→ Work
+
+Email
+→ Works for configured important events
+
+==================================================
+15. DO NOT BREAK ANYTHING ELSE
+
+Do not change anything else.
+
+Do not break:
+
+* Marketplace listing creation
+* 20-photo limit
+* 1-video limit
+* 60-second video limit
+* Messaging
+* Offers
+* Favorites
+* Notifications
+* Admin
+* Authentication
+* Buyer accounts
+* Seller accounts
+* Stripe
+* Email
+* Existing delivery functionality
+* Existing database data
+
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+16. GITHUB / DIGITALOCEAN
+
+After implementation:
+
+1. Run tests.
+2. Run production build.
+3. Fix critical errors.
+4. Verify authentication and permissions.
+5. Verify address privacy.
+6. Verify only approved Haulers can access delivery jobs.
+7. Verify only assigned Hauler gets exact addresses.
+8. Verify in-app/email notifications.
+9. Verify NO SMS.
+10. Commit changes.
+11. PUSH to the EXISTING GitHub production branch.
+12. Verify Local and GitHub HEAD match.
+13. Trigger/verify a NEW DigitalOcean deployment.
+14. Verify the newest commit is deployed.
+15. Test LIVE jhehaul.com.
+
+Report:
+
+* Files changed
+* Database migrations
+* Hauler approval logic
+* Available Deliveries status
+* Address privacy status
+* Delivery status workflow
+* Notification status
+* Tests
+* Git commit SHA
+* GitHub push status
+* DigitalOcean deployment status
+* Live production verification
+
+IMPORTANT:
+
+Do not mark complete based only on local/Replit preview.
+
+Verify the LIVE jhehaul.com production site.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
