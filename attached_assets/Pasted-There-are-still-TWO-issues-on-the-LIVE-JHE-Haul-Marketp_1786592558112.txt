@@ -1,0 +1,105 @@
+There are still TWO issues on the LIVE JHE Haul Marketplace that need to be corrected.
+
+1. Listing Photos Are STILL Not Working Correctly
+
+The existing 2014 Chevrolet Volt listing says it has 16 photos, but the listing is still not properly displaying/opening all of those photos.
+
+Do not consider this fixed just because the database says there are 16 photos.
+
+I need the actual LIVE listing tested.
+
+Required behavior
+
+When someone opens a listing with multiple photos:
+
+* The main photo should display.
+* The user must be able to swipe left/right through ALL photos on mobile.
+* Add visible previous/next controls where appropriate.
+* Tapping a photo should allow the user to view it properly/full size.
+* Every successfully uploaded photo must load.
+* The photo count must equal the number of photos that can actually be viewed.
+* Photos must continue working after refresh and after logging out/back in.
+* Photos must work for buyers, not only the seller.
+* Photos must work on the published listing, Browse results, seller listing management, and listing preview where applicable.
+
+Investigate the actual cause
+
+Please check:
+
+* database image records
+* stored image URLs
+* object/file storage
+* temporary/blob URLs
+* frontend gallery component
+* API response containing listing photos
+* image URL construction
+* iPhone HEIC/HEIF conversion
+* permissions/access to stored images
+* production environment/storage configuration
+
+If 16 images are stored but the frontend is only rendering the first one, fix the gallery.
+
+If some of the 16 images were never successfully stored, fix the upload/storage process and do NOT falsely display “16 photos.”
+
+Test the actual Volt listing
+
+Open the LIVE 2014 Chevrolet Volt listing and manually confirm that every available photo can be viewed/swiped through.
+
+Do not mark this issue complete until this works on the production site.
+
+⸻
+
+2. Clean Up the My Messages Page
+
+The My Messages page currently has unnecessary navigation links.
+
+At the top it shows:
+
+Browse Marketplace
+
+Then inside the empty-conversation box it shows another:
+
+Browse Marketplace
+
+and:
+
+Sell Something
+
+These are redundant because mobile already has permanent bottom navigation:
+
+Home | Browse | Sell | Messages | Account
+
+Simplify the Messages page
+
+Remove the Browse Marketplace link from the top-right next to “My Messages.”
+
+Also simplify the empty state.
+
+Instead of multiple navigation choices, show:
+
+💬 No conversations yet
+
+When you contact a seller or a buyer messages you about your listing, your conversations will appear here.
+
+You may keep ONE simple Browse Marketplace button in the empty state if needed.
+
+Remove the additional Sell Something link because the large Sell button is already permanently available in the bottom navigation.
+
+Once conversations exist, this page should focus on the user’s conversations rather than showing unnecessary marketplace navigation.
+
+Important
+
+Follow the same principle throughout the mobile marketplace:
+
+Do not duplicate navigation links on a page when the same primary action is already clearly available in the permanent bottom navigation.
+
+Do NOT remove the permanent bottom navigation.
+
+After completing BOTH fixes:
+
+1. Test on mobile/iPhone.
+2. Test the LIVE production site.
+3. Commit all changes.
+4. Push to the production branch.
+5. Confirm the DigitalOcean deployment succeeds.
+6. Open the live jhehaul.com site and verify the changes are actually visible before marking the work complete.
