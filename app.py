@@ -657,6 +657,21 @@ with app.app_context():
         db.session.rollback()
         logging.info("Table migration (listing_offers) skipped: %s", _e)
 
+    # Partial unique index: at most one accepted offer per listing.
+    # Works on both SQLite and PostgreSQL and is the database-level race guard.
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_one_accepted_offer_per_listing
+            ON listing_offers (listing_id)
+            WHERE status = 'accepted'
+        """))
+        db.session.commit()
+        logging.info("Index migration: uq_one_accepted_offer_per_listing ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Index migration (uq_one_accepted_offer_per_listing) skipped: %s", _e)
+
     try:
         from sqlalchemy import text as _text
         db.session.execute(_text("""

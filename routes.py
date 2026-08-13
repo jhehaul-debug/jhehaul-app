@@ -2193,9 +2193,54 @@ def offer_seller_respond(listing_id, offer_id):
     import math as _math
 
     if action == 'accept':
+        # ── Atomicity: lock the Listing row so concurrent accept requests
+        # serialize behind a single write lock.  Locking the Listing row (which
+        # always exists) prevents the lost-update race that locking only
+        # ListingOffer rows (which may not yet exist) cannot avoid.
+        # PostgreSQL honours FOR UPDATE; SQLite raises CompileError at
+        # compile-time, so we fall back gracefully — the partial unique index
+        # on listing_offers (listing_id) WHERE status='accepted' is then the
+        # final safety net in both environments.
+        from models import Listing as _ListingModel
+        try:
+            _ListingModel.query.filter_by(id=listing_id).with_for_update().one_or_none()
+        except Exception:
+            db.session.rollback()
+            # Re-fetch offer after rollback (session objects are expired)
+            offer = ListingOffer.query.get_or_404(offer_id)
+
+        # Check for an already-accepted sibling offer
+        already_accepted = ListingOffer.query.filter(
+            ListingOffer.listing_id == listing_id,
+            ListingOffer.id != offer_id,
+            ListingOffer.status == 'accepted',
+        ).first()
+        if already_accepted:
+            flash("An offer on this listing has already been accepted. Only one offer can be accepted.", "error")
+            return _done_redirect()
+
         offer.status = 'accepted'
         offer.updated_at = datetime.now()
-        db.session.commit()
+
+        # Auto-decline all other open offers on the same listing so no
+        # second buyer is left waiting on a deal that won't happen.
+        other_open = ListingOffer.query.filter(
+            ListingOffer.listing_id == listing_id,
+            ListingOffer.id != offer_id,
+            ListingOffer.status.in_(['pending', 'countered']),
+        ).all()
+        _now = datetime.now()
+        for _other in other_open:
+            _other.status = 'declined'
+            _other.updated_at = _now
+
+        try:
+            db.session.commit()
+        except Exception as _ie:
+            db.session.rollback()
+            app.logger.warning("offer accept IntegrityError (concurrent race) listing=%s: %s", listing_id, _ie)
+            flash("An offer on this listing was just accepted simultaneously. Please refresh and try again.", "error")
+            return _done_redirect()
         buyer = offer.buyer
         # SMS disabled for marketplace — in-app + email used instead
         # Email notification → buyer
@@ -2312,10 +2357,47 @@ def offer_buyer_respond(listing_id, offer_id):
         if offer.status != 'countered' or not offer.counter_amount:
             flash("No active counteroffer to accept.", "error")
             return redirect(url_for('listing_detail', listing_id=listing_id))
+
+        # ── Atomicity: lock the Listing row (same pattern as offer_seller_respond)
+        from models import Listing as _ListingModelBR
+        try:
+            _ListingModelBR.query.filter_by(id=listing_id).with_for_update().one_or_none()
+        except Exception:
+            db.session.rollback()
+            offer = ListingOffer.query.get_or_404(offer_id)
+
+        # Check for an already-accepted sibling offer
+        _ac_already = ListingOffer.query.filter(
+            ListingOffer.listing_id == listing_id,
+            ListingOffer.id != offer_id,
+            ListingOffer.status == 'accepted',
+        ).first()
+        if _ac_already:
+            flash("An offer on this listing has already been accepted.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
+
         offer.amount = offer.counter_amount
         offer.status = 'accepted'
         offer.updated_at = datetime.now()
-        db.session.commit()
+
+        # Auto-decline all other open offers on the same listing
+        _ac_open = ListingOffer.query.filter(
+            ListingOffer.listing_id == listing_id,
+            ListingOffer.id != offer_id,
+            ListingOffer.status.in_(['pending', 'countered']),
+        ).all()
+        _ac_now = datetime.now()
+        for _ac_other in _ac_open:
+            _ac_other.status = 'declined'
+            _ac_other.updated_at = _ac_now
+
+        try:
+            db.session.commit()
+        except Exception as _ie:
+            db.session.rollback()
+            app.logger.warning("accept_counter IntegrityError (concurrent race) listing=%s: %s", listing_id, _ie)
+            flash("An offer on this listing was just accepted simultaneously. Please refresh and try again.", "error")
+            return redirect(url_for('listing_detail', listing_id=listing_id))
         # SMS disabled for marketplace — in-app notification used instead
         # Email notification → seller
         try:
