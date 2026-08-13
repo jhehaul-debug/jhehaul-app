@@ -1,0 +1,236 @@
+JHE HAUL MARKETPLACE — FIX FALSE LISTING COUNT, EMPTY DRAFTS, AND PRIMARY ADMIN DELETE BUTTON
+
+There are two problems on the LIVE jhehaul.com production site that need to be fixed.
+
+DO NOT change anything else.
+DO NOT break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+
+1. ADMIN IS SHOWING TOO MANY LISTINGS
+    ==================================================
+
+The Admin dashboard is showing multiple listings for John Hunter.
+
+The Recent Listings section currently shows:
+
+* One legitimate active listing:
+    2014 Chevrolet Volt — $10,000 — Active
+
+AND
+
+* Multiple blank listings marked:
+    FREE
+    Draft
+
+These blank Draft records appear to have been created during incomplete or failed Sell/Create Listing attempts.
+
+Investigate why these empty drafts are being created.
+
+Do NOT simply delete all drafts.
+
+First determine:
+
+* Which draft records contain real seller-entered information
+* Which drafts are completely empty/orphaned testing records
+* Whether a new Draft is being created every time the Sell wizard is opened
+* Whether failed CSRF/media-upload attempts created duplicate drafts
+* Whether pressing Back/Cancel leaves unnecessary empty drafts
+
+==================================================
+2. CLEAN UP EMPTY/ORPHANED DRAFTS
+
+Only remove clearly EMPTY/ORPHANED draft listings that contain no legitimate seller listing information.
+
+Do NOT delete:
+
+* The active 2014 Chevrolet Volt listing
+* Any legitimate completed listing
+* Any draft containing meaningful user-entered data
+* Another user’s legitimate listing
+
+Before deleting anything, identify the exact affected records.
+
+Clean up the empty duplicate drafts safely.
+
+==================================================
+3. PREVENT FUTURE EMPTY DRAFTS
+
+Fix the Sell/Create Listing flow so opening the Sell page does NOT create unnecessary permanent Draft listings.
+
+A Draft should only be created when actually needed.
+
+If a temporary draft is required for photo/video uploads, make sure abandoned EMPTY drafts are automatically cleaned up safely.
+
+Consider a rule such as:
+
+Empty draft with no title, no description, no media, and no meaningful listing data
+→ automatically discard/delete after abandonment.
+
+Do not automatically delete legitimate drafts.
+
+==================================================
+4. ADMIN LISTING COUNTS
+
+Improve Admin listing counts so the dashboard clearly distinguishes:
+
+Active Listings
+Draft Listings
+Reserved Listings
+Sold Listings
+Expired Listings
+Removed Listings
+
+Do not present empty drafts as if they are active marketplace inventory.
+
+If displaying “Total Listings,” clearly indicate that it includes drafts, or preferably provide separate counts.
+
+Recent Listings should prioritize legitimate marketplace listings.
+
+Blank empty drafts should not clutter Recent Listings.
+
+==================================================
+5. PRIMARY ADMIN STILL SHOWS DELETE ACCOUNT
+
+The LIVE primary Admin account still displays:
+
+DELETE ACCOUNT
+
+and
+
+DELETE MY ACCOUNT
+
+This must be removed for the Primary Admin account.
+
+For the PRIMARY ADMIN:
+
+DO NOT display the regular Delete Account section.
+
+Replace it with:
+
+PRIMARY ADMIN ACCOUNT
+
+“This account controls JHE Haul administration and cannot be deleted through standard account settings.”
+
+==================================================
+6. SERVER-SIDE PRIMARY ADMIN PROTECTION
+
+Do not only hide the Delete button.
+
+The backend must reject any normal account-deletion request involving the Primary Admin account.
+
+Even if someone manually calls the delete endpoint:
+
+Primary Admin deletion
+→ REJECTED
+
+Also:
+
+The LAST active Admin account must never be deletable.
+
+Regular marketplace users should still be allowed to delete their own accounts according to the normal account-deletion rules.
+
+==================================================
+7. VERIFY PRIMARY ADMIN IDENTIFICATION
+
+Determine how the application identifies the Primary Admin.
+
+Do not rely only on display name.
+
+Use a stable server-side method such as the existing admin role plus the configured primary admin identifier/email/user ID where appropriate.
+
+Do not expose private identifiers publicly.
+
+Confirm the current John Hunter Admin account is actually recognized as the protected Primary Admin account.
+
+==================================================
+8. ADMIN USER MANAGEMENT
+
+The Primary Admin should still be able to manage OTHER marketplace users through Admin → Users.
+
+Admin should be able to:
+
+* View user
+* Review reports
+* Warn
+* Suspend
+* Unsuspend
+* Ban
+* Delete a regular user where appropriate
+
+But Primary Admin must not be able to accidentally delete itself through normal user management.
+
+==================================================
+9. TESTING
+
+Test all of the following:
+
+Admin Recent Listings
+→ Legitimate Volt listing remains
+
+Empty orphan drafts
+→ Removed safely
+
+Legitimate draft with real content
+→ Preserved
+
+Opening Sell then cancelling without entering anything
+→ Does not permanently clutter Admin with an empty draft
+
+Primary Admin Account page
+→ Delete My Account button NOT visible
+
+Primary Admin direct delete endpoint request
+→ Rejected
+
+Regular user account
+→ Delete My Account still available
+
+Last active Admin deletion attempt
+→ Rejected
+
+Admin → Users
+→ Other users remain manageable
+
+==================================================
+10. PUSH AND DEPLOY
+
+After fixing:
+
+1. Run relevant tests.
+2. Run production build.
+3. Verify database integrity.
+4. Verify the legitimate Volt listing remains.
+5. Verify empty orphan drafts are cleaned up.
+6. Verify new empty drafts are no longer accumulating.
+7. Verify Primary Admin Delete Account is removed.
+8. Verify server-side Primary Admin deletion protection.
+9. Commit the changes.
+10. PUSH to the EXISTING GitHub production branch.
+11. Confirm Local and GitHub HEAD match.
+12. Trigger/verify a NEW DigitalOcean deployment.
+13. Verify the newest commit is actually deployed.
+14. Test the LIVE jhehaul.com site.
+
+Final report must include:
+
+* Why 11 listings were being counted
+* Number of empty/orphan drafts found
+* Number safely removed
+* Confirmation active Volt listing was preserved
+* How future empty drafts are prevented
+* Primary Admin protection status
+* Delete Account button status
+* Files changed
+* Database cleanup/migration performed
+* Git commit SHA
+* GitHub push status
+* DigitalOcean deployment status
+* LIVE jhehaul.com verification
+
+CRITICAL:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
