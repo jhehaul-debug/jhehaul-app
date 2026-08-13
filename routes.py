@@ -495,7 +495,8 @@ def home():
                               not current_user.profile_photo_data and
                               not current_user.phone)
         show_profile_nudge = (profile_incomplete and
-                              not getattr(current_user, 'profile_nudge_dismissed', False))
+                              not getattr(current_user, 'profile_nudge_dismissed', False) and
+                              not show_welcome)
         return render_template('marketplace.html', categories=categories, is_search=False,
                                hide_sold='1' if hide_sold_pref else '',
                                no_vehicles_filter='',
@@ -767,7 +768,9 @@ def marketplace():
             not current_user.profile_photo_data and
             not current_user.phone
         )
-        _mp_show_nudge = _mp_profile_incomplete and not getattr(current_user, 'profile_nudge_dismissed', False)
+        _mp_show_nudge = (_mp_profile_incomplete and
+                          not getattr(current_user, 'profile_nudge_dismissed', False) and
+                          not show_welcome)
         return render_template('marketplace.html', categories=categories, is_search=False,
                                listing_type_filter='', area_filter='', city_zip_filter='',
                                hide_sold='1' if hide_sold_pref else '',
