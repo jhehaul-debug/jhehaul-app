@@ -5028,6 +5028,95 @@ def admin_dashboard():
                            spaces_configured=spaces_configured,
                            health_alert_events=health_alert_events)
 
+@app.route("/admin/photo-health")
+@require_admin
+def admin_photo_health():
+    """Run photo URL health checks across all photo tables and render results."""
+    import requests as _req
+    from requests.adapters import HTTPAdapter as _HTTPAdapter
+    from urllib3.util.retry import Retry as _Retry
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from models import JobPhoto, CompletionPhoto, ListingPhoto, GalleryPhoto
+
+    TABLES = [
+        ("job_photos", JobPhoto),
+        ("completion_photos", CompletionPhoto),
+        ("listing_photos", ListingPhoto),
+        ("gallery_photos", GalleryPhoto),
+    ]
+
+    # ── Gather DB stats ───────────────────────────────────────────────────────
+    table_stats = []
+    jobs = []           # (table_label, row_id, url)
+    no_url_rows = []    # (table_label, row_id)
+
+    for label, model in TABLES:
+        total = model.query.count()
+        with_url = model.query.filter(model.storage_url.isnot(None)).count()
+        without_url = total - with_url
+
+        null_rows = (model.query
+                     .filter(model.storage_url.is_(None))
+                     .with_entities(model.id)
+                     .all())
+        for (row_id,) in null_rows:
+            no_url_rows.append({"table": label, "id": row_id})
+
+        url_rows = (model.query
+                    .filter(model.storage_url.isnot(None))
+                    .with_entities(model.id, model.storage_url)
+                    .all())
+        for row_id, url in url_rows:
+            jobs.append((label, row_id, url))
+
+        table_stats.append({
+            "label": label,
+            "total": total,
+            "with_url": with_url,
+            "without_url": without_url,
+        })
+
+    # ── HTTP checks ───────────────────────────────────────────────────────────
+    _session = _req.Session()
+    _retry = _Retry(total=2, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
+    _adapter = _HTTPAdapter(max_retries=_retry)
+    _session.mount("https://", _adapter)
+    _session.mount("http://", _adapter)
+
+    def _check_url(table, row_id, url):
+        try:
+            resp = _session.head(url, timeout=8, allow_redirects=True)
+            if resp.status_code == 200:
+                return {"table": table, "id": row_id, "url": url, "status": "OK", "code": 200}
+            return {"table": table, "id": row_id, "url": url, "status": "BROKEN", "code": resp.status_code}
+        except Exception as exc:
+            return {"table": table, "id": row_id, "url": url, "status": "ERROR", "error": str(exc)[:200]}
+
+    counters = {"ok": 0, "broken": 0, "error": 0, "no_url": len(no_url_rows)}
+    broken_rows = []
+
+    if jobs:
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            futures = {pool.submit(_check_url, t, rid, u): (t, rid, u) for t, rid, u in jobs}
+            for future in as_completed(futures):
+                result = future.result()
+                status = result["status"].lower()
+                counters[status] = counters.get(status, 0) + 1
+                if result["status"] in ("BROKEN", "ERROR"):
+                    broken_rows.append(result)
+
+    broken_rows.sort(key=lambda r: (r["table"], r["id"]))
+
+    return render_template(
+        "admin_photo_health.html",
+        table_stats=table_stats,
+        counters=counters,
+        broken_rows=broken_rows,
+        no_url_rows=no_url_rows,
+        total_checked=len(jobs),
+    )
+
+
 @app.route("/admin/customers")
 @require_admin
 def admin_customers():

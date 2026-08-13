@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Photo URL Health Check — Admin - JHE Haul{% endblock %}
+{% block content %}
+{% include "admin_nav.html" %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+        <h2 class="page-title" style="margin:0;">🖼 Photo URL Health Check</h2>
+    </div>
+    <span style="font-size:0.85rem;color:#6b7280;">
+        Checked {{ total_checked }} URL{{ 's' if total_checked != 1 else '' }} across 4 tables
+    </span>
+</div>
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;">
+    <div class="stat-card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left:4px solid #22c55e;">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" style="color:#16a34a;">{{ counters.ok }}</div>
+        <div class="stat-label">OK (HTTP 200)</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,{% if counters.broken > 0 %}#fef2f2,#fee2e2{% else %}#f9fafb,#f3f4f6{% endif %});border-left:4px solid {% if counters.broken > 0 %}#ef4444{% else %}#9ca3af{% endif %};">
+        <div class="stat-icon">{{ '🔴' if counters.broken > 0 else '—' }}</div>
+        <div class="stat-value" style="color:{% if counters.broken > 0 %}#dc2626{% else %}#9ca3af{% endif %};">{{ counters.broken }}</div>
+        <div class="stat-label">Broken (non-200)</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,{% if counters.error > 0 %}#fff7ed,#ffedd5{% else %}#f9fafb,#f3f4f6{% endif %});border-left:4px solid {% if counters.error > 0 %}#f97316{% else %}#9ca3af{% endif %};">
+        <div class="stat-icon">{{ '⚠️' if counters.error > 0 else '—' }}</div>
+        <div class="stat-value" style="color:{% if counters.error > 0 %}#ea580c{% else %}#9ca3af{% endif %};">{{ counters.error }}</div>
+        <div class="stat-label">Network Error</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,{% if counters.no_url > 0 %}#fffbeb,#fef3c7{% else %}#f9fafb,#f3f4f6{% endif %});border-left:4px solid {% if counters.no_url > 0 %}#f59e0b{% else %}#9ca3af{% endif %};">
+        <div class="stat-icon">{{ '🔗' if counters.no_url > 0 else '—' }}</div>
+        <div class="stat-value" style="color:{% if counters.no_url > 0 %}#d97706{% else %}#9ca3af{% endif %};">{{ counters.no_url }}</div>
+        <div class="stat-label">No URL (unmigrated)</div>
+    </div>
+</div>
+
+<!-- Per-Table Stats -->
+<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden;">
+    <div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:10px;">
+        <h3 style="margin:0;font-size:1rem;">📊 Per-Table Summary</h3>
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+            <thead>
+                <tr style="background:#f8fafc;">
+                    <th style="padding:10px 16px;text-align:left;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;">Table</th>
+                    <th style="padding:10px 16px;text-align:right;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;">Total rows</th>
+                    <th style="padding:10px 16px;text-align:right;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;">With storage_url</th>
+                    <th style="padding:10px 16px;text-align:right;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;">Missing storage_url</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_stats %}
+                <tr style="border-bottom:1px solid #f3f4f6;{% if loop.index is odd %}background:#fafafa;{% endif %}">
+                    <td style="padding:9px 16px;font-family:monospace;color:#1e293b;">{{ row.label }}</td>
+                    <td style="padding:9px 16px;text-align:right;color:#374151;">{{ row.total }}</td>
+                    <td style="padding:9px 16px;text-align:right;color:#16a34a;font-weight:{% if row.with_url > 0 %}600{% else %}400{% endif %};">{{ row.with_url }}</td>
+                    <td style="padding:9px 16px;text-align:right;">
+                        {% if row.without_url > 0 %}
+                        <span style="background:#fef3c7;color:#92400e;padding:1px 9px;border-radius:12px;font-weight:700;">{{ row.without_url }}</span>
+                        {% else %}
+                        <span style="color:#9ca3af;">0</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Broken / Unreachable URLs -->
+{% if broken_rows %}
+<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden;border-left:4px solid #ef4444;">
+    <div style="padding:14px 18px;border-bottom:1px solid #fee2e2;background:#fef2f2;display:flex;align-items:center;gap:10px;">
+        <h3 style="margin:0;font-size:1rem;color:#991b1b;">🔴 Broken / Unreachable URLs</h3>
+        <span style="background:#ef4444;color:#fff;font-size:0.75rem;font-weight:700;padding:2px 9px;border-radius:12px;">{{ broken_rows|length }}</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+            <thead>
+                <tr style="background:#fef2f2;">
+                    <th style="padding:9px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Table</th>
+                    <th style="padding:9px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Row ID</th>
+                    <th style="padding:9px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Status</th>
+                    <th style="padding:9px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Detail</th>
+                    <th style="padding:9px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in broken_rows %}
+                <tr style="border-bottom:1px solid #fee2e2;{% if loop.index is odd %}background:#fffbfb;{% endif %}vertical-align:top;">
+                    <td style="padding:8px 14px;font-family:monospace;color:#374151;white-space:nowrap;">{{ r.table }}</td>
+                    <td style="padding:8px 14px;color:#374151;font-family:monospace;">{{ r.id }}</td>
+                    <td style="padding:8px 14px;white-space:nowrap;">
+                        {% if r.status == 'BROKEN' %}
+                        <span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">BROKEN</span>
+                        {% else %}
+                        <span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">ERROR</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:8px 14px;color:#6b7280;font-size:0.82rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ r.get('error', '') }}">
+                        {% if r.status == 'BROKEN' %}HTTP {{ r.code }}{% else %}{{ r.get('error', '') }}{% endif %}
+                    </td>
+                    <td style="padding:8px 14px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        <a href="{{ r.url }}" target="_blank" rel="noopener"
+                           style="color:#2563eb;font-size:0.8rem;word-break:break-all;" title="{{ r.url }}">{{ r.url[:80] }}{% if r.url|length > 80 %}…{% endif %}</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom:20px;text-align:center;padding:32px 20px;border-left:4px solid #22c55e;">
+    <div style="font-size:2.2rem;margin-bottom:10px;">✅</div>
+    <div style="font-weight:700;color:#15803d;font-size:1rem;margin-bottom:4px;">All checked URLs returned HTTP 200</div>
+    <div style="color:#6b7280;font-size:0.88rem;">No broken or unreachable storage URLs found.</div>
+</div>
+{% endif %}
+
+<!-- Unmigrated Rows (no storage_url) -->
+{% if no_url_rows %}
+<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden;border-left:4px solid #f59e0b;">
+    <div style="padding:14px 18px;border-bottom:1px solid #fde68a;background:#fffbeb;display:flex;align-items:center;gap:10px;">
+        <h3 style="margin:0;font-size:1rem;color:#92400e;">🔗 Rows Missing storage_url (Unmigrated)</h3>
+        <span style="background:#f59e0b;color:#fff;font-size:0.75rem;font-weight:700;padding:2px 9px;border-radius:12px;">{{ no_url_rows|length }}</span>
+    </div>
+    <div style="padding:10px 18px 6px;background:#fffbeb;border-bottom:1px solid #fde68a;">
+        <p style="margin:0;font-size:0.85rem;color:#78350f;">
+            These rows do not have a <code>storage_url</code> — they are stored in the database binary column (DB fallback) and have not been migrated to DigitalOcean Spaces yet.
+            Re-run <code>migrate_photos_to_spaces.py</code> to migrate them.
+        </p>
+    </div>
+    <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+            <thead>
+                <tr style="background:#fef9c3;position:sticky;top:0;z-index:1;">
+                    <th style="padding:9px 14px;text-align:left;color:#92400e;font-weight:600;border-bottom:1px solid #fde68a;">Table</th>
+                    <th style="padding:9px 14px;text-align:left;color:#92400e;font-weight:600;border-bottom:1px solid #fde68a;">Row ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in no_url_rows %}
+                <tr style="border-bottom:1px solid #fef3c7;{% if loop.index is odd %}background:#fffde7;{% endif %}">
+                    <td style="padding:7px 14px;font-family:monospace;color:#374151;">{{ r.table }}</td>
+                    <td style="padding:7px 14px;font-family:monospace;color:#374151;">{{ r.id }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- All-clear message when everything is perfect -->
+{% if not broken_rows and not no_url_rows and total_checked > 0 %}
+<div class="card" style="text-align:center;padding:24px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;">
+    <div style="font-size:2rem;margin-bottom:8px;">🎉</div>
+    <div style="font-weight:700;color:#15803d;font-size:1rem;">All {{ total_checked }} photo URLs are healthy and fully migrated.</div>
+</div>
+{% endif %}
+
+{% endblock %}
