@@ -273,6 +273,55 @@ with app.app_context():
     _cleanup((Listing, LISTING_ID_5), (User, SELLER_ID_5))
 
 # ---------------------------------------------------------------------------
+# Test 6: ev_seller_listing_expired admin toggle — SMS suppressed when disabled
+# ---------------------------------------------------------------------------
+# This tests the SmsSettings.ev_seller_listing_expired column added in task #101.
+# When the admin disables this event, notify_seller_listing_expired_sms() must
+# return False without calling send_sms/Twilio, regardless of user opt-in.
+
+from sms_service import notify_seller_listing_expired_sms
+
+
+def _make_settings(ev_seller_listing_expired=True, sms_globally_enabled=True):
+    """Return a stub SmsSettings-like object for patching get_sms_settings."""
+    s = MagicMock()
+    s.sms_globally_enabled = sms_globally_enabled
+    s.ev_seller_listing_expired = ev_seller_listing_expired
+    # configure getattr so is_sms_enabled works via _EVENT_TO_SETTING lookup
+    def _getattr(name, default=True):
+        return getattr(s, name, default)
+    s.__class__ = type('SmsSettingsStub', (), {})
+    return s
+
+
+# Test 6a: admin toggle OFF — SMS must not reach send_sms
+_settings_off = _make_settings(ev_seller_listing_expired=False)
+with (
+    patch('sms_service.get_sms_settings', return_value=_settings_off),
+    patch('sms_service.send_sms', return_value=True) as mock_send,
+):
+    result = notify_seller_listing_expired_sms('+16515550099', 900099, 'Admin-Toggled-Off Sofa')
+
+check("ev_seller_listing_expired=False: function returns False",
+      result is False,
+      f"got={result!r}")
+check("ev_seller_listing_expired=False: send_sms never called",
+      mock_send.call_count == 0,
+      f"call_count={mock_send.call_count}")
+
+# Test 6b: admin toggle ON — SMS proceeds to send_sms
+_settings_on = _make_settings(ev_seller_listing_expired=True)
+with (
+    patch('sms_service.get_sms_settings', return_value=_settings_on),
+    patch('sms_service.send_sms', return_value=True) as mock_send_on,
+):
+    result_on = notify_seller_listing_expired_sms('+16515550099', 900099, 'Admin-Toggled-On Sofa')
+
+check("ev_seller_listing_expired=True: send_sms called once",
+      mock_send_on.call_count == 1,
+      f"call_count={mock_send_on.call_count}")
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 

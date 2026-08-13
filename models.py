@@ -262,6 +262,7 @@ class SmsSettings(db.Model):
     ev_quote_received = db.Column(db.Boolean, default=True)
     ev_quote_withdrawn = db.Column(db.Boolean, default=True)
     ev_seller_new_offer = db.Column(db.Boolean, default=True)
+    ev_seller_listing_expired = db.Column(db.Boolean, default=True)
     email_fallback_to_sms = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

@@ -169,6 +169,13 @@
                 <small style="color:#718096;">Customer gets SMS when admin withdraws their service quote</small></span>
         </label>
 
+        <label class="check-label">
+            <input type="checkbox" name="ev_seller_listing_expired" value="1"
+                   {% if settings.ev_seller_listing_expired %}checked{% endif %}>
+            <span><strong>Listing Expired</strong><br>
+                <small style="color:#718096;">Seller gets SMS when their listing auto-expires so they can renew it</small></span>
+        </label>
+
     </div>
 
     <p style="font-weight:600;color:#4a5568;font-size:0.88rem;margin:0 0 8px;">Admin Alerts</p>

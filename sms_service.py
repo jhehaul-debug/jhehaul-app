@@ -30,6 +30,7 @@ _EVENT_TO_SETTING = {
     'customer_quote_received': 'ev_quote_received',
     'customer_quote_withdrawn': 'ev_quote_withdrawn',
     'seller_new_offer':        'ev_seller_new_offer',
+    'seller_listing_expired':  'ev_seller_listing_expired',
 }
 
 
