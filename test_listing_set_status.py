@@ -280,6 +280,89 @@ def test_missing_csrf_token_returns_400():
         _cleanup(seller_id, listing_id)
 
 
+def test_expired_to_active_renews_listing():
+    """Renewing an expired listing resets expiry fields and preserves original data."""
+    seller_id = listing_id = photo_id = None
+    with app.app_context():
+        seller_id  = _create_seller()
+        listing_id = _create_listing(seller_id, status="expired")
+        from models import Listing, ListingPhoto, User
+        l = Listing.query.get(listing_id)
+        # Set fields that should be cleared/reset on renewal
+        l.expired_at             = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        l.expiry_reminder_sent   = True
+        l.expires_at             = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        # Capture original data that must survive renewal
+        original_title = l.title
+        original_price = l.price
+        # Attach a photo to confirm it is not removed
+        photo = ListingPhoto()
+        photo.listing_id   = listing_id
+        photo.filename     = "test_photo.jpg"
+        photo.content_type = "image/jpeg"
+        db.session.add(photo)
+        db.session.commit()
+        photo_id = photo.id
+        seller = User.query.get(seller_id)
+
+    try:
+        with app.test_client() as client:
+            with patch("flask_login.utils._get_user", return_value=seller), \
+                 patch("flask_wtf.csrf.validate_csrf"):
+                resp = _post_status(client, listing_id, "active")
+
+        assert resp.status_code in (302, 303), (
+            f"Expected redirect, got {resp.status_code}"
+        )
+
+        now = datetime.datetime.now()
+        with app.app_context():
+            from models import Listing, ListingPhoto
+            updated = Listing.query.get(listing_id)
+
+            # Status must be active
+            assert updated.status == "active", (
+                f"Expected 'active', got '{updated.status}'"
+            )
+            # expires_at must be ~30 days in the future (within a 5-minute window)
+            assert updated.expires_at is not None, "expires_at should be set after renewal"
+            assert updated.expires_at > now, "expires_at should be in the future"
+            expected_expiry = now + datetime.timedelta(days=30)
+            delta = abs((updated.expires_at - expected_expiry).total_seconds())
+            assert delta < 300, (
+                f"expires_at should be ~30 days from now, delta was {delta}s"
+            )
+            # expired_at must be cleared
+            assert updated.expired_at is None, (
+                f"expired_at should be None after renewal, got '{updated.expired_at}'"
+            )
+            # expiry_reminder_sent must be reset to False
+            assert updated.expiry_reminder_sent == False, (
+                f"expiry_reminder_sent should be False after renewal, got {updated.expiry_reminder_sent}"
+            )
+            # Original listing data must be unchanged
+            assert updated.title == original_title, (
+                f"Title changed: expected '{original_title}', got '{updated.title}'"
+            )
+            assert updated.price == original_price, (
+                f"Price changed: expected {original_price}, got {updated.price}"
+            )
+            # Photos must still exist
+            remaining_photos = ListingPhoto.query.filter_by(listing_id=listing_id).all()
+            assert len(remaining_photos) == 1, (
+                f"Expected 1 photo to survive renewal, found {len(remaining_photos)}"
+            )
+    finally:
+        with app.app_context():
+            from models import ListingPhoto
+            if photo_id:
+                p = ListingPhoto.query.get(photo_id)
+                if p:
+                    db.session.delete(p)
+                    db.session.commit()
+        _cleanup(seller_id, listing_id)
+
+
 def test_non_owner_gets_403():
     """A different authenticated user cannot change another seller's listing."""
     owner_id = attacker_id = listing_id = None
@@ -316,13 +399,14 @@ def test_non_owner_gets_403():
 if __name__ == "__main__":
     print("\nRunning listing_set_status tests...\n")
 
-    run("active → reserved",                    test_active_to_reserved)
-    run("reserved → active (expiry refreshed)", test_reserved_to_active_refreshes_expiry)
-    run("sold → active (sold_at cleared)",      test_sold_to_active_clears_sold_at)
-    run("draft → reserved rejected",            test_draft_to_reserved_rejected)
-    run("invalid status value rejected",        test_invalid_status_value_rejected)
-    run("missing CSRF token → 400",             test_missing_csrf_token_returns_400)
-    run("non-owner → 403",                      test_non_owner_gets_403)
+    run("active → reserved",                          test_active_to_reserved)
+    run("reserved → active (expiry refreshed)",       test_reserved_to_active_refreshes_expiry)
+    run("sold → active (sold_at cleared)",            test_sold_to_active_clears_sold_at)
+    run("expired → active (renewal preserves data)",  test_expired_to_active_renews_listing)
+    run("draft → reserved rejected",                  test_draft_to_reserved_rejected)
+    run("invalid status value rejected",              test_invalid_status_value_rejected)
+    run("missing CSRF token → 400",                   test_missing_csrf_token_returns_400)
+    run("non-owner → 403",                            test_non_owner_gets_403)
 
     print(f"\n{'='*50}")
     print(f"Results: {len(PASS)} passed, {len(FAIL)} failed")
