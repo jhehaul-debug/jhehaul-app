@@ -29,6 +29,7 @@ _EVENT_TO_SETTING = {
     'admin_alert':             'ev_admin_alert',
     'customer_quote_received': 'ev_quote_received',
     'customer_quote_withdrawn': 'ev_quote_withdrawn',
+    'seller_new_offer':        'ev_seller_new_offer',
 }
 
 
@@ -376,6 +377,18 @@ def notify_seller_listing_expired_sms(phone, listing_id, title):
     msg = (f"JHE Haul: Your listing \"{safe_title}\" has expired. "
            f"Renew it from My Listings: {_APP_URL}/my-listings")
     return send_sms(phone, msg, 'seller_listing_expired')
+
+
+def notify_seller_new_offer_sms(phone, listing_title, amount, listing_id):
+    """SMS to a seller when a buyer submits a new offer. Respects global SMS kill-switch."""
+    if not is_sms_enabled('seller_new_offer'):
+        return False
+    safe_title = (listing_title or f"Listing #{listing_id}")[:50]
+    msg = (
+        f"JHE Haul: You received a ${amount:,.0f} offer on \"{safe_title}\". "
+        f"Respond now: {_APP_URL}/seller/offers"
+    )
+    return send_sms(phone, msg, 'seller_new_offer')
 
 
 # ── Admin notifications ────────────────────────────────────────────────────────

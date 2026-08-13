@@ -40,6 +40,7 @@ from sms_service import (
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
     notify_admin_new_request_sms,
+    notify_seller_new_offer_sms,
 )
 
 def get_badges(user, reviews=None, completed_count=0):
@@ -1765,18 +1766,10 @@ def listing_make_offer(listing_id):
     db.session.commit()
 
     # Notify seller via SMS if they have SMS enabled
-    # Uses the 'customer_new_bid' event toggle (ev_new_bid) — closest semantic match
     seller = listing.seller
     try:
-        from sms_service import send_sms, is_sms_enabled
-        if (is_sms_enabled('customer_new_bid') and seller.notify_sms
-                and seller.sms_consent and seller.phone):
-            buyer_name = current_user.first_name or 'A buyer'
-            sms_body = (
-                f"{buyer_name} made a ${amount:,.0f} offer on your listing "
-                f'"{listing.title[:40]}". Log in to respond.'
-            )
-            send_sms(seller.phone, sms_body, 'customer_new_bid')
+        if seller.phone and seller.notify_sms and seller.sms_consent:
+            notify_seller_new_offer_sms(seller.phone, listing.title, amount, listing_id)
     except Exception:
         pass
 
