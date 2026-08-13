@@ -508,6 +508,44 @@
     .mp-pill-row { display: flex; } /* pills on desktop too */
     .mp-filter-bar { display: none; } /* pills replace it */
 }
+
+/* ── Homepage City/ZIP quick-filter bar ── */
+.mp-homepage-area-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+}
+.mp-homepage-area-icon { font-size: 1rem; flex-shrink: 0; color: #6b7280; }
+.mp-homepage-area-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: .92rem;
+    color: #1a202c;
+    background: transparent;
+    min-width: 0;
+}
+.mp-homepage-area-input::placeholder { color: #9ca3af; }
+.mp-homepage-area-btn {
+    background: #38a169; color: #fff; border: none;
+    padding: 7px 18px; border-radius: 7px; font-weight: 700;
+    font-size: .88rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.mp-homepage-area-btn:hover { background: #2f855a; }
+.mp-homepage-area-clear {
+    font-size: .82rem; color: #9ca3af; text-decoration: none;
+    white-space: nowrap; flex-shrink: 0;
+}
+.mp-homepage-area-clear:hover { color: #ef4444; }
+@media (max-width: 480px) {
+    .mp-homepage-area-bar { padding: 8px 10px; gap: 6px; }
+    .mp-homepage-area-btn { padding: 7px 12px; }
+}
 </style>
 
 {# ── New-member welcome banner (shown exactly once after first login) ── #}
@@ -804,6 +842,21 @@ function dismissProfileNudge() {
         </div>
     </form>
 </div>
+
+{# ── Homepage City/ZIP quick-filter bar ── #}
+{# Show whenever there is no active location or text filter so buyers can set an area before browsing. #}
+{# Preserves the current tab (listing_type / no_vehicles / area) via hidden inputs. #}
+{% if not city_zip_filter and not _q_val and not area_filter %}
+<form method="get" action="/marketplace" class="mp-homepage-area-bar">
+    {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+    {% if no_vehicles_filter %}<input type="hidden" name="no_vehicles" value="{{ no_vehicles_filter }}">{% endif %}
+    {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+    <span class="mp-homepage-area-icon">📍</span>
+    <input type="text" name="city_zip" class="mp-homepage-area-input"
+           placeholder="Filter by city or ZIP…" autocomplete="off" value="">
+    <button type="submit" class="mp-homepage-area-btn">Filter</button>
+</form>
+{% endif %}
 
 {# ── Featured Listings (curated by admin, shown only on homepage) ── #}
 {% if not is_search and gallery_photos %}
