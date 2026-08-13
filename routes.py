@@ -4037,6 +4037,7 @@ _DELIVERY_STATUS_META = {
     'requested':       ('🔵', 'Requested',       '#3b82f6'),
     'offers_received': ('📬', 'Offers Received',  '#8b5cf6'),
     'hauler_selected': ('✅', 'Hauler Selected',  '#059669'),
+    'quoted':          ('💵', 'Quoted',           '#8b5cf6'),
     'scheduled':       ('📅', 'Scheduled',        '#2563eb'),
     'picked_up':       ('📦', 'Picked Up',        '#d97706'),
     'in_transit':      ('🚛', 'In Transit',       '#ea580c'),
