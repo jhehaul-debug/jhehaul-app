@@ -244,56 +244,6 @@
   </form>
 </div>
 
-<!-- ── Phone Verification ────────────────────────────────────────────────── -->
-{% if current_user.phone %}
-<div class="card" style="margin-bottom:16px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-    <div>
-      <h3 style="margin:0 0 3px;">Phone Verification</h3>
-      <p style="color:#718096;margin:0;font-size:.87rem;">Verify your number to activate SMS notifications.</p>
-    </div>
-    {% if current_user.phone_verified %}
-    <span style="background:#dcfce7;color:#15803d;font-weight:700;font-size:.85rem;padding:5px 14px;border-radius:20px;">✓ Verified</span>
-    {% else %}
-    <span style="background:#fef9c3;color:#92400e;font-weight:700;font-size:.85rem;padding:5px 14px;border-radius:20px;">Not Verified</span>
-    {% endif %}
-  </div>
-
-  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
-    <div style="font-weight:600;font-size:.9rem;color:#1a202c;">{{ current_user.phone_formatted }}</div>
-    {% if current_user.phone_verified %}
-    <div style="font-size:.83rem;color:#15803d;margin-top:4px;">Verified — SMS notifications are active.</div>
-    {% else %}
-    <div style="font-size:.83rem;color:#718096;margin-top:4px;">Verify this number to receive SMS notifications.</div>
-    {% endif %}
-  </div>
-
-  {% if not current_user.phone_verified %}
-  <form method="POST" action="{{ url_for('send_phone_verify') }}"
-        style="margin-bottom:{% if current_user.phone_verify_code %}12px{% else %}0{% endif %};">
-    <button type="submit" class="btn btn-outline btn-sm">📱 Send Verification Code</button>
-  </form>
-  {% if current_user.phone_verify_code %}
-  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-top:10px;">
-    <p style="font-size:.88rem;color:#92400e;margin:0 0 12px;font-weight:600;">
-      Code sent! Enter the 6-digit code from your text message:
-    </p>
-    <form method="POST" action="{{ url_for('verify_phone') }}"
-          style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input name="verify_code" type="text" inputmode="numeric"
-             maxlength="6" pattern="\d{6}" placeholder="000000"
-             autocomplete="one-time-code"
-             style="width:140px;font-size:1.2rem;letter-spacing:6px;text-align:center;font-weight:700;margin:0;">
-      <button type="submit" class="btn btn-success btn-sm">✓ Verify</button>
-    </form>
-    <p style="font-size:.77rem;color:#a0aec0;margin:8px 0 0;">
-      Expires in 10 minutes. Didn't receive it? Click "Send Verification Code" to resend.
-    </p>
-  </div>
-  {% endif %}
-  {% endif %}
-</div>
-{% endif %}
 
 <!-- ── Invite Friends ────────────────────────────────────────────────────── -->
 <div class="card" style="margin-bottom:16px;">
