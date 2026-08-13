@@ -337,7 +337,7 @@
     try {
       await fetch(`/listing/${LISTING_ID}/photo/reorder`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ order: ids })
       });
     } catch(e) { /* non-fatal */ }
@@ -383,7 +383,7 @@
       try {
         const res = await fetch(uploadUrl, {
           method: 'POST',
-          headers: { 'X-CSRFToken': csrfToken },
+          headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
           body: fd
         });
         const data = await res.json();
@@ -481,6 +481,7 @@
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `/listing/${LISTING_ID}/video/upload`);
     xhr.setRequestHeader('X-CSRFToken', csrfToken);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
     xhr.upload.onprogress = e => {
       if (e.lengthComputable) {
@@ -539,7 +540,7 @@
     if (!confirm('Remove this video?')) return;
     try {
       const res = await fetch(`/listing/${LISTING_ID}/video/${id}/delete`, {
-        method: 'POST', headers: { 'X-CSRFToken': csrfToken }
+        method: 'POST', headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
       });
       if (res.ok) {
         hasVideo = false;
@@ -556,7 +557,29 @@
     } catch(e) { alert('Error removing video.'); }
   }
 
-  // Guard: prevent wizard navigation while video is uploading
+  // ── CSRF refresh: keep hidden form token current with the session ────────────
+  // Fetches a fresh signed token and updates both the meta tag and hidden fields.
+  // Called (a) after any media upload and (b) just before wizard form submission.
+  async function refreshCsrfToken() {
+    try {
+      const res = await fetch('/listing/csrf-refresh', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) return;
+      const { token } = await res.json();
+      if (!token) return;
+      // Update the meta tag so future AJAX calls use the fresh token
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      if (meta) meta.setAttribute('content', token);
+      // Update all hidden CSRF fields in wizard nav forms
+      document.querySelectorAll('form[data-wizard-nav] input[name="csrf_token"]').forEach(function(el) {
+        el.value = token;
+      });
+    } catch (_) { /* non-fatal — form still has the original token */ }
+  }
+
+  // Guard: prevent wizard navigation while video is uploading;
+  // also refresh the CSRF token right before any form submission.
   document.addEventListener('submit', function(e) {
     if (videoUploading) {
       e.preventDefault();
@@ -564,12 +587,22 @@
     }
   }, true);
 
+  // Proactively refresh the CSRF token before every wizard nav form submit
+  // so long upload sessions cannot produce a stale token error.
+  document.querySelectorAll('form[data-wizard-nav]').forEach(function(form) {
+    form.addEventListener('submit', async function(e) {
+      if (videoUploading) return; // already blocked above
+      // Refresh token silently; if fetch fails the original token still works
+      await refreshCsrfToken();
+    });
+  });
+
   async function deletePhoto(id) {
     if (!LISTING_ID) return;
     if (!confirm('Remove this photo?')) return;
     const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/delete`, {
       method: 'POST',
-      headers: { 'X-CSRFToken': csrfToken }
+      headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
     });
     if (res.ok) {
       document.getElementById('thumb-' + id)?.remove();
@@ -582,7 +615,7 @@
     if (!LISTING_ID) return;
     const res = await fetch(`/listing/${LISTING_ID}/photo/${id}/primary`, {
       method: 'POST',
-      headers: { 'X-CSRFToken': csrfToken }
+      headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
     });
     if (res.ok) {
       document.querySelectorAll('.photo-thumb').forEach(t => {

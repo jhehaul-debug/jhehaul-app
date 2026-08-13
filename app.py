@@ -31,6 +31,10 @@ db.init_app(app)
 
 # CSRF helpers — scoped to listing endpoints only (not app-wide).
 # Global enforcement requires all existing forms to carry tokens first.
+# Disable time-based CSRF token expiry so sellers uploading many photos/videos
+# cannot get a stale token by the time they click "Next".
+app.config['WTF_CSRF_TIME_LIMIT'] = None
+
 @app.context_processor
 def _csrf_context():
     """Make csrf_token() callable in all templates without global enforcement."""

@@ -150,6 +150,12 @@ _AGE_GATE_EXEMPT = {
     'confirm_age', 'auth.logout', 'auth.switch_account', 'auth.login',
     'auth.error', 'static', 'serve_listing_photo',
     'api_notification_count',  # polling must not redirect
+    # Listing AJAX endpoints — must never redirect to age gate mid-upload
+    'listing_photo_upload', 'listing_photo_upload_lazy',
+    'listing_photo_delete', 'listing_photo_primary',
+    'listing_photo_reorder',
+    'listing_video_upload', 'listing_video_delete',
+    'csrf_refresh',  # token refresh endpoint
 }
 
 @app.before_request
@@ -655,14 +661,37 @@ def _check_listing_csrf():
     """Validate CSRF token for listing management POST endpoints.
 
     Checks the form field 'csrf_token' or the 'X-CSRFToken' request header.
-    Aborts 400 on failure.  Not applied app-wide — existing routes are unaffected.
+    For AJAX requests returns JSON 403; for browser form submits flashes an
+    error and redirects back so the user never sees a bare 400 page.
     """
     from flask_wtf.csrf import validate_csrf, ValidationError
     token = request.form.get('csrf_token') or request.headers.get('X-CSRFToken', '')
     try:
         validate_csrf(token)
     except ValidationError:
-        abort(400, description="CSRF validation failed.")
+        is_ajax = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.is_json
+            or bool(request.headers.get('X-CSRFToken'))  # explicit AJAX CSRF header
+        )
+        if is_ajax:
+            # Build a 403 JSON response and raise it via abort()
+            from flask import make_response as _mkr
+            _r = _mkr(jsonify(error='Session expired — please refresh the page and try again.'), 403)
+            abort(_r)
+        # Browser form submit: redirect back with a friendly flash so the
+        # seller never sees a raw "Bad Request" page.  Photos are already saved.
+        flash('Your session expired mid-upload. Your photos are saved — please try again.', 'warning')
+        referrer = request.referrer or url_for('home')
+        abort(redirect(referrer))
+
+
+@app.route('/listing/csrf-refresh', methods=['GET'])
+@require_login
+def csrf_refresh():
+    """Return a fresh CSRF token so the wizard can keep its hidden field current."""
+    from flask_wtf.csrf import generate_csrf as _gen
+    return jsonify(token=_gen())
 
 
 def _listing_owner_or_403(listing_id):
