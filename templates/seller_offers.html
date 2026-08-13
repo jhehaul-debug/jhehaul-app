@@ -146,6 +146,7 @@
         <!-- Accept -->
         <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ url_for('seller_offers') }}">
           <button type="submit" name="action" value="accept"
                   style="background:#16a34a;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
                   onclick="return confirm('Accept this ${{ "%.0f"|format(offer.amount) }} offer?')">
@@ -156,6 +157,7 @@
         <!-- Decline -->
         <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ url_for('seller_offers') }}">
           <button type="submit" name="action" value="decline"
                   style="background:#fff;color:#dc2626;border:1.5px solid #fca5a5;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
                   onclick="return confirm('Decline this offer?')">
@@ -165,16 +167,17 @@
 
         <!-- Counter -->
         {% if offer.status == 'pending' %}
-        <button type="button"
+        <button type="button" id="counter-btn-{{ offer.id }}"
                 style="background:#fff;color:#8b5cf6;border:1.5px solid #c4b5fd;padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;"
-                onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='block';this.style.display='none'">
+                onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='flex';this.style.display='none'">
           🔄 Counter
         </button>
         <form id="counter-form-{{ offer.id }}" method="POST"
               action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}"
-              style="display:none;display:none;align-items:center;gap:6px;flex-wrap:wrap;">
+              style="display:none;align-items:center;gap:6px;flex-wrap:wrap;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="action" value="counter">
+          <input type="hidden" name="next" value="{{ url_for('seller_offers') }}">
           <input type="number" name="counter_amount" min="1" step="1"
                  placeholder="Counter $"
                  style="width:110px;padding:6px 10px;border:1.5px solid #c4b5fd;border-radius:8px;font-size:.85rem;">
@@ -184,7 +187,7 @@
           </button>
           <button type="button"
                   style="background:none;border:none;color:#9ca3af;font-size:.82rem;cursor:pointer;padding:4px 6px;"
-                  onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='none';document.querySelector('[onclick*=counter-form-{{ offer.id }}]').style.display=''">
+                  onclick="document.getElementById('counter-form-{{ offer.id }}').style.display='none';document.getElementById('counter-btn-{{ offer.id }}').style.display=''">
             Cancel
           </button>
         </form>

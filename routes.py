@@ -1798,6 +1798,15 @@ def offer_seller_respond(listing_id, offer_id):
     if listing.id != listing_id or str(current_user.id) != str(listing.seller_id):
         abort(403)
 
+    # Honour a safe local next-URL so the seller can be sent back to the inbox
+    _next_raw = request.form.get('next', '').strip()
+    _next_url = (_next_raw
+                 if _next_raw and _next_raw.startswith('/') and not _next_raw.startswith('//')
+                 else None)
+
+    def _done_redirect():
+        return redirect(_next_url or url_for('listing_detail', listing_id=listing_id))
+
     # Enforce time-based expiry before any action
     if (offer.status in ('pending', 'countered')
             and offer.expires_at and offer.expires_at < datetime.now()):
@@ -1808,11 +1817,11 @@ def offer_seller_respond(listing_id, offer_id):
         except Exception:
             db.session.rollback()
         flash("This offer has expired and can no longer be accepted, declined, or countered.", "error")
-        return redirect(url_for('listing_detail', listing_id=listing_id))
+        return _done_redirect()
 
     if offer.status not in ('pending', 'countered'):
         flash("This offer is no longer open.", "error")
-        return redirect(url_for('listing_detail', listing_id=listing_id))
+        return _done_redirect()
 
     action = request.form.get('action', '').strip()
     import math as _math
@@ -1873,7 +1882,7 @@ def offer_seller_respond(listing_id, offer_id):
                 raise ValueError
         except (ValueError, AttributeError):
             flash("Please enter a valid counter offer amount.", "error")
-            return redirect(url_for('listing_detail', listing_id=listing_id))
+            return _done_redirect()
         original_amount = offer.amount
         offer.counter_amount = counter_amount
         offer.status = 'countered'
@@ -1903,7 +1912,7 @@ def offer_seller_respond(listing_id, offer_id):
     else:
         flash("Invalid action.", "error")
 
-    return redirect(url_for('listing_detail', listing_id=listing_id))
+    return _done_redirect()
 
 
 # ── Offer: Buyer respond to counter (accept / decline / withdraw) ────────────
