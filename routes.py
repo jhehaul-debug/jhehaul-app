@@ -4948,7 +4948,7 @@ def customer_dashboard():
 @require_admin
 def admin_dashboard():
     import os as _os
-    from models import SmsLog as _SmsLog
+    from models import SmsLog as _SmsLog, NotificationLog as _NotificationLog
 
     # Marketplace stats
     total_users = User.query.count()
@@ -4979,6 +4979,34 @@ def admin_dashboard():
     twilio_configured = bool(_os.environ.get("TWILIO_ACCOUNT_SID"))
     spaces_configured = bool(_os.environ.get("SPACES_KEY"))
 
+    # Deploy health-alert events (email + SMS logs combined, most recent first)
+    _email_alerts = (_NotificationLog.query
+                     .filter_by(event_type='admin_health_alert')
+                     .order_by(_NotificationLog.created_at.desc())
+                     .limit(20).all())
+    _sms_alerts = (_SmsLog.query
+                   .filter_by(event_type='admin_health_alert')
+                   .order_by(_SmsLog.created_at.desc())
+                   .limit(20).all())
+    # Build unified list: dicts with keys: ts, channel, status, detail
+    _health_events_raw = []
+    for _e in _email_alerts:
+        _health_events_raw.append({
+            'ts': _e.created_at,
+            'channel': 'email',
+            'status': _e.status,
+            'detail': _e.error_msg or _e.subject or '',
+        })
+    for _s in _sms_alerts:
+        _health_events_raw.append({
+            'ts': _s.created_at,
+            'channel': 'sms',
+            'status': _s.status,
+            'detail': _s.error_msg or (_s.message_body[:200] if _s.message_body else ''),
+        })
+    _health_events_raw.sort(key=lambda x: x['ts'], reverse=True)
+    health_alert_events = _health_events_raw[:20]
+
     return render_template('admin_dashboard.html',
                            total_users=total_users,
                            active_listings=active_listings,
@@ -4997,7 +5025,8 @@ def admin_dashboard():
                            sms_sent_total=sms_sent_total,
                            sms_failed_total=sms_failed_total,
                            twilio_configured=twilio_configured,
-                           spaces_configured=spaces_configured)
+                           spaces_configured=spaces_configured,
+                           health_alert_events=health_alert_events)
 
 @app.route("/admin/customers")
 @require_admin
@@ -5245,6 +5274,8 @@ def admin_notifications():
         'hauler_deposit_paid':    'Hauler — Deposit Paid (Address Unlocked)',
         'hauler_job_cancelled':   'Hauler — Job Cancelled by Customer',
         'hauler_new_review':      'Hauler — New Review Received',
+        # Infrastructure / health
+        'admin_health_alert':    'Admin — Deploy Health Check Alert',
         # Legacy / test
         'email':                  'General Email',
         'admin':                  'Admin (general)',
@@ -5254,6 +5285,38 @@ def admin_notifications():
                            sendgrid_configured=sendgrid_configured,
                            from_email=from_email,
                            type_labels=type_labels)
+
+
+@app.route("/admin/health-alerts")
+@require_admin
+def admin_health_alerts():
+    """Full audit log of deploy health-check alert events (email + SMS combined)."""
+    from models import NotificationLog as _NL, SmsLog as _SL
+    email_alerts = (_NL.query
+                    .filter_by(event_type='admin_health_alert')
+                    .order_by(_NL.created_at.desc())
+                    .limit(200).all())
+    sms_alerts = (_SL.query
+                  .filter_by(event_type='admin_health_alert')
+                  .order_by(_SL.created_at.desc())
+                  .limit(200).all())
+    events = []
+    for e in email_alerts:
+        events.append({
+            'ts': e.created_at,
+            'channel': 'email',
+            'status': e.status,
+            'detail': e.error_msg or e.subject or '',
+        })
+    for s in sms_alerts:
+        events.append({
+            'ts': s.created_at,
+            'channel': 'sms',
+            'status': s.status,
+            'detail': s.error_msg or (s.message_body or ''),
+        })
+    events.sort(key=lambda x: x['ts'], reverse=True)
+    return render_template('admin_health_alerts.html', events=events)
 
 
 @app.route("/admin/suppression-check")

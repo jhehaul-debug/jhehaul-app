@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Deploy Health Alerts — Admin - JHE Haul{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+        <h2 class="page-title" style="margin:0;">🚨 Deploy Health Alerts</h2>
+    </div>
+    {% if events %}
+    <span style="background:#fee2e2;color:#b91c1c;font-size:0.85rem;font-weight:700;padding:4px 14px;border-radius:20px;">
+        {{ events|length }} event{{ 's' if events|length != 1 else '' }}
+    </span>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px;padding:14px 18px;background:#fef2f2;border-left:4px solid #dc2626;">
+    <p style="margin:0;font-size:0.88rem;color:#7f1d1d;line-height:1.5;">
+        This log shows every deploy-time health-check failure notification sent via <strong>email</strong> or <strong>SMS</strong>.
+        Both channels are shown together, sorted by time. The first alert from each deploy is always recorded here even if the
+        admin's phone or inbox missed it.
+    </p>
+</div>
+
+{% if not events %}
+<div class="card" style="text-align:center;padding:40px 20px;color:#718096;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">✅</div>
+    <div style="font-size:1rem;font-weight:600;margin-bottom:6px;">No health alerts on record</div>
+    <div style="font-size:0.88rem;">All deploys have passed their startup health checks so far.</div>
+</div>
+{% else %}
+<div class="card" style="padding:0;overflow:hidden;">
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+                <tr style="background:#fef2f2;">
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;white-space:nowrap;">Timestamp</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Channel</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Status</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Detail / Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in events %}
+                <tr style="border-bottom:1px solid #fee2e2;{% if loop.index is odd %}background:#fffbfb;{% endif %}vertical-align:top;">
+                    <td style="padding:9px 14px;white-space:nowrap;color:#374151;font-size:0.82rem;">
+                        {{ ev.ts.strftime('%b %d, %Y') }}<br>
+                        <span style="color:#9ca3af;">{{ ev.ts.strftime('%I:%M:%S %p') }}</span>
+                    </td>
+                    <td style="padding:9px 14px;">
+                        {% if ev.channel == 'email' %}
+                        <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 9px;font-size:0.78rem;font-weight:600;white-space:nowrap;">📧 Email</span>
+                        {% else %}
+                        <span style="background:#ede9fe;color:#5b21b6;border-radius:4px;padding:2px 9px;font-size:0.78rem;font-weight:600;white-space:nowrap;">📱 SMS</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:9px 14px;white-space:nowrap;">
+                        {% if ev.status == 'sent' %}
+                        <span style="color:#16a34a;font-weight:600;">✓ sent</span>
+                        {% elif ev.status == 'failed' %}
+                        <span style="color:#dc2626;font-weight:600;">✗ failed</span>
+                        {% elif ev.status == 'no_twilio' %}
+                        <span style="color:#ea580c;font-weight:600;">⚠ no_twilio</span>
+                        {% elif ev.status == 'skipped' %}
+                        <span style="color:#9ca3af;font-weight:600;">– skipped</span>
+                        {% else %}
+                        <span style="color:#6b7280;">{{ ev.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:9px 14px;color:#374151;font-size:0.82rem;max-width:500px;word-break:break-word;">
+                        {% if ev.detail %}
+                        <pre style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:0.82rem;color:#374151;">{{ ev.detail }}</pre>
+                        {% else %}
+                        <span style="color:#9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
