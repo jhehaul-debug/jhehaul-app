@@ -273,8 +273,13 @@
       </div>
       {% endif %}
       <div class="form-group">
-        <label class="form-label">Garage / Parking</label>
-        <input class="form-control" type="text" name="garage_parking" value="{{ listing.garage_parking or '' }}" placeholder="e.g. 2-car attached garage">
+        <label class="form-label">Garage Size</label>
+        <select class="form-control" name="garage_parking">
+          <option value="">— Select —</option>
+          {% for g in ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+          <option value="{{ g }}" {{ 'selected' if listing.garage_parking == g }}>{{ g }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Amenities <span style="color:#9ca3af;font-weight:400;font-size:.8rem">(one per line)</span></label>

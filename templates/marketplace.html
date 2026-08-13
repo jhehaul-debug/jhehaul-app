@@ -761,7 +761,7 @@ function dismissProfileNudge() {
                 </select>
             </div>
             <button type="submit" class="mp-panel-submit">Apply</button>
-            {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds')) %}
+            {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
             <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>
             {% endif %}
         </div>

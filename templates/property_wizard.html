@@ -512,8 +512,13 @@
 
       {# Garage #}
       <div class="form-group">
-        <label class="form-label">Garage / Parking <span class="opt">(optional)</span></label>
-        <input class="form-control" type="text" name="garage_parking" value="{{ listing.garage_parking or '' }}" placeholder="e.g. 2-car attached garage, driveway">
+        <label class="form-label">Garage Size <span class="opt">(optional)</span></label>
+        <select class="form-control" name="garage_parking">
+          <option value="">— Select —</option>
+          {% for g in ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+          <option value="{{ g }}" {{ 'selected' if listing.garage_parking == g }}>{{ g }}</option>
+          {% endfor %}
+        </select>
       </div>
 
       {# Amenities #}
