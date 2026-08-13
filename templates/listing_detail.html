@@ -19,151 +19,256 @@
 
 {% block content %}
 <style>
+/* ══════════════════════════════════════════
+   LISTING DETAIL — redesigned
+   ══════════════════════════════════════════ */
+
 /* ── Layout ── */
 .ld-wrap {
-  max-width: 1100px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 20px 16px 80px;
+  padding: 16px 0 80px;
 }
+@media (min-width: 769px) {
+  .ld-wrap { padding: 20px 16px 80px; }
+}
+
 .ld-breadcrumb {
   font-size: 0.82rem;
   color: #6b7280;
-  margin-bottom: 16px;
+  margin: 0 16px 14px;
   display: flex;
   gap: 6px;
   align-items: center;
   flex-wrap: wrap;
 }
+@media (min-width: 769px) { .ld-breadcrumb { margin-left: 0; margin-right: 0; } }
 .ld-breadcrumb a { color: #2563eb; text-decoration: none; }
 .ld-breadcrumb a:hover { text-decoration: underline; }
 .ld-breadcrumb span { color: #9ca3af; }
 
-.ld-grid {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 24px;
-  align-items: start;
-}
-@media (max-width: 780px) {
-  .ld-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Gallery ── */
-.ld-gallery { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
-.ld-main-photo {
-  width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: contain;
-  background: #f8fafc;
-  display: block;
-  cursor: zoom-in;
-}
-.ld-main-placeholder {
-  width: 100%;
-  aspect-ratio: 4/3;
-  background: linear-gradient(135deg, #edf2f7, #e2e8f0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  color: #cbd5e0;
-}
-.ld-thumbs {
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-.ld-thumb {
-  width: 68px;
-  height: 68px;
-  border-radius: 8px;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid transparent;
-  flex-shrink: 0;
-  transition: border-color 0.15s, opacity 0.15s;
-  background: #f3f4f6;
-}
-.ld-thumb:hover { opacity: 0.85; }
-.ld-thumb.active { border-color: #2563eb; }
-
-/* ── Main photo prev/next arrows ── */
-.ld-main-wrap { position: relative; }
-.ld-main-prev, .ld-main-next {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  background: rgba(0,0,0,0.38); color: #fff; border: none;
-  font-size: 1.8rem; line-height: 1; cursor: pointer;
-  border-radius: 7px; padding: 6px 13px; opacity: 0.82;
-  z-index: 2; transition: opacity .15s, background .15s;
-}
-.ld-main-prev { left: 10px; }
-.ld-main-next { right: 10px; }
-.ld-main-prev:hover, .ld-main-next:hover { opacity: 1; background: rgba(0,0,0,0.58); }
-
-/* ── Lightbox ── */
-.ld-lightbox {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 9000;
-  align-items: center;
-  justify-content: center;
-}
-.ld-lightbox.open { display: flex; }
-.ld-lightbox img {
-  max-width: 94vw;
-  max-height: 90vh;
-  object-fit: contain;
-  border-radius: 4px;
-}
-.ld-lb-close {
-  position: absolute;
-  top: 18px;
-  right: 24px;
-  color: #fff;
-  font-size: 2rem;
-  cursor: pointer;
-  line-height: 1;
-  background: none;
-  border: none;
-  opacity: 0.7;
-}
-.ld-lb-close:hover { opacity: 1; }
-.ld-lb-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #fff;
-  font-size: 2.5rem;
-  cursor: pointer;
-  background: rgba(255,255,255,0.08);
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  line-height: 1;
-  opacity: 0.7;
-}
-.ld-lb-nav:hover { opacity: 1; background: rgba(255,255,255,0.15); }
-.ld-lb-prev { left: 16px; }
-.ld-lb-next { right: 16px; }
-
-/* ── Info panel (left column) ── */
-.ld-info {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid #e5e7eb;
-  margin-top: 20px;
-}
-.ld-status-row {
+/* Owner/admin bar */
+.ld-owner-bar {
+  background: #fffbeb;
+  border-top: 1px solid #fde68a;
+  border-bottom: 1px solid #fde68a;
+  padding: 11px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 0;
+}
+@media (min-width: 769px) {
+  .ld-owner-bar {
+    border-radius: 12px;
+    border: 1px solid #fde68a;
+    margin-bottom: 16px;
+  }
+}
+.ld-owner-bar span { font-size: 0.88rem; font-weight: 600; color: #92400e; flex: 1; }
+.btn-edit-sm {
+  font-size: 0.82rem; font-weight: 700; color: #2563eb;
+  background: #eff6ff; border: 1.5px solid #bfdbfe;
+  padding: 6px 14px; border-radius: 7px; text-decoration: none; white-space: nowrap;
+}
+.btn-edit-sm:hover { background: #dbeafe; }
+.btn-remove-sm {
+  font-size: 0.82rem; font-weight: 700; color: #dc2626;
+  background: none; border: 1.5px solid #fca5a5;
+  padding: 6px 14px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+}
+.btn-remove-sm:hover { background: #fee2e2; }
+
+/* ── Two-column grid (desktop) ── */
+.ld-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+@media (min-width: 769px) {
+  .ld-grid {
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+/* ══════════════════════════════════════════
+   GALLERY — swipe carousel with dots
+   ══════════════════════════════════════════ */
+.ld-gallery {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  /* Square-ish on mobile, 4/3 on desktop */
+  aspect-ratio: 1 / 1;
+  max-height: 420px;
+}
+@media (min-width: 769px) {
+  .ld-gallery {
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    max-height: none;
+  }
+}
+
+/* Slides track */
+.ld-slides-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+.ld-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  position: relative;
+}
+.ld-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.ld-slide video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+/* Video play overlay */
+.ld-video-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+}
+.ld-video-overlay-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #fff;
+  border: 3px solid rgba(255,255,255,0.55);
+  transition: background 0.15s, transform 0.15s;
+}
+.ld-video-overlay-icon:hover { background: rgba(0,0,0,0.8); transform: scale(1.07); }
+
+/* Prev / Next arrows */
+.ld-arr {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 8px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.15s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.ld-arr:hover { background: rgba(0,0,0,0.65); }
+.ld-arr-prev { left: 10px; }
+.ld-arr-next { right: 10px; }
+
+/* Dot indicators */
+.ld-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+  max-width: 90%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.ld-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  transition: background 0.2s, transform 0.2s;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ld-dot.active {
+  background: #fff;
+  transform: scale(1.35);
+}
+/* When many photos, use small dashes */
+.ld-dots.many .ld-dot { width: 5px; height: 5px; }
+
+/* Photo count badge (top-right) */
+.ld-count-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(0,0,0,0.52);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── No-photo placeholder ── */
+.ld-no-photo {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(135deg, #edf2f7, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  color: #cbd5e0;
+}
+@media (min-width: 769px) {
+  .ld-no-photo { aspect-ratio: 4/3; border-radius: 16px; }
+}
+
+/* ══════════════════════════════════════════
+   INFO SECTION (below gallery on mobile,
+   left column on desktop)
+   ══════════════════════════════════════════ */
+.ld-info {
+  padding: 16px 16px 0;
+}
+@media (min-width: 769px) {
+  .ld-info { padding: 20px 0 0; }
+}
+
+.ld-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 .ld-status-badge {
   font-size: 0.72rem;
@@ -181,23 +286,26 @@
 .s-removed  { background: #fee2e2; color: #dc2626; }
 
 .ld-title {
-  font-size: 1.6rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: #1a1a2e;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   line-height: 1.25;
 }
+@media (min-width: 769px) { .ld-title { font-size: 1.65rem; } }
+
 .ld-price-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 .ld-price {
-  font-size: 1.9rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #276749;
+  line-height: 1;
 }
 .ld-price.free { color: #2b6cb0; }
 .ld-badge-offer {
@@ -210,106 +318,48 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+
+/* Meta chips row */
 .ld-meta-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: 7px;
+  margin-bottom: 16px;
 }
 .ld-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.82rem;
+  gap: 4px;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #4b5563;
   background: #f3f4f6;
-  padding: 5px 12px;
+  padding: 4px 11px;
   border-radius: 20px;
 }
-.ld-chip .chip-icon { font-size: 0.9rem; }
-.ld-description {
-  font-size: 0.95rem;
-  color: #374151;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.ld-section-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #9ca3af;
-  margin: 22px 0 8px;
-}
 
-/* ── Delivery options strip ── */
-.ld-delivery-opts {
+/* Property stats (beds/baths/sqft) */
+.ld-prop-stats {
   display: flex;
+  gap: 18px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-}
-.ld-del-chip {
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-/* ── Sidebar ── */
-.ld-sidebar { display: flex; flex-direction: column; gap: 16px; }
-
-.ld-action-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  background: #f8fafc;
   border: 1px solid #e5e7eb;
-}
-.ld-action-card h3 {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 14px;
-}
-
-/* Seller card */
-.ld-seller-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  border-radius: 10px;
+  padding: 14px 18px;
   margin-bottom: 14px;
 }
-.ld-seller-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #e5e7eb;
-  flex-shrink: 0;
-}
-.ld-seller-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 2px;
-}
-.ld-seller-since {
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-.ld-seller-stats {
-  font-size: 0.82rem;
-  color: #6b7280;
-  margin-top: 4px;
-}
+.ld-prop-stat-val { font-size: 1.25rem; font-weight: 800; color: #1a1a2e; }
+.ld-prop-stat-lbl { font-size: .72rem; color: #9ca3af; font-weight: 500; }
 
-/* Action buttons */
+/* ══════════════════════════════════════════
+   CTA BLOCK (inline on mobile, sidebar desktop)
+   ══════════════════════════════════════════ */
+.ld-cta-block {
+  padding: 14px 16px 0;
+}
+@media (min-width: 769px) { .ld-cta-block { padding: 0; } }
+
 .btn-primary {
   display: block;
   width: 100%;
@@ -318,7 +368,7 @@
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
-  padding: 13px 20px;
+  padding: 14px 20px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
@@ -337,7 +387,7 @@
   color: #374151;
   font-size: 0.95rem;
   font-weight: 600;
-  padding: 11px 20px;
+  padding: 12px 20px;
   border-radius: 10px;
   border: 1.5px solid #e5e7eb;
   cursor: pointer;
@@ -358,7 +408,7 @@
   color: #374151;
   font-size: 0.95rem;
   font-weight: 600;
-  padding: 11px 20px;
+  padding: 12px 20px;
   border-radius: 10px;
   border: 1.5px solid #e5e7eb;
   cursor: pointer;
@@ -378,100 +428,251 @@
   color: #166534;
   font-size: 0.92rem;
   font-weight: 700;
-  padding: 11px 20px;
+  padding: 12px 20px;
   border-radius: 10px;
   border: 1.5px solid #bbf7d0;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
   box-sizing: border-box;
   margin-bottom: 10px;
 }
 .btn-delivery:hover { background: #dcfce7; border-color: #86efac; color: #166534; text-decoration: none; }
 
-/* Admin/seller controls */
-.ld-owner-bar {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 12px;
-  padding: 14px 16px;
+.btn-make-offer {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.btn-make-offer:hover { background: linear-gradient(135deg, #d97706, #b45309); }
+
+/* ══════════════════════════════════════════
+   CONTENT SECTIONS (Description, Seller, etc.)
+   ══════════════════════════════════════════ */
+.ld-section {
+  margin: 0 16px;
+  padding: 18px 0;
+  border-top: 1px solid #f1f5f9;
+}
+@media (min-width: 769px) {
+  .ld-section { margin: 0; }
+}
+.ld-section-head {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+/* Description */
+.ld-description {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ld-desc-short {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ld-desc-short.expanded {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  display: block;
+}
+.ld-see-more {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 0 0;
+  display: inline-block;
+}
+.ld-see-more:hover { text-decoration: underline; }
+
+/* Seller inline card */
+.ld-seller-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  gap: 14px;
 }
-.ld-owner-bar span { font-size: 0.88rem; font-weight: 600; color: #92400e; flex: 1; }
-.btn-edit-sm {
-  font-size: 0.82rem;
+.ld-seller-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+.ld-seller-name {
+  font-size: 1rem;
   font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 2px;
+}
+.ld-seller-since { font-size: 0.8rem; color: #6b7280; }
+.ld-seller-stats { font-size: 0.82rem; color: #6b7280; margin-top: 2px; }
+.ld-seller-link {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: .8rem;
   color: #2563eb;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  padding: 6px 14px;
-  border-radius: 7px;
   text-decoration: none;
-  white-space: nowrap;
+  font-weight: 600;
 }
-.btn-edit-sm:hover { background: #dbeafe; }
-.btn-remove-sm {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #dc2626;
-  background: none;
-  border: 1.5px solid #fca5a5;
-  padding: 6px 14px;
-  border-radius: 7px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-remove-sm:hover { background: #fee2e2; }
+.ld-seller-link:hover { text-decoration: underline; }
 
-/* Share / report strip */
+/* Details table */
+.ld-details-table {
+  width: 100%;
+  font-size: .88rem;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+.ld-details-table tr { border-bottom: 1px solid #f3f4f6; }
+.ld-details-table td { padding: 8px 0; }
+.ld-details-table td:first-child { color: #6b7280; font-weight: 600; width: 42%; }
+.ld-details-table td:last-child  { color: #1a1a2e; }
+
+/* Details expand */
+.ld-details-extra { display: none; }
+.ld-details-extra.shown { display: table-row-group; }
+
+/* Delivery chips */
+.ld-delivery-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ld-del-chip {
+  font-size: 0.82rem; font-weight: 600;
+  padding: 5px 12px; border-radius: 8px;
+  background: #eff6ff; color: #2563eb;
+}
+
+/* Location section */
+.ld-location-line {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ld-location-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Share/Report strip */
 .ld-bottom-strip {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f3f4f6;
   font-size: 0.82rem;
 }
 .ld-share-btn {
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  background: none; border: none; color: #2563eb;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  padding: 0; display: flex; align-items: center; gap: 5px;
 }
 .ld-share-btn:hover { text-decoration: underline; }
 .ld-report-link {
-  color: #9ca3af;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  color: #9ca3af; font-weight: 500; cursor: pointer;
+  text-decoration: none; display: flex; align-items: center; gap: 4px;
 }
 .ld-report-link:hover { color: #dc2626; text-decoration: underline; }
-.ld-copy-toast {
-  display: none;
-  color: #16a34a;
-  font-weight: 600;
+.ld-copy-toast { display: none; color: #16a34a; font-weight: 600; }
+
+/* Safety card */
+.ld-safety-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+}
+.ld-safety-card h3 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 10px;
+}
+.ld-safety-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.8;
 }
 
-/* Report modal */
+/* ══════════════════════════════════════════
+   SIDEBAR WRAPPER (desktop only)
+   ══════════════════════════════════════════ */
+.ld-sidebar { display: flex; flex-direction: column; gap: 0; }
+@media (min-width: 769px) { .ld-sidebar { gap: 16px; } }
+
+.ld-sidebar-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+.ld-sidebar-card h3 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 14px;
+}
+
+/* ══════════════════════════════════════════
+   OFFER STATUS BOXES
+   ══════════════════════════════════════════ */
+.offer-status-box {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.offer-status-label { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+.offer-status-amount { font-size: 1.5rem; font-weight: 800; margin: 4px 0; }
+.offer-status-sub { font-size: 0.8rem; opacity: 0.8; }
+.offer-update-link {
+  display: inline-block; margin-top: 8px;
+  background: none; border: none; font-size: 0.82rem;
+  font-weight: 700; cursor: pointer; text-decoration: underline;
+}
+.offer-pending  { background: #fef3c7; color: #92400e; }
+.offer-pending .offer-update-link { color: #92400e; }
+.offer-accepted { background: #dcfce7; color: #15803d; }
+.offer-declined { background: #fee2e2; color: #dc2626; }
+.offer-declined .offer-update-link { color: #dc2626; }
+
+/* ══════════════════════════════════════════
+   OFFER MODAL
+   ══════════════════════════════════════════ */
 .modal-backdrop {
   display: none;
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,0.55);
   z-index: 8000;
   align-items: center;
@@ -488,210 +689,83 @@
 }
 .modal-box h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 16px; }
 .modal-box select, .modal-box textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.92rem;
-  color: #374151;
-  box-sizing: border-box;
-  margin-bottom: 12px;
-  font-family: inherit;
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #d1d5db; border-radius: 8px;
+  font-size: 0.92rem; color: #374151;
+  box-sizing: border-box; margin-bottom: 12px; font-family: inherit;
 }
-.modal-box select:focus, .modal-box textarea:focus {
-  outline: none;
-  border-color: #2563eb;
-}
+.modal-box select:focus, .modal-box textarea:focus { outline: none; border-color: #2563eb; }
 .modal-box textarea { min-height: 80px; resize: vertical; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
 .btn-cancel { background: #f3f4f6; color: #374151; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .btn-report-submit { background: #dc2626; color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-report-submit:hover { background: #b91c1c; }
-
-@media (max-width: 480px) {
-  .ld-title { font-size: 1.3rem; }
-  .ld-price { font-size: 1.5rem; }
-}
-
-/* ── Make Offer button ── */
-.btn-make-offer {
-  display: block;
-  width: 100%;
-  text-align: center;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  padding: 13px 20px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  box-sizing: border-box;
-  margin-bottom: 10px;
-}
-.btn-make-offer:hover { background: linear-gradient(135deg, #d97706, #b45309); }
-
-/* ── Offer status boxes ── */
-.offer-status-box {
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-.offer-status-label { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
-.offer-status-amount { font-size: 1.5rem; font-weight: 800; margin: 4px 0; }
-.offer-status-sub { font-size: 0.8rem; opacity: 0.8; }
-.offer-update-link {
-  display: inline-block;
-  margin-top: 8px;
-  background: none;
-  border: none;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.offer-pending  { background: #fef3c7; color: #92400e; }
-.offer-pending .offer-update-link { color: #92400e; }
-.offer-accepted { background: #dcfce7; color: #15803d; }
-.offer-declined { background: #fee2e2; color: #dc2626; }
-.offer-declined .offer-update-link { color: #dc2626; }
-
-/* ── Offer modal ── */
 #offer-modal .modal-box { max-width: 420px; }
 .offer-modal-price-hint { font-size: 0.82rem; color: #6b7280; margin-bottom: 12px; }
-.offer-amount-wrap {
-  position: relative;
-  margin-bottom: 12px;
-}
+.offer-amount-wrap { position: relative; margin-bottom: 12px; }
 .offer-amount-wrap .currency-sym {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1rem;
-  font-weight: 700;
-  color: #374151;
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 1rem; font-weight: 700; color: #374151;
 }
 .offer-amount-wrap input[type=number] {
-  width: 100%;
-  padding: 11px 12px 11px 28px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1a1a2e;
-  box-sizing: border-box;
+  width: 100%; padding: 11px 12px 11px 28px;
+  border: 1.5px solid #d1d5db; border-radius: 8px;
+  font-size: 1rem; font-weight: 700; color: #1a1a2e; box-sizing: border-box;
 }
-.offer-amount-wrap input[type=number]:focus {
-  outline: none;
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
-}
+.offer-amount-wrap input[type=number]:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
 .btn-offer-submit {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
-  border: none;
-  padding: 11px 22px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
+  color: #fff; border: none; padding: 11px 22px;
+  border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
 }
 .btn-offer-submit:hover { background: linear-gradient(135deg, #d97706, #b45309); }
 
-/* ── Similar Listings ── */
+/* ══════════════════════════════════════════
+   SIMILAR LISTINGS
+   ══════════════════════════════════════════ */
 .sim-section {
-  margin-top: 32px;
-  padding-top: 28px;
+  margin: 28px 16px 0;
+  padding-top: 24px;
   border-top: 1px solid #e5e7eb;
 }
-.sim-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.sim-head h2 {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #1a202c;
-  margin: 0;
-}
-.sim-head a {
-  font-size: 0.86rem;
-  color: #38a169;
-  font-weight: 600;
-  text-decoration: none;
-}
+@media (min-width: 769px) { .sim-section { margin: 28px 0 0; } }
+.sim-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.sim-head h2 { font-size: 1.1rem; font-weight: 800; color: #1a202c; margin: 0; }
+.sim-head a { font-size: 0.86rem; color: #38a169; font-weight: 600; text-decoration: none; }
 .sim-head a:hover { text-decoration: underline; }
 .sim-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
 }
-@media (max-width: 600px) {
-  .sim-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-}
+@media (max-width: 600px) { .sim-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
 .sim-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  overflow: hidden; text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
   transition: box-shadow 0.15s, transform 0.15s;
 }
-.sim-card:hover {
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
-  text-decoration: none;
-  color: inherit;
-}
-.sim-card-img {
-  width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-  background: #f1f5f9;
-  display: block;
-}
+.sim-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-2px); text-decoration: none; color: inherit; }
+.sim-card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: #f1f5f9; display: block; }
 .sim-card-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  color: #cbd5e0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; color: #cbd5e0;
   background: linear-gradient(135deg, #edf2f7, #e2e8f0);
 }
-.sim-card-body {
-  padding: 10px 12px 12px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.sim-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .sim-card-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #1a202c;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-size: 0.88rem; font-weight: 700; color: #1a202c; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.sim-card-price {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #276749;
-}
-.sim-card-meta {
-  font-size: 0.75rem;
-  color: #a0aec0;
-  margin-top: auto;
+.sim-card-price { font-size: 1rem; font-weight: 800; color: #276749; }
+.sim-card-meta { font-size: 0.75rem; color: #a0aec0; margin-top: auto; }
+
+/* Mobile: hide sidebar, show mobile-only sections */
+.ld-mobile-only { display: block; }
+.ld-desktop-only { display: none; }
+@media (min-width: 769px) {
+  .ld-mobile-only { display: none; }
+  .ld-desktop-only { display: block; }
 }
 </style>
 
@@ -729,73 +803,85 @@
   {% endif %}
 
   <div class="ld-grid">
-    <!-- LEFT COLUMN -->
+
+    <!-- ═══════════════════════════════════
+         LEFT / MAIN COLUMN
+         ═══════════════════════════════════ -->
     <div>
-      <!-- Gallery -->
-      <div class="ld-gallery">
-        {% if photos %}
-          {# Main display: photo (default) or video #}
-          <div class="ld-main-wrap">
-          <img
-            id="ld-main-img"
-            class="ld-main-photo"
-            src="{% if photos[0].storage_url %}{{ photos[0].storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photos[0].id) }}{% endif %}"
-            alt="{{ listing.title }}"
-            loading="eager"
-            onclick="openLightbox(0)">
-          {% if listing.videos %}
-          {% set lv = listing.videos[0] %}
-          <video id="ld-main-video"
-                 class="ld-main-photo"
-                 style="display:none;background:#000;border-radius:inherit;"
-                 controls playsinline preload="metadata">
-            {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
-          </video>
-          {% endif %}
-          {% if photos|length > 1 %}
-          <button class="ld-main-prev" onclick="galleryNav(-1, event)" aria-label="Previous photo">‹</button>
-          <button class="ld-main-next" onclick="galleryNav(1, event)" aria-label="Next photo">›</button>
-          {% endif %}
-          </div>
 
-          {% if (photos|length > 1) or listing.videos %}
-          <div class="ld-thumbs">
-            {% for photo in photos %}
+      <!-- ── Gallery ── -->
+      {% set total_media = (photos | length) + (1 if listing.videos else 0) %}
+      {% if photos or listing.videos %}
+      <div class="ld-gallery" id="ld-gallery">
+
+        <!-- Slides track -->
+        <div class="ld-slides-track" id="ld-track">
+
+          {# Photo slides #}
+          {% for photo in photos %}
+          <div class="ld-slide">
             <img
-              class="ld-thumb {% if loop.index0 == 0 %}active{% endif %}"
               src="{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"
-              alt="Photo {{ loop.index }}"
-              loading="lazy"
-              onclick="selectPhoto({{ loop.index0 }}, '{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}', this)">
-            {% endfor %}
-            {% if listing.videos %}
-            <div class="ld-thumb ld-video-thumb" onclick="selectVideo(this)"
-                 title="Play video"
-                 style="position:relative;background:#0f172a;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;overflow:hidden;">
-              <span style="font-size:1.6rem;color:#fff;line-height:1;z-index:1;">▶</span>
-              <span style="position:absolute;bottom:3px;right:4px;font-size:.6rem;color:rgba(255,255,255,.7);font-weight:700;letter-spacing:.3px;">VIDEO</span>
-            </div>
-            {% endif %}
+              alt="{{ listing.title }} — photo {{ loop.index }}"
+              loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}">
           </div>
-          {% endif %}
-        {% else %}
-          {# No photos — show video as main if available #}
+          {% endfor %}
+
+          {# Video slide (last) #}
           {% if listing.videos %}
           {% set lv = listing.videos[0] %}
-          <video class="ld-main-photo" style="background:#000;border-radius:inherit;"
-                 controls playsinline preload="metadata">
-            {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
-          </video>
-          {% else %}
-          <div class="ld-main-placeholder">📦</div>
+          <div class="ld-slide" id="ld-video-slide">
+            <video id="ld-video-player" controls playsinline preload="metadata"
+                   style="width:100%;height:100%;object-fit:contain;background:#000;">
+              {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
+            </video>
+            {# Play overlay — hidden once video starts #}
+            <div class="ld-video-overlay" id="ld-video-overlay" onclick="ldPlayVideo()">
+              <div class="ld-video-overlay-icon">▶</div>
+            </div>
+          </div>
           {% endif %}
-        {% endif %}
-      </div>
 
-      <!-- Info -->
+        </div><!-- /track -->
+
+        {# Prev/next arrows (only if multiple media) #}
+        {% if total_media > 1 %}
+        <button class="ld-arr ld-arr-prev" onclick="ldNav(-1)" aria-label="Previous">‹</button>
+        <button class="ld-arr ld-arr-next" onclick="ldNav(1)"  aria-label="Next">›</button>
+        {% endif %}
+
+        {# Dot indicators #}
+        {% if total_media > 1 %}
+        <div class="ld-dots{% if total_media > 12 %} many{% endif %}" id="ld-dots">
+          {% for photo in photos %}
+          <button class="ld-dot {% if loop.index0 == 0 %}active{% endif %}"
+                  onclick="ldGoTo({{ loop.index0 }})" aria-label="Photo {{ loop.index }}"></button>
+          {% endfor %}
+          {% if listing.videos %}
+          <button class="ld-dot" onclick="ldGoTo({{ photos | length }})" aria-label="Video">▶</button>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {# Photo count badge #}
+        {% if total_media > 1 %}
+        <div class="ld-count-badge" id="ld-count-badge">1 / {{ total_media }}</div>
+        {% endif %}
+
+      </div><!-- /gallery -->
+
+      {% else %}
+      {# No photos, no video #}
+      <div class="ld-no-photo">{{ '🏠' if listing.is_property else '📦' }}</div>
+      {% endif %}
+
+      <!-- ── Status + Title + Price ── -->
       <div class="ld-info">
+
         <div class="ld-status-row">
-          {% if listing.status == 'sold' %}
+          {% if listing.status == 'active' %}
+            <span class="ld-status-badge s-active">Active</span>
+          {% elif listing.status == 'sold' %}
             <span class="ld-status-badge s-sold">Sold</span>
           {% elif listing.status == 'reserved' %}
             <span class="ld-status-badge s-reserved">Reserved</span>
@@ -806,6 +892,11 @@
           {% elif listing.status == 'removed' %}
             <span class="ld-status-badge s-removed">Removed</span>
           {% endif %}
+          {% if listing.is_property %}
+            <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;{% if listing.listing_type == 'rental' %}background:#dbeafe;color:#1e40af{% else %}background:#dcfce7;color:#15803d{% endif %}">
+              {{ '🔑 For Rent' if listing.listing_type == 'rental' else '🏠 For Sale' }}
+            </span>
+          {% endif %}
           {% if listing.moderation_status == 'flagged' and (is_owner or is_admin) %}
             <span class="ld-status-badge s-removed">⚠️ Flagged</span>
           {% endif %}
@@ -814,11 +905,6 @@
         <h1 class="ld-title">{{ listing.title }}</h1>
 
         <div class="ld-price-row">
-          {% if listing.is_property %}
-            <span style="font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:8px;{% if listing.listing_type == 'rental' %}background:#dbeafe;color:#1e40af{% else %}background:#dcfce7;color:#15803d{% endif %}">
-              {{ '🔑 For Rent' if listing.listing_type == 'rental' else '🏠 For Sale' }}
-            </span>
-          {% endif %}
           {% if listing.price_type == 'free' %}
             <span class="ld-price free">Free</span>
           {% elif listing.price is not none %}
@@ -827,170 +913,331 @@
               <span class="ld-badge-offer">Negotiable</span>
             {% endif %}
           {% else %}
-            <span class="ld-price">Contact for price</span>
+            <span class="ld-price" style="font-size:1.3rem">Contact for price</span>
           {% endif %}
         </div>
 
-        {# ── Property Stats Row (beds/baths/sqft) ── #}
+        <!-- Meta chips -->
+        <div class="ld-meta-chips">
+          {% if not listing.is_property and listing.condition %}
+          <span class="ld-chip">
+            {% if listing.condition == 'new' %}✨{% elif listing.condition == 'like_new' %}🌟{% elif listing.condition == 'good' %}👍{% elif listing.condition == 'fair' %}🔧{% elif listing.condition == 'for_parts' %}🔩{% else %}❓{% endif %}
+            {{ listing.condition.replace('_', ' ').title() }}
+          </span>
+          {% endif %}
+          {% if listing.category %}
+          <span class="ld-chip">🏷 {{ listing.category.name }}</span>
+          {% endif %}
+          {% if listing.city or listing.state %}
+          <span class="ld-chip">📍 {{ [listing.city, listing.state] | select | join(', ') }}</span>
+          {% endif %}
+          <span class="ld-chip">📅 {{ listing.created_at.strftime('%-m/%-d/%Y') }}</span>
+          <span class="ld-chip">👁 {{ listing.view_count or 0 }} view{{ '' if (listing.view_count or 0) == 1 else 's' }}</span>
+        </div>
+
+        {# Property stats (beds/baths/sqft) #}
         {% if listing.is_property and (listing.bedrooms is not none or listing.bathrooms is not none or listing.sqft) %}
-        <div style="display:flex;gap:20px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:14px">
+        <div class="ld-prop-stats">
           {% if listing.bedrooms is not none %}
           <div style="text-align:center">
-            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.bedrooms|int if listing.bedrooms == listing.bedrooms|int else listing.bedrooms }}</div>
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Beds</div>
+            <div class="ld-prop-stat-val">{{ listing.bedrooms|int if listing.bedrooms == listing.bedrooms|int else listing.bedrooms }}</div>
+            <div class="ld-prop-stat-lbl">Beds</div>
           </div>
           {% endif %}
           {% if listing.bathrooms is not none %}
           <div style="text-align:center">
-            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.bathrooms|int if listing.bathrooms == listing.bathrooms|int else listing.bathrooms }}</div>
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Baths</div>
+            <div class="ld-prop-stat-val">{{ listing.bathrooms|int if listing.bathrooms == listing.bathrooms|int else listing.bathrooms }}</div>
+            <div class="ld-prop-stat-lbl">Baths</div>
           </div>
           {% endif %}
           {% if listing.sqft %}
           <div style="text-align:center">
-            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ '{:,}'.format(listing.sqft) }}</div>
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Sq Ft</div>
+            <div class="ld-prop-stat-val">{{ '{:,}'.format(listing.sqft) }}</div>
+            <div class="ld-prop-stat-lbl">Sq Ft</div>
           </div>
           {% endif %}
           {% if listing.year_built %}
           <div style="text-align:center">
-            <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e">{{ listing.year_built }}</div>
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:500">Year Built</div>
+            <div class="ld-prop-stat-val">{{ listing.year_built }}</div>
+            <div class="ld-prop-stat-lbl">Year Built</div>
           </div>
           {% endif %}
         </div>
         {% endif %}
 
-        {# ── Open House Banner ── #}
+        {# Open House banner #}
         {% if listing.open_house_dt %}
         <div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-weight:600;color:#713f12;font-size:.92rem">
           🗓️ <strong>Open House:</strong> {{ listing.open_house_dt.strftime('%A, %B %-d at %-I:%M %p') }}
         </div>
         {% endif %}
 
-        <div class="ld-meta-chips">
-          {% if listing.is_property %}
-            {# Property type #}
-            {% if listing.property_type %}
-            <span class="ld-chip">🏠 {{ {'house':'House','condo':'Condo/Townhome','multi_family':'Multi-Family','land':'Land','commercial':'Commercial','manufactured':'Manufactured/Mobile','other':'Other Real Estate','apartment':'Apartment','room':'Room','short_term':'Short-term Rental'}.get(listing.property_type, listing.property_type.replace('_',' ').title()) }}</span>
+      </div><!-- /ld-info -->
+
+      <!-- ── CTA BLOCK (mobile only — desktop CTAs are in sidebar) ── -->
+      <div class="ld-cta-block ld-mobile-only">
+        {% include "_listing_ctas.html" ignore missing %}
+        {# Inline CTAs for mobile — same logic as sidebar below #}
+        {% if is_owner or is_admin %}
+          <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 View Messages ({{ listing.conversations | length }})</a>
+          <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-secondary">✏️ Edit Listing</a>
+        {% elif listing.status == 'active' and listing.moderation_status == 'approved' %}
+          {% if current_user.is_authenticated %}
+            {% if listing.is_property %}
+              {% if listing.listing_type == 'rental' %}
+                <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🔑 Contact Landlord</a>
+              {% else %}
+                <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
+              <a href="{{ url_for('listing_request_delivery', listing_id=listing.id) }}" class="btn-delivery">🚚 Need Delivery?</a>
             {% endif %}
-            {# Listed by #}
-            {% if listing.listed_by %}
-            <span class="ld-chip">{{ {'owner':'🏠 Owner/FSBO','agent':'🤝 Agent','builder':'🏗️ Builder'}.get(listing.listed_by, listing.listed_by) }}</span>
+            {% if listing.price_type == 'negotiable' %}
+              {% if buyer_offer and buyer_offer.status == 'pending' %}
+                <div class="offer-status-box offer-pending">
+                  <div class="offer-status-label">⏳ Offer Pending</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-sub">Sent {{ buyer_offer.created_at.strftime('%-m/%-d/%Y') }} · Waiting for seller</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Update offer</button>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'accepted' %}
+                <div class="offer-status-box offer-accepted">
+                  <div class="offer-status-label">✅ Offer Accepted!</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-sub">Contact the seller to complete your purchase.</div>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'declined' %}
+                <div class="offer-status-box offer-declined">
+                  <div class="offer-status-label">❌ Offer Declined</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-sub">The seller passed on this offer.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'countered' and buyer_offer.counter_amount %}
+                <div style="background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:10px;padding:16px;text-align:center;margin-bottom:10px;">
+                  <div style="font-size:.82rem;font-weight:700;color:#5b21b6;margin-bottom:6px;">🔄 Counteroffer Received</div>
+                  <div style="font-size:1.5rem;font-weight:800;color:#4c1d95;">${{ buyer_offer.counter_amount|fmt_price }}</div>
+                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ buyer_offer.amount|fmt_price }} · Seller countered: ${{ buyer_offer.counter_amount|fmt_price }}</div>
+                  <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=buyer_offer.id) }}"
+                        style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" name="action" value="accept_counter"
+                            style="padding:9px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;"
+                            onclick="return confirm('Accept the ${{ buyer_offer.counter_amount|fmt_price }} counteroffer?')">✅ Accept ${{ buyer_offer.counter_amount|fmt_price }}</button>
+                    <button type="submit" name="action" value="decline_counter"
+                            style="padding:9px 14px;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;">❌ Decline</button>
+                    <button type="submit" name="action" value="withdraw"
+                            style="padding:9px 14px;background:#f8fafc;color:#64748b;border:1.5px solid #d1d5db;border-radius:8px;font-size:.82rem;cursor:pointer;"
+                            onclick="return confirm('Withdraw your offer?')">↩ Withdraw</button>
+                  </form>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'withdrawn' %}
+                <div class="offer-status-box" style="background:#f8fafc;border:1.5px solid #d1d5db;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
+                  <div class="offer-status-label" style="color:#64748b;">↩️ Offer Withdrawn</div>
+                  <div class="offer-status-sub">You withdrew your previous offer.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
+              {% elif buyer_offer and buyer_offer.status == 'expired' %}
+                <div class="offer-status-box" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
+                  <div class="offer-status-label" style="color:#92400e;">⏰ Offer Expired</div>
+                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-sub" style="color:#9a3412;">This offer expired without a response.</div>
+                  <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
+                </div>
+              {% else %}
+                <button type="button" class="btn-make-offer" onclick="openOfferModal()">💰 Make an Offer</button>
+              {% endif %}
             {% endif %}
-            {# Pets #}
-            {% if listing.listing_type == 'rental' %}
-            <span class="ld-chip">{{ '🐾 Pets OK' if listing.pets_allowed else '🚫 No Pets' }}</span>
+            {% if not is_owner %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+              </button>
+            </form>
             {% endif %}
           {% else %}
-            {# Item condition #}
-            {% if listing.condition %}
-            <span class="ld-chip">
-              <span class="chip-icon">{% if listing.condition == 'new' %}✨{% elif listing.condition == 'like_new' %}🌟{% elif listing.condition == 'good' %}👍{% elif listing.condition == 'fair' %}🔧{% elif listing.condition == 'for_parts' %}🔩{% else %}❓{% endif %}</span>
-              {{ listing.condition.replace('_', ' ').title() }}
-            </span>
+            {# Logged-out #}
+            {% if listing.is_property %}
+              {% if listing.listing_type == 'rental' %}
+                <a href="{{ url_for('auth.login') }}" class="btn-primary">🔑 Contact Landlord</a>
+              {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-primary">🏠 Contact Owner / Request Showing</a>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('auth.login') }}" class="btn-primary">💬 Message Seller</a>
+              <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚚 Need Delivery?</a>
+            {% endif %}
+            {% if listing.price_type == 'negotiable' %}
+            <a href="{{ url_for('auth.login') }}" class="btn-make-offer">💰 Make an Offer</a>
             {% endif %}
           {% endif %}
-          {% if listing.city or listing.state %}
-          <span class="ld-chip">📍 {{ [listing.city, listing.state] | select | join(', ') }}</span>
+        {% elif listing.status == 'sold' %}
+          <div style="text-align:center;padding:12px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🏷️ This item has been sold.</div>
+          {% if not is_owner and current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+              <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+              <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+            </button>
+          </form>
           {% endif %}
-          {% if listing.category %}
-          <span class="ld-chip">🏷 {{ listing.category.name }}</span>
+        {% elif listing.status == 'reserved' %}
+          <div style="text-align:center;padding:12px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🔒 This item is currently reserved.</div>
+          {% if not is_owner and current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+              <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+              <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+            </button>
+          </form>
           {% endif %}
-          <span class="ld-chip">📅 {{ listing.created_at.strftime('%-m/%-d/%Y') }}</span>
-          <span class="ld-chip">👁 {{ listing.view_count or 0 }} view{{ '' if (listing.view_count or 0) == 1 else 's' }}</span>
+        {% endif %}
+      </div><!-- /mobile CTA -->
+
+      <!-- ── Description ── -->
+      {% if listing.description %}
+      <div class="ld-section">
+        <div class="ld-section-head">Description</div>
+        <div class="ld-description ld-desc-short" id="ld-desc">{{ listing.description }}</div>
+        <button class="ld-see-more" id="ld-see-more-btn" onclick="ldToggleDesc()" style="display:none">See more</button>
+      </div>
+      {% endif %}
+
+      <!-- ── Seller (mobile) ── -->
+      <div class="ld-section ld-mobile-only">
+        <div class="ld-section-head">Seller</div>
+        <div class="ld-seller-card">
+          {% if listing.seller.profile_image_url %}
+          <img class="ld-seller-avatar" src="{{ listing.seller.profile_image_url }}" alt="{{ listing.seller.first_name }}">
+          {% elif listing.seller.profile_photo_data %}
+          <img class="ld-seller-avatar" src="{{ url_for('serve_profile_photo', user_id=listing.seller.id) }}" alt="{{ listing.seller.first_name }}">
+          {% else %}
+          <div class="ld-seller-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#e5e7eb;">👤</div>
+          {% endif %}
+          <div>
+            <div class="ld-seller-name">{{ listing.seller.first_name or '' }}{% if listing.seller.first_name and listing.seller.last_name %} {{ listing.seller.last_name[0] }}.{% endif %}</div>
+            <div class="ld-seller-since">Member since {{ listing.seller.created_at.strftime('%B %Y') }}</div>
+            <div class="ld-seller-stats">{{ seller_active_count }} active listing{{ '' if seller_active_count == 1 else 's' }}{% if seller_sold_count > 0 %} · {{ seller_sold_count }} sold{% endif %}</div>
+            {% if not is_owner %}
+            <a href="{{ url_for('seller_profile', user_id=listing.seller.id) }}" class="ld-seller-link">View Profile →</a>
+            {% endif %}
+          </div>
         </div>
+      </div>
 
-        {# ── Property Address ── #}
-        {% if listing.is_property and listing.property_address %}
-        <div style="font-size:.9rem;color:#4b5563;margin-bottom:12px">
-          📍 {{ listing.property_address }}, {{ listing.city or '' }}{% if listing.state %}, {{ listing.state }}{% endif %} {{ listing.zip_code or '' }}
-        </div>
-        {% endif %}
-
-        {% if listing.description %}
-        <div class="ld-section-label">Description</div>
-        <div class="ld-description">{{ listing.description }}</div>
-        {% endif %}
-
-        {# ── Vehicle Details Table ── #}
-        {% if listing.is_vehicle %}
-        {% set vd = [] %}
-        {% if listing.vehicle_year %}{% set _ = vd.append(('Year', listing.vehicle_year)) %}{% endif %}
-        {% if listing.vehicle_make %}{% set _ = vd.append(('Make', listing.vehicle_make)) %}{% endif %}
-        {% if listing.vehicle_model %}{% set _ = vd.append(('Model', listing.vehicle_model)) %}{% endif %}
-        {% if listing.vehicle_trim %}{% set _ = vd.append(('Trim', listing.vehicle_trim)) %}{% endif %}
-        {% if listing.vehicle_body_style %}{% set _ = vd.append(('Body Style', listing.vehicle_body_style)) %}{% endif %}
-        {% if listing.vehicle_mileage is not none %}{% set _ = vd.append(('Mileage', '{:,} mi'.format(listing.vehicle_mileage))) %}{% endif %}
-        {% if listing.vehicle_exterior_color %}{% set _ = vd.append(('Exterior Color', listing.vehicle_exterior_color)) %}{% endif %}
-        {% if listing.vehicle_transmission %}
-          {% set _tr_labels = {'automatic':'Automatic','manual':'Manual','cvt':'CVT','other':'Other'} %}
-          {% set _ = vd.append(('Transmission', _tr_labels.get(listing.vehicle_transmission, listing.vehicle_transmission))) %}
-        {% endif %}
-        {% if listing.vehicle_fuel_type %}
-          {% set _fu_labels = {'gasoline':'Gasoline','diesel':'Diesel','electric':'Electric','hybrid':'Hybrid','plug_in_hybrid':'Plug-in Hybrid','other':'Other'} %}
-          {% set _ = vd.append(('Fuel Type', _fu_labels.get(listing.vehicle_fuel_type, listing.vehicle_fuel_type))) %}
-        {% endif %}
-        {% if listing.vehicle_drivetrain %}
-          {% set _dr_labels = {'fwd':'FWD','rwd':'RWD','awd':'AWD','4wd':'4WD / 4x4','other':'Other'} %}
-          {% set _ = vd.append(('Drivetrain', _dr_labels.get(listing.vehicle_drivetrain, listing.vehicle_drivetrain))) %}
-        {% endif %}
-        {% if listing.vehicle_title_status %}
-          {% set _ts_labels = {'clean':'Clean','salvage':'Salvage','rebuilt':'Rebuilt','lien':'Lien','other':'Other'} %}
-          {% set _ = vd.append(('Title Status', _ts_labels.get(listing.vehicle_title_status, listing.vehicle_title_status))) %}
-        {% endif %}
-        {% if vd %}
-        <div class="ld-section-label">Vehicle Details</div>
-        <table style="width:100%;font-size:.88rem;border-collapse:collapse;margin-bottom:14px">
-          {% for label, val in vd %}
-          <tr style="border-bottom:1px solid #f3f4f6">
-            <td style="padding:7px 0;color:#6b7280;font-weight:600;width:40%">{{ label }}</td>
-            <td style="padding:7px 0;color:#1a1a2e">{{ val }}</td>
-          </tr>
-          {% endfor %}
+      <!-- ── Vehicle Details ── -->
+      {% if listing.is_vehicle %}
+      {% set vd = [] %}
+      {% if listing.vehicle_year %}{% set _ = vd.append(('Year', listing.vehicle_year)) %}{% endif %}
+      {% if listing.vehicle_make %}{% set _ = vd.append(('Make', listing.vehicle_make)) %}{% endif %}
+      {% if listing.vehicle_model %}{% set _ = vd.append(('Model', listing.vehicle_model)) %}{% endif %}
+      {% if listing.vehicle_trim %}{% set _ = vd.append(('Trim', listing.vehicle_trim)) %}{% endif %}
+      {% if listing.vehicle_body_style %}{% set _ = vd.append(('Body Style', listing.vehicle_body_style)) %}{% endif %}
+      {% if listing.vehicle_mileage is not none %}{% set _ = vd.append(('Mileage', '{:,} mi'.format(listing.vehicle_mileage))) %}{% endif %}
+      {% if listing.vehicle_exterior_color %}{% set _ = vd.append(('Exterior Color', listing.vehicle_exterior_color)) %}{% endif %}
+      {% if listing.vehicle_transmission %}
+        {% set _tr = {'automatic':'Automatic','manual':'Manual','cvt':'CVT','other':'Other'} %}
+        {% set _ = vd.append(('Transmission', _tr.get(listing.vehicle_transmission, listing.vehicle_transmission))) %}
+      {% endif %}
+      {% if listing.vehicle_fuel_type %}
+        {% set _fu = {'gasoline':'Gasoline','diesel':'Diesel','electric':'Electric','hybrid':'Hybrid','plug_in_hybrid':'Plug-in Hybrid','other':'Other'} %}
+        {% set _ = vd.append(('Fuel Type', _fu.get(listing.vehicle_fuel_type, listing.vehicle_fuel_type))) %}
+      {% endif %}
+      {% if listing.vehicle_drivetrain %}
+        {% set _dr = {'fwd':'FWD','rwd':'RWD','awd':'AWD','4wd':'4WD / 4x4','other':'Other'} %}
+        {% set _ = vd.append(('Drivetrain', _dr.get(listing.vehicle_drivetrain, listing.vehicle_drivetrain))) %}
+      {% endif %}
+      {% if listing.vehicle_title_status %}
+        {% set _ts = {'clean':'Clean','salvage':'Salvage','rebuilt':'Rebuilt','lien':'Lien','other':'Other'} %}
+        {% set _ = vd.append(('Title Status', _ts.get(listing.vehicle_title_status, listing.vehicle_title_status))) %}
+      {% endif %}
+      {% if vd %}
+      <div class="ld-section">
+        <div class="ld-section-head">Vehicle Details</div>
+        <table class="ld-details-table">
+          <tbody id="vd-body-main">
+            {% for label, val in vd[:6] %}
+            <tr><td>{{ label }}</td><td>{{ val }}</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if vd | length > 6 %}
+          <tbody class="ld-details-extra" id="vd-body-extra">
+            {% for label, val in vd[6:] %}
+            <tr><td>{{ label }}</td><td>{{ val }}</td></tr>
+            {% endfor %}
+          </tbody>
+          {% endif %}
         </table>
+        {% if vd | length > 6 %}
+        <button class="ld-see-more" id="vd-extra-btn" onclick="ldToggleExtra('vd-body-extra','vd-extra-btn')">See more details</button>
         {% endif %}
-        {% endif %}
+      </div>
+      {% endif %}
+      {% endif %}
 
-        {# ── Property Details Table ── #}
-        {% if listing.is_property %}
-        {% set prop_details = [] %}
-        {% if listing.lot_size %}{% set _ = prop_details.append(('Lot Size', listing.lot_size)) %}{% endif %}
-        {% if listing.garage_parking %}{% set _ = prop_details.append(('Garage/Parking', listing.garage_parking)) %}{% endif %}
-        {% if listing.hoa_fee is not none %}{% set _ = prop_details.append(('HOA', '$' ~ '%.0f'|format(listing.hoa_fee) ~ '/mo')) %}{% endif %}
-        {% if listing.property_tax_annual is not none %}{% set _ = prop_details.append(('Property Tax', '$' ~ '{:,.0f}'.format(listing.property_tax_annual) ~ '/yr')) %}{% endif %}
-        {% if listing.rent_terms %}{% set _ = prop_details.append(('Lease Terms', {'monthly':'Month-to-month','annual':'Annual','weekly':'Weekly','short_term':'Short-term/nightly'}.get(listing.rent_terms, listing.rent_terms))) %}{% endif %}
-        {% if listing.utilities_included %}{% set _ = prop_details.append(('Utilities Included', listing.utilities_included)) %}{% endif %}
-        {% if prop_details %}
-        <div class="ld-section-label">Property Details</div>
-        <table style="width:100%;font-size:.88rem;border-collapse:collapse;margin-bottom:14px">
-          {% for label, val in prop_details %}
-          <tr style="border-bottom:1px solid #f3f4f6">
-            <td style="padding:7px 0;color:#6b7280;font-weight:600;width:45%">{{ label }}</td>
-            <td style="padding:7px 0;color:#1a1a2e">{{ val }}</td>
-          </tr>
-          {% endfor %}
+      <!-- ── Property Details ── -->
+      {% if listing.is_property %}
+      {% set pd = [] %}
+      {% if listing.lot_size %}{% set _ = pd.append(('Lot Size', listing.lot_size)) %}{% endif %}
+      {% if listing.garage_parking %}{% set _ = pd.append(('Garage/Parking', listing.garage_parking)) %}{% endif %}
+      {% if listing.hoa_fee is not none %}{% set _ = pd.append(('HOA', '$' ~ '%.0f'|format(listing.hoa_fee) ~ '/mo')) %}{% endif %}
+      {% if listing.property_tax_annual is not none %}{% set _ = pd.append(('Property Tax', '$' ~ '{:,.0f}'.format(listing.property_tax_annual) ~ '/yr')) %}{% endif %}
+      {% if listing.rent_terms %}{% set _ = pd.append(('Lease Terms', {'monthly':'Month-to-month','annual':'Annual','weekly':'Weekly','short_term':'Short-term/nightly'}.get(listing.rent_terms, listing.rent_terms))) %}{% endif %}
+      {% if listing.utilities_included %}{% set _ = pd.append(('Utilities Included', listing.utilities_included)) %}{% endif %}
+      {% if listing.property_type %}
+        {% set _pt = {'house':'House','condo':'Condo/Townhome','multi_family':'Multi-Family','land':'Land','commercial':'Commercial','manufactured':'Manufactured/Mobile','other':'Other Real Estate','apartment':'Apartment','room':'Room','short_term':'Short-term Rental'} %}
+        {% set _ = pd.append(('Property Type', _pt.get(listing.property_type, listing.property_type.replace('_',' ').title()))) %}
+      {% endif %}
+      {% if listing.listed_by %}
+        {% set _lb = {'owner':'Owner / FSBO','agent':'Real Estate Agent','builder':'Builder'} %}
+        {% set _ = pd.append(('Listed By', _lb.get(listing.listed_by, listing.listed_by))) %}
+      {% endif %}
+      {% if listing.listing_type == 'rental' %}
+        {% set _ = pd.append(('Pets', 'Pets OK' if listing.pets_allowed else 'No Pets')) %}
+      {% endif %}
+
+      {% if pd %}
+      <div class="ld-section">
+        <div class="ld-section-head">Property Details</div>
+        <table class="ld-details-table">
+          <tbody>
+            {% for label, val in pd %}
+            <tr><td>{{ label }}</td><td>{{ val }}</td></tr>
+            {% endfor %}
+          </tbody>
         </table>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        {# Amenities #}
-        {% if listing.amenities_list %}
-        <div class="ld-section-label">Amenities</div>
-        <ul style="list-style:none;padding:0;margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+      {# Amenities #}
+      {% if listing.amenities_list %}
+      <div class="ld-section">
+        <div class="ld-section-head">Amenities</div>
+        <ul style="list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
           {% for a in listing.amenities_list %}
           <li style="font-size:.85rem;color:#374151;padding:3px 0">✓ {{ a }}</li>
           {% endfor %}
         </ul>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        {# Real estate disclaimer #}
-        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#6b7280;line-height:1.6;margin-bottom:12px">
+      {# Real estate disclaimer #}
+      <div class="ld-section" style="padding-top:12px">
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#6b7280;line-height:1.6;">
           📋 JHE Haul connects buyers and renters with sellers and landlords. We do not process real estate payments, provide escrow services, or act as a brokerage.
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        {% if not listing.is_property and listing.delivery_options_list %}
-        <div class="ld-section-label">Delivery options</div>
+      <!-- ── Delivery Options ── -->
+      {% if not listing.is_property and listing.delivery_options_list %}
+      <div class="ld-section">
+        <div class="ld-section-head">Delivery Options</div>
         <div class="ld-delivery-opts">
           {% for opt in listing.delivery_options_list %}
           <span class="ld-del-chip">
@@ -1001,9 +1248,25 @@
           </span>
           {% endfor %}
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        <!-- Share / Report -->
+      <!-- ── Location ── -->
+      {% if listing.city or listing.state or listing.zip_code %}
+      <div class="ld-section">
+        <div class="ld-section-head">Location</div>
+        <div class="ld-location-line">
+          📍 {{ [listing.city, listing.state] | select | join(', ') }}{% if listing.zip_code %} {{ listing.zip_code }}{% endif %}
+        </div>
+        {% if listing.is_property and listing.property_address %}
+        <div style="font-size:.85rem;color:#4b5563;margin-top:5px">{{ listing.property_address }}</div>
+        {% endif %}
+        <div class="ld-location-note">General area shown to protect seller privacy.</div>
+      </div>
+      {% endif %}
+
+      <!-- ── Share / Report ── -->
+      <div class="ld-section">
         <div class="ld-bottom-strip">
           <button class="ld-share-btn" onclick="shareListing()">📤 Share</button>
           <span class="ld-copy-toast" id="copy-toast">✅ Link copied!</span>
@@ -1014,15 +1277,76 @@
           {% endif %}
         </div>
       </div>
-    </div>
 
-    <!-- RIGHT COLUMN: Sidebar -->
-    <div class="ld-sidebar">
+      <!-- ── Seller Offers Panel (owner only, mobile) ── -->
+      {% if is_owner and listing.price_type == 'negotiable' %}
+      <div class="ld-section ld-mobile-only">
+        <div class="ld-section-head">Offers {% if seller_offers %}({{ seller_offers|length }}){% endif %}</div>
+        {% if seller_offers %}
+        {% for offer in seller_offers %}
+        <div style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;font-size:.95rem;color:#1a202c;">
+                ${{ offer.amount|fmt_price }}
+                {% if offer.status == 'countered' and offer.counter_amount %}
+                <span style="font-size:.74rem;color:#5b21b6;font-weight:400;margin-left:4px;">counter: ${{ offer.counter_amount|fmt_price }}</span>
+                {% endif %}
+              </div>
+              <div style="font-size:.77rem;color:#6b7280;margin-top:2px;">
+                {{ offer.buyer.first_name or '' }}{% if offer.buyer.first_name and offer.buyer.last_name %} {{ offer.buyer.last_name[0] }}.{% endif %}
+                · {{ offer.created_at.strftime('%b %d') }}
+              </div>
+              {% if offer.message %}
+              <div style="font-size:.76rem;color:#9ca3af;font-style:italic;margin-top:2px;">"{{ offer.message|truncate(55) }}"</div>
+              {% endif %}
+            </div>
+            <span style="font-size:.71rem;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap;flex-shrink:0;
+              {% if offer.status == 'pending' %}background:#fef3c7;color:#92400e;
+              {% elif offer.status == 'accepted' %}background:#dcfce7;color:#15803d;
+              {% elif offer.status == 'countered' %}background:#ede9fe;color:#5b21b6;
+              {% else %}background:#f1f5f9;color:#64748b;{% endif %}">
+              {{ offer.status.title() }}
+            </span>
+          </div>
+          {% if offer.status in ('pending', 'countered') %}
+          <form method="POST" action="{{ url_for('offer_seller_respond', listing_id=listing.id, offer_id=offer.id) }}"
+                style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if offer.status == 'pending' %}
+            <button type="submit" name="action" value="accept"
+                    style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;"
+                    onclick="return confirm('Accept this offer?')">✅ Accept</button>
+            {% endif %}
+            <button type="submit" name="action" value="decline"
+                    style="padding:6px 12px;background:#fff;color:#dc2626;border:1.5px solid #fca5a5;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;">❌ Decline</button>
+            <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:130px;">
+              <input type="number" name="counter_amount" placeholder="Counter $" min="1" step="1"
+                     style="flex:1;min-width:70px;padding:6px 8px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.8rem;box-sizing:border-box;">
+              <button type="submit" name="action" value="counter"
+                      style="padding:6px 10px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">Counter</button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="font-size:.82rem;color:#9ca3af;padding:6px 0;">No offers yet.</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div><!-- /left column -->
+
+    <!-- ═══════════════════════════════════
+         RIGHT COLUMN — SIDEBAR (desktop)
+         ═══════════════════════════════════ -->
+    <div class="ld-sidebar ld-desktop-only">
 
       <!-- Seller card -->
-      <div class="ld-action-card">
+      <div class="ld-sidebar-card">
         <h3>Seller</h3>
-        <div class="ld-seller-row">
+        <div class="ld-seller-card" style="margin-bottom:14px;">
           {% if listing.seller.profile_image_url %}
           <img class="ld-seller-avatar" src="{{ listing.seller.profile_image_url }}" alt="{{ listing.seller.first_name }}">
           {% elif listing.seller.profile_photo_data %}
@@ -1031,25 +1355,20 @@
           <div class="ld-seller-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#e5e7eb;">👤</div>
           {% endif %}
           <div>
-            <div class="ld-seller-name">
-              {{ listing.seller.first_name or '' }}{% if listing.seller.first_name and listing.seller.last_name %} {{ listing.seller.last_name[0] }}.{% endif %}
-            </div>
+            <div class="ld-seller-name">{{ listing.seller.first_name or '' }}{% if listing.seller.first_name and listing.seller.last_name %} {{ listing.seller.last_name[0] }}.{% endif %}</div>
             <div class="ld-seller-since">Member since {{ listing.seller.created_at.strftime('%B %Y') }}</div>
             <div class="ld-seller-stats">{{ seller_active_count }} active listing{{ '' if seller_active_count == 1 else 's' }}{% if seller_sold_count > 0 %} · {{ seller_sold_count }} sold{% endif %}</div>
             {% if not is_owner %}
-            <a href="{{ url_for('seller_profile', user_id=listing.seller.id) }}"
-               style="display:inline-block;margin-top:5px;font-size:.8rem;color:#2563eb;text-decoration:none;font-weight:600;">View Seller Profile →</a>
+            <a href="{{ url_for('seller_profile', user_id=listing.seller.id) }}" class="ld-seller-link">View Profile →</a>
             {% endif %}
           </div>
         </div>
 
-        <!-- CTAs -->
+        <!-- Desktop CTAs -->
         {% if is_owner or is_admin %}
-          <!-- Seller / admin always see messages inbox + edit -->
           <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 View Messages ({{ listing.conversations | length }})</a>
           <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-secondary">✏️ Edit Listing</a>
-
-          {# ── Seller: incoming offers panel (negotiable listings only) ── #}
+          {# Seller offers (desktop) #}
           {% if is_owner and listing.price_type == 'negotiable' %}
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
             <div style="font-size:.8rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">
@@ -1110,9 +1429,7 @@
           {% endif %}
 
         {% elif listing.status == 'active' and listing.moderation_status == 'approved' %}
-
           {% if current_user.is_authenticated %}
-            <!-- Logged-in buyer: primary CTA -->
             {% if listing.is_property %}
               {% if listing.listing_type == 'rental' %}
                 <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">🔑 Contact Landlord</a>
@@ -1123,34 +1440,32 @@
               <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-primary">💬 Message Seller</a>
               <a href="{{ url_for('listing_request_delivery', listing_id=listing.id) }}" class="btn-delivery">🚚 Need Delivery?</a>
             {% endif %}
-
-            {# ── Offer controls: shown for all negotiable listings ── #}
             {% if listing.price_type == 'negotiable' %}
               {% if buyer_offer and buyer_offer.status == 'pending' %}
                 <div class="offer-status-box offer-pending">
                   <div class="offer-status-label">⏳ Offer Pending</div>
-                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">Sent {{ buyer_offer.created_at.strftime('%-m/%-d/%Y') }} · Waiting for seller</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Update offer</button>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'accepted' %}
                 <div class="offer-status-box offer-accepted">
                   <div class="offer-status-label">✅ Offer Accepted!</div>
-                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">Contact the seller to complete your purchase.</div>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'declined' %}
                 <div class="offer-status-box offer-declined">
                   <div class="offer-status-label">❌ Offer Declined</div>
-                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-amount">${{ buyer_offer.amount|fmt_price }}</div>
                   <div class="offer-status-sub">The seller passed on this offer.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'countered' and buyer_offer.counter_amount %}
-                <div style="background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:10px;padding:16px;text-align:center;margin-top:4px;">
+                <div style="background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:10px;padding:16px;text-align:center;margin-bottom:10px;">
                   <div style="font-size:.82rem;font-weight:700;color:#5b21b6;margin-bottom:6px;">🔄 Counteroffer Received</div>
                   <div style="font-size:1.5rem;font-weight:800;color:#4c1d95;">${{ buyer_offer.counter_amount|fmt_price }}</div>
-                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ buyer_offer.amount|fmt_price }} · Seller countered at ${{ buyer_offer.counter_amount|fmt_price }}</div>
+                  <div style="font-size:.75rem;color:#7c3aed;margin-top:4px;">Your offer: ${{ buyer_offer.amount|fmt_price }} · Seller countered: ${{ buyer_offer.counter_amount|fmt_price }}</div>
                   <form method="POST" action="{{ url_for('offer_buyer_respond', listing_id=listing.id, offer_id=buyer_offer.id) }}"
                         style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -1165,25 +1480,33 @@
                   </form>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'withdrawn' %}
-                <div class="offer-status-box" style="background:#f8fafc;border:1.5px solid #d1d5db;border-radius:10px;padding:14px;text-align:center;">
+                <div class="offer-status-box" style="background:#f8fafc;border:1.5px solid #d1d5db;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
                   <div class="offer-status-label" style="color:#64748b;">↩️ Offer Withdrawn</div>
                   <div class="offer-status-sub">You withdrew your previous offer.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
               {% elif buyer_offer and buyer_offer.status == 'expired' %}
-                <div class="offer-status-box" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;">
+                <div class="offer-status-box" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
                   <div class="offer-status-label" style="color:#92400e;">⏰ Offer Expired</div>
-                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ buyer_offer.amount|fmt_price if buyer_offer.amount == buyer_offer.amount|int else buyer_offer.amount|fmt_price }}</div>
-                  <div class="offer-status-sub" style="color:#9a3412;">This offer expired without a response from the seller.</div>
+                  <div class="offer-status-amount" style="font-size:1.3rem;font-weight:800;color:#c2410c;">${{ buyer_offer.amount|fmt_price }}</div>
+                  <div class="offer-status-sub" style="color:#9a3412;">This offer expired without a response.</div>
                   <button type="button" class="offer-update-link" onclick="openOfferModal()">Make a new offer</button>
                 </div>
               {% else %}
                 <button type="button" class="btn-make-offer" onclick="openOfferModal()">💰 Make an Offer</button>
               {% endif %}
             {% endif %}
-
+            {% if not is_owner %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form-desktop">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavoriteDesktop()">
+                <span id="fav-icon-desktop">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label-desktop">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+              </button>
+            </form>
+            {% endif %}
           {% else %}
-            <!-- Logged-out visitor: primary CTA -->
+            {# Logged-out desktop #}
             {% if listing.is_property %}
               {% if listing.listing_type == 'rental' %}
                 <a href="{{ url_for('auth.login') }}" class="btn-primary">🔑 Contact Landlord</a>
@@ -1194,68 +1517,39 @@
               <a href="{{ url_for('auth.login') }}" class="btn-primary">💬 Message Seller</a>
               <a href="{{ url_for('auth.login') }}" class="btn-delivery">🚚 Need Delivery?</a>
             {% endif %}
-            {# Offer CTA for all negotiable listings (logged-out) #}
             {% if listing.price_type == 'negotiable' %}
             <a href="{{ url_for('auth.login') }}" class="btn-make-offer">💰 Make an Offer</a>
             {% endif %}
           {% endif %}
-
-          <!-- Favorite toggle -->
-          {% if not is_owner %}
-            {% if current_user.is_authenticated %}
-            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
-                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
-                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
-              </button>
-            </form>
-            {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
-            {% endif %}
-          {% endif %}
-
         {% elif listing.status == 'sold' %}
-          <div style="text-align:center;padding:16px 16px 8px;color:#6b7280;font-size:0.95rem;">
-            🏷️ This item has been sold.
-          </div>
-          {% if not is_owner %}
-            {% if current_user.is_authenticated %}
-            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
-                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
-                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
-              </button>
-            </form>
-            {% else %}
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
-            {% endif %}
+          <div style="text-align:center;padding:14px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🏷️ This item has been sold.</div>
+          {% if not is_owner and current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form-desktop">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavoriteDesktop()">
+              <span id="fav-icon-desktop">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+              <span id="fav-label-desktop">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+            </button>
+          </form>
           {% endif %}
         {% elif listing.status == 'reserved' %}
-          <div style="text-align:center;padding:16px 16px 8px;color:#6b7280;font-size:0.95rem;">
-            🔒 This item is currently reserved.
-          </div>
-          {% if not is_owner %}
-            {% if current_user.is_authenticated %}
-            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
-                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
-                <span id="fav-label">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
-              </button>
-            </form>
-            {% else %}
-            <a href="{{ url_for('invite', role='customer') }}" class="btn-fav">🤍 Save Listing</a>
-            {% endif %}
+          <div style="text-align:center;padding:14px;color:#6b7280;font-size:0.95rem;margin-bottom:8px;">🔒 This item is currently reserved.</div>
+          {% if not is_owner and current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form-desktop">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavoriteDesktop()">
+              <span id="fav-icon-desktop">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+              <span id="fav-label-desktop">{% if is_favorited %}Saved{% else %}Save Listing{% endif %}</span>
+            </button>
+          </form>
           {% endif %}
         {% endif %}
       </div>
 
-      <!-- Safety tips card -->
-      <div class="ld-action-card" style="background:#f8fafc;">
+      <!-- Safety tips -->
+      <div class="ld-safety-card">
         <h3>Stay Safe</h3>
-        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:#6b7280;line-height:1.8;">
+        <ul>
           <li>Meet in a public place when possible</li>
           <li>Never wire money or pay via gift cards</li>
           <li>Verify the item before paying</li>
@@ -1263,10 +1557,11 @@
         </ul>
       </div>
 
-    </div>
-  </div>
+    </div><!-- /sidebar -->
 
-  {# ── Similar Listings ── only for sold/reserved, non-owner #}
+  </div><!-- /ld-grid -->
+
+  <!-- ── Similar Listings ── -->
   {% if similar_listings and not is_owner %}
   <div class="sim-section">
     <div class="sim-head">
@@ -1291,13 +1586,9 @@
         <div class="sim-card-body">
           <div class="sim-card-title">{{ sim.title | truncate(55) }}</div>
           <div class="sim-card-price">
-            {% if sim.price_type == 'free' %}
-              <span style="color:#2b6cb0;font-weight:800">Free</span>
-            {% elif sim.price %}
-              ${{ sim.price|fmt_price }}{% if sim.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}
-            {% else %}
-              Contact
-            {% endif %}
+            {% if sim.price_type == 'free' %}<span style="color:#2b6cb0;font-weight:800">Free</span>
+            {% elif sim.price %}${{ sim.price|fmt_price }}{% if sim.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:500">/mo</span>{% endif %}
+            {% else %}Contact{% endif %}
           </div>
           {% if sim.city or sim.state %}
           <div class="sim-card-meta">{{ sim.city or '' }}{% if sim.city and sim.state %}, {% endif %}{{ sim.state or '' }}</div>
@@ -1309,19 +1600,9 @@
   </div>
   {% endif %}
 
-</div>
+</div><!-- /ld-wrap -->
 
-<!-- Lightbox -->
-<div class="ld-lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="ld-lb-close" onclick="closeLightbox()">✕</button>
-  {% if photos | length > 1 %}
-  <button class="ld-lb-nav ld-lb-prev" onclick="lbNav(-1, event)">‹</button>
-  <button class="ld-lb-nav ld-lb-next" onclick="lbNav(1, event)">›</button>
-  {% endif %}
-  <img id="lb-img" src="" alt="{{ listing.title }}">
-</div>
-
-<!-- Make Offer modal -->
+<!-- ── Offer modal ── -->
 {% if current_user.is_authenticated and not is_owner and listing.price_type == 'negotiable' and listing.status == 'active' %}
 <div class="modal-backdrop" id="offer-modal" onclick="closeOfferModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -1353,7 +1634,7 @@
 </div>
 {% endif %}
 
-<!-- Report modal -->
+<!-- ── Report modal ── -->
 {% if current_user.is_authenticated and not is_owner %}
 <div class="modal-backdrop" id="report-modal" onclick="closeReportModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -1396,137 +1677,164 @@
 {% endif %}
 
 <script>
-// ── Gallery ──────────────────────────────────────────────────
-const photoUrls = [
-  {% for photo in photos %}
-  "{% if photo.storage_url %}{{ photo.storage_url }}{% else %}{{ url_for('serve_listing_photo', photo_id=photo.id) }}{% endif %}"{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-let currentIdx = 0;
-
-function selectPhoto(idx, src, thumbEl) {
-  currentIdx = idx;
-  // Hide video player if showing
-  const vidEl = document.getElementById('ld-main-video');
-  if (vidEl) { vidEl.pause(); vidEl.style.display = 'none'; }
-  const mainImg = document.getElementById('ld-main-img');
-  if (mainImg) {
-    mainImg.style.display = '';
-    mainImg.src = src;
-    mainImg.onclick = () => openLightbox(idx);
-  }
-  document.querySelectorAll('.ld-thumb').forEach((t, i) => {
-    t.classList.toggle('active', i === idx);
-  });
-}
-
-function selectVideo(thumbEl) {
-  // Hide photo, show video player
-  const mainImg = document.getElementById('ld-main-img');
-  if (mainImg) { mainImg.style.display = 'none'; mainImg.onclick = null; }
-  const vidEl = document.getElementById('ld-main-video');
-  if (vidEl) { vidEl.style.display = ''; }
-  document.querySelectorAll('.ld-thumb').forEach(t => t.classList.remove('active'));
-  document.querySelector('.ld-video-thumb')?.classList.add('active');
-}
-
-// ── Lightbox ─────────────────────────────────────────────────
-function openLightbox(idx) {
-  currentIdx = idx;
-  const lb = document.getElementById('lightbox');
-  const img = document.getElementById('lb-img');
-  img.src = photoUrls[idx] || '';
-  lb.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeLightbox(e) {
-  if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('ld-lb-close')) return;
-  document.getElementById('lightbox').classList.remove('open');
-  document.body.style.overflow = '';
-}
-function lbNav(dir, e) {
-  e && e.stopPropagation();
-  currentIdx = (currentIdx + dir + photoUrls.length) % photoUrls.length;
-  document.getElementById('lb-img').src = photoUrls[currentIdx];
-  // sync main gallery
-  const src = photoUrls[currentIdx];
-  const thumbs = document.querySelectorAll('.ld-thumb');
-  const mainImg = document.getElementById('ld-main-img');
-  if (mainImg) mainImg.src = src;
-  thumbs.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
-}
-document.addEventListener('keydown', function(e) {
-  const lb = document.getElementById('lightbox');
-  if (!lb.classList.contains('open')) return;
-  if (e.key === 'Escape') { lb.classList.remove('open'); document.body.style.overflow = ''; }
-  if (e.key === 'ArrowRight') lbNav(1, null);
-  if (e.key === 'ArrowLeft')  lbNav(-1, null);
-});
-
-// ── Navigate main gallery (used by prev/next arrows and swipe) ────
-function galleryNav(dir, e) {
-  e && e.stopPropagation();
-  if (!photoUrls.length) return;
-  currentIdx = (currentIdx + dir + photoUrls.length) % photoUrls.length;
-  const src = photoUrls[currentIdx];
-  const mainImg = document.getElementById('ld-main-img');
-  const vidEl   = document.getElementById('ld-main-video');
-  // ensure photo is visible (may have been showing video)
-  if (vidEl) { vidEl.pause(); vidEl.style.display = 'none'; }
-  if (mainImg) {
-    mainImg.style.display = '';
-    mainImg.src = src;
-    mainImg.onclick = () => openLightbox(currentIdx);
-  }
-  document.querySelectorAll('.ld-thumb').forEach((t, i) => t.classList.toggle('active', i === currentIdx));
-}
-
-// ── Touch / swipe support ─────────────────────────────────────
+// ══════════════════════════════════════════
+// GALLERY — swipe carousel
+// ══════════════════════════════════════════
 (function() {
-  // Swipe on main gallery wrap
-  var wrap = document.querySelector('.ld-main-wrap');
-  if (wrap) {
-    var sx = 0;
-    wrap.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
-    wrap.addEventListener('touchend', function(e) {
-      var dx = e.changedTouches[0].clientX - sx;
-      if (Math.abs(dx) > 40) galleryNav(dx < 0 ? 1 : -1, null);
+  const totalMedia = {{ total_media }};
+  const hasVideo   = {{ 'true' if listing.videos else 'false' }};
+  let   currentIdx = 0;
+  let   isVideoSlide = false;
+
+  const track    = document.getElementById('ld-track');
+  const dots     = document.querySelectorAll('.ld-dot');
+  const badge    = document.getElementById('ld-count-badge');
+  const vidPlayer= document.getElementById('ld-video-player');
+  const vidOverlay = document.getElementById('ld-video-overlay');
+
+  function updateGallery(idx) {
+    if (!track) return;
+    currentIdx = idx;
+    track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+    // dots
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    // badge
+    if (badge) badge.textContent = (idx + 1) + ' / ' + totalMedia;
+    // if moving away from video, pause it
+    isVideoSlide = hasVideo && (idx === {{ photos | length }});
+    if (!isVideoSlide && vidPlayer) {
+      vidPlayer.pause();
+      if (vidOverlay) vidOverlay.style.display = 'flex';
+    }
+  }
+
+  window.ldNav = function(dir) {
+    if (totalMedia <= 1) return;
+    const next = (currentIdx + dir + totalMedia) % totalMedia;
+    updateGallery(next);
+  };
+
+  window.ldGoTo = function(idx) {
+    updateGallery(idx);
+  };
+
+  window.ldPlayVideo = function() {
+    if (vidPlayer) {
+      vidPlayer.play();
+      if (vidOverlay) vidOverlay.style.display = 'none';
+    }
+  };
+
+  // Hide overlay once video is playing natively
+  if (vidPlayer) {
+    vidPlayer.addEventListener('play', function() {
+      if (vidOverlay) vidOverlay.style.display = 'none';
+    });
+    vidPlayer.addEventListener('pause', function() {
+      if (vidOverlay && vidPlayer.currentTime === 0) vidOverlay.style.display = 'flex';
     });
   }
-  // Swipe on lightbox
-  var lb = document.getElementById('lightbox');
-  if (lb) {
-    var lbsx = 0;
-    lb.addEventListener('touchstart', function(e) { lbsx = e.touches[0].clientX; }, { passive: true });
-    lb.addEventListener('touchend', function(e) {
-      var dx = e.changedTouches[0].clientX - lbsx;
-      if (Math.abs(dx) > 40) lbNav(dx < 0 ? 1 : -1, null);
-    });
+
+  // ── Touch / swipe ────────────────────────
+  var gallery = document.getElementById('ld-gallery');
+  if (gallery && totalMedia > 1) {
+    var startX = 0, startY = 0, moved = false;
+    gallery.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      moved  = false;
+    }, { passive: true });
+    gallery.addEventListener('touchmove', function(e) {
+      moved = true;
+    }, { passive: true });
+    gallery.addEventListener('touchend', function(e) {
+      if (!moved) return;
+      var dx = e.changedTouches[0].clientX - startX;
+      var dy = e.changedTouches[0].clientY - startY;
+      // Only swipe if horizontal movement dominates
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        // Prevent vertical scroll hijack
+        ldNav(dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
   }
+
+  // ── Keyboard (for desktop) ───────────────
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight') ldNav(1);
+    if (e.key === 'ArrowLeft')  ldNav(-1);
+  });
+
 })();
 
-// ── Share ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════
+// DESCRIPTION — See more / less
+// ══════════════════════════════════════════
+(function() {
+  var desc = document.getElementById('ld-desc');
+  var btn  = document.getElementById('ld-see-more-btn');
+  if (!desc || !btn) return;
+  // Show button only if text overflows
+  function checkOverflow() {
+    if (desc.scrollHeight > desc.clientHeight + 4) {
+      btn.style.display = 'inline-block';
+    }
+  }
+  checkOverflow();
+  window.addEventListener('resize', checkOverflow);
+})();
+
+window.ldToggleDesc = function() {
+  var desc = document.getElementById('ld-desc');
+  var btn  = document.getElementById('ld-see-more-btn');
+  if (!desc || !btn) return;
+  var expanded = desc.classList.toggle('expanded');
+  btn.textContent = expanded ? 'See less' : 'See more';
+};
+
+// ══════════════════════════════════════════
+// DETAILS TABLE — See more
+// ══════════════════════════════════════════
+window.ldToggleExtra = function(tbodyId, btnId) {
+  var tbody = document.getElementById(tbodyId);
+  var btn   = document.getElementById(btnId);
+  if (!tbody || !btn) return;
+  var shown = tbody.classList.toggle('shown');
+  btn.textContent = shown ? 'See less' : 'See more details';
+};
+
+// ══════════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════════
 function shareListing() {
-  const url = window.location.href;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => {
-      const toast = document.getElementById('copy-toast');
-      toast.style.display = 'inline';
-      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  var url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: '{{ listing.title | replace("'", "\\'") }}', url: url }).catch(function(){});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      var toast = document.getElementById('copy-toast');
+      if (toast) { toast.style.display = 'inline'; setTimeout(function(){ toast.style.display='none'; }, 2500); }
     });
   } else {
     prompt('Copy this link:', url);
   }
 }
 
-// ── Favorite ──────────────────────────────────────────────────
+// ══════════════════════════════════════════
+// FAVORITE (mobile form)
+// ══════════════════════════════════════════
 function toggleFavorite() {
-  const form = document.getElementById('fav-form');
-  const btn  = document.getElementById('fav-btn');
-  const icon = document.getElementById('fav-icon');
-  const label = document.getElementById('fav-label');
+  _doFavoriteToggle('fav-form', 'fav-btn', 'fav-icon', 'fav-label');
+}
+function toggleFavoriteDesktop() {
+  _doFavoriteToggle('fav-form-desktop', 'fav-btn-desktop', 'fav-icon-desktop', 'fav-label-desktop');
+}
+function _doFavoriteToggle(formId, btnId, iconId, labelId) {
+  var form  = document.getElementById(formId);
+  var btn   = document.getElementById(btnId);
+  var icon  = document.getElementById(iconId);
+  var label = document.getElementById(labelId);
   if (!form) return;
-
   fetch(form.action, {
     method: 'POST',
     headers: {
@@ -1536,48 +1844,49 @@ function toggleFavorite() {
     },
     body: 'csrf_token=' + encodeURIComponent(form.querySelector('[name=csrf_token]').value),
   })
-  .then(r => r.json())
-  .then(data => {
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
     if (data.favorited) {
-      btn.classList.add('favorited');
-      icon.textContent = '❤️';
-      label.textContent = 'Saved';
+      if (btn)   btn.classList.add('favorited');
+      if (icon)  icon.textContent = '❤️';
+      if (label) label.textContent = 'Saved';
     } else {
-      btn.classList.remove('favorited');
-      icon.textContent = '🤍';
-      label.textContent = 'Save Listing';
+      if (btn)   btn.classList.remove('favorited');
+      if (icon)  icon.textContent = '🤍';
+      if (label) label.textContent = 'Save Listing';
     }
   })
-  .catch(() => { form.submit(); });
+  .catch(function() { if (form) form.submit(); });
 }
 
-// ── Offer modal ───────────────────────────────────────────────
+// ══════════════════════════════════════════
+// OFFER MODAL
+// ══════════════════════════════════════════
 function openOfferModal() {
-  const m = document.getElementById('offer-modal');
-  if (m) {
-    m.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    const inp = document.getElementById('offer-amount');
-    if (inp) setTimeout(() => inp.focus(), 50);
-  }
+  var m = document.getElementById('offer-modal');
+  if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  var inp = document.getElementById('offer-amount');
+  if (inp) setTimeout(function(){ inp.focus(); }, 50);
 }
 function closeOfferModal(e) {
   if (e && e.target !== document.getElementById('offer-modal')) return;
-  const m = document.getElementById('offer-modal');
+  var m = document.getElementById('offer-modal');
   if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
 }
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeOfferModal();
+  if (e.key === 'Escape') { closeOfferModal(); closeReportModal(); }
 });
 
-// ── Report modal ──────────────────────────────────────────────
+// ══════════════════════════════════════════
+// REPORT MODAL
+// ══════════════════════════════════════════
 function openReportModal() {
-  const m = document.getElementById('report-modal');
+  var m = document.getElementById('report-modal');
   if (m) m.classList.add('open');
 }
 function closeReportModal(e) {
   if (e && e.target !== document.getElementById('report-modal')) return;
-  const m = document.getElementById('report-modal');
+  var m = document.getElementById('report-modal');
   if (m) m.classList.remove('open');
 }
 </script>
