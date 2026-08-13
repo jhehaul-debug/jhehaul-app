@@ -316,7 +316,7 @@ def notify_listing_reserved_to_watchers(listing_id, listing_title, offer_buyer_i
                 related_conversation_id=related_conversation_id,
             )
             user = User.query.get(uid)
-            if user and user.email:
+            if user and user.email and getattr(user, 'notify_listing_status_changes', True):
                 try:
                     notify_buyer_listing_reserved(user.email, safe_title, listing_id)
                 except Exception as _email_err:

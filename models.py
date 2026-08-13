@@ -42,6 +42,7 @@ class User(UserMixin, db.Model):
     city = db.Column(db.String(100), nullable=True)
     zip_code = db.Column(db.String(10), nullable=True)
     profile_nudge_dismissed = db.Column(db.Boolean, default=False)
+    notify_listing_status_changes = db.Column(db.Boolean, default=True)  # email when a saved listing is reserved/sold
 
     jobs = db.relationship('Job', backref='customer', lazy=True, foreign_keys='Job.customer_id')
     bids = db.relationship('Bid', backref='hauler', lazy=True, foreign_keys='Bid.hauler_id')

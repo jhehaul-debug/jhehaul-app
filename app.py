@@ -340,6 +340,16 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.profile_nudge_dismissed) skipped: %s", _e)
 
+    try:
+        db.session.execute(_text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_listing_status_changes BOOLEAN DEFAULT TRUE"
+        ))
+        db.session.commit()
+        logging.info("Column migration: users.notify_listing_status_changes ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.notify_listing_status_changes) skipped: %s", _e)
+
     # ── hauler_status column ─────────────────────────────────────────────────
     try:
         from sqlalchemy import text as _text

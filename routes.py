@@ -4845,6 +4845,17 @@ def profile_update():
     flash("Profile updated successfully!", "success")
     return redirect(url_for('profile'))
 
+
+@app.route("/account/notification-prefs", methods=["POST"])
+@require_login
+def profile_notification_prefs():
+    """Save notification preference toggles from the profile page."""
+    current_user.notify_listing_status_changes = bool(request.form.get("notify_listing_status_changes"))
+    db.session.commit()
+    flash("Notification preferences saved.", "success")
+    return redirect(url_for('profile') + '#notification-prefs')
+
+
 def _is_primary_admin(user):
     """Return True if user is the designated primary admin (is_admin + configured ADMIN_EMAIL)."""
     primary_email = os.environ.get("ADMIN_EMAIL", "jhehaul@gmail.com")
