@@ -22,9 +22,10 @@ from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
-DRAFT_MAX_AGE_HOURS  = 48          # delete drafts older than this
-REMINDER_MIN_HOURS   = 24          # start sending reminders once draft reaches this age
-CLEANUP_INTERVAL     = 60 * 60     # run every hour (keeps reminder close to the 24h mark)
+DRAFT_MAX_AGE_HOURS        = 48      # delete drafts older than this
+REMINDER_MIN_HOURS         = 24      # start sending reminders once draft reaches this age
+REMINDER_RECENCY_GRACE_HOURS = 6    # skip reminder if the draft was touched within this window
+CLEANUP_INTERVAL           = 60 * 60  # run every hour (keeps reminder close to the 24h mark)
 
 
 def send_draft_reminders(app):
@@ -43,9 +44,18 @@ def send_draft_reminders(app):
         now = datetime.now()
         reminder_cutoff = now - timedelta(hours=REMINDER_MIN_HOURS)
         delete_cutoff   = now - timedelta(hours=DRAFT_MAX_AGE_HOURS)
+        recency_cutoff  = now - timedelta(hours=REMINDER_RECENCY_GRACE_HOURS)
 
-        # Eligible: old enough to warn (≥ 24h) but not yet deleted (< 48h), and
-        # reminder not yet successfully sent.
+        # Eligible: old enough to warn (≥ 24h) but not yet deleted (< 48h), reminder
+        # not yet sent, AND not touched recently.
+        #
+        # draft_activity_at tracks the last time the seller mutated any draft content
+        # (photo upload/delete/reorder, video upload/delete, field edits).  Photo and
+        # video endpoints only write to child rows (ListingPhoto / ListingVideo), so
+        # Listing.updated_at would NOT reflect those changes — hence the dedicated column.
+        #
+        # NULL means the draft predates the column or was never touched after creation;
+        # in that case we allow the reminder (the seller has not actively returned to it).
         candidates = (
             Listing.query
             .filter(
@@ -54,6 +64,10 @@ def send_draft_reminders(app):
                 Listing.created_at <= reminder_cutoff,
                 Listing.created_at > delete_cutoff,
                 Listing.draft_reminder_sent == False,
+                db.or_(
+                    Listing.draft_activity_at == None,
+                    Listing.draft_activity_at <= recency_cutoff,
+                ),
             )
             .all()
         )
@@ -78,12 +92,14 @@ def send_draft_reminders(app):
                         "  AND status = 'draft' "
                         "  AND (title IS NULL OR title = '') "
                         "  AND created_at <= :reminder_cutoff "
-                        "  AND created_at > :delete_cutoff"
+                        "  AND created_at > :delete_cutoff "
+                        "  AND (draft_activity_at IS NULL OR draft_activity_at <= :recency_cutoff)"
                     ),
                     {
                         "lid": listing.id,
                         "reminder_cutoff": reminder_cutoff,
                         "delete_cutoff": delete_cutoff,
+                        "recency_cutoff": recency_cutoff,
                     },
                 )
                 db.session.commit()

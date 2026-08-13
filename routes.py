@@ -1216,6 +1216,11 @@ def listing_step(listing_id, step):
             flash("Your listing is now live! 🎉", "success")
             return redirect(url_for('my_listings'))
 
+        # Stamp draft_activity_at so the reminder system knows the seller
+        # actively returned to this draft.  Only applies to steps 1-5 (step 6
+        # sets status='active' and returns early before reaching this line).
+        if listing.status == 'draft':
+            listing.draft_activity_at = datetime.now()
         db.session.commit()
 
         if step < TOTAL_STEPS:
@@ -1230,6 +1235,34 @@ def listing_step(listing_id, step):
                            total_steps=TOTAL_STEPS,
                            categories=categories,
                            now=_dt_now.now())
+
+
+def _touch_draft_activity(listing_id):
+    """Stamp draft_activity_at on a draft listing whenever any content is mutated.
+
+    Photo and video endpoints only write to ListingPhoto / ListingVideo rows, so
+    the Listing.updated_at column is never bumped.  This helper gives the draft-
+    reminder logic a reliable "seller was here recently" signal regardless of which
+    sub-resource changed.  It is a no-op for non-draft listings (the WHERE clause
+    limits to status='draft') and silently swallows errors so it never breaks the
+    surrounding request.
+
+    IMPORTANT: do NOT call db.session.commit() here — the caller owns the
+    transaction and will commit after all their writes are done.
+    """
+    try:
+        from sqlalchemy import text as _sq_text
+        db.session.execute(
+            _sq_text(
+                "UPDATE listings SET draft_activity_at = :now "
+                "WHERE id = :lid AND status = 'draft'"
+            ),
+            {"now": datetime.now(), "lid": listing_id},
+        )
+    except Exception as _e:
+        app.logger.debug(
+            "_touch_draft_activity: update skipped for listing #%s: %s", listing_id, _e
+        )
 
 
 @app.route("/listing/<int:listing_id>/photo/upload", methods=["POST"])
@@ -1271,6 +1304,7 @@ def listing_photo_upload(listing_id):
         is_primary=is_primary,
     )
     db.session.add(lp)
+    _touch_draft_activity(listing_id)
     db.session.commit()
 
     photo_url = storage_url or url_for('serve_listing_photo', photo_id=lp.id)
@@ -1308,9 +1342,12 @@ def listing_new_photo_upload():
     if len(data) > 15 * 1024 * 1024:
         return jsonify(error='Photo must be under 15 MB.'), 400
 
-    # Create the draft listing now that the seller has shown real intent
+    # Create the draft listing now that the seller has shown real intent.
+    # Set draft_activity_at to now so the recency guard in send_draft_reminders
+    # recognises this as a freshly-touched draft from the very beginning.
     draft = Listing(seller_id=current_user.id, title='', status='draft',
-                    moderation_status='approved', listing_type=lt)
+                    moderation_status='approved', listing_type=lt,
+                    draft_activity_at=datetime.now())
     db.session.add(draft)
     db.session.flush()  # get draft.id without a full commit yet
 
@@ -1352,6 +1389,7 @@ def listing_photo_delete(listing_id, photo_id):
                      .first())
         if remaining:
             remaining.is_primary = True
+    _touch_draft_activity(listing_id)
     db.session.commit()
     # Delete the stored file after DB commit so we don't orphan it on rollback
     try:
@@ -1372,6 +1410,7 @@ def listing_photo_set_primary(listing_id, photo_id):
     ListingPhoto.query.filter_by(listing_id=listing_id).update({'is_primary': False})
     photo = ListingPhoto.query.filter_by(id=photo_id, listing_id=listing_id).first_or_404()
     photo.is_primary = True
+    _touch_draft_activity(listing_id)
     db.session.commit()
     return jsonify(ok=True), 200
 
@@ -1386,6 +1425,7 @@ def listing_photo_reorder(listing_id):
     order = (request.get_json() or {}).get('order', [])
     for i, pid in enumerate(order):
         ListingPhoto.query.filter_by(id=int(pid), listing_id=listing_id).update({'display_order': i})
+    _touch_draft_activity(listing_id)
     db.session.commit()
     return jsonify(ok=True), 200
 
@@ -1458,6 +1498,7 @@ def listing_video_upload(listing_id):
         duration_seconds=duration,
     )
     db.session.add(lv)
+    _touch_draft_activity(listing_id)
     db.session.commit()
     return jsonify(id=lv.id, url=storage_url or '', ok=True), 200
 
@@ -1477,6 +1518,7 @@ def listing_video_delete(listing_id, video_id):
         except Exception:
             pass
     db.session.delete(lv)
+    _touch_draft_activity(listing_id)
     db.session.commit()
     return jsonify(ok=True), 200
 

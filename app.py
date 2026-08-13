@@ -790,6 +790,20 @@ with app.app_context():
         logging.info("Column migration (listings.draft_reminder_sent) skipped: %s", _e)
 
     try:
+        from sqlalchemy import inspect as _inspect, text as _text
+        _insp = _inspect(db.engine)
+        _cols = [c['name'] for c in _insp.get_columns('listings')]
+        if 'draft_activity_at' not in _cols:
+            db.session.execute(_text(
+                "ALTER TABLE listings ADD COLUMN draft_activity_at TIMESTAMP"
+            ))
+            db.session.commit()
+        logging.info("Column migration: listings.draft_activity_at ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listings.draft_activity_at) skipped: %s", _e)
+
+    try:
         from sqlalchemy import text as _text
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS item_type VARCHAR(20) DEFAULT 'custom'"))
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS listing_id INTEGER REFERENCES listings(id)"))
