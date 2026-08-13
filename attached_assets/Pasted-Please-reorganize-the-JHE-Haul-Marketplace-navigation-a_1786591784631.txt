@@ -1,0 +1,147 @@
+Please reorganize the JHE Haul Marketplace navigation and homepage so users do NOT have to go to multiple different places to find the same features.
+
+The site currently has too many navigation choices across the top and additional categories/actions farther down the page. This makes the marketplace feel confusing and repetitive.
+
+Main Goal
+
+Create a simple structure where users immediately understand the three main things they can do:
+
+1. Browse Marketplace
+
+For people looking for something to buy or rent.
+
+2. Sell Something
+
+For people posting an item, vehicle, property, rental, etc.
+
+3. Request a Service
+
+For people who need hauling/delivery or another available JHE Haul service.
+
+These should be the PRIMARY marketplace actions.
+
+⸻
+
+Simplify the Top Navigation
+
+Reorganize the desktop navigation so it is cleaner and does not duplicate options unnecessarily.
+
+Suggested main navigation:
+
+Home | Marketplace | Sell | Request Service | Messages | 🔔 | Account
+
+Do not place individual marketplace categories across the main navigation bar.
+
+Move Sign Out inside the Account menu instead of using valuable space as a separate main navigation item.
+
+If “Our Work” is still needed, move it somewhere secondary, such as an About/More menu or footer. It should not compete with the primary marketplace actions.
+
+⸻
+
+Organize Marketplace Categories in ONE Main Place
+
+When a user selects Marketplace, take them to the main Browse Marketplace page.
+
+Put the marketplace categories there in an organized category section.
+
+For example:
+
+Shop by Category
+
+* Vehicles
+* Furniture
+* Electronics
+* Appliances
+* Home & Garden
+* Clothing
+* Tools
+* Baby & Kids
+* Sports & Outdoors
+* Homes for Sale
+* Apartments/Rentals
+* Other
+
+Use the categories already supported by the application. Do NOT remove working categories simply because they aren’t listed in this example.
+
+Users should not have to hunt through multiple pages to find categories.
+
+⸻
+
+Keep the Search Bar Prominent
+
+The Marketplace page should continue to have the large search bar near the top.
+
+A user should be able to:
+
+Search directly
+
+OR
+
+Choose a category
+
+Both should lead into the same marketplace browsing system.
+
+⸻
+
+Sell Flow
+
+The Sell button should be the single main starting point for creating a marketplace listing.
+
+After pressing Sell, THEN ask the seller what they are listing and show the appropriate categories.
+
+Do not make users choose between several different “sell/post/list” buttons scattered throughout the site.
+
+⸻
+
+Request Service Is Separate
+
+Keep Request Service separate from Marketplace listings.
+
+Marketplace = buying, selling and renting.
+
+Request Service = requesting hauling/delivery/service work.
+
+Do not mix the old hauling/job-bidding workflow into marketplace listing categories.
+
+⸻
+
+Mobile Navigation
+
+Keep the mobile bottom navigation simple:
+
+Home | Browse | Sell | Messages | Account
+
+This current structure is good.
+
+Marketplace categories should be accessed after pressing Browse, rather than adding more buttons to the mobile bottom navigation.
+
+Put Notifications inside the appropriate header/account area without overcrowding the bottom navigation.
+
+⸻
+
+Remove Duplicate Navigation
+
+Audit the entire site for buttons or sections that send users to duplicate versions of:
+
+* Marketplace
+* Browse
+* Sell
+* Categories
+* Request Service
+* Account
+
+Consolidate them so there is ONE clear path for each major action.
+
+Do NOT remove functionality. Reorganize and consolidate it.
+
+Important
+
+Before deleting any navigation link, verify what it does and make sure its functionality remains accessible from the new organized navigation.
+
+The goal is:
+
+Fewer choices at once → clearer navigation → easier marketplace experience.
+
+Make the desktop and mobile versions consistent with each other.
+
+After completing and testing the navigation changes, commit and push all changes to the production branch and verify the changes on the live jhehaul.com site.

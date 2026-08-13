@@ -69,6 +69,30 @@ header {
   color: white;
   text-decoration: none;
 }
+/* Account dropdown */
+.nav-account-wrap { position: relative; display: inline-block; }
+.nav-account-btn {
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: .95rem; font-weight: 500; color: rgba(255,255,255,0.85);
+  padding: 0; display: flex; align-items: center; gap: 2px; letter-spacing: inherit;
+}
+.nav-account-btn:hover { color: #fff; }
+.nav-account-dropdown {
+  display: none; position: absolute; right: 0; top: calc(100% + 10px);
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.14); min-width: 196px; z-index: 1000;
+  padding: 6px 0;
+}
+.nav-account-wrap.open .nav-account-dropdown { display: block; }
+.nav-account-dropdown a {
+  display: block; padding: 9px 18px; color: #374151; font-size: .9rem;
+  text-decoration: none; white-space: nowrap; font-weight: 500;
+}
+.nav-account-dropdown a:hover { background: #f3f4f6; color: #111; }
+.dropdown-divider { border: none; border-top: 1px solid #f0f0f0; margin: 4px 0; }
+.dropdown-signout { color: #dc2626 !important; }
+.dropdown-signout:hover { background: #fee2e2 !important; }
+
 .nav-desktop .nav-signout {
   color: rgba(255,255,255,0.55);
   font-size: 0.84rem;
