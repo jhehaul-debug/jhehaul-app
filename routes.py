@@ -819,6 +819,68 @@ def _apply_listing_fields(listing, form):
         raw_opts = form.getlist('delivery_option')
         valid_opts = [o for o in raw_opts if o in _VALID_DELIVERY_OPTS]
         listing.delivery_option = ','.join(valid_opts) if valid_opts else None
+        # Vehicle-specific fields (applied/cleared based on category)
+        _apply_vehicle_fields(listing, form)
+
+
+_VALID_TRANSMISSIONS  = frozenset({'automatic', 'manual', 'cvt', 'other'})
+_VALID_FUEL_TYPES     = frozenset({'gasoline', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid', 'other'})
+_VALID_DRIVETRAINS    = frozenset({'fwd', 'rwd', 'awd', '4wd', 'other'})
+_VALID_TITLE_STATUSES = frozenset({'clean', 'salvage', 'rebuilt', 'lien', 'other'})
+
+
+def _apply_vehicle_fields(listing, form):
+    """Save vehicle-specific fields from a submitted form onto a Listing instance.
+
+    Safe to call for any listing — fields are cleared when category != Vehicles.
+    Does NOT commit.
+    """
+    from models import Category as _VC
+    _vcat = _VC.query.filter_by(name='Vehicles').first()
+    if not (_vcat and listing.category_id == _vcat.id):
+        # Category changed away from Vehicles — wipe stale data
+        for _f in ('vehicle_year', 'vehicle_make', 'vehicle_model', 'vehicle_trim',
+                   'vehicle_body_style', 'vehicle_mileage', 'vehicle_exterior_color',
+                   'vehicle_transmission', 'vehicle_fuel_type', 'vehicle_drivetrain',
+                   'vehicle_vin', 'vehicle_title_status'):
+            setattr(listing, _f, None)
+        return
+
+    _yr = form.get('vehicle_year', '').strip()
+    try:
+        _yr_int = int(_yr)
+        listing.vehicle_year = _yr_int if 1886 <= _yr_int <= 2030 else None
+    except (ValueError, TypeError):
+        listing.vehicle_year = None
+
+    _make = form.get('vehicle_make', '').strip()
+    if _make == 'Other':
+        _other = form.get('vehicle_make_other', '').strip()
+        listing.vehicle_make = _other[:50] if _other else 'Other'
+    else:
+        listing.vehicle_make = _make[:50] if _make else None
+
+    listing.vehicle_model          = (form.get('vehicle_model', '').strip()[:100] or None)
+    listing.vehicle_trim           = (form.get('vehicle_trim', '').strip()[:100] or None)
+    listing.vehicle_body_style     = (form.get('vehicle_body_style', '').strip()[:50] or None)
+    listing.vehicle_exterior_color = (form.get('vehicle_exterior_color', '').strip()[:50] or None)
+
+    _mi = form.get('vehicle_mileage', '').strip()
+    try:
+        listing.vehicle_mileage = int(float(_mi)) if _mi else None
+    except (ValueError, TypeError):
+        listing.vehicle_mileage = None
+
+    _tr = form.get('vehicle_transmission', '').strip()
+    listing.vehicle_transmission = _tr if _tr in _VALID_TRANSMISSIONS else None
+    _fu = form.get('vehicle_fuel_type', '').strip()
+    listing.vehicle_fuel_type = _fu if _fu in _VALID_FUEL_TYPES else None
+    _dr = form.get('vehicle_drivetrain', '').strip()
+    listing.vehicle_drivetrain = _dr if _dr in _VALID_DRIVETRAINS else None
+    _ts = form.get('vehicle_title_status', '').strip()
+    listing.vehicle_title_status = _ts if _ts in _VALID_TITLE_STATUSES else None
+    # VIN stored but NEVER displayed publicly
+    listing.vehicle_vin = (form.get('vehicle_vin', '').strip()[:50] or None)
 
 
 def _validate_listing(listing, require_photos=False):
@@ -969,6 +1031,8 @@ def listing_step(listing_id, step):
                     listing.subcategory_id = None
                 raw_cond = request.form.get('condition', '').strip()
                 listing.condition = raw_cond if raw_cond in _VALID_CONDITIONS else None
+                # Vehicle-specific fields (only saved when Vehicles category selected)
+                _apply_vehicle_fields(listing, request.form)
 
             if not listing.title:
                 flash("A title is required.", "error")

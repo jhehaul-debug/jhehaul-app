@@ -826,6 +826,33 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (user_reports safety) skipped: %s", _e)
 
+    # ── Vehicle listing columns ───────────────────────────────────────────────
+    try:
+        from sqlalchemy import text as _text
+        _veh_cols = [
+            ('vehicle_year',           'INTEGER'),
+            ('vehicle_make',           'VARCHAR(50)'),
+            ('vehicle_model',          'VARCHAR(100)'),
+            ('vehicle_trim',           'VARCHAR(100)'),
+            ('vehicle_body_style',     'VARCHAR(50)'),
+            ('vehicle_mileage',        'INTEGER'),
+            ('vehicle_exterior_color', 'VARCHAR(50)'),
+            ('vehicle_transmission',   'VARCHAR(30)'),
+            ('vehicle_fuel_type',      'VARCHAR(30)'),
+            ('vehicle_drivetrain',     'VARCHAR(30)'),
+            ('vehicle_vin',            'VARCHAR(50)'),
+            ('vehicle_title_status',   'VARCHAR(30)'),
+        ]
+        for _col, _defn in _veh_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE listings ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: listings vehicle fields ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (listings vehicle fields) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

@@ -891,6 +891,45 @@
         <div class="ld-description">{{ listing.description }}</div>
         {% endif %}
 
+        {# ── Vehicle Details Table ── #}
+        {% if listing.is_vehicle %}
+        {% set vd = [] %}
+        {% if listing.vehicle_year %}{% set _ = vd.append(('Year', listing.vehicle_year)) %}{% endif %}
+        {% if listing.vehicle_make %}{% set _ = vd.append(('Make', listing.vehicle_make)) %}{% endif %}
+        {% if listing.vehicle_model %}{% set _ = vd.append(('Model', listing.vehicle_model)) %}{% endif %}
+        {% if listing.vehicle_trim %}{% set _ = vd.append(('Trim', listing.vehicle_trim)) %}{% endif %}
+        {% if listing.vehicle_body_style %}{% set _ = vd.append(('Body Style', listing.vehicle_body_style)) %}{% endif %}
+        {% if listing.vehicle_mileage is not none %}{% set _ = vd.append(('Mileage', '{:,} mi'.format(listing.vehicle_mileage))) %}{% endif %}
+        {% if listing.vehicle_exterior_color %}{% set _ = vd.append(('Exterior Color', listing.vehicle_exterior_color)) %}{% endif %}
+        {% if listing.vehicle_transmission %}
+          {% set _tr_labels = {'automatic':'Automatic','manual':'Manual','cvt':'CVT','other':'Other'} %}
+          {% set _ = vd.append(('Transmission', _tr_labels.get(listing.vehicle_transmission, listing.vehicle_transmission))) %}
+        {% endif %}
+        {% if listing.vehicle_fuel_type %}
+          {% set _fu_labels = {'gasoline':'Gasoline','diesel':'Diesel','electric':'Electric','hybrid':'Hybrid','plug_in_hybrid':'Plug-in Hybrid','other':'Other'} %}
+          {% set _ = vd.append(('Fuel Type', _fu_labels.get(listing.vehicle_fuel_type, listing.vehicle_fuel_type))) %}
+        {% endif %}
+        {% if listing.vehicle_drivetrain %}
+          {% set _dr_labels = {'fwd':'FWD','rwd':'RWD','awd':'AWD','4wd':'4WD / 4x4','other':'Other'} %}
+          {% set _ = vd.append(('Drivetrain', _dr_labels.get(listing.vehicle_drivetrain, listing.vehicle_drivetrain))) %}
+        {% endif %}
+        {% if listing.vehicle_title_status %}
+          {% set _ts_labels = {'clean':'Clean','salvage':'Salvage','rebuilt':'Rebuilt','lien':'Lien','other':'Other'} %}
+          {% set _ = vd.append(('Title Status', _ts_labels.get(listing.vehicle_title_status, listing.vehicle_title_status))) %}
+        {% endif %}
+        {% if vd %}
+        <div class="ld-section-label">Vehicle Details</div>
+        <table style="width:100%;font-size:.88rem;border-collapse:collapse;margin-bottom:14px">
+          {% for label, val in vd %}
+          <tr style="border-bottom:1px solid #f3f4f6">
+            <td style="padding:7px 0;color:#6b7280;font-weight:600;width:40%">{{ label }}</td>
+            <td style="padding:7px 0;color:#1a1a2e">{{ val }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+        {% endif %}
+
         {# ── Property Details Table ── #}
         {% if listing.is_property %}
         {% set prop_details = [] %}

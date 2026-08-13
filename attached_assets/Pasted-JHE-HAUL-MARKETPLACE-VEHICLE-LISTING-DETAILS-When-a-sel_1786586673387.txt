@@ -1,0 +1,236 @@
+JHE HAUL MARKETPLACE — VEHICLE LISTING DETAILS
+
+When a seller selects the category:
+
+VEHICLES
+
+show additional vehicle-specific fields on the Item Details step.
+
+Do not show these fields for non-vehicle categories.
+
+Add:
+
+YEAR
+
+MAKE
+
+MODEL
+
+TRIM — optional
+
+BODY STYLE — optional
+
+MILEAGE
+
+EXTERIOR COLOR — optional
+
+TRANSMISSION — optional
+
+FUEL TYPE — optional
+
+DRIVETRAIN — optional
+
+VIN — optional and should NOT be publicly displayed in full unless specifically approved later
+
+TITLE STATUS — optional, with values such as:
+Clean
+Salvage
+Rebuilt
+Lien
+Other
+
+========================================
+MAKE FIELD
+
+Use a dropdown/searchable selector for common vehicle makes instead of requiring the seller to manually type every make.
+
+Include major makes such as:
+
+Acura
+Alfa Romeo
+Audi
+BMW
+Buick
+Cadillac
+Chevrolet
+Chrysler
+Dodge
+Fiat
+Ford
+Genesis
+GMC
+Honda
+Hyundai
+Infiniti
+Jaguar
+Jeep
+Kia
+Land Rover
+Lexus
+Lincoln
+Mazda
+Mercedes-Benz
+Mini
+Mitsubishi
+Nissan
+Porsche
+Ram
+Subaru
+Tesla
+Toyota
+Volkswagen
+Volvo
+Other
+
+Include an:
+
+OTHER
+
+option so sellers can enter a make that is not listed.
+
+========================================
+MODEL FIELD
+
+After selecting Make, allow seller to select or enter the Model.
+
+Where practical, make the Model field dependent on the selected Make.
+
+Example:
+
+Toyota
+→ Camry
+→ Corolla
+→ Highlander
+→ RAV4
+→ Tacoma
+→ Tundra
+→ etc.
+
+Ford
+→ F-150
+→ Explorer
+→ Escape
+→ Mustang
+→ Bronco
+→ etc.
+
+Do NOT hard-code the system in a way that makes maintaining every vehicle model difficult.
+
+A searchable model field with manual fallback is acceptable.
+
+========================================
+TITLE GENERATION
+
+Use the vehicle fields to help automatically create the listing title.
+
+Example:
+
+Year: 2018
+Make: Toyota
+Model: Camry
+Trim: SE
+
+Suggested title:
+
+2018 Toyota Camry SE
+
+Allow seller to edit the title before publishing.
+
+Do not overwrite a seller-edited title without permission.
+
+========================================
+SEARCH / FILTERING
+
+Store vehicle details in structured database fields so buyers can later filter by:
+
+Year
+Make
+Model
+Price
+Mileage
+Condition
+Location
+
+Prepare architecture for future filters such as:
+
+Body Style
+Transmission
+Fuel Type
+Drivetrain
+Title Status
+
+========================================
+MOBILE DESIGN
+
+Keep the vehicle form simple.
+
+Do not display all advanced fields at once if it makes the page too long.
+
+Required primary vehicle fields should be:
+
+Year
+Make
+Model
+Mileage
+
+Optional vehicle details can be placed under:
+
+“More Vehicle Details”
+
+========================================
+DO NOT BREAK
+
+Do not break the normal marketplace listing flow.
+
+Non-vehicle listings should continue using the regular:
+
+Title
+Description
+Category
+Condition
+
+fields.
+
+Vehicle-specific fields should only appear when the selected category is Vehicles.
+
+========================================
+TEST AND DEPLOY
+
+Test:
+
+Vehicles selected
+→ Vehicle fields appear
+
+Furniture selected
+→ Vehicle fields do not appear
+
+Year + Make + Model entered
+→ Suggested title works
+
+Seller edits suggested title
+→ Seller’s title remains
+
+Vehicle listing publishes successfully
+
+Vehicle details display properly on listing page
+
+After testing:
+
+Commit changes
+
+Push to the EXISTING GitHub production branch
+
+Verify DigitalOcean creates a NEW deployment
+
+Verify LIVE jhehaul.com
+
+Report:
+
+* files changed
+* database migration
+* vehicle fields added
+* title-generation status
+* tests
+* Git commit SHA
+* GitHub push status
+* DigitalOcean deployment status

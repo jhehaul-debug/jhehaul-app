@@ -378,6 +378,20 @@ class Listing(db.Model):
     pets_allowed       = db.Column(db.Boolean, nullable=True)
     utilities_included = db.Column(db.String(200), nullable=True)
 
+    # ── Vehicle fields (populated only when category = Vehicles) ─────────────
+    vehicle_year           = db.Column(db.Integer,    nullable=True)
+    vehicle_make           = db.Column(db.String(50),  nullable=True)
+    vehicle_model          = db.Column(db.String(100), nullable=True)
+    vehicle_trim           = db.Column(db.String(100), nullable=True)
+    vehicle_body_style     = db.Column(db.String(50),  nullable=True)
+    vehicle_mileage        = db.Column(db.Integer,    nullable=True)
+    vehicle_exterior_color = db.Column(db.String(50),  nullable=True)
+    vehicle_transmission   = db.Column(db.String(30),  nullable=True)
+    vehicle_fuel_type      = db.Column(db.String(30),  nullable=True)
+    vehicle_drivetrain     = db.Column(db.String(30),  nullable=True)
+    vehicle_vin            = db.Column(db.String(50),  nullable=True)  # never shown publicly
+    vehicle_title_status   = db.Column(db.String(30),  nullable=True)
+
     seller = db.relationship('User', backref=db.backref('listings', lazy=True), foreign_keys=[seller_id])
     photos = db.relationship('ListingPhoto', backref='listing', lazy=True,
                              cascade='all, delete-orphan', order_by='ListingPhoto.display_order')
@@ -403,6 +417,10 @@ class Listing(db.Model):
     @property
     def is_property(self):
         return self.listing_type in ('property_sale', 'rental')
+
+    @property
+    def is_vehicle(self):
+        return bool(self.category and self.category.name == 'Vehicles')
 
     @property
     def beds_baths_display(self):
