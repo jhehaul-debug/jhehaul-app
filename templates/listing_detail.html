@@ -1104,15 +1104,6 @@
         {% endif %}
       </div><!-- /mobile CTA -->
 
-      <!-- ── Description ── -->
-      {% if listing.description %}
-      <div class="ld-section">
-        <div class="ld-section-head">Description</div>
-        <div class="ld-description ld-desc-short" id="ld-desc">{{ listing.description }}</div>
-        <button class="ld-see-more" id="ld-see-more-btn" onclick="ldToggleDesc()" style="display:none">See more</button>
-      </div>
-      {% endif %}
-
       <!-- ── Seller (mobile) ── -->
       <div class="ld-section ld-mobile-only">
         <div class="ld-section-head">Seller</div>
@@ -1236,6 +1227,15 @@
         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#6b7280;line-height:1.6;">
           📋 JHE Haul connects buyers and renters with sellers and landlords. We do not process real estate payments, provide escrow services, or act as a brokerage.
         </div>
+      </div>
+      {% endif %}
+
+      <!-- ── Description ── -->
+      {% if listing.description %}
+      <div class="ld-section">
+        <div class="ld-section-head">Description</div>
+        <div class="ld-description ld-desc-short" id="ld-desc">{{ listing.description }}</div>
+        <button class="ld-see-more" id="ld-see-more-btn" onclick="ldToggleDesc()" style="display:none">See more</button>
       </div>
       {% endif %}
 

@@ -181,7 +181,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <textarea class="form-control" name="description">{{ listing.description or '' }}</textarea>
+        <textarea class="form-control" name="description" placeholder="Describe the item, condition, features, and anything a buyer should know…">{{ listing.description or '' }}</textarea>
       </div>
 
       {% if listing.is_property %}
