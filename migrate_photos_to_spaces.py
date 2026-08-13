@@ -154,6 +154,7 @@ def upload_local_file(local_path: str, filename: str) -> str:
 
 from app import app, UPLOAD_FOLDER  # noqa: E402  (after sys.path is clean)
 from models import db, JobPhoto, CompletionPhoto, ListingPhoto, GalleryPhoto  # noqa: E402
+from migrate_cleanup import run_cleanup  # noqa: E402
 
 # ── Migration logic ───────────────────────────────────────────────────────────
 
@@ -232,72 +233,7 @@ with app.app_context():
 
     # ── Cleanup: remove local files already migrated to Spaces ───────────────
     if CLEANUP:
-        log.info("")
-        log.info("── Cleanup ─────────────────────────────────────────")
-
-        if DRY_RUN:
-            log.info("  DRY-RUN mode — no files will actually be deleted")
-
-        # Build a set of filenames that have been successfully migrated
-        # (storage_url IS NOT NULL) across all tables.
-        migrated_filenames: set[str] = set()
-        for _label, model in TABLES:
-            rows = model.query.filter(model.storage_url.isnot(None)).all()
-            for row in rows:
-                if row.filename:
-                    migrated_filenames.add(row.filename)
-
-        log.info("  DB rows with storage_url set : %d unique filenames", len(migrated_filenames))
-
-        # Scan the uploads/ folder and decide what to delete.
-        cleanup_counters = {
-            "deleted":          0,
-            "would_delete":     0,
-            "skipped_no_db":    0,
-            "skipped_not_file": 0,
-            "errors":           0,
-        }
-
-        try:
-            local_files = os.listdir(UPLOAD_FOLDER)
-        except FileNotFoundError:
-            local_files = []
-            log.warning("  uploads/ folder not found — nothing to clean up")
-
-        for fname in sorted(local_files):
-            fpath = os.path.join(UPLOAD_FOLDER, fname)
-
-            if not os.path.isfile(fpath):
-                cleanup_counters["skipped_not_file"] += 1
-                continue  # skip subdirectories etc.
-
-            if fname not in migrated_filenames:
-                # Not referenced by any migrated DB row — leave it alone.
-                log.debug("  KEEP  %s  (not in DB or not yet migrated)", fname)
-                cleanup_counters["skipped_no_db"] += 1
-                continue
-
-            # File is confirmed migrated to Spaces — safe to remove.
-            if DRY_RUN:
-                log.info("  DRY-RUN would delete  uploads/%s", fname)
-                cleanup_counters["would_delete"] += 1
-            else:
-                try:
-                    os.remove(fpath)
-                    log.info("  Deleted  uploads/%s", fname)
-                    cleanup_counters["deleted"] += 1
-                except Exception as exc:
-                    log.error("  Failed to delete uploads/%s : %s", fname, exc)
-                    cleanup_counters["errors"] += 1
-
-        log.info("")
-        log.info("  Local files scanned        : %d", len(local_files))
-        if DRY_RUN:
-            log.info("  Would delete               : %d", cleanup_counters["would_delete"])
-        else:
-            log.info("  Deleted                    : %d", cleanup_counters["deleted"])
-        log.info("  Kept (not in DB / pending) : %d", cleanup_counters["skipped_no_db"])
-        log.info("  Errors                     : %d", cleanup_counters["errors"])
+        cleanup_counters = run_cleanup(TABLES, UPLOAD_FOLDER, dry_run=DRY_RUN)
         if cleanup_counters["errors"]:
             counters["errors"] += cleanup_counters["errors"]
 
