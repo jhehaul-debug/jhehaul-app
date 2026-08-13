@@ -1,0 +1,126 @@
+Please redesign the JHE Marketplace listing-detail/photo view.
+
+Right now, when a user taps a listing photo, the photo opens too large and takes over the screen. I want the experience to work more like the Facebook Marketplace example I provided, while keeping JHE Haul’s own colors, branding, and design.
+
+1. Photo/video gallery at the top
+
+When a user opens a listing:
+
+* Show the main photo at the top of the listing-detail page.
+* Do NOT make the photo excessively tall or wide.
+* Keep the image properly proportioned without stretching or distortion.
+* Allow the user to swipe left and right directly on the photo to move through all listing photos.
+* Show small position indicators/dots over or below the image so the user knows how many photos there are and which photo they are viewing.
+* If the listing has the allowed 60-second video, include the video in the same swipe gallery with a clear play icon.
+* Support the full listing allowance of up to 20 photos and 1 video up to 60 seconds.
+* Images and video must load correctly on iPhone/Safari and desktop.
+
+2. Listing information directly below the gallery
+
+After the photo gallery, show:
+
+Listing title
+Price formatted with commas, such as $10,000
+Location
+Date/listing age
+Listing status: Active, Pending, Reserved, or Sold
+
+Then provide the buyer’s main action:
+
+Message Seller
+
+The buyer should be able to start a conversation with the seller directly from this listing.
+
+3. Description
+
+Add a Description section below the main information.
+
+If the description is long, initially show only part of it with:
+
+See more
+
+Tapping See more expands the complete description.
+
+4. Seller information
+
+Add a Seller section showing available marketplace seller information such as:
+
+* Seller display name
+* Seller profile picture/avatar if available
+* Seller rating/reviews if JHE Marketplace supports them
+
+Do not invent ratings or reviews. Only display actual stored information.
+
+5. Item-specific details
+
+Below the seller section, display the important details for that listing category.
+
+For vehicle listings, for example:
+
+Year
+Make
+Model
+Trim
+Mileage
+Transmission
+Exterior color
+Interior color
+Condition
+
+Use the appropriate details for other categories instead of displaying vehicle fields on every listing.
+
+Allow additional details to be expanded with See more when necessary.
+
+6. Location
+
+Add a Location section near the bottom.
+
+Show:
+
+* City/state
+* Approximate location only when appropriate
+
+Do not expose a seller’s exact private street address to the public.
+
+7. Mobile behavior
+
+The complete page should scroll vertically, but the photo gallery itself should swipe horizontally.
+
+So the behavior should be:
+
+Swipe LEFT/RIGHT = next/previous photo or video
+
+Scroll UP/DOWN = move through listing information
+
+Do not make users open and close every individual photo.
+
+8. Keep JHE branding
+
+Do NOT copy Facebook’s branding, icons, colors, or exact design.
+
+Use the Facebook Marketplace screenshots only as a layout/UX reference.
+
+Keep JHE Haul/JHE Marketplace colors and branding and make the page clean, modern, and mobile-friendly.
+
+9. Important
+
+Do not remove or break the current marketplace features while making this change.
+
+Test:
+
+* Listings with 1 photo
+* Listings with several photos
+* Listings with 20 photos
+* Listing with photos + one 60-second video
+* Swipe navigation
+* Message Seller
+* See more
+* Vehicle details
+* Other item categories
+* For Sale property listings
+* Rental listings
+* Active/Pending/Reserved/Sold statuses
+* iPhone/Safari
+* Desktop
+
+After completing and testing the changes, commit them, push them to production, confirm the DigitalOcean deployment succeeds, and verify the changes on the live JHE Haul site.
