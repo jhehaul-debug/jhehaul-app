@@ -663,7 +663,10 @@ def marketplace():
                 # City name search (case-insensitive partial match)
                 qobj = qobj.filter(Listing.city.ilike(f'%{_czf}%'))
 
-        search_results = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(48).all()
+        _limit = min(max(int(request.args.get('limit', 24) or 24), 1), 192)
+        _all   = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(_limit + 1).all()
+        has_more = len(_all) > _limit
+        search_results = _all[:_limit]
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
         _mp_profile_incomplete = (
             current_user.is_authenticated and
@@ -686,6 +689,8 @@ def marketplace():
                                min_price=min_price, max_price=max_price,
                                min_beds=min_beds, open_house_only=open_house_only,
                                hide_sold=hide_sold,
+                               search_limit=_limit,
+                               has_more=has_more,
                                saved_listing_ids=_saved_listing_ids(),
                                show_welcome=False,
                                show_profile_nudge=_mp_show_nudge,

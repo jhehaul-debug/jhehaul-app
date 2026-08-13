@@ -397,6 +397,117 @@
     .mp-sell-cta { text-align: center; justify-content: center; }
     .mp-sell-cta-text { text-align: center; }
 }
+
+/* ── Compact mobile header (replaces hero on small screens) ── */
+.mp-compact-header { display: none; padding: 4px 0 14px; }
+.mp-compact-title { font-size: 1.4rem; font-weight: 800; color: #1a202c; margin: 0 0 10px; }
+.mp-search-compact {
+    display: flex; border-radius: 9px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.09);
+    border: 1.5px solid #e2e8f0;
+}
+.mp-search-compact-wrap { position: relative; flex: 1; display: flex; }
+.mp-search-compact-wrap input {
+    flex: 1; padding: 11px 14px; border: none; font-size: .95rem;
+    outline: none; color: #1a202c; background: #fff;
+}
+.mp-search-compact button {
+    background: #38a169; color: #fff; border: none;
+    padding: 11px 18px; font-size: .92rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+}
+.mp-search-compact button:hover { background: #2f855a; }
+
+/* ── Pill filter row ── */
+.mp-pill-row {
+    display: flex; gap: 8px; overflow-x: auto; padding: 0 0 4px;
+    margin-bottom: 14px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.mp-pill-row::-webkit-scrollbar { display: none; }
+.mp-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fff; border: 1.5px solid #d1d5db; border-radius: 20px;
+    padding: 7px 15px; font-size: .84rem; font-weight: 600; color: #374151;
+    cursor: pointer; text-decoration: none; white-space: nowrap;
+    transition: border-color .12s, background .12s, color .12s; flex-shrink: 0;
+    font-family: inherit;
+}
+.mp-pill:hover { border-color: #38a169; background: #f0fff4; color: #276749; text-decoration: none; }
+.mp-pill.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+
+/* ── Collapsible filter panel ── */
+.mp-filter-panel {
+    display: none; background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+}
+.mp-filter-panel.open { display: block; }
+.mp-filter-panel-inner { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.mp-panel-group { display: flex; flex-direction: column; gap: 3px; }
+.mp-panel-group label {
+    font-size: .72rem; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+}
+.mp-panel-group select,
+.mp-panel-text-input {
+    padding: 7px 10px; border: 1.5px solid #d1d5db; border-radius: 7px;
+    font-size: .88rem; color: #1a202c; background: #f9fafb; min-width: 130px;
+}
+.mp-panel-group select:focus, .mp-panel-text-input:focus { outline: none; border-color: #38a169; background: #fff; }
+.mp-panel-submit {
+    background: #38a169; color: #fff; border: none;
+    padding: 8px 20px; border-radius: 7px; font-weight: 700;
+    font-size: .88rem; cursor: pointer; height: 36px; align-self: flex-end;
+}
+.mp-panel-submit:hover { background: #2f855a; }
+.mp-panel-clear {
+    align-self: flex-end; font-size: .82rem; color: #9ca3af;
+    text-decoration: none; line-height: 2.35; white-space: nowrap;
+}
+.mp-panel-clear:hover { color: #ef4444; }
+@media (max-width: 600px) {
+    .mp-filter-panel-inner { gap: 8px; }
+    .mp-panel-group { flex: 1 1 calc(50% - 8px); }
+    .mp-panel-group select, .mp-panel-text-input { min-width: 0; width: 100%; }
+    .mp-panel-submit { flex: 1 1 100%; }
+}
+
+/* ── Just Listed badge ── */
+.mp-badge-new {
+    position: absolute; top: 8px; left: 8px; z-index: 3;
+    background: rgba(22,163,74,.9); color: #fff;
+    font-size: .65rem; font-weight: 800; padding: 3px 8px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: .04em;
+    pointer-events: none;
+}
+
+/* ── Load More ── */
+.mp-load-more { text-align: center; margin: 28px 0 8px; }
+.mp-load-more a {
+    display: inline-block; background: #fff; border: 1.5px solid #d1d5db;
+    border-radius: 8px; padding: 11px 36px; font-size: .92rem; font-weight: 700;
+    color: #374151; text-decoration: none;
+    transition: border-color .15s, background .15s;
+}
+.mp-load-more a:hover { border-color: #38a169; background: #f0fff4; color: #276749; text-decoration: none; }
+
+/* ── Responsive grid ── */
+@media (min-width: 640px)  { .mp-grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); } }
+@media (min-width: 1024px) { .mp-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+@media (min-width: 1280px) { .mp-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); } }
+
+/* ── Mobile: hide big hero, show compact header ── */
+@media (max-width: 768px) {
+    .mp-hero { display: none !important; }
+    .mp-compact-header { display: block; }
+    .mp-filter-bar { display: none; }
+    .mp-pill-row { display: flex; }
+}
+/* ── Desktop: hide compact header, keep filter bar ── */
+@media (min-width: 769px) {
+    .mp-compact-header { display: none; }
+    .mp-pill-row { display: flex; } /* pills on desktop too */
+    .mp-filter-bar { display: none; } /* pills replace it */
+}
 </style>
 
 {# ── New-member welcome banner (shown exactly once after first login) ── #}
@@ -473,6 +584,22 @@ function dismissProfileNudge() {
 </script>
 {% endif %}
 
+{# ── Compact mobile header (hidden on desktop via CSS) ── #}
+<div class="mp-compact-header">
+    <div class="mp-compact-title">🛋️ Marketplace</div>
+    <form action="/marketplace" method="get" class="mp-search-compact" id="mp-search-form-mobile">
+        <div class="mp-search-compact-wrap">
+            <input type="text" name="q" id="mp-q-mobile" placeholder="Search marketplace…"
+                   autocomplete="off" value="{{ request.args.get('q', '') }}">
+            <div class="mp-suggestions" id="mp-suggestions-mobile"></div>
+        </div>
+        {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+        {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        <button type="submit">🔍</button>
+    </form>
+</div>
+
 {# ── Hero ── #}
 <div class="mp-hero">
     <h1>🛋️ JHE Marketplace</h1>
@@ -490,57 +617,80 @@ function dismissProfileNudge() {
         <button type="submit">Search</button>
     </form>
 
-    <div class="mp-hero-btns">
-        <a href="/sell" class="mp-btn-sell">+ List Something</a>
-        <a href="/marketplace" class="mp-btn-browse">Browse All</a>
-    </div>
 </div>
 
-{# ── Unified compact filter bar ── #}
+{# ── Pill filter row ── #}
 {% set _has_filters = listing_type_filter or (active_category and active_category.id) or city_zip_filter or area_filter %}
 {% set _q_val = (search_query if search_query is defined and search_query else request.args.get('q', '')) %}
-<form method="get" action="/marketplace" class="mp-filter-bar">
-    {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
-    {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
-    {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
-
-    {# Category dropdown #}
-    <div class="mp-filter-group">
-        <label for="mp-cat-sel">Category</label>
-        <select name="category" id="mp-cat-sel">
-            <option value="">All Categories</option>
-            {% for cat in categories %}
-            <option value="{{ cat.slug }}" {{ 'selected' if active_category and active_category.id == cat.id }}>
-                {{ (cat.icon ~ ' ') if cat.icon else '' }}{{ cat.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    {# Listing type dropdown #}
-    <div class="mp-filter-group">
-        <label for="mp-type-sel">Type</label>
-        <select name="listing_type" id="mp-type-sel">
-            <option value="" {{ 'selected' if not listing_type_filter }}>All Types</option>
-            <option value="item" {{ 'selected' if listing_type_filter == 'item' }}>📦 Items</option>
-            <option value="property_sale" {{ 'selected' if listing_type_filter == 'property_sale' }}>🏠 For Sale</option>
-            <option value="rental" {{ 'selected' if listing_type_filter == 'rental' }}>🔑 Rentals</option>
-        </select>
-    </div>
-
-    {# City / ZIP #}
-    <div class="mp-filter-group">
-        <label for="mp-city-inp">City or ZIP</label>
-        <input type="text" name="city_zip" id="mp-city-inp" class="mp-filter-city-input"
-               value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" autocomplete="off">
-    </div>
-
-    <button type="submit" class="mp-filter-btn">Filter</button>
-
+{% set _pq = ('?q=' ~ _q_val ~ '&') if _q_val else '?' %}
+{% set _pcat = ('category=' ~ active_category.slug ~ '&') if active_category else '' %}
+{% set _pcity = ('city_zip=' ~ city_zip_filter ~ '&') if city_zip_filter else '' %}
+{% set _ptype = ('listing_type=' ~ listing_type_filter ~ '&') if listing_type_filter else '' %}
+<div class="mp-pill-row">
+    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill {{ 'active' if not listing_type_filter }}">All</a>
+    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=item' }}" class="mp-pill {{ 'active' if listing_type_filter == 'item' }}">📦 Items</a>
+    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=property_sale' }}" class="mp-pill {{ 'active' if listing_type_filter == 'property_sale' }}">🏠 For Sale</a>
+    <a href="/marketplace{{ _pq ~ _pcat ~ _pcity ~ 'listing_type=rental' }}" class="mp-pill {{ 'active' if listing_type_filter == 'rental' }}">🔑 Rentals</a>
+    <button type="button" class="mp-pill {{ 'active' if active_category }}" onclick="mpTogglePanel('mp-cat-panel', this)">
+        {{ active_category.name if active_category else 'Category' }} ▾
+    </button>
+    <button type="button" class="mp-pill {{ 'active' if city_zip_filter or hide_sold }}" onclick="mpTogglePanel('mp-filters-panel', this)">
+        Filters{% if city_zip_filter %}: {{ city_zip_filter }}{% endif %} ▾
+    </button>
     {% if _has_filters %}
-    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-filter-clear">✕ Clear filters</a>
+    <a href="/marketplace{{ ('?q=' ~ _q_val) if _q_val else '' }}" class="mp-pill" style="color:#ef4444;border-color:#fca5a5;">✕ Clear</a>
     {% endif %}
-</form>
+</div>
+
+{# Category panel #}
+<div id="mp-cat-panel" class="mp-filter-panel">
+    <form method="get" action="/marketplace">
+        {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
+        {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+        {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
+        <div class="mp-filter-panel-inner">
+            <div class="mp-panel-group">
+                <label for="mp-cat-sel">Category</label>
+                <select name="category" id="mp-cat-sel">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.slug }}" {{ 'selected' if active_category and active_category.id == cat.id }}>
+                        {{ (cat.icon ~ ' ') if cat.icon else '' }}{{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="mp-panel-submit">Apply</button>
+            {% if active_category %}<a href="/marketplace{{ ('?' ~ _ptype ~ _pcity ~ 'q=' ~ _q_val) if _q_val else ('?' ~ _ptype ~ _pcity).rstrip('?&') }}" class="mp-panel-clear">✕ Clear</a>{% endif %}
+        </div>
+    </form>
+</div>
+
+{# Filters panel (city/zip + hide sold) #}
+<div id="mp-filters-panel" class="mp-filter-panel">
+    <form method="get" action="/marketplace">
+        {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
+        {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+        <div class="mp-filter-panel-inner">
+            <div class="mp-panel-group">
+                <label for="mp-city-panel">City or ZIP</label>
+                <input type="text" name="city_zip" id="mp-city-panel" class="mp-panel-text-input"
+                       value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" autocomplete="off">
+            </div>
+            <div class="mp-panel-group">
+                <label for="mp-hide-sold-sel">Listing status</label>
+                <select name="hide_sold" id="mp-hide-sold-sel">
+                    <option value="">Show all</option>
+                    <option value="1" {{ 'selected' if hide_sold }}>Active only</option>
+                </select>
+            </div>
+            <button type="submit" class="mp-panel-submit">Apply</button>
+            {% if city_zip_filter or hide_sold %}<a href="/marketplace{{ ('?' ~ _ptype ~ _pcat ~ 'q=' ~ _q_val) if _q_val else ('?' ~ _ptype ~ _pcat).rstrip('?&') }}" class="mp-panel-clear">✕ Clear</a>{% endif %}
+        </div>
+    </form>
+</div>
 
 {# ── Featured Listings (curated by admin, shown only on homepage) ── #}
 {% if not is_search and gallery_photos %}
@@ -642,8 +792,10 @@ function dismissProfileNudge() {
         {% if listing.open_house_dt %}<div style="position:absolute;top:8px;right:8px"><span class="mp-prop-badge oh">Open House</span></div>{% endif %}
         {% endif %}
     {% endif %}
+    {% if listing.created_at and (utcnow() - listing.created_at).total_seconds() < 172800 and not is_sold and not is_reserved and not is_pending %}
+    <div class="mp-badge-new">Just Listed</div>
+    {% endif %}
     <div class="mp-card-body">
-        <div class="mp-card-title">{{ listing.title }}</div>
         <div>
             {% if listing.price_type == 'free' %}
                 <span class="mp-card-price free">FREE</span>
@@ -652,12 +804,12 @@ function dismissProfileNudge() {
             {% else %}
                 <span class="mp-card-price">{{ 'Contact' if listing.is_property else 'Make offer' }}</span>
             {% endif %}
-            {% if listing.featured %}<span class="mp-badge-featured">Featured</span>{% endif %}
-            {% if listing.price_type == 'free' %}<span class="mp-badge-free">Free</span>{% endif %}
-            {% if listing.price_type == 'negotiable' %}<span style="font-size:.7rem;color:#9ca3af;margin-left:4px">· negotiable</span>{% endif %}
+            {% if listing.featured %}<span class="mp-badge-featured">⭐</span>{% endif %}
+            {% if listing.price_type == 'negotiable' %}<span style="font-size:.7rem;color:#9ca3af;margin-left:3px">· OBO</span>{% endif %}
         </div>
+        <div class="mp-card-title">{{ listing.title }}</div>
         {% if listing.is_property and listing.beds_baths_display %}
-            <div style="font-size:.8rem;color:#374151;font-weight:600;margin-top:3px">{{ listing.beds_baths_display }}</div>
+            <div style="font-size:.8rem;color:#374151;font-weight:600;margin-top:2px">{{ listing.beds_baths_display }}</div>
         {% endif %}
         <div class="mp-card-meta">{{ listing.city or '' }}{% if listing.city and listing.state %}, {% endif %}{{ listing.state or '' }}</div>
     </div>
@@ -762,6 +914,16 @@ function dismissProfileNudge() {
         <div style="position:relative">{{ listing_card(listing) }}</div>
         {% endfor %}
     </div>
+    {# ── Load More ── #}
+    {% if has_more is defined and has_more %}
+    {% set _next_limit = (search_limit + 24) if search_limit is defined else 48 %}
+    {% set _lm_url = request.url | replace('&limit=' ~ (search_limit if search_limit is defined else 24), '') %}
+    {% set _lm_url = _lm_url | replace('?limit=' ~ (search_limit if search_limit is defined else 24) ~ '&', '?') %}
+    {% set _lm_url = _lm_url | replace('?limit=' ~ (search_limit if search_limit is defined else 24), '') %}
+    <div class="mp-load-more">
+        <a href="{{ _lm_url }}{{ '&' if '?' in _lm_url else '?' }}limit={{ _next_limit }}">Load More Listings ↓</a>
+    </div>
+    {% endif %}
     {% else %}
     <div class="mp-empty">
         <div class="mp-empty-icon">🔍</div>
@@ -913,6 +1075,20 @@ function mpToggleSave(evt, btn) {
         btn.title = pressed ? 'Saved' : 'Save';
     });
 }
+
+// ── Pill panel toggle ─────────────────────────────────────────
+function mpTogglePanel(id, btn) {
+    var panel = document.getElementById(id);
+    if (!panel) return;
+    var others = document.querySelectorAll('.mp-filter-panel');
+    others.forEach(function(p) { if (p.id !== id) p.classList.remove('open'); });
+    panel.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.mp-pill-row') && !e.target.closest('.mp-filter-panel')) {
+        document.querySelectorAll('.mp-filter-panel').forEach(function(p) { p.classList.remove('open'); });
+    }
+});
 
 // ── Search suggestions ────────────────────────────────────────
 (function() {

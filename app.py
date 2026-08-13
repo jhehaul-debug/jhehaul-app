@@ -106,6 +106,10 @@ def _fmt_price(value):
 
 app.jinja_env.filters['fmt_price'] = _fmt_price
 
+# Make datetime.utcnow available in all templates for age checks (e.g. Just Listed badge)
+from datetime import datetime as _dt
+app.jinja_env.globals['utcnow'] = _dt.utcnow
+
 
 # ---- Startup checks ----
 _sendgrid_key = os.environ.get("SENDGRID_API_KEY")

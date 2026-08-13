@@ -1,0 +1,334 @@
+Redesign the JHE Haul Marketplace Browse page to be cleaner and more visual, using the organization of Facebook Marketplace as inspiration.
+
+Do NOT copy Facebook branding, icons, colors, or proprietary design. Keep JHE Haul’s own branding.
+
+The goal is to make JHE Haul feel like a modern marketplace where users see listings quickly instead of scrolling through large menus and controls.
+
+MOBILE BROWSE PAGE
+
+1. Create a Compact Marketplace Header
+
+At the top of Browse, show:
+
+Marketplace
+
+Then provide compact controls for:
+
+* Search 🔍
+* Category/Filters
+* Location
+
+Do NOT use a huge hero section on mobile.
+
+Remove the large dark JHE Marketplace promotional box from the mobile Browse page.
+
+Users already know they are in Marketplace after pressing Browse.
+
+⸻
+
+2. Remove Large Buttons From the Top
+
+Do not display large:
+
+* List Something
+* Browse All
+* Large category button groups
+
+on the Browse page.
+
+The permanent bottom navigation already contains:
+
+Home | Browse | Sell | Messages | Account
+
+The orange Sell button is already clearly visible, so we do not need another large “List Something” button on Browse.
+
+When someone is on Browse, let them BROWSE.
+
+⸻
+
+3. Compact Filter Row
+
+Under the Marketplace heading/search, create a compact horizontal filter area such as:
+
+For You | Local | Category ▼ | Filters ▼
+
+or an equivalent design appropriate for JHE Haul.
+
+Category should open the category dropdown we already requested.
+
+Filters can contain things such as:
+
+* Listing Type
+* Price
+* City/ZIP
+* Distance
+* Condition
+* Active listings only
+
+Do NOT display all of these controls permanently down the page.
+
+Open them only when the user requests filters.
+
+⸻
+
+4. Make Listings the Main Focus
+
+Immediately underneath the compact controls, display marketplace listings.
+
+On MOBILE, use a 2-column listing grid, similar to the organization shown in the reference screenshot.
+
+Each listing card should prioritize:
+
+PHOTO
+
+Then underneath:
+
+$10,000
+
+2014 Chevrolet Volt
+
+Maplewood, MN
+
+Keep this information compact.
+
+Do not put large buttons inside Browse listing cards.
+
+Tapping the photo or listing card should open the full listing.
+
+⸻
+
+5. Listing Photos
+
+Photos should be LARGE and fill most of each listing tile.
+
+Use consistent image dimensions/cropping so the grid looks organized even when sellers upload differently sized photos.
+
+Use object-fit: cover or the appropriate equivalent so photos fill their containers without stretching.
+
+Do NOT distort uploaded photos.
+
+If a listing has multiple photos, use the primary photo for the Browse grid.
+
+The full listing page should contain the complete photo gallery.
+
+⸻
+
+6. Marketplace Badges
+
+Allow small badges over the listing photo when appropriate, such as:
+
+Just Listed
+
+Pending
+
+Reserved
+
+Do not overcrowd the card.
+
+Sold listings should normally not appear in active Browse results unless the user specifically chooses to view sold listings.
+
+⸻
+
+7. Price Formatting
+
+Continue using the corrected price format:
+
+$10,000
+
+NOT:
+
+$10000
+
+or
+
+$10000.00
+
+If the marketplace supports a previous/original price, it can optionally display:
+
+$10,000 $12,000
+
+but only when there is actually an original/reduced price stored for that listing.
+
+Do NOT invent sale prices.
+
+⸻
+
+8. Search Suggestions
+
+Keep the marketplace search suggestion/autocomplete system.
+
+When the user taps Search and begins typing, show relevant suggestions.
+
+Examples:
+
+Typing:
+
+Chev
+
+could suggest:
+
+* Chevrolet
+* Chevrolet Volt
+* Chevrolet Malibu
+* Chevrolet Silverado
+
+Typing:
+
+sofa
+
+could suggest:
+
+* Sofas
+* Sectionals
+* Furniture
+* Matching active listings
+
+Suggestions should come from real marketplace categories, vehicle make/model data, common search terms, and active listings.
+
+⸻
+
+9. Location
+
+Use the user’s selected marketplace location.
+
+Allow the user to easily change:
+
+* City
+* ZIP
+* Distance/radius if supported
+
+Location controls should be accessible without permanently taking up a large portion of the Browse page.
+
+⸻
+
+10. Infinite Scroll / Load More
+
+As the user scrolls, continue showing additional listings.
+
+Use either:
+
+* Infinite scrolling
+
+OR
+
+* A clean Load More system
+
+Do not make users repeatedly navigate back and forth between pages unnecessarily.
+
+⸻
+
+11. DESKTOP VERSION
+
+Keep desktop clean too.
+
+Desktop can have more space for search and filters, but listings should still be the main focus.
+
+Use a responsive listing grid:
+
+* Mobile: approximately 2 columns
+* Tablet: approximately 3 columns
+* Desktop: approximately 4–5 columns depending on screen width
+
+Do not make desktop listing cards unnecessarily huge.
+
+⸻
+
+12. Keep JHE Haul Branding
+
+This is NOT a request to clone Facebook.
+
+Keep:
+
+* JHE Haul name/logo
+* JHE Haul colors
+* Existing account system
+* Existing marketplace database
+* Existing messaging
+* Existing Sell flow
+* Existing listing statuses
+* Existing Request Service system
+
+We are only using the reference as inspiration for a cleaner marketplace browsing experience.
+
+⸻
+
+13. Mobile Bottom Navigation
+
+Keep:
+
+🏠 Home | 🛍️ Browse | ➕ Sell | 💬 Messages | 👤 Account
+
+Do not duplicate these same actions with large buttons on the Browse page.
+
+⸻
+
+14. Final Mobile Layout
+
+The mobile Browse page should essentially become:
+
+JHE Haul
+
+Marketplace
+
+🔍 Search Marketplace
+
+For You | Local | Category ▼ | Filters ▼
+
+[Listing Photo] [Listing Photo]
+
+$Price          $Price
+
+Short title     Short title
+
+Location        Location
+
+[Listing Photo] [Listing Photo]
+
+…and continue scrolling.
+
+The actual merchandise should dominate the screen—not navigation buttons.
+
+⸻
+
+IMPORTANT: DO NOT BREAK EXISTING FEATURES
+
+This is primarily a UI/organization redesign.
+
+Do not remove:
+
+* Categories
+* Search
+* Filters
+* Favorites
+* Messaging
+* Listing statuses
+* Seller controls
+* Listing details
+* Photos
+* Location filtering
+
+Move secondary controls into dropdowns/filter panels rather than deleting their functionality.
+
+Test the redesign with the existing 2014 Chevrolet Volt listing.
+
+Verify:
+
+* Primary photo displays
+* Price shows $10,000
+* Title displays correctly
+* Location displays correctly
+* Listing opens when tapped
+* Full photo gallery works
+* Search works
+* Category dropdown works
+* Filters work
+* Mobile 2-column grid works
+* Desktop responsive grid works
+
+After completing everything:
+
+1. Commit all changes.
+2. Push to the production branch.
+3. Confirm DigitalOcean deployment succeeds.
+4. Test the LIVE jhehaul.com website on mobile and desktop.
+5. Do not mark the task complete until the redesigned Browse page is actually visible and functional on production.
