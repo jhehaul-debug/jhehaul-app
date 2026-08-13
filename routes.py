@@ -6203,37 +6203,39 @@ def _gallery_photos(active_only=False):
     return q.order_by(GalleryPhoto.display_order, GalleryPhoto.id).all()
 
 def _deactivate_stale_gallery_pins():
-    """Delete pinned listing gallery entries whose listing is no longer active.
+    """Deactivate pinned listing gallery entries whose listing is no longer active.
 
     A listing pin is considered stale when:
     - The listing no longer exists (orphaned foreign key)
     - The listing status is anything other than 'active'  (sold, reserved, expired, removed, draft, …)
     - The listing's moderation_status is not 'approved'
 
-    Stale pins are deleted (not merely deactivated) so the admin Featured Content
-    list never fills up with dead entries.  Runs at startup and on every admin
-    gallery page visit.  Returns the count of rows deleted.
+    Stale pins are deactivated (is_active set to False) rather than deleted so
+    the admin Featured Content page shows the badge flip to Inactive.
+    Public-facing pages use active_only=True, so deactivated pins are never
+    shown to visitors.  Runs at startup and on every admin gallery page visit.
+    Returns the count of rows deactivated.
     """
     from models import GalleryPhoto
     all_listing_pins = (GalleryPhoto.query
-                        .filter_by(item_type='listing')
+                        .filter_by(item_type='listing', is_active=True)
                         .all())
-    removed = 0
+    deactivated = 0
     for pin in all_listing_pins:
         listing = pin.listing_rel
         if (listing is None
                 or listing.status != 'active'
                 or listing.moderation_status != 'approved'):
-            db.session.delete(pin)
-            removed += 1
-    if removed:
+            pin.is_active = False
+            deactivated += 1
+    if deactivated:
         try:
             db.session.commit()
-            app.logger.info("gallery cleanup: removed %d stale pinned listing(s)", removed)
+            app.logger.info("gallery cleanup: deactivated %d stale pinned listing(s)", deactivated)
         except Exception as _e:
             db.session.rollback()
             app.logger.warning("gallery cleanup: commit failed: %s", _e)
-    return removed
+    return deactivated
 def _compress_gallery_image(raw_bytes: bytes, ext: str):
     """
     Resize and compress an uploaded gallery image with Pillow.
