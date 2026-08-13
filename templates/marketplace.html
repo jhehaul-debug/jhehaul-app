@@ -68,6 +68,22 @@
     white-space: nowrap;
 }
 .mp-search-wrap button:hover { background: #2f855a; }
+.mp-search-input-wrap { position: relative; flex: 1; display: flex; }
+.mp-search-input-wrap input { flex: 1; }
+.mp-suggestions {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 10px 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.13); z-index: 600; overflow: hidden;
+    margin-top: 2px;
+}
+.mp-suggestions.open { display: block; }
+.mp-suggestion-item {
+    padding: 10px 16px; cursor: pointer; font-size: .92rem; color: #1a202c;
+    border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 10px;
+}
+.mp-suggestion-item:last-child { border-bottom: none; }
+.mp-suggestion-item:hover, .mp-suggestion-item.focused { background: #f0fdf4; }
+.mp-suggestion-icon { font-size: .82rem; flex-shrink: 0; }
 .mp-hero-btns {
     display: flex;
     gap: 12px;
@@ -436,8 +452,11 @@ function dismissProfileNudge() {
     <h1>🛋️ JHE Marketplace</h1>
     <p>Buy, sell, and rent locally — items, homes, apartments, and more.</p>
 
-    <form action="/marketplace" method="get" class="mp-search-wrap">
-        <input type="text" name="q" placeholder="Search items, homes, rentals, and more…" autocomplete="off" value="{{ request.args.get('q', '') }}">
+    <form action="/marketplace" method="get" class="mp-search-wrap" id="mp-search-form">
+        <div class="mp-search-input-wrap">
+            <input type="text" name="q" id="mp-q" placeholder="Search items, vehicles, homes, and more…" autocomplete="off" value="{{ request.args.get('q', '') }}">
+            <div class="mp-suggestions" id="mp-suggestions"></div>
+        </div>
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
         {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
         <button type="submit">Search</button>
@@ -641,7 +660,7 @@ function dismissProfileNudge() {
 <div class="mp-section">
     <div class="mp-section-head">
         <h2>
-            {% if search_query %}Results for "{{ search_query }}"
+            {% if search_query %}Results for "{{ search_query }}" <span style="color:#718096;font-size:0.85rem;font-weight:400;">({{ search_results | length }} listing{{ 's' if search_results | length != 1 else '' }})</span>
             {% elif listing_type_filter == 'property_sale' %}🏠 Properties for Sale
             {% elif listing_type_filter == 'rental' %}🔑 Rentals
             {% elif listing_type_filter == 'housing' %}🏠 Housing & Real Estate
@@ -872,6 +891,76 @@ function mpToggleSave(evt, btn) {
         btn.title = pressed ? 'Saved' : 'Save';
     });
 }
+
+// ── Search suggestions ────────────────────────────────────────
+(function() {
+    var inp  = document.getElementById('mp-q');
+    var box  = document.getElementById('mp-suggestions');
+    var form = document.getElementById('mp-search-form');
+    if (!inp || !box || !form) return;
+
+    var timer, focusIdx = -1;
+
+    function renderSuggestions(items) {
+        if (!items.length) { box.classList.remove('open'); return; }
+        var icons = { category: '🏷️', vehicle: '🚗', listing: '📦' };
+        box.innerHTML = items.map(function(s, i) {
+            return '<div class="mp-suggestion-item" data-idx="' + i + '" data-text="' + s.text.replace(/"/g, '&quot;') + '" data-url="' + s.url + '">' +
+                   '<span class="mp-suggestion-icon">' + (icons[s.type] || '🔍') + '</span>' +
+                   '<span>' + s.text + '</span></div>';
+        }).join('');
+        focusIdx = -1;
+        box.classList.add('open');
+        box.querySelectorAll('.mp-suggestion-item').forEach(function(el) {
+            el.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                inp.value = el.getAttribute('data-text');
+                box.classList.remove('open');
+                form.submit();
+            });
+        });
+    }
+
+    function fetchSuggestions(q) {
+        fetch('/api/search-suggestions?q=' + encodeURIComponent(q))
+            .then(function(r) { return r.json(); })
+            .then(function(d) { renderSuggestions(d.suggestions || []); })
+            .catch(function() {});
+    }
+
+    inp.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = inp.value.trim();
+        if (q.length < 2) { box.classList.remove('open'); return; }
+        timer = setTimeout(function() { fetchSuggestions(q); }, 220);
+    });
+
+    // Keyboard navigation within dropdown
+    inp.addEventListener('keydown', function(e) {
+        var items = box.querySelectorAll('.mp-suggestion-item');
+        if (!box.classList.contains('open') || !items.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            focusIdx = Math.min(focusIdx + 1, items.length - 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            focusIdx = Math.max(focusIdx - 1, -1);
+        } else if (e.key === 'Escape') {
+            box.classList.remove('open'); return;
+        } else if (e.key === 'Enter' && focusIdx >= 0) {
+            e.preventDefault();
+            inp.value = items[focusIdx].getAttribute('data-text');
+            box.classList.remove('open');
+            form.submit(); return;
+        } else { return; }
+        items.forEach(function(el, i) { el.classList.toggle('focused', i === focusIdx); });
+        if (focusIdx >= 0) items[focusIdx].scrollIntoView({ block: 'nearest' });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!inp.contains(e.target) && !box.contains(e.target)) box.classList.remove('open');
+    });
+})();
 </script>
 
 {% endblock %}

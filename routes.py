@@ -577,8 +577,14 @@ def marketplace():
 
         if q:
             qobj = qobj.filter(
-                db.or_(Listing.title.ilike(f'%{q}%'),
-                       Listing.description.ilike(f'%{q}%'))
+                db.or_(
+                    Listing.title.ilike(f'%{q}%'),
+                    Listing.description.ilike(f'%{q}%'),
+                    Listing.vehicle_make.ilike(f'%{q}%'),
+                    Listing.vehicle_model.ilike(f'%{q}%'),
+                    Listing.city.ilike(f'%{q}%'),
+                    db.cast(Listing.vehicle_year, db.String).ilike(f'%{q}%'),
+                )
             )
         if category_slug:
             cat = Category.query.filter_by(slug=category_slug, is_active=True).first()
@@ -2292,6 +2298,78 @@ def api_zip_lookup():
         return jsonify({'found': True, 'lat': zc.lat, 'lon': zc.lon,
                         'city': zc.city or '', 'state': zc.state or ''})
     return jsonify({'found': False})
+
+
+@app.route("/api/search-suggestions")
+def api_search_suggestions():
+    """Return typeahead suggestions for the marketplace search box."""
+    from models import Listing, Category
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify(suggestions=[])
+
+    suggestions = []
+    seen_text = set()
+
+    def _add(text, stype, url):
+        key = text.lower()
+        if key not in seen_text:
+            seen_text.add(key)
+            suggestions.append({'text': text, 'type': stype, 'url': url})
+
+    # 1. Matching categories
+    cats = Category.query.filter(
+        Category.name.ilike(f'%{q}%'),
+        Category.is_active == True,
+        Category.parent_id == None
+    ).limit(3).all()
+    for c in cats:
+        _add(c.name, 'category', f'/marketplace?category={c.slug}')
+
+    # 2. Vehicle makes that start with the query
+    _MAKES = ['Acura','Audi','BMW','Buick','Cadillac','Chevrolet','Chrysler',
+              'Dodge','Ford','GMC','Honda','Hyundai','Infiniti','Jeep','Kia',
+              'Lexus','Lincoln','Mazda','Mercedes-Benz','Mitsubishi','Nissan',
+              'Pontiac','RAM','Subaru','Tesla','Toyota','Volkswagen','Volvo']
+    for make in _MAKES:
+        if make.lower().startswith(q.lower()):
+            _add(make, 'vehicle', f'/marketplace?q={make}')
+
+    # 3. Distinct vehicle make+model combos from live listings
+    if len(suggestions) < 6:
+        vm_rows = (Listing.query
+            .with_entities(Listing.vehicle_make, Listing.vehicle_model)
+            .filter(
+                Listing.status == 'active',
+                Listing.moderation_status == 'approved',
+                Listing.vehicle_make.isnot(None),
+                db.or_(
+                    Listing.vehicle_make.ilike(f'{q}%'),
+                    Listing.vehicle_model.ilike(f'%{q}%'),
+                )
+            )
+            .distinct()
+            .limit(6).all())
+        for make, model in vm_rows:
+            if make and model:
+                _add(f'{make} {model}', 'vehicle', f'/marketplace?q={make}+{model}')
+            elif make:
+                _add(make, 'vehicle', f'/marketplace?q={make}')
+
+    # 4. Active listing titles that contain the query
+    if len(suggestions) < 8:
+        listings = (Listing.query
+            .filter(
+                Listing.status == 'active',
+                Listing.moderation_status == 'approved',
+                Listing.title.ilike(f'%{q}%')
+            )
+            .order_by(Listing.created_at.desc())
+            .limit(6).all())
+        for l in listings:
+            _add(l.title, 'listing', f'/listing/{l.id}')
+
+    return jsonify(suggestions=suggestions[:8])
 
 
 @app.route("/api/notifications/count")

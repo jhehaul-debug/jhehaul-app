@@ -1,0 +1,187 @@
+Please fix the following navigation and search issues on the LIVE JHE Haul Marketplace.
+
+1. Remove Browse Marketplace From the Messages Page
+
+The My Messages page still shows a Browse Marketplace button.
+
+Remove it.
+
+The Messages page should be dedicated to the user’s conversations.
+
+When there are no conversations, show only:
+
+💬 No conversations yet
+
+When you contact a seller or a buyer messages you about your listing, your conversations will appear here.
+
+Do NOT show:
+
+* Browse Marketplace button
+* Sell Something link
+* Extra marketplace navigation inside the Messages page
+
+The permanent bottom navigation already contains:
+
+Home | Browse | Sell | Messages | Account
+
+That is enough.
+
+When conversations exist, this page should display the conversation list and allow users to open and reply to messages.
+
+⸻
+
+2. Fix the Marketplace Search Button
+
+The main marketplace Search button currently does not navigate/search correctly.
+
+Make it functional.
+
+When a user enters a search and presses Search, it should:
+
+* Search active marketplace listings
+* Take the user to the search results
+* Preserve the search term
+* Show matching listings
+* Show a clear “No results found” state when nothing matches
+
+Search should work with:
+
+* Listing title
+* Make/model for vehicles
+* Category
+* Description
+* City/location where appropriate
+* Common keywords
+
+Pressing Enter/Return from the search field should perform the same search.
+
+⸻
+
+3. Fix Browse All
+
+There is also a Browse All button/link that is not navigating anywhere.
+
+Make Browse All take the user to the full marketplace listing page showing all active listings.
+
+It should NOT be a dead button.
+
+If Browse All duplicates another unnecessary button on the same screen, consolidate them instead of showing multiple buttons that do the same thing.
+
+⸻
+
+4. Add Search Suggestions While Typing
+
+Improve the marketplace search box by showing useful suggestions/templates as the user types.
+
+For example:
+
+If the user types:
+
+Chev
+
+suggest things such as:
+
+* Chevrolet
+* Chevrolet Volt
+* Chevrolet Silverado
+* Chevrolet Malibu
+
+If they type:
+
+Ford
+
+suggest:
+
+* Ford
+* Ford F-150
+* Ford Mustang
+* Ford Explorer
+
+If they type:
+
+sofa
+
+suggest:
+
+* Sofas
+* Sectionals
+* Living Room Furniture
+* Matching active listings
+
+Suggestions can come from:
+
+* Existing categories
+* Vehicle makes
+* Vehicle models
+* Common marketplace search terms
+* Active listing titles
+
+The suggestions should appear in a dropdown directly below the search field.
+
+When the user taps a suggestion:
+
+* Fill/select that search
+* Run the search or take them directly to the appropriate results page
+
+Do not show irrelevant fake suggestions.
+
+Prioritize actual marketplace categories, vehicle data, and active listings.
+
+⸻
+
+5. Search Experience
+
+Add a clean search-results experience with:
+
+* Search term displayed
+* Number of results when appropriate
+* Relevant listings
+* Ability to change the search
+* Ability to clear/reset the search
+* Category filtering if already supported
+
+Do not create another separate confusing search system. Use the same marketplace browsing/listing data already used by Browse.
+
+⸻
+
+6. Test Before Marking Complete
+
+Test all of these on the LIVE production site:
+
+Messages
+
+* My Messages has NO Browse Marketplace button
+* My Messages has NO Sell Something link
+* Conversation list still works when conversations exist
+
+Search
+
+Test:
+
+* Chevrolet
+* Chevrolet Volt
+* Ford
+* Sofa
+* Furniture
+* A search with no matches
+
+Verify:
+
+* Search button works
+* Enter/Return works
+* Suggestions appear while typing
+* Selecting suggestions works
+* Search results open correctly
+
+Browse All
+
+* Browse All opens all active marketplace listings
+* It is not a dead button
+
+After testing:
+
+1. Commit the changes.
+2. Push to the production branch.
+3. Confirm the DigitalOcean deployment succeeds.
+4. Open the LIVE jhehaul.com site.
+5. Verify these changes are actually visible and functional before marking the task complete.
