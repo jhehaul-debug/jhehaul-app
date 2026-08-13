@@ -1,0 +1,327 @@
+JHE HAUL MARKETPLACE — ADMIN USER MANAGEMENT, REPORT REVIEW, SUSPEND, BAN, AND DELETE
+
+Add a complete Admin User Management system for the JHE Haul Marketplace.
+
+IMPORTANT:
+
+This is for the NEW JHE Haul Marketplace.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+
+1. ADMIN USERS PAGE
+    ==================================================
+
+Add a section in the Admin dashboard called:
+
+USERS
+
+Admin should be able to view all marketplace accounts.
+
+Show useful account information such as:
+
+* Display name
+* Email
+* Account type
+* Customer / Seller / Hauler / Admin status
+* Account created date
+* Last active date if available
+* Number of active listings
+* Number of sold listings if tracked
+* Number of reports received
+* Current account status
+* Hauler approval status where applicable
+
+Allow Admin to search users by:
+
+* Name
+* Email
+* User ID
+* Account status
+
+==================================================
+2. USER DETAIL PAGE
+
+When Admin selects a user, open a detailed Admin User page.
+
+Show:
+
+* Basic account information
+* Active listings
+* Sold/removed listings
+* Reports against the user
+* Reports submitted by the user
+* Moderation history
+* Account status
+* Hauler status if applicable
+* Delivery history where appropriate
+* Relevant offer/message metadata where legally and technically appropriate
+
+Do NOT expose passwords or authentication secrets.
+
+==================================================
+3. REPORT REVIEW
+
+If a user is reported, Admin should be able to open the report directly from:
+
+ADMIN → REPORTS
+
+and then select:
+
+VIEW USER
+
+The user detail page should clearly show:
+
+* Number of prior reports
+* Report reasons
+* Dates
+* Reported listing
+* Reported conversation where appropriate
+* Evidence attachments where supported
+* Admin notes
+* Previous warnings/suspensions
+
+==================================================
+4. ADMIN ACTIONS
+
+Admin should be able to take the following actions:
+
+WARN USER
+
+TEMPORARILY SUSPEND USER
+
+UNSUSPEND USER
+
+BAN USER
+
+DELETE USER ACCOUNT
+
+For listings, Admin should also be able to:
+
+REMOVE LISTING
+
+SUSPEND LISTING
+
+RESTORE LISTING where appropriate
+
+==================================================
+5. SUSPEND USER
+
+When an account is suspended:
+
+The user should not be able to:
+
+* Create new listings
+* Send new marketplace offers
+* Send new messages where suspension rules require it
+* Accept delivery jobs if they are a Hauler
+* Perform other restricted marketplace actions
+
+Do not automatically delete their data during suspension.
+
+Display an appropriate account notice.
+
+==================================================
+6. BAN USER
+
+A banned user should be blocked from normal marketplace access.
+
+Preserve evidence, moderation history, reports, and necessary records.
+
+Do not immediately erase all moderation history when banning an account.
+
+==================================================
+7. DELETE USER ACCOUNT
+
+Admin may delete a regular marketplace user’s account when appropriate.
+
+Before deletion, require a confirmation step.
+
+Example:
+
+“Permanently delete this user account?”
+
+Explain that deletion may remove or anonymize account data depending on the system’s retention requirements.
+
+Do NOT allow Admin to accidentally delete:
+
+* Primary Admin account
+* Last remaining active Admin
+* Marketplace-wide data
+* Other users’ listings
+* Global settings
+* Database tables
+* Shared system configuration
+
+Enforce protections SERVER-SIDE.
+
+==================================================
+8. PRIMARY ADMIN PROTECTION
+
+The Primary Admin account must not be deletable from the standard Admin Users page.
+
+If Admin opens the Primary Admin account, do not show a normal Delete User button.
+
+Display:
+
+“Primary Admin account cannot be deleted through standard user management.”
+
+If multiple Admins exist, never allow deletion of the last remaining active Admin.
+
+==================================================
+9. DELETE VS BAN
+
+Use BAN as the preferred action when fraud, scams, abuse, or criminal activity may need to be preserved for investigation or moderation history.
+
+Use DELETE only when permanent account removal is appropriate.
+
+Do not automatically delete a reported user merely because one report is submitted.
+
+Admin should review the evidence first.
+
+==================================================
+10. MODERATION AUDIT LOG
+
+Every major Admin action should be logged.
+
+Include:
+
+* Admin who took action
+* User affected
+* Action taken
+* Reason
+* Date/time
+* Related report
+* Admin notes where provided
+
+Actions to log include:
+
+Warn
+Suspend
+Unsuspend
+Ban
+Delete
+Remove Listing
+Restore Listing
+
+==================================================
+11. REPORT ACTION SHORTCUTS
+
+From each marketplace report, provide Admin buttons such as:
+
+VIEW LISTING
+
+VIEW USER
+
+WARN USER
+
+SUSPEND USER
+
+BAN USER
+
+REMOVE LISTING
+
+DISMISS REPORT
+
+Do not show destructive buttons without confirmation.
+
+==================================================
+12. SAFETY / FRAUD WORKFLOW
+
+Recommended Admin flow:
+
+Report Received
+→ Review Report
+→ Review User
+→ Review Prior Reports
+→ Review Listing/Conversation
+→ Decide Action
+
+Possible outcomes:
+
+Dismiss
+Warn
+Suspend
+Ban
+Delete
+
+Do not automatically take irreversible action based on a single automated flag or report.
+
+==================================================
+13. TESTING
+
+Test:
+
+Admin opens Users page
+→ Users display
+
+Admin searches user
+→ Correct result appears
+
+Admin opens reported user
+→ Reports visible
+
+Admin warns user
+→ Warning logged
+
+Admin suspends user
+→ Restricted actions blocked
+
+Admin unsuspends user
+→ Normal access restored
+
+Admin bans user
+→ Marketplace access blocked
+
+Admin deletes regular user
+→ Account removed/anonymized according to implementation
+
+Admin attempts to delete Primary Admin
+→ Rejected
+
+Admin attempts to delete last active Admin
+→ Rejected
+
+Unauthorized regular user accesses Admin Users route
+→ Rejected
+
+==================================================
+14. PUSH / DEPLOY
+
+After implementation:
+
+1. Run tests.
+2. Run production build.
+3. Verify Admin permissions.
+4. Verify Primary Admin protection.
+5. Verify report-to-user workflow.
+6. Verify suspend/ban/delete actions.
+7. Commit changes.
+8. PUSH to the EXISTING GitHub production branch.
+9. Verify Local and GitHub HEAD match.
+10. Trigger/verify a NEW DigitalOcean deployment.
+11. Test LIVE jhehaul.com.
+
+Report:
+
+* Files changed
+* Database migrations
+* Users page status
+* Report review status
+* Suspend status
+* Ban status
+* Delete status
+* Primary Admin protection status
+* Tests
+* Git commit SHA
+* GitHub push status
+* DigitalOcean deployment status
+
+CRITICAL:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
