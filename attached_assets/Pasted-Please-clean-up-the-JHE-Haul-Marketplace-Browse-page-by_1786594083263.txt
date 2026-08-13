@@ -1,0 +1,144 @@
+Please clean up the JHE Haul Marketplace Browse page by removing the large group of category buttons currently displayed down the page.
+
+Right now categories such as:
+
+* All
+* Items
+* For Sale
+* Rentals
+* Twin Cities
+* Furniture
+* Appliances
+* Electronics
+* Vehicles
+* Auto Parts
+* Tools
+* Home & Garden
+* Clothing & Accessories
+* Restaurant Equipment
+* Business Equipment
+* Kids & Baby
+* Sports & Outdoors
+* Collectibles
+* Free Items
+* Other
+* Housing & Real Estate
+
+take up too much screen space, especially on mobile.
+
+Replace Them With One Category Dropdown
+
+Create one clean dropdown/filter labeled:
+
+Category
+
+Default selection:
+
+All Categories
+
+When opened, show the existing marketplace categories in the dropdown.
+
+For example:
+
+Category ▼
+
+* All Categories
+* Furniture
+* Appliances
+* Electronics
+* Vehicles
+* Auto Parts
+* Tools
+* Home & Garden
+* Clothing & Accessories
+* Restaurant Equipment
+* Business Equipment
+* Kids & Baby
+* Sports & Outdoors
+* Collectibles
+* Free Items
+* Housing & Real Estate
+* Other
+
+Preserve all existing categories supported by the database. Do NOT accidentally remove category functionality.
+
+Handle These Separately
+
+Do NOT treat these as normal product categories if they are actually filters:
+
+* For Sale
+* Rentals
+* Twin Cities
+* All
+
+Instead, organize them properly.
+
+For example:
+
+Category: All Categories ▼
+
+Listing Type: All | For Sale | Rentals
+
+City or ZIP: [________]
+
+This is cleaner than mixing listing types and locations into the category list.
+
+If “Twin Cities” is simply a location filter, remove it from the category list and use the City/ZIP location filter instead.
+
+Mobile Layout
+
+On mobile, the Browse page should show something compact like:
+
+Category ▼
+
+Listing Type ▼ if needed
+
+City or ZIP
+
+Filter
+
+Then immediately show:
+
+All Listings
+
+The user should NOT have to scroll through dozens of category buttons before reaching the listings.
+
+Desktop
+
+Use the same organized filtering system on desktop so mobile and desktop behave consistently.
+
+Keep Search
+
+Do NOT remove the marketplace search bar or search suggestions.
+
+Search and filters should work together.
+
+Example:
+
+User searches Chevrolet
+
+Then chooses:
+
+Category: Vehicles
+
+and enters:
+
+ZIP: 55109
+
+The results should reflect all selected filters.
+
+Important
+
+This change is primarily about organization and reducing clutter.
+
+Do NOT remove working categories or listing data.
+
+After making the changes:
+
+1. Test every category in the dropdown.
+2. Test City/ZIP filtering.
+3. Test listing type filters if retained.
+4. Test on iPhone/mobile.
+5. Test desktop.
+6. Commit and push to production.
+7. Verify the dropdown is working on the LIVE jhehaul.com site before marking complete.
