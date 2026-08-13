@@ -1,194 +1,134 @@
 {% extends "base.html" %}
-{% block title %}My Dashboard - JHE Haul{% endblock %}
+{% block title %}Hauler Dashboard — JHE Haul{% endblock %}
 {% block content %}
 
 <div class="page-header">
     <div style="display:flex;align-items:center;gap:12px;">
         {% if current_user.profile_image_url %}
-        <img src="{{ current_user.profile_image_url }}" alt="{{ current_user.first_name or 'User' }}"
+        <img src="{{ current_user.profile_image_url }}" alt="{{ current_user.first_name or 'Hauler' }}"
              style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;"
              onerror="this.style.display='none';">
+        {% elif current_user.profile_photo_data %}
+        <img src="{{ url_for('serve_profile_photo', user_id=current_user.id) }}" alt="{{ current_user.first_name or 'Hauler' }}"
+             style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;">
         {% else %}
         <div style="width:44px;height:44px;border-radius:50%;background:#27ae60;color:#fff;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             {{ (current_user.first_name or current_user.email or '?')[0]|upper }}
         </div>
         {% endif %}
-        <h2 class="page-title" style="margin:0;">My Dashboard</h2>
+        <h2 class="page-title" style="margin:0;">🚛 Hauler Dashboard</h2>
     </div>
-    <a href="{{ url_for('hauler_earnings') }}" class="btn btn-outline btn-sm">💰 Earnings</a>
 </div>
 
-{% if hauler_avg_rating is defined and hauler_review_count > 0 %}
-<div class="card" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:16px 20px;margin-bottom:6px;">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}
+<div class="alert alert-{{ cat }}" style="margin-bottom:14px;">{{ msg }}</div>
+{% endfor %}
+{% endwith %}
+
+{# ── Status Banner ── #}
+{% if hauler_status == 'pending' %}
+<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;">
+    <span style="font-size:1.4rem;flex-shrink:0;">⏳</span>
+    <div>
+        <div style="font-weight:700;color:#92400e;margin-bottom:3px;">Application Pending</div>
+        <div style="font-size:0.88rem;color:#78350f;line-height:1.5;">Your hauler application is under review. We'll notify you as soon as it's approved — usually within 1–2 business days.</div>
+    </div>
+</div>
+{% elif hauler_status == 'rejected' %}
+<div style="background:#fff5f5;border:1px solid #fed7d7;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;">
+    <span style="font-size:1.4rem;flex-shrink:0;">❌</span>
+    <div>
+        <div style="font-weight:700;color:#c53030;margin-bottom:3px;">Application Not Approved</div>
+        <div style="font-size:0.88rem;color:#742a2a;line-height:1.5;">Your hauler application was not approved at this time. Contact support if you have questions.</div>
+    </div>
+</div>
+{% elif hauler_status == 'suspended' %}
+<div style="background:#fff5f5;border:1px solid #feb2b2;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;">
+    <span style="font-size:1.4rem;flex-shrink:0;">⚠️</span>
+    <div>
+        <div style="font-weight:700;color:#c53030;margin-bottom:3px;">Access Suspended</div>
+        <div style="font-size:0.88rem;color:#742a2a;line-height:1.5;">Your hauler access is currently suspended. Contact support for more information.</div>
+    </div>
+</div>
+{% elif hauler_status == 'approved' %}
+<div style="background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:1.6rem;font-weight:800;color:#1a202c;">{{ "%.1f"|format(hauler_avg_rating) }}</span>
+        <span style="font-size:1.3rem;">✅</span>
         <div>
-            <div style="color:#f6c90e;font-size:1.1rem;line-height:1;">
-                {% set full = hauler_avg_rating|int %}
-                {% for i in range(full) %}★{% endfor %}{% if hauler_avg_rating - full >= 0.5 %}★{% endif %}{% for i in range(5 - full - (1 if hauler_avg_rating - full >= 0.5 else 0)) %}☆{% endfor %}
-            </div>
-            <div style="font-size:0.78rem;color:#718096;">{{ hauler_review_count }} review{% if hauler_review_count != 1 %}s{% endif %}</div>
+            <div style="font-weight:700;color:#166534;font-size:0.95rem;">Approved Hauler</div>
+            <div style="font-size:0.82rem;color:#15803d;">You can accept marketplace deliveries.</div>
         </div>
     </div>
-    {% if hauler_badges %}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        {% for b in hauler_badges %}
-        <span title="{{ b.desc }}" style="display:inline-flex;align-items:center;gap:4px;background:{{ b.color }}18;border:1.5px solid {{ b.color }};border-radius:20px;padding:3px 12px;font-size:0.82rem;font-weight:600;color:{{ b.color }};">
-            {{ b.icon }} {{ b.label }}
-        </span>
-        {% endfor %}
-    </div>
-    {% endif %}
-    <a href="{{ url_for('hauler_earnings') }}" style="margin-left:auto;font-size:0.85rem;color:#2563eb;white-space:nowrap;">View all reviews →</a>
+    <a href="{{ url_for('hauler_deliveries_page') }}" class="btn btn-success btn-sm">
+        🚛 Browse Available Deliveries{% if available_count %} ({{ available_count }}){% endif %}
+    </a>
+</div>
+{% else %}
+<div style="background:#f7f9fc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+    <div style="font-weight:600;color:#4a5568;margin-bottom:3px;">Hauler Status: Not Set</div>
+    <div style="font-size:0.86rem;color:#718096;">Contact support or wait for your application status.</div>
 </div>
 {% endif %}
 
-{% if not jobs %}
-<div class="card">
-    <div class="empty-state">
-        <div class="empty-icon">🚛</div>
-        <p>No accepted jobs yet. Start bidding on open jobs!</p>
-        <a href="{{ url_for('hauler_jobs') }}" class="btn btn-primary btn-lg">Browse Open Jobs</a>
-    </div>
-</div>
-{% else %}
-<p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Jobs where your bid was accepted:</p>
-{% for job in jobs %}
-{% set cust = customer_map.get(job.customer_id) if customer_map is defined else None %}
-<div class="card">
-    <div class="card-header">
+{# ── Active Deliveries ── #}
+{% if active_drs %}
+<div style="font-weight:700;font-size:1rem;color:#1a202c;margin-bottom:12px;">📦 My Active Deliveries</div>
+{% for dr in active_drs %}
+{% set sm = status_meta.get(dr.status, ('⚪', dr.status.replace('_',' ').title(), '#6b7280')) %}
+<div class="card" style="padding:16px 18px;margin-bottom:12px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
         <div>
-            <h3 style="margin-bottom:6px;">Job #{{ job.id }}</h3>
-            <span class="status status-{{ job.status }}">{{ job.status.replace('_', ' ').title() }}</span>
-        </div>
-        <div style="text-align:right;">
-            <span style="font-size:1.3rem;font-weight:800;color:#27ae60;">${{ "%.2f"|format(job.accepted_quote or 0) }}</span>
-        </div>
-    </div>
-    <hr>
-    <p style="color:#4a5568;margin-bottom:10px;">{{ job.job_description }}</p>
-
-    {% if job.preferred_date or job.preferred_time %}
-    <p style="font-size:0.87rem;color:#718096;margin-bottom:12px;">
-        📅 Preferred:
-        {% if job.preferred_date %}{{ job.preferred_date }}{% endif %}
-        {% if job.preferred_time %} ({{ job.preferred_time.title() }}){% endif %}
-    </p>
-    {% endif %}
-
-    {% if job.status == 'deposit_paid' %}
-    <div class="banner banner-success">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            {% if cust and cust.profile_image_url %}
-            <img src="{{ cust.profile_image_url }}" alt="{{ job.customer_name }}"
-                 style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.6);flex-shrink:0;"
-                 onerror="this.style.display='none';">
-            {% elif cust %}
-            <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.4);color:#1b5e20;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                {{ (job.customer_name or '?')[0]|upper }}
-            </div>
+            {% if dr.listing %}
+            <div style="font-weight:700;font-size:0.95rem;color:#1a202c;margin-bottom:4px;">{{ dr.listing.title }}</div>
             {% endif %}
-            <div>
-            <strong>Customer:</strong> {{ job.customer_name }}<br>
-            {% if job.customer_phone %}<strong>Phone:</strong> {{ job.customer_phone }}<br>{% endif %}
-            <strong>Pickup Address:</strong> {{ job.pickup_address }}, {{ job.pickup_zip }}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="background:{{ sm[2] }}18;color:{{ sm[2] }};font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:12px;white-space:nowrap;border:1px solid {{ sm[2] }}40;">
+                    {{ sm[0] }} {{ sm[1] }}
+                </span>
+            </div>
+            <div style="font-size:0.84rem;color:#718096;">
+                📍 {{ dr.pickup_city or '—' }} → {{ dr.delivery_city or '—' }}
+                {% if dr.preferred_date %} · 📅 {{ dr.preferred_date }}{% endif %}
             </div>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <a href="https://www.google.com/maps/dir/?api=1&destination={{ (job.pickup_address ~ ', ' ~ job.pickup_zip)|urlencode }}"
-               target="_blank" class="btn btn-primary btn-sm">🗺 Get Directions</a>
-            <a href="{{ url_for('hauler_upload_photos', job_id=job.id) }}"
-               class="btn btn-success btn-sm">📷 Submit Completion Proof</a>
-        </div>
+        <a href="{{ url_for('delivery_detail', dr_id=dr.id) }}"
+           class="btn btn-outline btn-sm" style="white-space:nowrap;flex-shrink:0;">View Details →</a>
     </div>
-
-    {% elif job.status == 'completed' %}
-    <div class="banner banner-complete">
-        <div style="display:flex;align-items:center;gap:10px;">
-            {% if cust and cust.profile_image_url %}
-            <img src="{{ cust.profile_image_url }}" alt="{{ job.customer_name }}"
-                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);flex-shrink:0;"
-                 onerror="this.style.display='none';">
-            {% elif cust %}
-            <div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.35);color:#1b5e20;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                {{ (job.customer_name or '?')[0]|upper }}
-            </div>
-            {% endif %}
-            <div>
-                <strong>✅ Job Completed!</strong><br>
-                <span style="font-size:0.88rem;">{{ job.customer_name }} · {{ job.pickup_address }}, {{ job.pickup_zip }}</span>
-                {% if job.completed_at %}<br><span style="font-size:0.84rem;opacity:0.8;">Completed {{ job.completed_at | ct('%B %d, %Y') }}</span>{% endif %}
-            </div>
-        </div>
-    </div>
-
-    {% elif job.status == 'accepted' %}
-    <div class="banner banner-warning">
-        <strong>⏳ Waiting for customer deposit</strong><br>
-        <span style="font-size:0.87rem;">The full address and customer info will unlock once the deposit is paid.</span>
-    </div>
-
-    {% else %}
-    <div class="banner banner-info">
-        <strong>🔒 Address unlocks after booking confirmation.</strong>
-    </div>
-    {% endif %}
 </div>
 {% endfor %}
 {% endif %}
 
-<!-- Invite Links -->
-<div class="card" style="margin-top:24px;">
-    <h3 style="margin-bottom:4px;">Invite Others to JHE Haul</h3>
-    <p style="color:#718096;margin-bottom:18px;font-size:0.92rem;">Share these links with friends, neighbors, or anyone looking for hauling help.</p>
-
-    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-        <div style="font-weight:600;margin-bottom:6px;">👤 Customer Invite Link</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input id="hd-link-customer" value="https://jhehaul.com/invite/customer" readonly
-                   style="flex:1;min-width:180px;background:#fff;border:1px solid #bee3f8;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
-            <button onclick="hdCopyLink('hd-link-customer', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
-            <button onclick="hdShareLink('customer')" class="btn btn-primary btn-sm" style="white-space:nowrap;">🔗 Share</button>
+{# ── Completed Deliveries ── #}
+{% if completed_drs %}
+<div style="font-weight:700;font-size:1rem;color:#1a202c;margin:20px 0 12px;">✅ Completed Deliveries</div>
+{% for dr in completed_drs %}
+{% set sm = status_meta.get(dr.status, ('⚪', dr.status.replace('_',' ').title(), '#6b7280')) %}
+<div class="card" style="padding:14px 18px;margin-bottom:10px;opacity:0.85;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+            {% if dr.listing %}<div style="font-weight:600;font-size:0.9rem;color:#374151;margin-bottom:3px;">{{ dr.listing.title }}</div>{% endif %}
+            <div style="font-size:0.82rem;color:#9ca3af;">
+                {{ sm[0] }} {{ sm[1] }} · {{ dr.pickup_city or '—' }} → {{ dr.delivery_city or '—' }}
+            </div>
         </div>
-    </div>
-
-    <div style="background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;padding:14px 16px;">
-        <div style="font-weight:600;margin-bottom:6px;">🚛 Hauler Invite Link</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input id="hd-link-hauler" value="https://jhehaul.com/invite/hauler" readonly
-                   style="flex:1;min-width:180px;background:#fff;border:1px solid #9ae6b4;border-radius:6px;padding:7px 10px;font-size:0.85rem;color:#2d3748;">
-            <button onclick="hdCopyLink('hd-link-hauler', this)" class="btn btn-outline btn-sm" style="white-space:nowrap;">📋 Copy</button>
-            <button onclick="hdShareLink('hauler')" class="btn btn-success btn-sm" style="white-space:nowrap;">🔗 Share</button>
-        </div>
+        <a href="{{ url_for('delivery_detail', dr_id=dr.id) }}" style="font-size:0.82rem;color:#6b7280;white-space:nowrap;">View →</a>
     </div>
 </div>
+{% endfor %}
+{% endif %}
 
-<script>
-function hdCopyLink(inputId, btn) {
-    var input = document.getElementById(inputId);
-    input.select(); input.setSelectionRange(0, 99999);
-    try { navigator.clipboard.writeText(input.value); } catch(e) { document.execCommand('copy'); }
-    var orig = btn.textContent;
-    btn.textContent = '✅ Copied!';
-    setTimeout(function(){ btn.textContent = orig; }, 2000);
-}
-function hdShareLink(type) {
-    var url, title, text;
-    if (type === 'customer') {
-        url = 'https://jhehaul.com/invite/customer';
-        title = 'Post a Junk Removal Job - JHE Haul';
-        text = 'Post your junk hauling job on JHE Haul and get bids from local haulers!';
-    } else {
-        url = 'https://jhehaul.com/invite/hauler';
-        title = 'Become a Local Hauler - JHE Haul';
-        text = 'Find junk hauling jobs in your area, submit bids, and earn with JHE Haul!';
-    }
-    if (navigator.share) {
-        navigator.share({ title: title, text: text, url: url });
-    } else {
-        window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + '\n\n' + url);
-    }
-}
-</script>
+{# ── Empty state ── #}
+{% if not active_drs and not completed_drs %}
+<div class="card" style="padding:32px 24px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🚛</div>
+    {% if hauler_status == 'approved' %}
+    <p style="color:#718096;margin-bottom:16px;">No deliveries yet. Browse available jobs to get started.</p>
+    <a href="{{ url_for('hauler_deliveries_page') }}" class="btn btn-success">Browse Available Deliveries</a>
+    {% else %}
+    <p style="color:#718096;margin-bottom:0;">Your delivery history will appear here once you're approved and start accepting jobs.</p>
+    {% endif %}
+</div>
+{% endif %}
 
 {% endblock %}

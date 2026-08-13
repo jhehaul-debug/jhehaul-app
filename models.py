@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     profile_image_url = db.Column(db.String, nullable=True)
     phone = db.Column(db.String, nullable=True)
     user_type = db.Column(db.String, nullable=True)
+    hauler_status = db.Column(db.String(20), nullable=True)   # pending/approved/suspended/rejected
     home_zip = db.Column(db.String, nullable=True)
     max_travel_miles = db.Column(db.Integer, nullable=True)
     notify_new_jobs = db.Column(db.Boolean, default=True)

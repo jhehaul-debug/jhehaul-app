@@ -340,6 +340,18 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.profile_nudge_dismissed) skipped: %s", _e)
 
+    # ── hauler_status column ─────────────────────────────────────────────────
+    try:
+        from sqlalchemy import text as _text
+        db.session.execute(_text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS hauler_status VARCHAR(20) DEFAULT NULL"
+        ))
+        db.session.commit()
+        logging.info("Column migration: users.hauler_status ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.hauler_status) skipped: %s", _e)
+
     # ── User safety columns (must run before ANY User query below) ───────────
     try:
         from sqlalchemy import text as _text

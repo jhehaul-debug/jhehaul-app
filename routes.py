@@ -3048,6 +3048,33 @@ def set_role():
             app.logger.error("Admin notify failed (new customer): %s", e)
     return redirect(url_for('marketplace'))
 
+
+@app.route("/hauler/apply", methods=["GET", "POST"])
+@require_login
+def hauler_apply():
+    """Let a logged-in customer apply to become a marketplace hauler."""
+    if current_user.user_type == 'hauler':
+        return redirect(url_for('hauler_dashboard'))
+    if request.method == 'POST':
+        current_user.user_type = 'hauler'
+        current_user.hauler_status = 'pending'
+        db.session.commit()
+        # Notify admins of the new application
+        try:
+            from notification_service import create_notification as _cn
+            _name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+            for _adm in User.query.filter_by(is_admin=True).all():
+                _cn(user_id=_adm.id, type='hauler_application',
+                    title='New Hauler Application',
+                    message=f'{_name} applied to be a marketplace hauler.',
+                    action_url='/admin/haulers')
+        except Exception:
+            pass
+        flash("Application submitted! We'll review it and notify you when approved.", "success")
+        return redirect(url_for('hauler_dashboard'))
+    return render_template('hauler_apply.html')
+
+
 @app.route("/hauler/setup")
 @app.route("/hauler/setup", methods=["POST"])
 def hauler_setup():
@@ -4597,6 +4624,17 @@ def hauler_deliveries_page():
     if current_user.user_type != 'hauler':
         flash("This page is for registered haulers only.", "error")
         return redirect(url_for('home'))
+    _hs = getattr(current_user, 'hauler_status', None)
+    if _hs != 'approved':
+        if _hs == 'pending':
+            flash("Your hauler application is under review. You'll be notified when approved.", "info")
+        elif _hs == 'suspended':
+            flash("Your hauler access is currently suspended. Contact support for assistance.", "error")
+        elif _hs == 'rejected':
+            flash("Your hauler application was not approved.", "error")
+        else:
+            flash("Hauler access requires admin approval.", "info")
+        return redirect(url_for('hauler_dashboard'))
 
     open_statuses = ('requested', 'offers_received')
     available_drs = (DeliveryRequest.query
@@ -4665,8 +4703,40 @@ def hauler_bid_submit(job_id):
     return redirect(url_for('home'))
 
 @app.route("/hauler/dashboard")
+@require_login
 def hauler_dashboard():
-    return redirect(url_for('home'))
+    if current_user.user_type != 'hauler':
+        return redirect(url_for('home'))
+    _hs = getattr(current_user, 'hauler_status', None)
+
+    # Deliveries this hauler has been selected for (via accepted bid)
+    my_bids = Bid.query.filter_by(hauler_id=current_user.id, status='accepted').all()
+    my_job_ids = [b.job_id for b in my_bids]
+
+    active_drs = []
+    completed_drs = []
+    if my_job_ids:
+        _all_my = (DeliveryRequest.query
+                   .filter(DeliveryRequest.job_id.in_(my_job_ids))
+                   .order_by(DeliveryRequest.created_at.desc()).all())
+        for _dr in _all_my:
+            if _dr.status in ('delivered', 'cancelled'):
+                completed_drs.append(_dr)
+            else:
+                active_drs.append(_dr)
+
+    available_count = 0
+    if _hs == 'approved':
+        available_count = (DeliveryRequest.query
+                           .filter(DeliveryRequest.status.in_(('requested', 'offers_received')))
+                           .count())
+
+    return render_template('hauler_dashboard.html',
+                           hauler_status=_hs,
+                           active_drs=active_drs,
+                           completed_drs=completed_drs,
+                           available_count=available_count,
+                           status_meta=_DELIVERY_STATUS_META)
 
 @app.route("/account")
 @require_login
@@ -5156,6 +5226,42 @@ def admin_haulers():
                            completed_map=completed_map,
                            bid_map=bid_map,
                            rating_map=rating_map)
+
+
+@app.route("/admin/hauler/<user_id>/set-status", methods=["POST"])
+@require_admin
+def admin_set_hauler_status(user_id):
+    hauler = User.query.filter_by(id=user_id, user_type='hauler').first_or_404()
+    new_status = request.form.get('status', '').strip()
+    if new_status not in ('pending', 'approved', 'suspended', 'rejected'):
+        flash("Invalid status.", "error")
+        return redirect(url_for('admin_haulers'))
+    hauler.hauler_status = new_status
+    db.session.commit()
+    # In-app notification to the hauler
+    try:
+        from notification_service import create_notification as _cn2
+        _status_msgs = {
+            'approved':  ('✅ Hauler Application Approved',
+                          'Your hauler application has been approved. You can now accept marketplace deliveries.',
+                          '/hauler/deliveries'),
+            'rejected':  ('❌ Hauler Application Declined',
+                          'Your hauler application was not approved at this time. Contact support for more information.',
+                          '/profile'),
+            'suspended': ('⚠️ Hauler Access Suspended',
+                          'Your hauler access has been temporarily suspended. Contact support for assistance.',
+                          '/profile'),
+            'pending':   ('🔄 Hauler Status Updated',
+                          'Your hauler account status has been reset to pending review.',
+                          '/hauler/dashboard'),
+        }
+        _t, _m, _u = _status_msgs[new_status]
+        _cn2(user_id=hauler.id, type='hauler_status', title=_t, message=_m, action_url=_u)
+    except Exception:
+        pass
+    _hname = f"{hauler.first_name or ''} {hauler.last_name or ''}".strip() or hauler.email
+    flash(f"Hauler {_hname} status set to {new_status}.", "success")
+    return redirect(url_for('admin_haulers'))
 
 
 @app.route("/admin/test-job", methods=["POST"])
