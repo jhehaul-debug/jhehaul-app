@@ -40,8 +40,8 @@ from sms_service import (
     notify_admin_new_customer_sms, notify_admin_new_hauler_sms,
     notify_admin_new_job_sms, notify_admin_bid_accepted_sms, notify_admin_new_bid_sms,
     notify_admin_new_request_sms,
-    notify_seller_new_offer_sms,
 )
+# notify_seller_new_offer_sms removed — marketplace SMS disabled; in-app + email used instead
 
 def get_badges(user, reviews=None, completed_count=0):
     badges = []
@@ -1765,13 +1765,8 @@ def listing_make_offer(listing_id):
 
     db.session.commit()
 
-    # Notify seller via SMS if they have SMS enabled
+    # SMS notifications disabled for marketplace — in-app + email are used instead
     seller = listing.seller
-    try:
-        if seller.phone and seller.notify_sms and seller.sms_consent:
-            notify_seller_new_offer_sms(seller.phone, listing.title, amount, listing_id)
-    except Exception:
-        pass
 
     # In-app notification → seller
     try:
@@ -1827,15 +1822,7 @@ def offer_seller_respond(listing_id, offer_id):
         offer.updated_at = datetime.now()
         db.session.commit()
         buyer = offer.buyer
-        try:
-            from sms_service import send_sms
-            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
-                send_sms(buyer.phone,
-                         f"✅ Your ${offer.amount:,.0f} offer on \"{listing.title[:40]}\" was accepted! "
-                         f"Message the seller to arrange pickup.",
-                         'customer_new_bid')
-        except Exception:
-            pass
+        # SMS disabled for marketplace — in-app + email used instead
         # Email notification → buyer
         try:
             from email_service import notify_buyer_offer_accepted as _eboa
@@ -1860,15 +1847,7 @@ def offer_seller_respond(listing_id, offer_id):
         offer.updated_at = datetime.now()
         db.session.commit()
         buyer = offer.buyer
-        try:
-            from sms_service import send_sms
-            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
-                send_sms(buyer.phone,
-                         f"Your offer on \"{listing.title[:40]}\" was declined. "
-                         f"Browse more listings at JHEHaul.com.",
-                         'customer_new_bid')
-        except Exception:
-            pass
+        # SMS disabled for marketplace — in-app + email used instead
         # Email notification → buyer
         try:
             from email_service import notify_buyer_offer_declined as _ebod
@@ -1901,15 +1880,7 @@ def offer_seller_respond(listing_id, offer_id):
         offer.updated_at = datetime.now()
         db.session.commit()
         buyer = offer.buyer
-        try:
-            from sms_service import send_sms
-            if buyer and buyer.notify_sms and buyer.sms_consent and buyer.phone:
-                send_sms(buyer.phone,
-                         f"💬 The seller countered your offer on \"{listing.title[:40]}\" "
-                         f"at ${counter_amount:,.0f}. Log in to respond.",
-                         'customer_new_bid')
-        except Exception:
-            pass
+        # SMS disabled for marketplace — in-app + email used instead
         # Email notification → buyer
         try:
             from email_service import notify_buyer_offer_countered as _eboc
@@ -1970,16 +1941,7 @@ def offer_buyer_respond(listing_id, offer_id):
         offer.status = 'accepted'
         offer.updated_at = datetime.now()
         db.session.commit()
-        try:
-            from sms_service import send_sms
-            seller = offer.seller
-            if seller and seller.notify_sms and seller.sms_consent and seller.phone:
-                send_sms(seller.phone,
-                         f"✅ {current_user.first_name or 'A buyer'} accepted your ${offer.amount:,.0f} "
-                         f"counteroffer on \"{offer.listing.title[:40]}\".",
-                         'customer_new_bid')
-        except Exception:
-            pass
+        # SMS disabled for marketplace — in-app notification used instead
         # In-app notification → seller
         try:
             from notification_service import notify_counter_accepted as _nca
@@ -3800,15 +3762,7 @@ def delivery_offer(dr_id):
         dr.status = 'offers_received'
     db.session.commit()
 
-    try:
-        buyer = User.query.get(dr.buyer_id)
-        if buyer and buyer.phone and buyer.notify_sms:
-            send_sms(buyer.phone,
-                f"JHE Haul: {hauler_name} offered ${quote_amount:.0f} to deliver your item. "
-                f"View offers: {request.host_url}delivery/{dr.id}",
-                event_type='delivery_offer')
-    except Exception as _e:
-        app.logger.error("Delivery offer SMS: %s", _e)
+    # SMS disabled for marketplace — in-app notifications used instead
 
     flash("Delivery offer submitted! The buyer will be notified.", "success")
     return redirect(url_for('delivery_detail', dr_id=dr_id))
@@ -3836,15 +3790,7 @@ def delivery_select_hauler(dr_id, bid_id):
     dr.status = 'hauler_selected'
     db.session.commit()
 
-    try:
-        hauler = User.query.get(selected.hauler_id)
-        if hauler and hauler.phone and hauler.notify_sms:
-            send_sms(hauler.phone,
-                f"JHE Haul: Your delivery offer was selected! Full pickup/drop-off details are now visible. "
-                f"View: {request.host_url}delivery/{dr.id}",
-                event_type='delivery_selected')
-    except Exception as _e:
-        app.logger.error("Delivery select SMS: %s", _e)
+    # SMS disabled for marketplace — in-app notifications used instead
 
     flash("Hauler selected! They'll be notified and can now see the full addresses.", "success")
     return redirect(url_for('delivery_detail', dr_id=dr_id))
@@ -3909,16 +3855,7 @@ def delivery_update_status(dr_id):
         'delivered':  "Your item has been delivered! Please confirm receipt.",
         'cancelled':  "Your delivery request has been cancelled.",
     }
-    try:
-        if new_status in _buyer_msgs:
-            buyer = User.query.get(dr.buyer_id)
-            if buyer and buyer.phone and buyer.notify_sms:
-                send_sms(buyer.phone,
-                    f"JHE Haul Delivery: {_buyer_msgs[new_status]} "
-                    f"Details: {request.host_url}delivery/{dr.id}",
-                    event_type='delivery_status')
-    except Exception as _e:
-        app.logger.error("Delivery status SMS: %s", _e)
+    # SMS disabled for marketplace — in-app notifications used instead
 
     flash(f"Status updated to: {new_status.replace('_', ' ').title()}", "success")
     return redirect(url_for('delivery_detail', dr_id=dr_id))

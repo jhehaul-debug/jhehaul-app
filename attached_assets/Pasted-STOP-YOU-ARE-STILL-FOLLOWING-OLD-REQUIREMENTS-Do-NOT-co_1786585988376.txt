@@ -1,0 +1,130 @@
+STOP — YOU ARE STILL FOLLOWING OLD REQUIREMENTS.
+
+Do NOT continue the suggested SMS task.
+
+The JHE Haul Marketplace requirements have changed.
+
+CORRECT THE FOLLOWING NOW:
+
+1. REMOVE/DISABLE SMS NOTIFICATIONS
+
+The marketplace should NOT send SMS/Twilio notifications right now.
+
+Remove SMS from the active marketplace notification flow.
+
+Do NOT send SMS for:
+- new offers
+- messages
+- accepted offers
+- declined offers
+- counteroffers
+- reserved items
+- sold items
+- delivery updates
+- marketplace activity
+
+Do NOT suggest any more tasks to test or confirm SMS delivery.
+
+Keep the existing Twilio secrets/configuration for possible future use, but SMS must be disabled from the active marketplace.
+
+2. USE IN-APP NOTIFICATIONS
+
+The primary notification system must be notifications INSIDE JHE Haul.
+
+Users should receive in-app notifications for:
+- new messages
+- new offers
+- counteroffers
+- offer accepted
+- offer declined
+- listing reserved
+- listing sold
+- delivery updates
+- important account/admin activity
+
+Show unread notification counts and allow the user to open the related listing/message/offer from the notification.
+
+3. USE EMAIL FOR IMPORTANT NOTIFICATIONS
+
+Use email as the secondary notification method.
+
+Email important marketplace events where appropriate.
+
+Do NOT substitute SMS for email.
+
+4. FIX THE MEDIA LIMIT STATEMENT AND ENFORCEMENT
+
+You just reported that sellers can upload "any number of photos and videos."
+
+THAT IS WRONG.
+
+The required limit PER MARKETPLACE LISTING is:
+
+MAXIMUM 20 PHOTOS
+MAXIMUM 1 VIDEO
+MAXIMUM VIDEO LENGTH: 60 SECONDS
+
+Enforce these limits in BOTH:
+- frontend/UI
+- backend/server validation
+
+The Sell page must display:
+"Upload up to 20 photos and 1 video (maximum 60 seconds)."
+
+The photo counter must show:
+0 / 20 photos
+
+Do not allow a 21st photo.
+Do not allow a second video.
+Do not allow a video longer than 60 seconds.
+
+5. KEEP THE CSRF FIX
+
+Do not undo the CSRF fix.
+
+Uploading photos/video and pressing:
+Next: Details
+
+must work without:
+"Bad Request — CSRF validation failed."
+
+6. VERIFY THE COMPLETE LIVE SELL FLOW
+
+Test the LIVE production website, not only the Replit preview:
+
+Photos/Video
+→ Details
+→ Price
+→ Location
+→ Delivery
+→ Publish
+
+Confirm a listing can actually be published.
+
+7. DEPLOY EVERYTHING
+
+After correcting everything:
+
+- run tests
+- commit ALL changes
+- push to the EXISTING GitHub production branch
+- verify Local and GitHub are 0 commits apart
+- trigger/verify a NEW DigitalOcean deployment
+- verify DigitalOcean is running the NEW commit
+- test LIVE jhehaul.com
+
+FINAL REPORT MUST CONFIRM:
+
+- SMS disabled
+- In-app notifications working
+- Email notifications working
+- 20-photo maximum enforced
+- 1-video maximum enforced
+- 60-second video maximum enforced
+- CSRF error fixed
+- Complete Sell flow tested on LIVE jhehaul.com
+- GitHub commit SHA
+- DigitalOcean deployment status
+
+DO NOT report "any number of photos and videos."
+DO NOT continue or recommend the old SMS notification task.
