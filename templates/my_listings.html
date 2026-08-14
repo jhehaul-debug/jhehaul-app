@@ -1,226 +1,387 @@
 {% extends 'base.html' %}
-{% block title %}My Listings — JHE Marketplace{% endblock %}
+{% block title %}Selling — JHE Marketplace{% endblock %}
 
 {% block content %}
 <style>
-  .my-listings-wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
-  .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
-  .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0; }
-  .btn-new { display: inline-flex; align-items: center; gap: 6px; background: #2563eb; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.92rem; text-decoration: none; }
-  .btn-new:hover { background: #1d4ed8; }
+/* ── Layout ── */
+.sd-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 80px; }
 
-  .listing-card {
-    display: flex; gap: 16px; background: #fff; border-radius: 12px; padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid #f0f0f0; margin-bottom: 14px;
-    transition: box-shadow .15s;
-  }
-  .listing-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+/* ── Page header ── */
+.sd-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
+.sd-header h1 { font-size:1.5rem; font-weight:800; color:#1a1a2e; margin:0; }
+.btn-create { display:inline-flex; align-items:center; gap:6px; background:#2563eb; color:#fff; padding:11px 22px; border-radius:10px; font-weight:700; font-size:0.92rem; text-decoration:none; white-space:nowrap; }
+.btn-create:hover { background:#1d4ed8; color:#fff; }
 
-  .listing-thumb {
-    width: 90px; height: 90px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
-    background: #f3f4f6; display: flex; align-items: center; justify-content: center;
-    font-size: 2rem;
-  }
-  .listing-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+/* ── Overview cards ── */
+.sd-overview { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px; margin-bottom:24px; }
+.sd-card {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:18px 12px 14px; border-radius:14px; text-decoration:none;
+  border:2px solid transparent; transition:box-shadow .15s, border-color .15s;
+  text-align:center; cursor:pointer; min-height:90px;
+}
+.sd-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.10); border-color:currentColor; text-decoration:none; }
+.sd-card .sd-count { font-size:2rem; font-weight:800; line-height:1; margin-bottom:4px; }
+.sd-card .sd-label { font-size:0.75rem; font-weight:700; letter-spacing:.02em; }
+.sd-card-active   { background:#f0fdf4; color:#15803d; }
+.sd-card-sold     { background:#eef2ff; color:#3730a3; }
+.sd-card-expired  { background:#fff7ed; color:#c2410c; }
+.sd-card-reserved { background:#fdf4ff; color:#7e22ce; }
+.sd-card-pending  { background:#fffbeb; color:#b45309; }
+.sd-card-messages { background:#eff6ff; color:#1d4ed8; }
+.sd-card-offers   { background:#fdf2f8; color:#9d174d; }
 
-  .listing-info { flex: 1; min-width: 0; }
-  .listing-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .listing-price { font-size: 0.95rem; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
-  .listing-price.free { color: #16a34a; }
-  .listing-meta { font-size: 0.8rem; color: #6b7280; }
+/* ── Stats row ── */
+.sd-stats { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-bottom:28px; }
+.sd-stat { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; }
+.sd-stat-val { font-size:1.5rem; font-weight:800; color:#1a1a2e; line-height:1; }
+.sd-stat-lbl { font-size:0.75rem; color:#6b7280; font-weight:600; margin-top:4px; }
 
-  .listing-status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .status-badge { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
-  .status-active  { background: #dcfce7; color: #15803d; }
-  .status-draft   { background: #fef3c7; color: #92400e; }
-  .status-sold    { background: #e0e7ff; color: #3730a3; }
-  .status-reserved{ background: #fce7f3; color: #9d174d; }
-  .status-expired  { background: #f3f4f6; color: #6b7280; }
-  .status-removed  { background: #fee2e2; color: #dc2626; }
-  .status-pending  { background: #fef3c7; color: #b45309; }
+/* ── Filter tabs ── */
+.sd-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
+.sd-tab {
+  padding:7px 16px; border-radius:20px; font-size:0.82rem; font-weight:700;
+  text-decoration:none; color:#6b7280; background:#f3f4f6; border:1.5px solid transparent;
+  white-space:nowrap; transition:all .12s;
+}
+.sd-tab:hover { background:#e5e7eb; color:#1a1a2e; text-decoration:none; }
+.sd-tab.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+.sd-tab-count { display:inline-block; background:rgba(255,255,255,.35); border-radius:10px; padding:0 7px; margin-left:4px; font-size:0.75rem; }
+.sd-tab.active .sd-tab-count { background:rgba(255,255,255,.3); }
 
-  .listing-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-  .btn-edit { font-size: 0.82rem; font-weight: 600; color: #2563eb; border: 1.5px solid #bfdbfe; background: #eff6ff; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
-  .btn-edit:hover { background: #dbeafe; }
-  .btn-delete { font-size: 0.82rem; font-weight: 600; color: #dc2626; border: 1.5px solid #fca5a5; background: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
-  .btn-delete:hover { background: #fee2e2; }
-  .btn-continue { font-size: 0.82rem; font-weight: 600; color: #92400e; border: 1.5px solid #fde68a; background: #fef9c3; padding: 6px 14px; border-radius: 6px; text-decoration: none; }
-  .btn-continue:hover { background: #fef08a; }
-  .btn-sold { font-size: 0.82rem; font-weight: 600; color: #3730a3; border: 1.5px solid #c7d2fe; background: #eef2ff; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
-  .btn-sold:hover { background: #e0e7ff; }
-  .btn-reserved { font-size: 0.82rem; font-weight: 600; color: #9d174d; border: 1.5px solid #fbcfe8; background: #fdf2f8; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
-  .btn-reserved:hover { background: #fce7f3; }
-  .btn-reactivate { font-size: 0.82rem; font-weight: 600; color: #15803d; border: 1.5px solid #86efac; background: #f0fdf4; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
-  .btn-reactivate:hover { background: #dcfce7; }
+/* ── Listing cards ── */
+.listing-card {
+  display:flex; gap:14px; background:#fff; border-radius:12px; padding:14px 16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid #f0f0f0; margin-bottom:12px;
+  transition:box-shadow .15s;
+}
+.listing-card:hover { box-shadow:0 3px 10px rgba(0,0,0,.1); }
 
-  .empty-state { text-align: center; padding: 64px 24px; }
-  .empty-state .emoji { font-size: 3.5rem; display: block; margin-bottom: 16px; }
-  .empty-state h2 { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
-  .empty-state p { color: #6b7280; margin: 0 0 24px; }
+.listing-thumb {
+  width:86px; height:86px; border-radius:8px; flex-shrink:0;
+  background:#f3f4f6; display:flex; align-items:center; justify-content:center;
+  font-size:2rem; overflow:hidden;
+}
+.listing-thumb img { width:100%; height:100%; object-fit:cover; }
 
-  @media (max-width: 480px) {
-    .listing-card { flex-wrap: wrap; }
-    .listing-actions { width: 100%; justify-content: flex-end; }
-  }
+.listing-info { flex:1; min-width:0; }
+.listing-title { font-size:0.97rem; font-weight:700; color:#1a1a2e; margin:0 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.listing-price { font-size:0.93rem; font-weight:700; color:#2563eb; margin-bottom:3px; }
+.listing-price.free { color:#16a34a; }
+.listing-meta { font-size:0.78rem; color:#6b7280; }
+
+.listing-status-row { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:7px; }
+.status-badge { font-size:0.71rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+.status-active   { background:#dcfce7; color:#15803d; }
+.status-draft    { background:#fef3c7; color:#92400e; }
+.status-sold     { background:#e0e7ff; color:#3730a3; }
+.status-reserved { background:#fae8ff; color:#7e22ce; }
+.status-expired  { background:#f3f4f6; color:#6b7280; }
+.status-removed  { background:#fee2e2; color:#dc2626; }
+.status-pending  { background:#fef3c7; color:#b45309; }
+
+/* ── Action buttons ── */
+.listing-actions { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+.listing-actions-row { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.btn-act {
+  font-size:0.8rem; font-weight:600; padding:6px 13px; border-radius:7px;
+  text-decoration:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
+  border:1.5px solid; cursor:pointer; background:none; line-height:1.3;
+}
+.btn-view    { color:#1d4ed8; border-color:#bfdbfe; background:#eff6ff; }
+.btn-view:hover { background:#dbeafe; color:#1d4ed8; text-decoration:none; }
+.btn-edit    { color:#2563eb; border-color:#bfdbfe; background:#eff6ff; }
+.btn-edit:hover { background:#dbeafe; color:#2563eb; text-decoration:none; }
+.btn-msgs    { color:#7c3aed; border-color:#ddd6fe; background:#f5f3ff; }
+.btn-msgs:hover { background:#ede9fe; color:#7c3aed; text-decoration:none; }
+.btn-sold    { color:#3730a3; border-color:#c7d2fe; background:#eef2ff; }
+.btn-sold:hover { background:#e0e7ff; }
+.btn-pending { color:#b45309; border-color:#fde68a; background:#fffbeb; }
+.btn-pending:hover { background:#fef9c3; }
+.btn-reserved { color:#7e22ce; border-color:#e9d5ff; background:#fdf4ff; }
+.btn-reserved:hover { background:#f3e8ff; }
+.btn-reactivate { color:#15803d; border-color:#86efac; background:#f0fdf4; }
+.btn-reactivate:hover { background:#dcfce7; }
+.btn-renew   { color:#fff; border-color:#f59e0b; background:#f59e0b; }
+.btn-renew:hover { background:#d97706; border-color:#d97706; }
+.btn-delete  { color:#dc2626; border-color:#fca5a5; background:none; }
+.btn-delete:hover { background:#fee2e2; }
+.btn-continue { color:#92400e; border-color:#fde68a; background:#fef9c3; }
+.btn-continue:hover { background:#fef08a; color:#92400e; text-decoration:none; }
+
+/* ── Empty state ── */
+.empty-state { text-align:center; padding:60px 24px; }
+.empty-state .emoji { font-size:3.5rem; display:block; margin-bottom:16px; }
+.empty-state h2 { font-size:1.3rem; font-weight:700; color:#1a1a2e; margin:0 0 8px; }
+.empty-state p { color:#6b7280; margin:0 0 24px; }
+
+/* ── Section label (when filtered) ── */
+.sd-section-label { font-size:0.85rem; font-weight:700; color:#6b7280; letter-spacing:.04em; text-transform:uppercase; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0; }
+
+/* ── Mobile ── */
+@media (max-width:600px) {
+  .sd-overview { grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .sd-card { padding:14px 8px 10px; min-height:76px; }
+  .sd-card .sd-count { font-size:1.7rem; }
+  .sd-card .sd-label { font-size:0.68rem; }
+  .sd-stats { grid-template-columns:repeat(3, 1fr); }
+  .listing-card { flex-wrap:wrap; gap:10px; }
+  .listing-thumb { width:72px; height:72px; }
+  .listing-actions { width:100%; flex-direction:row; align-items:center; flex-wrap:wrap; margin-top:4px; }
+  .listing-actions-row { flex-wrap:wrap; }
+}
+@media (max-width:400px) {
+  .sd-overview { grid-template-columns:repeat(2, 1fr); }
+}
 </style>
 
-<div class="my-listings-wrap">
-  <div class="page-header">
-    <h1>My Listings</h1>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <a href="{{ url_for('seller_offers') }}" style="display:inline-flex;align-items:center;gap:6px;position:relative;padding:9px 18px;border-radius:8px;font-size:.88rem;font-weight:700;color:#8b5cf6;background:#faf5ff;border:1.5px solid #c4b5fd;text-decoration:none;">
-        📬 Offers
-        {% if pending_offers_count %}
-        <span style="background:#ef4444;color:#fff;font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:12px;line-height:1.5;">{{ pending_offers_count }}</span>
-        {% endif %}
-      </a>
-      <a href="{{ url_for('sell') }}" class="btn-new">+ New Listing</a>
+<div class="sd-wrap">
+
+  <!-- ── Page header ─────────────────────────────────────────────────── -->
+  <div class="sd-header">
+    <h1>🏪 Selling</h1>
+    <a href="{{ url_for('sell') }}" class="btn-create">＋ Create Listing</a>
+  </div>
+
+  <!-- ── Overview cards ──────────────────────────────────────────────── -->
+  <div class="sd-overview">
+    <a href="{{ url_for('my_listings') }}?filter=active" class="sd-card sd-card-active">
+      <div class="sd-count">{{ status_counts.active }}</div>
+      <div class="sd-label">Active</div>
+    </a>
+    <a href="{{ url_for('my_listings') }}?filter=sold" class="sd-card sd-card-sold">
+      <div class="sd-count">{{ status_counts.sold }}</div>
+      <div class="sd-label">Sold</div>
+    </a>
+    <a href="{{ url_for('my_listings') }}?filter=expired" class="sd-card sd-card-expired">
+      <div class="sd-count">{{ status_counts.expired }}</div>
+      <div class="sd-label">{% if status_counts.expired %}Renew ↺{% else %}Expired{% endif %}</div>
+    </a>
+    <a href="{{ url_for('my_listings') }}?filter=reserved" class="sd-card sd-card-reserved">
+      <div class="sd-count">{{ status_counts.reserved }}</div>
+      <div class="sd-label">Reserved</div>
+    </a>
+    <a href="{{ url_for('my_listings') }}?filter=pending" class="sd-card sd-card-pending">
+      <div class="sd-count">{{ status_counts.pending }}</div>
+      <div class="sd-label">Pending</div>
+    </a>
+    <a href="{{ url_for('marketplace_messages') }}" class="sd-card sd-card-messages">
+      <div class="sd-count">{{ total_conversations }}</div>
+      <div class="sd-label">Inquiries</div>
+    </a>
+    <a href="{{ url_for('seller_offers') }}" class="sd-card sd-card-offers" style="position:relative;">
+      <div class="sd-count">{{ pending_offers_count }}</div>
+      <div class="sd-label">Offers</div>
+      {% if pending_offers_count > 0 %}
+      <span style="position:absolute;top:8px;right:8px;background:#ef4444;color:#fff;font-size:.62rem;font-weight:700;padding:1px 5px;border-radius:10px;line-height:1.4;">New</span>
+      {% endif %}
+    </a>
+  </div>
+
+  <!-- ── Performance stats ────────────────────────────────────────────── -->
+  <div class="sd-stats">
+    <div class="sd-stat">
+      <div class="sd-stat-val">{{ total_views }}</div>
+      <div class="sd-stat-lbl">Total Views</div>
+    </div>
+    <div class="sd-stat">
+      <div class="sd-stat-val">{{ status_counts.active }}</div>
+      <div class="sd-stat-lbl">Active Listings</div>
+    </div>
+    <div class="sd-stat">
+      <div class="sd-stat-val">{{ status_counts.sold }}</div>
+      <div class="sd-stat-lbl">Sold Listings</div>
     </div>
   </div>
 
+  <!-- ── Filter tabs ──────────────────────────────────────────────────── -->
+  <div class="sd-tabs">
+    <a href="{{ url_for('my_listings') }}" class="sd-tab {% if status_filter == 'all' %}active{% endif %}">
+      All <span class="sd-tab-count">{{ status_counts.total }}</span>
+    </a>
+    {% if status_counts.active %}
+    <a href="{{ url_for('my_listings') }}?filter=active" class="sd-tab {% if status_filter == 'active' %}active{% endif %}">
+      Active <span class="sd-tab-count">{{ status_counts.active }}</span>
+    </a>
+    {% endif %}
+    {% if status_counts.pending %}
+    <a href="{{ url_for('my_listings') }}?filter=pending" class="sd-tab {% if status_filter == 'pending' %}active{% endif %}">
+      Pending <span class="sd-tab-count">{{ status_counts.pending }}</span>
+    </a>
+    {% endif %}
+    {% if status_counts.reserved %}
+    <a href="{{ url_for('my_listings') }}?filter=reserved" class="sd-tab {% if status_filter == 'reserved' %}active{% endif %}">
+      Reserved <span class="sd-tab-count">{{ status_counts.reserved }}</span>
+    </a>
+    {% endif %}
+    {% if status_counts.sold %}
+    <a href="{{ url_for('my_listings') }}?filter=sold" class="sd-tab {% if status_filter == 'sold' %}active{% endif %}">
+      Sold <span class="sd-tab-count">{{ status_counts.sold }}</span>
+    </a>
+    {% endif %}
+    {% if status_counts.expired %}
+    <a href="{{ url_for('my_listings') }}?filter=expired" class="sd-tab {% if status_filter == 'expired' %}active{% endif %}">
+      Expired <span class="sd-tab-count">{{ status_counts.expired }}</span>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- ── Listing list ─────────────────────────────────────────────────── -->
   {% if not listings %}
   <div class="empty-state">
+    {% if status_filter != 'all' %}
+    <span class="emoji">📭</span>
+    <h2>No {{ status_filter }} listings</h2>
+    <p>You don't have any {{ status_filter }} listings right now.</p>
+    <a href="{{ url_for('my_listings') }}" class="btn-act btn-view" style="display:inline-flex;">← All Listings</a>
+    {% else %}
     <span class="emoji">📦</span>
     <h2>No listings yet</h2>
-    <p>Post your first item and start selling on the JHE Marketplace.</p>
-    <a href="{{ url_for('listing_new') }}" class="btn-new">+ Create Your First Listing</a>
+    <p>Create your first listing to start selling on the JHE Marketplace.</p>
+    <a href="{{ url_for('sell') }}" class="btn-create">＋ Create Your First Listing</a>
+    {% endif %}
   </div>
 
   {% else %}
 
-{# Draft count banner removed — no-draft policy: unfinished listings are discarded and not shown here #}
+  {% if status_filter != 'all' %}
+  <div class="sd-section-label">
+    {{ status_filter | title }} Listings · {{ listings | length }} result{{ 's' if listings | length != 1 }}
+  </div>
+  {% endif %}
 
   {% for listing in listings %}
   <div class="listing-card">
+
     <!-- Thumbnail -->
     {% set primary = listing.primary_photo %}
-    <div class="listing-thumb">
+    <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="listing-thumb" style="text-decoration:none;">
       {% if primary %}
-        <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="">
+        <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}" alt="{{ listing.title }}">
       {% elif listing.listing_type == 'property_sale' %}🏠
       {% elif listing.listing_type == 'rental' %}🔑
       {% else %}📦
       {% endif %}
-    </div>
+    </a>
 
     <!-- Info -->
     <div class="listing-info">
       <div class="listing-title" title="{{ listing.title }}">
         {% if listing.listing_type == 'property_sale' %}
-          <span style="font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:#dcfce7;color:#15803d;margin-right:5px;vertical-align:middle">🏠 For Sale</span>
+          <span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:4px;background:#dcfce7;color:#15803d;margin-right:5px;vertical-align:middle">🏠 For Sale</span>
         {% elif listing.listing_type == 'rental' %}
-          <span style="font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:#dbeafe;color:#1e40af;margin-right:5px;vertical-align:middle">🔑 Rental</span>
+          <span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:4px;background:#dbeafe;color:#1e40af;margin-right:5px;vertical-align:middle">🔑 Rental</span>
         {% endif %}
-        {{ listing.title or '(untitled draft)' }}
+        {{ listing.title or '(untitled)' }}
       </div>
 
       {% if listing.price_type == 'free' %}
         <div class="listing-price free">Free</div>
       {% elif listing.price is not none %}
-        <div class="listing-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.78rem;color:#6b7280;font-weight:400">(negotiable)</span>{% endif %}</div>
+        <div class="listing-price">${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.73rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.76rem;color:#9ca3af;font-weight:400">OBO</span>{% endif %}</div>
       {% else %}
         <div class="listing-price" style="color:#6b7280;">—</div>
       {% endif %}
 
       <div class="listing-meta">
-        {% if listing.is_property and listing.beds_baths_display %}{{ listing.beds_baths_display }} &nbsp;·&nbsp; {% endif %}
-        {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }} &nbsp;·&nbsp; {% endif %}
+        {% if listing.city or listing.state %}📍 {{ [listing.city, listing.state] | select | join(', ') }} · {% endif %}
         Listed {{ listing.created_at.strftime('%b %-d, %Y') }}
-        {% if listing.photos|length > 0 %}&nbsp;·&nbsp; {{ listing.photos|length }} photo{{ 's' if listing.photos|length != 1 }}{% endif %}
+        {% if listing.photos | length %} · {{ listing.photos | length }} photo{{ 's' if listing.photos | length != 1 }}{% endif %}
         {% if listing.expires_at and listing.status == 'active' %}
-          &nbsp;·&nbsp; <span title="This listing expires on {{ listing.expires_at.strftime('%b %-d, %Y') }}" style="color:#d97706">⏰ Expires {{ listing.expires_at.strftime('%b %-d') }}</span>
+          · <span style="color:#d97706;" title="Expires {{ listing.expires_at.strftime('%b %-d, %Y') }}">⏰ Expires {{ listing.expires_at.strftime('%b %-d') }}</span>
         {% endif %}
       </div>
 
       <div class="listing-status-row">
         <span class="status-badge status-{{ listing.status }}">
           {% if listing.status == 'active' %}● Active
-          {% elif listing.status == 'draft' %}✏️ Draft
           {% elif listing.status == 'sold' %}✓ Sold
           {% elif listing.status == 'reserved' %}⏸ Reserved
-          {% elif listing.status == 'pending' %}⏳ Pending
+          {% elif listing.status == 'pending' %}⏳ Pending Sale
           {% elif listing.status == 'expired' %}⏰ Expired
           {% elif listing.status == 'removed' %}✕ Removed
           {% else %}{{ listing.status | title }}{% endif %}
         </span>
         {% if listing.view_count %}
-        <span style="font-size:.75rem;color:#9ca3af">{{ listing.view_count }} view{{ 's' if listing.view_count != 1 }}</span>
+        <span style="font-size:.74rem;color:#9ca3af;">{{ listing.view_count }} view{{ 's' if listing.view_count != 1 }}</span>
         {% endif %}
-        {# Show purge countdown for untitled drafts (at risk of auto-deletion) #}
-        {% if listing.status == 'draft' and not listing.title and now is defined %}
-          {% set hours_left = (48 - ((now - listing.created_at).total_seconds() / 3600)) | round(0, 'floor') | int %}
-          {% if hours_left <= 48 %}
-            {% if hours_left <= 0 %}
-            <span style="font-size:.72rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px">⚠️ Deletes soon</span>
-            {% elif hours_left <= 6 %}
-            <span style="font-size:.72rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:20px">⚠️ Deletes in {{ hours_left }}h</span>
-            {% elif hours_left <= 24 %}
-            <span style="font-size:.72rem;font-weight:700;color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:20px">⏳ Deletes in {{ hours_left }}h</span>
-            {% else %}
-            <span style="font-size:.72rem;color:#92400e;background:#fef9c3;padding:2px 8px;border-radius:20px">⏳ {{ hours_left }}h left to complete</span>
-            {% endif %}
-          {% endif %}
+        {% if listing.conversations | length %}
+        <span style="font-size:.74rem;color:#9ca3af;">{{ listing.conversations | length }} inquiry{{ 'ies' if listing.conversations | length != 1 else 'y' }}</span>
         {% endif %}
       </div>
     </div>
 
     <!-- Actions -->
     <div class="listing-actions">
-      {% if listing.status == 'draft' %}
-        <a href="{{ url_for('listing_step', listing_id=listing.id, step=1) }}" class="btn-continue">▶ Continue</a>
-      {% else %}
-        <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-edit" title="View buyer messages">
-          💬{% if listing.conversations | length %} {{ listing.conversations | length }}{% endif %}
+      <!-- Primary actions row -->
+      <div class="listing-actions-row">
+        <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="btn-act btn-view" title="View public listing">👁 View</a>
+        <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-act btn-edit" title="Edit listing">✏️ Edit</a>
+        {% if listing.conversations | length %}
+        <a href="{{ url_for('listing_message', listing_id=listing.id) }}" class="btn-act btn-msgs" title="View buyer messages">
+          💬 {{ listing.conversations | length }}
         </a>
-        <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="btn-edit">✏️ Edit</a>
+        {% endif %}
+      </div>
+
+      <!-- Status-change actions row -->
+      <div class="listing-actions-row">
         {% if listing.status == 'active' %}
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="pending">
-            <button type="submit" class="btn-reserved" style="color:#b45309;border-color:#fde68a;background:#fffbeb" title="Mark as pending sale — sale in progress">⏳ Pending</button>
+            <button type="submit" class="btn-act btn-pending" title="Mark as Pending Sale">⏳ Pending</button>
           </form>
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="reserved">
-            <button type="submit" class="btn-reserved" title="Mark as reserved">⏸ Reserved</button>
+            <button type="submit" class="btn-act btn-reserved" title="Mark as Reserved">⏸ Reserve</button>
           </form>
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="sold">
-            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
+            <button type="submit" class="btn-act btn-sold" title="Mark as Sold">✓ Sold</button>
           </form>
+
         {% elif listing.status == 'pending' %}
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="active">
-            <button type="submit" class="btn-reactivate" title="Sale fell through — reactivate listing">↺ Reactivate</button>
+            <button type="submit" class="btn-act btn-reactivate" title="Deal fell through — reactivate">↺ Reactivate</button>
           </form>
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="sold">
-            <button type="submit" class="btn-sold" title="Mark as sold">✓ Sold</button>
+            <button type="submit" class="btn-act btn-sold" title="Mark as Sold">✓ Sold</button>
           </form>
+
         {% elif listing.status in ('sold', 'reserved') %}
           <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="status" value="active">
-            <button type="submit" class="btn-reactivate" title="Reactivate listing">↺ Reactivate</button>
+            <button type="submit" class="btn-act btn-reactivate" title="Reactivate this listing">↺ Reactivate</button>
           </form>
+
         {% elif listing.status == 'expired' %}
           <form action="{{ url_for('listing_renew', listing_id=listing.id) }}" method="POST" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn-reactivate" title="Renew this listing for 30 more days" style="background:#f59e0b;border-color:#f59e0b;color:#fff">🔄 Renew</button>
+            <button type="submit" class="btn-act btn-renew" title="Renew for 30 more days">🔄 Renew</button>
           </form>
         {% endif %}
-      {% endif %}
-      <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST"
-            onsubmit="return confirm('Delete \'{{ listing.title | default('this listing') | replace("'", "\\'") }}\'? This cannot be undone.');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn-delete">🗑</button>
-      </form>
+
+        <!-- Delete -->
+        <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST" style="display:inline"
+              onsubmit="return confirm('Delete \'{{ listing.title | default('this listing') | replace("'", "\\'") }}\'? This cannot be undone.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-act btn-delete" title="Delete listing">🗑</button>
+        </form>
+      </div>
     </div>
+
   </div>
   {% endfor %}
-  {% endif %}
-</div>
+
+  {% endif %}<!-- /listings -->
+
+</div><!-- /sd-wrap -->
 {% endblock %}

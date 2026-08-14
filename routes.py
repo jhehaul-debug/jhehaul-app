@@ -1839,28 +1839,59 @@ def listing_renew(listing_id):
 @app.route("/my-listings")
 @require_login
 def my_listings():
-    """Seller's dashboard: view and manage their own listings."""
-    from models import Listing
-
-    DRAFT_DISPLAY_CAP = 10  # show at most this many draft entries
-
-    # No-draft policy: only show published/completed listings — drafts are
-    # temporary session records and are not surfaced to the seller.
-    listings = (Listing.query
-                .filter(Listing.seller_id == current_user.id,
-                        Listing.status != 'draft')
-                .order_by(Listing.created_at.desc())
-                .all())
-
+    """Seller dashboard: overview stats, status counts, filtered listing list."""
+    from models import Listing, ListingOffer, ListingConversation
+    from sqlalchemy import func
     from datetime import datetime as _dt
-    from models import ListingOffer
+
+    status_filter = request.args.get('filter', '').lower().strip()
+
+    # All non-draft listings for this seller (no-draft policy)
+    all_listings = (Listing.query
+                    .filter(Listing.seller_id == current_user.id,
+                            Listing.status != 'draft')
+                    .order_by(Listing.created_at.desc())
+                    .all())
+
+    # Per-status counts for the dashboard overview cards
+    status_counts = {s: 0 for s in ('active', 'sold', 'reserved', 'pending', 'expired', 'removed')}
+    for lst in all_listings:
+        if lst.status in status_counts:
+            status_counts[lst.status] += 1
+    status_counts['total'] = len(all_listings)
+
+    # Seller performance stats
+    total_views = sum(lst.view_count or 0 for lst in all_listings)
+    if all_listings:
+        listing_ids = [lst.id for lst in all_listings]
+        total_conversations = (db.session.query(func.count(ListingConversation.id))
+                               .filter(ListingConversation.listing_id.in_(listing_ids))
+                               .scalar() or 0)
+    else:
+        total_conversations = 0
+
+    # Pending offers count (for the "Offers" badge)
     pending_offers_count = (ListingOffer.query
                             .filter_by(seller_id=current_user.id)
                             .filter(ListingOffer.status.in_(['pending', 'countered']))
                             .count())
-    return render_template('my_listings.html', listings=listings,
-                           hidden_draft_count=0,
+
+    # Apply status filter for the listing list below the dashboard
+    valid_filters = ('active', 'sold', 'reserved', 'pending', 'expired', 'removed')
+    if status_filter in valid_filters:
+        listings = [lst for lst in all_listings if lst.status == status_filter]
+    else:
+        status_filter = 'all'
+        listings = all_listings
+
+    return render_template('my_listings.html',
+                           listings=listings,
+                           status_counts=status_counts,
+                           total_views=total_views,
+                           total_conversations=total_conversations,
                            pending_offers_count=pending_offers_count,
+                           status_filter=status_filter,
+                           hidden_draft_count=0,
                            now=_dt.now())
 
 
