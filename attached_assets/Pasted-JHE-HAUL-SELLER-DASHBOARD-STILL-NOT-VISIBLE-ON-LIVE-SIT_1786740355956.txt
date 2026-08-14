@@ -1,0 +1,156 @@
+JHE HAUL — SELLER DASHBOARD STILL NOT VISIBLE ON LIVE SITE
+
+I have checked the LIVE jhehaul.com site again and there is still NO visible seller dashboard / My Listings experience.
+
+The live site is still showing the old Marketplace/Home layout.
+
+I need you to stop assuming the previous work is deployed and verify everything from code to production.
+
+DO NOT change anything else.
+DO NOT break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. VERIFY WHETHER THE FEATURE WAS ACTUALLY BUILT
+==================================================
+
+Confirm whether these EXIST IN THE CURRENT CODE:
+
+- Account → Selling / My Listings
+- Seller dashboard page
+- Create Listing button
+- Active Listings count
+- Sold Listings count
+- Expired/Inactive Listings
+- Messages/Inquiries
+- Seller performance statistics using REAL JHE Haul data
+- My Listings management page
+
+If any of these do NOT exist, build them now.
+
+Do not simply report that they were planned.
+
+==================================================
+2. VERIFY ROUTING / NAVIGATION
+==================================================
+
+Check that the Account page actually links to:
+
+Selling / My Listings
+
+Check that the route/template exists and is reachable on mobile.
+
+Make sure the new seller dashboard is not hidden behind an unused route.
+
+==================================================
+3. VERIFY GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED CHANGES:
+UNTRACKED FILES:
+
+If seller-dashboard changes are uncommitted, commit them.
+
+==================================================
+4. PUSH TO PRODUCTION REPOSITORY
+==================================================
+
+Push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do not create a new repository.
+Do not create a new unrelated branch.
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+LOCAL = GITHUB: YES/NO
+
+==================================================
+5. VERIFY DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Confirm DigitalOcean is connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Trigger a NEW deployment if necessary.
+
+Report:
+
+DEPLOYED COMMIT SHA:
+DEPLOYMENT STATUS:
+DEPLOYMENT FINISHED TIME:
+
+==================================================
+6. VERIFY LIVE SITE
+==================================================
+
+Do NOT test only in Replit.
+
+Open the LIVE production site:
+
+jhehaul.com
+
+Log in as a seller and verify:
+
+Account
+→ Selling / My Listings
+→ seller dashboard is visible
+
+Take a screenshot or clearly report exactly what is visible.
+
+==================================================
+7. IMPORTANT DESIGN INTENT
+==================================================
+
+The public Marketplace/Home page can still keep:
+
+- Search
+- Categories
+- Recently Listed
+- City/ZIP filter
+
+That is for buyers.
+
+The NEW feature I am waiting for is a SELLER MANAGEMENT AREA under:
+
+Account → Selling / My Listings
+
+This should function as the seller homepage/dashboard.
+
+==================================================
+8. FINAL REPORT
+==================================================
+
+Report exactly:
+
+SELLER DASHBOARD IMPLEMENTED: YES/NO
+ACCOUNT LINK ADDED: YES/NO
+MY LISTINGS PAGE WORKING: YES/NO
+CURRENT LOCAL SHA:
+CURRENT GITHUB SHA:
+DIGITALOCEAN DEPLOYED SHA:
+LIVE SITE VERIFIED: YES/NO
+
+If LIVE still does not show it, identify the exact reason before stopping.
+
+CRITICAL:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
