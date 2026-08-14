@@ -1,0 +1,63 @@
+Update the JHE Haul seller/account experience.
+
+I want the seller side organized more like a real marketplace seller dashboard, using the Facebook Marketplace seller screenshots I provided only as a general layout/workflow reference. Do NOT copy Facebook branding or styling.
+
+1. Add a “My Listings” / “Selling” section under Account
+
+When a logged-in user goes to Account, provide a clear My Listings / Selling option.
+
+When opened, it should show the seller’s own marketplace activity and listings instead of sending them back to the general marketplace feed.
+
+2. Create a seller overview dashboard
+
+At the top show:
+
+* Create Listing
+* Active Listings
+* Draft Listings
+* Sold Listings
+* Expired/Inactive Listings
+* Listings to Renew, if applicable
+* Messages/Inquiries
+
+Each section/card must be clickable and open the corresponding listings.
+
+3. Add seller performance information
+
+Where the data is available, show useful seller statistics such as:
+
+* Listing views/clicks
+* Messages/inquiries received
+* Number of active listings
+* Number of sold listings
+* Seller rating/reviews if JHE Haul currently supports ratings
+
+Do not display fake statistics. Only calculate statistics from actual JHE Haul data.
+
+4. My Listings page
+
+The seller must be able to see their own listings with the photo, title, price, status and date posted.
+
+Give the seller controls to View, Edit, Mark Sold, Renew/Relist, and Delete their own listing where appropriate.
+
+5. Keep the Marketplace Home page buyer-focused
+
+Do NOT remove the current marketplace search, category buttons, city/ZIP filtering, or listing browsing.
+
+Keep Recently Listed on the marketplace home because buyers should be able to discover the newest listings.
+
+However, add My Listings as a clearly accessible seller destination through Account/Selling rather than using Recently Listed as the seller’s listing area.
+
+6. Mobile layout
+
+Make the seller dashboard clean and mobile-friendly, similar in organization to the reference screenshots: large touch-friendly cards, easy-to-read counts, and clear navigation.
+
+IMPORTANT:
+Do not change anything else in JHE Haul.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+Do not change the existing marketplace listing creation fields, photos/videos, messaging, authentication, admin system, notifications, categories, or database behavior unless a change is specifically required to implement this seller dashboard.
+
+Test the entire seller flow on mobile after making the changes.
+
+Push/commit all completed changes to the production GitHub branch used by DigitalOcean so the update actually deploys to JHEHaul.com.
