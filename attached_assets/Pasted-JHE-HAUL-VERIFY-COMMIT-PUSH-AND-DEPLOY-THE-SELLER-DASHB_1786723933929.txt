@@ -1,0 +1,97 @@
+JHE HAUL — VERIFY, COMMIT, PUSH, AND DEPLOY THE SELLER DASHBOARD CHANGES
+
+I do not see any of the seller dashboard / My Listings changes on the live JHE Haul site.
+
+Do NOT tell me they are done unless you verify the actual code, GitHub commit, and DigitalOcean deployment.
+
+Please do the following now:
+
+1. VERIFY WHETHER THE SELLER DASHBOARD CHANGES ACTUALLY EXIST IN THE CODE
+
+Confirm whether you implemented:
+- Account → My Listings / Selling
+- Seller overview dashboard
+- Active Listings
+- Sold Listings
+- Expired/Inactive Listings
+- Messages/Inquiries
+- Seller performance stats where real data exists
+- My Listings page with View/Edit/Mark Sold/Renew/Delete controls
+
+If any of these were only planned but not implemented, implement them now.
+
+2. CHECK GIT STATUS
+
+Show me whether there are:
+- uncommitted changes
+- untracked files
+- commits that exist locally but were never pushed
+
+3. COMMIT EVERYTHING THAT BELONGS TO THIS SELLER DASHBOARD UPDATE
+
+Create a new commit with a clear message such as:
+
+"Add seller dashboard and My Listings management"
+
+4. PUSH TO THE EXISTING PRODUCTION GITHUB BRANCH
+
+Do NOT create a new repository.
+Do NOT create a new unrelated branch.
+
+Push to the SAME GitHub production branch currently connected to DigitalOcean.
+
+5. VERIFY GITHUB
+
+Report:
+- local HEAD commit SHA
+- GitHub remote HEAD commit SHA
+- confirm they match
+- confirm 0 commits ahead and 0 commits behind
+
+6. VERIFY DIGITALOCEAN DEPLOYMENT
+
+Confirm DigitalOcean detects the NEW commit and creates a NEW deployment.
+
+Do not assume auto-deploy happened.
+
+Report:
+- deployed commit SHA
+- deployment status
+- deployment completion time
+
+7. TEST LIVE JHEHAUL.COM
+
+Test the LIVE production site after deployment.
+
+Confirm that when a logged-in seller goes to:
+
+Account
+
+they can access:
+
+My Listings / Selling
+
+and see the new seller dashboard.
+
+Do not test only the Replit preview.
+
+8. FINAL REPORT
+
+Report exactly:
+
+SELLER DASHBOARD IMPLEMENTED: YES/NO
+MY LISTINGS IMPLEMENTED: YES/NO
+FILES CHANGED:
+NEW COMMIT SHA:
+GITHUB PUSHED: YES/NO
+LOCAL = GITHUB: YES/NO
+DIGITALOCEAN NEW DEPLOYMENT: YES/NO
+DIGITALOCEAN DEPLOYED SHA:
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+If something prevented the push or deployment, tell me the exact error instead of saying the work is complete.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
