@@ -1,0 +1,122 @@
+JHE HAUL — SELLER DASHBOARD CHANGES ARE STILL NOT LIVE
+
+The LIVE jhehaul.com site still shows the old marketplace Home layout with:
+
+- Marketplace search
+- Filters
+- Recently Listed
+- Old Home/footer layout
+
+I still do NOT see the new seller dashboard / My Listings experience we requested.
+
+DO NOT tell me the task is complete unless you verify the live production site.
+
+Please do this now:
+
+1. VERIFY IMPLEMENTATION
+Confirm whether the seller dashboard code actually exists.
+
+Required features:
+- Account → Selling / My Listings
+- Seller overview dashboard
+- Create Listing button
+- Active Listings
+- Sold Listings
+- Expired/Inactive Listings
+- Messages/Inquiries
+- Seller performance stats where real data exists
+- My Listings page with seller controls
+
+If any of these are missing, implement them now.
+
+2. VERIFY GIT STATUS
+Show:
+- uncommitted changes
+- untracked files
+- current local branch
+- current local HEAD SHA
+
+3. COMMIT THE SELLER DASHBOARD CHANGES
+Create a clear commit such as:
+
+Add seller dashboard and My Listings experience
+
+4. PUSH TO THE EXISTING PRODUCTION GITHUB REPOSITORY
+Do NOT create a new repository.
+Do NOT create a new unrelated branch.
+
+Push to:
+jhehaul-debug/jhehaul-app
+branch: main
+
+5. VERIFY GITHUB
+Report:
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+LOCAL = GITHUB: YES/NO
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+6. VERIFY DIGITALOCEAN
+Confirm DigitalOcean is connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Then trigger or verify a NEW deployment of the new seller-dashboard commit.
+
+Report:
+DIGITALOCEAN DEPLOYED SHA:
+DEPLOYMENT STATUS:
+DEPLOYMENT TIME:
+
+7. TEST LIVE JHEHAUL.COM
+
+Do NOT test only the Replit preview.
+
+Open the actual LIVE production site and verify:
+
+Account
+→ Selling / My Listings
+→ Seller dashboard appears
+
+Also verify the new seller dashboard is visible on MOBILE.
+
+8. IMPORTANT DESIGN INTENT
+
+Do NOT replace the public buyer marketplace.
+
+The public Home/Browse page may still show Recently Listed for shoppers.
+
+The change I am waiting for is the NEW SELLER MANAGEMENT AREA under:
+
+Account → Selling / My Listings
+
+That is where I should manage my own listings.
+
+9. FINAL REPORT
+
+SELLER DASHBOARD CODE EXISTS: YES/NO
+MY LISTINGS PAGE EXISTS: YES/NO
+NEW COMMIT SHA:
+PUSHED TO GITHUB MAIN: YES/NO
+DIGITALOCEAN DEPLOYED NEW SHA: YES/NO
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+If LIVE is still showing the old version, do not stop. Determine whether the problem is:
+- changes not committed
+- changes not pushed
+- wrong repository
+- wrong branch
+- DigitalOcean not redeploying
+- stale deployment
+- cache
+- route/template not wired into Account
+
+CRITICAL:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
