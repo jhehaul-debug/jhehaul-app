@@ -1,0 +1,76 @@
+JHE HAUL — SEND ONE CONTROLLED SENDGRID TEST EMAIL
+
+I have confirmed from the Admin Notification Log that SendGrid is configured and JHE Haul is sending from:
+
+noreply@jhehaul.com
+
+The Admin Notification Log currently shows:
+- 180 total attempts
+- 2 accepted by SendGrid
+- 178 failed
+
+I want to test the EXISTING email system before making any other changes.
+
+DO NOT create another email provider.
+DO NOT replace SendGrid.
+DO NOT enable SMS or Twilio.
+
+TASK:
+
+1. Inspect the existing production SendGrid configuration.
+2. Do NOT expose or print the SendGrid API key or any other secrets.
+3. Send ONE controlled test email using the SAME production SendGrid configuration used by JHE Haul.
+
+Use the test recipient email address that I provide to you.
+
+Subject:
+JHE Haul Email Test
+
+Message:
+
+“This is a test of the JHE Haul email notification system. If you received this email, outgoing email delivery is working.”
+
+From:
+noreply@jhehaul.com
+
+4. Record the exact SendGrid response/status for this test.
+
+5. If SendGrid returns HTTP 202, report:
+SENDGRID ACCEPTED: YES
+
+6. If it fails, report the actual NON-SECRET error message and HTTP status so we can determine why.
+
+7. Also inspect the 178 existing failed notification records and tell me the PRIMARY reason they failed.
+
+Do NOT send 178 emails again.
+Do NOT retry old failed notifications.
+Do NOT send bulk emails.
+
+8. Check whether the test recipient is on a SendGrid:
+- bounce suppression
+- block suppression
+- spam-report suppression
+- unsubscribe suppression
+
+Do not remove a suppression automatically. Report it first.
+
+9. Report:
+
+SENDGRID CONFIGURED: YES/NO
+FROM ADDRESS: noreply@jhehaul.com
+TEST EMAIL ATTEMPTED: YES/NO
+SENDGRID HTTP STATUS:
+SENDGRID ACCEPTED: YES/NO
+TEST EMAIL DELIVERY STATUS, IF AVAILABLE:
+PRIMARY CAUSE OF THE 178 FAILURES:
+RECIPIENT SUPPRESSED: YES/NO
+ANY CONFIGURATION PROBLEM FOUND:
+
+IMPORTANT:
+Do not expose API keys, passwords, tokens, or secrets.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+This is a diagnostic test only. Do not modify the marketplace, listings, admin system, authentication, payments, delivery system, or messaging.
