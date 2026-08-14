@@ -5701,7 +5701,14 @@ def admin_test_email():
     if success:
         flash(f"Test email sent to {email}! Check the Notification Log to confirm delivery.", "success")
     else:
-        flash(f"Failed to send to {email}. SENDGRID_API_KEY may not be set — check Notification Log for details.", "error")
+        import os as _os
+        if not _os.environ.get("SENDGRID_API_KEY"):
+            flash(f"Email not sent: SENDGRID_API_KEY is not set in this environment. "
+                  f"Add it in DigitalOcean → App → web service component → Environment Variables.", "error")
+        else:
+            flash(f"Email send failed. SENDGRID_API_KEY is present but SendGrid rejected the request "
+                  f"(likely invalid or missing Mail Send permission). "
+                  f"Check the Notification Log for the exact HTTP status.", "error")
 
     return redirect(url_for('admin_dashboard'))
 
@@ -6298,8 +6305,15 @@ def admin_security_settings():
                     _html("Email Test", "Sent from JHE Haul admin.", "✅ Email Test", body),
                     'admin_security'
                 )
-                success = "Test email sent — check your inbox." if ok \
-                    else "Failed to send. SENDGRID_API_KEY may not be configured on the server."
+                if ok:
+                    success = "Test email sent — check your inbox."
+                elif not os.environ.get("SENDGRID_API_KEY"):
+                    error = ("Email not sent: SENDGRID_API_KEY is not set in this environment. "
+                             "Add it in DigitalOcean → App → web service component → Environment Variables.")
+                else:
+                    error = ("Email send failed. SENDGRID_API_KEY is present but SendGrid rejected the request "
+                             "(likely invalid key or missing Mail Send permission). "
+                             "Check the Notification Log for the exact HTTP status.")
             except Exception as _e:
                 error = f"Email test error: {_e}"
 
