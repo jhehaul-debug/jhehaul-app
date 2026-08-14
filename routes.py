@@ -433,24 +433,38 @@ def _expire_offers_and_notify(listing_id, listing_title=None):
     while still in their current state.
     """
     from models import ListingOffer
-    # Fetch affected offers (with buyer email) before the bulk-update wipes the status
+    # Fetch affected offers (with buyer id and email) before the bulk-update wipes the status
     affected = (ListingOffer.query
                 .filter(
                     ListingOffer.listing_id == listing_id,
                     ListingOffer.status.in_(['pending', 'countered'])
                 )
                 .join(User, ListingOffer.buyer_id == User.id)
-                .with_entities(ListingOffer.amount, User.email)
+                .with_entities(ListingOffer.amount, User.email, User.id)
                 .all())
     # Perform the bulk status update
     expire_pending_offers(listing_id)
-    # Send an email to each buyer (silently swallow errors so they don't break the route)
-    for offer_amount, buyer_email in affected:
+    # Notify each buyer via email + in-app alert (silently swallow errors so they don't break the route)
+    safe_title = (listing_title or f"Listing #{listing_id}")[:60]
+    for offer_amount, buyer_email, buyer_id in affected:
         if buyer_email:
             try:
                 notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amount)
             except Exception as _e:
                 app.logger.warning("notify_buyer_offer_expired failed for listing %s: %s", listing_id, _e)
+        if buyer_id:
+            try:
+                from notification_service import create_notification
+                create_notification(
+                    user_id=buyer_id,
+                    notif_type='offer_expired',
+                    title="Your offer is no longer active.",
+                    message=f"Your offer on \"{safe_title}\" is no longer active — the listing was sold or removed.",
+                    action_url="/marketplace",
+                    related_listing_id=listing_id,
+                )
+            except Exception as _e:
+                app.logger.warning("in-app offer_expired notification failed for listing %s buyer %s: %s", listing_id, buyer_id, _e)
 
 
 def _marketplace_categories():
