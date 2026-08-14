@@ -18,25 +18,102 @@
 </div>
 {% endif %}
 
-<!-- Email system status -->
+<!-- Email system diagnostics -->
 <div class="card" style="margin-bottom:20px;">
-  <h3 style="margin:0 0 14px;font-size:1rem;font-weight:700;color:#1a202c;">📧 Email System</h3>
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-    <span style="font-size:0.9rem;color:#4a5568;">SendGrid:</span>
-    {% if sendgrid_ok %}
-    <span style="background:#dcfce7;color:#15803d;font-size:0.8rem;font-weight:700;padding:3px 12px;border-radius:20px;">✓ Configured</span>
-    {% else %}
-    <span style="background:#fee2e2;color:#991b1b;font-size:0.8rem;font-weight:700;padding:3px 12px;border-radius:20px;">✗ SENDGRID_API_KEY not set</span>
-    {% endif %}
-  </div>
-  <form method="POST" action="{{ url_for('admin_security_settings') }}" style="margin:0;">
+  <h3 style="margin:0 0 16px;font-size:1rem;font-weight:700;color:#1a202c;">📧 Email System Diagnostics</h3>
+
+  <!-- Environment variable status table -->
+  <table style="width:100%;border-collapse:collapse;font-size:0.875rem;margin-bottom:18px;">
+    <tbody>
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:8px 0;color:#64748b;font-weight:600;width:220px;">SENDGRID_API_KEY</td>
+        <td style="padding:8px 0;">
+          {% if sg_api_key_present %}
+          <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">✓ Present</span>
+          {% else %}
+          <span style="background:#fee2e2;color:#991b1b;font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">✗ Missing</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:8px 0;color:#64748b;font-weight:600;">SENDGRID_FROM_EMAIL</td>
+        <td style="padding:8px 0;">
+          {% if sg_from_email_present %}
+          <span style="background:#dcfce7;color:#15803d;font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">✓ Present</span>
+          {% else %}
+          <span style="background:#fff7ed;color:#c2410c;font-size:0.78rem;font-weight:700;padding:3px 10px;border-radius:20px;">⚠ Not set</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#64748b;font-weight:600;">Sender address used</td>
+        <td style="padding:8px 0;font-family:monospace;font-size:0.85rem;color:#1a202c;">{{ sg_from_email_value }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Send test email button -->
+  <form method="POST" action="{{ url_for('admin_security_settings') }}" style="margin:0 0 16px;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="send_test_email">
     <button type="submit" class="btn btn-outline" style="font-size:0.84rem;padding:8px 16px;"
-            {% if not sendgrid_ok %}disabled title="SendGrid is not configured"{% endif %}>
+            {% if not sg_api_key_present %}disabled title="SENDGRID_API_KEY is not set"{% endif %}>
       Send Test Email to {{ admin.email }}
     </button>
   </form>
+
+  <!-- Test result diagnostic panel (only shown after a test is attempted) -->
+  {% if sg_test_result and sg_test_result.attempted %}
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;font-size:0.85rem;">
+    <div style="font-weight:700;color:#1a202c;margin-bottom:10px;">🔬 Last Test Result</div>
+    <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+      <tbody>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:6px 0;color:#64748b;font-weight:600;width:200px;">SendGrid HTTP status</td>
+          <td style="padding:6px 0;font-family:monospace;">
+            {% if sg_test_result.status_code %}
+              {% if sg_test_result.status_code == 202 %}
+              <span style="color:#15803d;font-weight:700;">202 Accepted ✓</span>
+              {% else %}
+              <span style="color:#991b1b;font-weight:700;">{{ sg_test_result.status_code }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:#64748b;">— (request never reached SendGrid)</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:6px 0;color:#64748b;font-weight:600;">Accepted by SendGrid</td>
+          <td style="padding:6px 0;">
+            {% if sg_test_result.accepted %}
+            <span style="color:#15803d;font-weight:700;">YES</span>
+            {% else %}
+            <span style="color:#991b1b;font-weight:700;">NO</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% if sg_test_result.msg_id %}
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:6px 0;color:#64748b;font-weight:600;">SendGrid Message-ID</td>
+          <td style="padding:6px 0;font-family:monospace;font-size:0.8rem;">{{ sg_test_result.msg_id }}</td>
+        </tr>
+        {% endif %}
+        {% if sg_test_result.error %}
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:6px 0;color:#64748b;font-weight:600;vertical-align:top;">Error</td>
+          <td style="padding:6px 0;color:#991b1b;font-family:monospace;font-size:0.8rem;word-break:break-all;">{{ sg_test_result.error }}</td>
+        </tr>
+        {% endif %}
+        {% if sg_test_result.body %}
+        <tr>
+          <td style="padding:6px 0;color:#64748b;font-weight:600;vertical-align:top;">Response body</td>
+          <td style="padding:6px 0;font-family:monospace;font-size:0.8rem;word-break:break-all;color:#374151;">{{ sg_test_result.body }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </div>
 
 <!-- Admin password -->

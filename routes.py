@@ -6225,8 +6225,9 @@ def admin_security_settings():
     from datetime import timedelta
 
     admin = User.query.get(current_user.id)
-    error   = None
-    success = None
+    error         = None
+    success       = None
+    sg_test_result = None   # populated only when send_test_email action runs
 
     if request.method == "POST":
         _check_listing_csrf()
@@ -6296,27 +6297,60 @@ def admin_security_settings():
                 success = f"Verification email sent to {masked}. Click the link in that email to activate it."
 
         elif action == "send_test_email":
-            try:
-                from email_service import send_email, _html
-                body = "<p>Your JHE Haul email system is configured and working.</p>"
-                ok = send_email(
-                    admin.email,
-                    "JHE Haul Email Test",
-                    _html("Email Test", "Sent from JHE Haul admin.", "✅ Email Test", body),
-                    'admin_security'
-                )
-                if ok:
-                    success = "Test email sent — check your inbox."
-                elif not os.environ.get("SENDGRID_API_KEY"):
-                    error = ("Email not sent: SENDGRID_API_KEY is not set in this environment. "
-                             "Add it in DigitalOcean → App → web service component → Environment Variables.")
-                else:
-                    error = ("Email send failed. SENDGRID_API_KEY is present but SendGrid rejected the request "
-                             "(likely invalid key or missing Mail Send permission). "
-                             "Check the Notification Log for the exact HTTP status.")
-            except Exception as _e:
-                error = f"Email test error: {_e}"
+            _sg_key  = os.environ.get("SENDGRID_API_KEY")
+            _sg_from = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@jhehaul.com")
+            if not _sg_key:
+                sg_test_result = {
+                    "attempted": True,
+                    "status_code": None,
+                    "accepted": False,
+                    "msg_id": None,
+                    "error": "SENDGRID_API_KEY is not set in this environment.",
+                    "body": None,
+                }
+                error = "SENDGRID_API_KEY is not set — email not sent."
+            else:
+                try:
+                    from sendgrid import SendGridAPIClient
+                    from sendgrid.helpers.mail import Mail
+                    _msg = Mail(
+                        from_email=(_sg_from, "JHE Haul"),
+                        to_emails=admin.email,
+                        subject="JHE Haul Email Test",
+                        html_content="<p>This is a diagnostic test email from JHE Haul admin security settings.</p>",
+                    )
+                    _resp = SendGridAPIClient(_sg_key).send(_msg)
+                    _mid  = (_resp.headers.get("X-Message-Id", "") or "") if _resp.headers else ""
+                    sg_test_result = {
+                        "attempted": True,
+                        "status_code": _resp.status_code,
+                        "accepted": _resp.status_code == 202,
+                        "msg_id": _mid,
+                        "error": None,
+                        "body": None,
+                    }
+                    if _resp.status_code == 202:
+                        success = f"SendGrid accepted the test email (HTTP 202) — sent to {admin.email}."
+                    else:
+                        error = f"SendGrid returned HTTP {_resp.status_code} — not accepted."
+                except Exception as _e:
+                    _sg_code = getattr(_e, "status_code", None)
+                    _sg_body = ""
+                    try:
+                        _sg_body = str(getattr(_e, "body", "") or "")[:600]
+                    except Exception:
+                        pass
+                    sg_test_result = {
+                        "attempted": True,
+                        "status_code": _sg_code,
+                        "accepted": False,
+                        "msg_id": None,
+                        "error": str(_e)[:400],
+                        "body": _sg_body,
+                    }
+                    error = f"SendGrid error (HTTP {_sg_code or '?'}) — see diagnostic panel below."
 
+    _sg_from_val = os.environ.get("SENDGRID_FROM_EMAIL", "")
     return render_template(
         "admin_security.html",
         admin=admin,
@@ -6324,6 +6358,10 @@ def admin_security_settings():
         recovery_email=_mask_email(admin.admin_recovery_email) if admin.admin_recovery_email else None,
         recovery_pending=_mask_email(admin.admin_recovery_email_pending) if admin.admin_recovery_email_pending else None,
         sendgrid_ok=bool(os.environ.get("SENDGRID_API_KEY")),
+        sg_api_key_present=bool(os.environ.get("SENDGRID_API_KEY")),
+        sg_from_email_present=bool(_sg_from_val),
+        sg_from_email_value=_sg_from_val or "noreply@jhehaul.com (default fallback — SENDGRID_FROM_EMAIL not set)",
+        sg_test_result=sg_test_result,
         error=error,
         success=success,
     )
