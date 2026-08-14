@@ -2227,6 +2227,16 @@ def offer_seller_respond(listing_id, offer_id):
         prior_listing_status = listing.status
         listing.status = 'reserved'
 
+        # Extend expires_at so the background job cannot silently expire a
+        # listing while its accepted offer is still active.  We push it out
+        # to at least 30 days from now; if the existing expiry is already
+        # further in the future we leave it alone.
+        from datetime import timedelta as _timedelta
+        _reserve_min_expiry = datetime.now() + _timedelta(days=30)
+        if listing.expires_at is None or listing.expires_at < _reserve_min_expiry:
+            listing.expires_at = _reserve_min_expiry
+            listing.expiry_reminder_sent = False  # re-arm the 3-day reminder
+
         # Auto-decline all other open offers on the same listing so no
         # second buyer is left waiting on a deal that won't happen.
         other_open = ListingOffer.query.filter(

@@ -61,6 +61,22 @@ def _run_checks(app):
         listing_expired_count = 0
         for lst in expired_listings:
             try:
+                # Belt-and-suspenders: never auto-expire a reserved listing
+                # that still has an accepted offer.  The offer-accept route
+                # already extends expires_at by 30 days, but a race or a
+                # pre-existing short expiry could still slip through.
+                if lst.status == 'reserved':
+                    from models import ListingOffer as _LO
+                    has_accepted = _LO.query.filter_by(
+                        listing_id=lst.id, status='accepted'
+                    ).first()
+                    if has_accepted:
+                        log.info(
+                            "Listing #%s skipped auto-expiry — reserved with active accepted offer",
+                            lst.id,
+                        )
+                        continue
+
                 lst.status = 'expired'
                 lst.expired_at = now
                 buyer_targets = expire_pending_offers(lst.id)
