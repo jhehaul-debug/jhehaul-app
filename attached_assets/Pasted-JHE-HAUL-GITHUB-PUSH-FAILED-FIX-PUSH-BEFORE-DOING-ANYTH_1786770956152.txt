@@ -1,0 +1,122 @@
+JHE HAUL — GITHUB PUSH FAILED — FIX PUSH BEFORE DOING ANYTHING ELSE
+
+The last push did NOT go through.
+
+Do not continue adding features until the GitHub push problem is fixed.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+========================================
+1. CHECK CURRENT GIT STATUS
+========================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+REMOTE ORIGIN URL:
+UNCOMMITTED CHANGES:
+UNTRACKED FILES:
+COMMITS AHEAD OF GITHUB:
+COMMITS BEHIND GITHUB:
+
+========================================
+2. ATTEMPT THE PUSH AND CAPTURE THE EXACT ERROR
+========================================
+
+Attempt to push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Use the existing configured remote.
+
+If the push fails, show me the EXACT non-secret error message.
+
+Do NOT hide the error behind a summary such as:
+“push failed”
+or
+“authentication issue.”
+
+I need the exact reason.
+
+========================================
+3. CHECK GITHUB AUTHENTICATION
+========================================
+
+Verify whether the current GitHub authentication/token can push to:
+
+jhehaul-debug/jhehaul-app
+
+Do NOT print or expose the token.
+
+Check whether the token is:
+- missing
+- expired
+- invalid
+- lacking repo/write permission
+- attached to the wrong GitHub account
+
+If the token is the problem, STOP and tell me exactly what I need to replace or update.
+
+Do not create or expose credentials yourself.
+
+========================================
+4. DO NOT CREATE ANOTHER REPOSITORY
+========================================
+
+Do NOT:
+- create a new repository
+- create a replacement GitHub project
+- push to the wrong repo
+- create an unrelated branch
+
+Production must remain:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+========================================
+5. AFTER PUSH SUCCEEDS
+========================================
+
+Only after the push succeeds:
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+LOCAL = GITHUB: YES/NO
+COMMITS AHEAD: 0
+COMMITS BEHIND: 0
+
+Then verify DigitalOcean sees the new commit and creates a NEW deployment.
+
+Report:
+
+DIGITALOCEAN DEPLOYED SHA:
+DEPLOYMENT STATUS:
+
+========================================
+6. DO NOT MARK COMPLETE UNTIL VERIFIED
+========================================
+
+Do not say this task is complete until:
+
+- GitHub push succeeds
+- GitHub main contains the new commit
+- DigitalOcean deploys that same SHA
+- live jhehaul.com is verified
+
+CRITICAL:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
