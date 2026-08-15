@@ -350,6 +350,22 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (users.notify_listing_status_changes) skipped: %s", _e)
 
+    try:
+        from sqlalchemy import inspect as _sa_inspect2
+        _inspector2 = _sa_inspect2(db.engine)
+        _user_cols2 = {c['name'] for c in _inspector2.get_columns('users')}
+        if 'hide_sold_pref' not in _user_cols2:
+            db.session.execute(_text(
+                "ALTER TABLE users ADD COLUMN hide_sold_pref BOOLEAN DEFAULT FALSE"
+            ))
+            db.session.commit()
+            logging.info("Column migration: users.hide_sold_pref added")
+        else:
+            logging.info("Column migration: users.hide_sold_pref already exists")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.hide_sold_pref) skipped: %s", _e)
+
     # ── hauler_status column ─────────────────────────────────────────────────
     try:
         from sqlalchemy import text as _text

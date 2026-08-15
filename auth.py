@@ -97,6 +97,8 @@ def google_logged_in(blueprint, token):
     )
     if user:
         login_user(user)
+        # Seed hide-sold preference from DB so it survives across sessions
+        session['hide_sold'] = bool(user.hide_sold_pref)
         if not user.age_confirmed:
             return redirect(url_for('confirm_age'))
     next_url = session.pop('next_url', None)
@@ -133,6 +135,8 @@ def github_logged_in(blueprint, token):
     )
     if user:
         login_user(user)
+        # Seed hide-sold preference from DB so it survives across sessions
+        session['hide_sold'] = bool(user.hide_sold_pref)
         if not user.age_confirmed:
             return redirect(url_for('confirm_age'))
     next_url = session.pop('next_url', None)

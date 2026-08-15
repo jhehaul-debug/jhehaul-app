@@ -43,6 +43,7 @@ class User(UserMixin, db.Model):
     zip_code = db.Column(db.String(10), nullable=True)
     profile_nudge_dismissed = db.Column(db.Boolean, default=False)
     notify_listing_status_changes = db.Column(db.Boolean, default=True)  # email when a saved listing is reserved/sold
+    hide_sold_pref = db.Column(db.Boolean, default=False)                # persist hide-sold toggle across sessions
 
     # Admin security fields (only meaningful on is_admin=True accounts)
     admin_password_hash          = db.Column(db.String(256), nullable=True)

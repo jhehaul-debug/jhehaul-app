@@ -524,10 +524,18 @@ def home():
             return redirect(url_for('choose_role'))
         show_welcome = session.pop('new_member', False)
         categories = _marketplace_categories()
-        # Respect hide_sold query param; persist choice in session
+        # Respect hide_sold query param; persist choice in session and DB (for logged-in users)
         hs_param = request.args.get('hide_sold', None)
         if hs_param is not None:
-            session['hide_sold'] = bool(hs_param and hs_param != '0')
+            _hs_bool = bool(hs_param and hs_param != '0')
+            session['hide_sold'] = _hs_bool
+            # Persist to DB so the preference survives session expiry
+            if current_user.is_authenticated and current_user.hide_sold_pref != _hs_bool:
+                current_user.hide_sold_pref = _hs_bool
+                db.session.commit()
+        elif 'hide_sold' not in session and current_user.is_authenticated:
+            # First visit after session expiry — seed from stored preference
+            session['hide_sold'] = bool(current_user.hide_sold_pref)
         hide_sold_pref = session.get('hide_sold', False)
         ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
         # Show profile nudge if profile is incomplete and user hasn't dismissed it
@@ -615,9 +623,16 @@ def marketplace():
     if _hide_sold_param is not None:
         _hs_bool = bool(_hide_sold_param and _hide_sold_param.strip() != '0')
         session['hide_sold'] = _hs_bool
+        # Persist to DB so the preference survives session expiry
+        if current_user.is_authenticated and current_user.hide_sold_pref != _hs_bool:
+            current_user.hide_sold_pref = _hs_bool
+            db.session.commit()
         hide_sold = '1' if _hs_bool else ''
     else:
-        hide_sold = ''
+        if 'hide_sold' not in session and current_user.is_authenticated:
+            # First visit after session expiry — seed from stored preference
+            session['hide_sold'] = bool(current_user.hide_sold_pref)
+        hide_sold = '1' if session.get('hide_sold') else ''
 
     try: min_price = float(min_price_raw) if min_price_raw else None
     except ValueError: min_price = None
@@ -801,10 +816,18 @@ def marketplace():
                                for_sale_listings=[], rental_listings=[])
     else:
         show_welcome = session.pop('new_member', False)
-        # Respect hide_sold query param; persist choice in session
+        # Respect hide_sold query param; persist choice in session and DB (for logged-in users)
         hs_param = request.args.get('hide_sold', None)
         if hs_param is not None:
-            session['hide_sold'] = bool(hs_param and hs_param != '0')
+            _hs_bool = bool(hs_param and hs_param != '0')
+            session['hide_sold'] = _hs_bool
+            # Persist to DB so the preference survives session expiry
+            if current_user.is_authenticated and current_user.hide_sold_pref != _hs_bool:
+                current_user.hide_sold_pref = _hs_bool
+                db.session.commit()
+        elif 'hide_sold' not in session and current_user.is_authenticated:
+            # First visit after session expiry — seed from stored preference
+            session['hide_sold'] = bool(current_user.hide_sold_pref)
         hide_sold_pref = session.get('hide_sold', False)
         ctx = _marketplace_homepage_ctx(hide_sold=hide_sold_pref)
         _mp_profile_incomplete = (
