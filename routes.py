@@ -3366,6 +3366,43 @@ def serve_listing_photo(photo_id):
     if not (is_public or is_owner or is_admin):
         return "", 404
 
+    # On-the-fly HEIC/HEIF → JPEG conversion for legacy stored photos.
+    # Also persists the converted bytes back to the DB row so subsequent
+    # requests are served directly as JPEG without re-converting.
+    if photo.content_type in ('image/heic', 'image/heif'):
+        _heif_available = False
+        try:
+            import pillow_heif as _ph2
+            _ph2.register_heif_opener()
+            _heif_available = True
+        except ImportError:
+            app.logger.error(
+                "serve_listing_photo: pillow-heif is not installed — cannot convert "
+                "ListingPhoto #%s from HEIC/HEIF to JPEG. Add 'pillow-heif' to "
+                "requirements.txt to fix broken images.",
+                photo_id,
+            )
+        if _heif_available:
+            try:
+                from PIL import Image as _PILImg2
+                import io as _io2
+                _img2 = _PILImg2.open(_io2.BytesIO(photo.data))
+                _buf2 = _io2.BytesIO()
+                _img2.convert('RGB').save(_buf2, format='JPEG', quality=90)
+                _jpg2 = _buf2.getvalue()
+                if _jpg2:
+                    photo.data = _jpg2
+                    photo.content_type = 'image/jpeg'
+                    try:
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+            except Exception as _conv_err2:
+                app.logger.warning(
+                    "serve_listing_photo: HEIC→JPEG conversion failed for photo %s: %s",
+                    photo_id, _conv_err2
+                )
+
     from flask import Response
     r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
     cache = "public, max-age=3600" if is_public else "private, no-cache"

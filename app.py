@@ -1086,6 +1086,191 @@ with app.app_context():
         db.session.rollback()
         logging.info("Backfill (housing category_id) skipped: %s", _e)
 
+    # ── Backfill: convert stored HEIC/HEIF listing photos → JPEG ─────────────
+    # Any ListingPhoto rows uploaded before the new-upload HEIC→JPEG conversion
+    # was added still carry image/heic or image/heif content_type. There are two
+    # storage paths:
+    #   • DB-backed  (data IS NOT NULL, storage_url IS NULL) — convert blob in place.
+    #   • Spaces-backed (storage_url IS NOT NULL) — download from Spaces, convert,
+    #     re-upload as JPEG, update the DB row, delete the old HEIC object.
+    # Both paths use pillow-heif + PIL. A missing pillow-heif is logged as ERROR
+    # (not silently swallowed) because it is an operational misconfiguration.
+    try:
+        from models import ListingPhoto as _LPH
+        _heic_photos = (
+            _LPH.query
+            .filter(_LPH.content_type.in_(['image/heic', 'image/heif']))
+            .all()
+        )
+        if _heic_photos:
+            logging.info(
+                "Backfill: converting %d stored HEIC/HEIF listing photos to JPEG…",
+                len(_heic_photos),
+            )
+            # Fail loudly if the HEIC decoder dependency is absent — this is an
+            # operational misconfiguration, not a per-photo data problem.
+            try:
+                import pillow_heif as _bph
+                _bph.register_heif_opener()
+            except ImportError:
+                logging.error(
+                    "Backfill HEIC→JPEG ABORTED: pillow-heif is not installed. "
+                    "Add 'pillow-heif' to requirements.txt so stored HEIC photos "
+                    "can be converted and displayed in browsers."
+                )
+                raise  # re-raise so the outer except rolls back and records the skip
+
+            from PIL import Image as _BPILImg
+            import io as _bio
+            import uuid as _uuid2
+            import requests as _req
+
+            # Collect Spaces config once (may all be None in dev)
+            _sp_key    = os.environ.get("SPACES_KEY")
+            _sp_secret = os.environ.get("SPACES_SECRET")
+            _sp_bucket = os.environ.get("SPACES_BUCKET")
+            _sp_region = os.environ.get("SPACES_REGION", "nyc3")
+            _sp_ep     = os.environ.get(
+                "SPACES_ENDPOINT",
+                f"https://{_sp_region}.digitaloceanspaces.com",
+            )
+            _sp_cdn    = os.environ.get("SPACES_CDN_URL", "").rstrip("/")
+            _s3_client = None
+            if _sp_key and _sp_secret and _sp_bucket:
+                try:
+                    import boto3 as _boto3
+                    from botocore.client import Config as _BConfig
+                    _s3_client = _boto3.session.Session().client(
+                        "s3",
+                        region_name=_sp_region,
+                        endpoint_url=_sp_ep,
+                        aws_access_key_id=_sp_key,
+                        aws_secret_access_key=_sp_secret,
+                        config=_BConfig(signature_version="s3v4"),
+                    )
+                except Exception as _s3e:
+                    logging.warning("Backfill: could not init S3 client for Spaces: %s", _s3e)
+
+            _converted = 0
+            for _lph in _heic_photos:
+                try:
+                    # ── Step 1: get the HEIC bytes ──────────────────────────
+                    _heic_bytes = None
+                    _old_spaces_key = None   # e.g. "uploads/abc123.heic"
+
+                    if _lph.data:
+                        # DB-backed photo
+                        _heic_bytes = _lph.data
+                    elif _lph.storage_url:
+                        # Spaces-backed photo — download from public URL
+                        try:
+                            _dl = _req.get(_lph.storage_url, timeout=30)
+                            _dl.raise_for_status()
+                            _heic_bytes = _dl.content
+                            # Derive the Spaces object key from the stored filename
+                            if _lph.filename:
+                                _old_spaces_key = f"uploads/{_lph.filename}"
+                        except Exception as _dle:
+                            logging.warning(
+                                "Backfill: could not download HEIC from %s for ListingPhoto #%d: %s",
+                                _lph.storage_url, _lph.id, _dle,
+                            )
+                    else:
+                        logging.warning(
+                            "Backfill: ListingPhoto #%d has HEIC content_type but no data or "
+                            "storage_url — skipping",
+                            _lph.id,
+                        )
+                        continue
+
+                    if not _heic_bytes:
+                        continue
+
+                    # ── Step 2: convert HEIC → JPEG ─────────────────────────
+                    _img = _BPILImg.open(_bio.BytesIO(_heic_bytes))
+                    _buf = _bio.BytesIO()
+                    _img.convert('RGB').save(_buf, format='JPEG', quality=90)
+                    _jpg_bytes = _buf.getvalue()
+                    if not _jpg_bytes:
+                        raise ValueError("PIL produced empty JPEG output")
+
+                    # ── Step 3: persist the JPEG ────────────────────────────
+                    if _lph.storage_url and _s3_client and _sp_bucket:
+                        # Re-upload to Spaces as JPEG, then delete old HEIC
+                        _new_fname = f"{_uuid2.uuid4().hex}.jpg"
+                        _s3_client.upload_fileobj(
+                            _bio.BytesIO(_jpg_bytes),
+                            _sp_bucket,
+                            f"uploads/{_new_fname}",
+                            ExtraArgs={
+                                "ACL": "public-read",
+                                "ContentType": "image/jpeg",
+                            },
+                        )
+                        if _sp_cdn:
+                            _new_url = f"{_sp_cdn}/uploads/{_new_fname}"
+                        else:
+                            _new_url = f"{_sp_ep.rstrip('/')}/{_sp_bucket}/uploads/{_new_fname}"
+                        # Update DB row
+                        _lph.storage_url  = _new_url
+                        _lph.filename     = _new_fname
+                        _lph.content_type = 'image/jpeg'
+                        _lph.data         = None
+                        _converted += 1
+                        # Delete the old HEIC object from Spaces (best-effort)
+                        if _old_spaces_key:
+                            try:
+                                _s3_client.delete_object(Bucket=_sp_bucket, Key=_old_spaces_key)
+                            except Exception as _dele:
+                                logging.warning(
+                                    "Backfill: could not delete old HEIC object %s: %s",
+                                    _old_spaces_key, _dele,
+                                )
+                    elif _lph.storage_url and not _s3_client:
+                        # Spaces photo but S3 client unavailable in this environment —
+                        # store JPEG bytes in the DB column as a fallback so the app
+                        # can serve them via serve_listing_photo until Spaces creds exist.
+                        _lph.data         = _jpg_bytes
+                        _lph.content_type = 'image/jpeg'
+                        # Clear storage_url so serve_listing_photo is used instead of
+                        # the still-HEIC Spaces object
+                        _lph.storage_url  = None
+                        _converted += 1
+                        logging.warning(
+                            "Backfill: ListingPhoto #%d — no Spaces creds; JPEG stored in DB "
+                            "as fallback and storage_url cleared",
+                            _lph.id,
+                        )
+                    else:
+                        # DB-backed: update blob in place
+                        _lph.data         = _jpg_bytes
+                        _lph.content_type = 'image/jpeg'
+                        _converted += 1
+
+                except Exception as _pe:
+                    logging.warning(
+                        "Backfill: HEIC→JPEG failed for ListingPhoto #%d: %s",
+                        _lph.id, _pe,
+                    )
+
+            if _converted:
+                db.session.commit()
+                logging.info(
+                    "Backfill: converted %d/%d HEIC/HEIF listing photos to JPEG",
+                    _converted, len(_heic_photos),
+                )
+            else:
+                db.session.rollback()
+                logging.warning(
+                    "Backfill: found %d HEIC/HEIF listing photos but none were successfully converted",
+                    len(_heic_photos),
+                )
+        else:
+            logging.info("Backfill: no stored HEIC/HEIF listing photos found — nothing to convert")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Backfill (HEIC→JPEG listing photos) skipped: %s", _e)
+
 from job_expiry import start_expiry_thread
 start_expiry_thread(app)
 
