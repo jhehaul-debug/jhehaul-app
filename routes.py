@@ -2025,7 +2025,8 @@ def listing_detail(listing_id):
         else:
             # No category set and not a property — fall back to recent sitewide items
             similar_fallback = True
-        similar_listings = sim_q.order_by(_SL.created_at.desc()).limit(6).all()
+        from sqlalchemy import func as _sim_func
+        similar_listings = sim_q.order_by(_sim_func.random()).limit(6).all()
 
     return render_template(
         'listing_detail.html',

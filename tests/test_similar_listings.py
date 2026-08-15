@@ -175,6 +175,37 @@ with app.app_context():
         check('property sold listing: Browse-more link uses listing_type param',
               True, '(sim-section absent — skipped link check)')
 
+    # ── Rotation: repeated requests return varied results ─────────────────
+    # Seed 12 active peers in a new category so the pool exceeds the 6-card limit.
+    cat_rotation = _make_category('rotation-t160', 'Rotation T160')
+    sold_rot = _make_listing(9650, 't96-seller', status='sold', category=cat_rotation)
+    for _rid in range(9651, 9663):  # 12 peers
+        _make_listing(_rid, 't96-seller', status='active', category=cat_rotation)
+
+    _flu._get_user = lambda: buyer
+    seen_ids: set = set()
+    samples: list = []
+    for _ in range(8):
+        resp_rot = client.get(f'/listing/{sold_rot.id}', follow_redirects=False)
+        html_rot = resp_rot.data.decode('utf-8', errors='replace')
+        batch = frozenset(
+            _rid for _rid in range(9651, 9663)
+            if f'/listing/{_rid}' in html_rot
+        )
+        samples.append(batch)
+        seen_ids.update(batch)
+
+    # With 12 peers and limit 6, random ordering should surface more than 6
+    # unique IDs over 8 independent fetches (probability of always picking the
+    # same 6 out of 12 is astronomically small with func.random()).
+    check('rotation: more than 6 distinct peer IDs seen across 8 fetches',
+          len(seen_ids) > 6,
+          f'only {len(seen_ids)} unique IDs seen; ordering may not be random')
+    # At least two fetches must have returned a different set
+    check('rotation: at least two fetches returned different card sets',
+          len(set(samples)) > 1,
+          'every fetch returned identical similar-listing sets')
+
     # ── Unapproved peers do NOT appear in similar row ─────────────────────
     sold2 = _make_listing(9609, 't96-seller', status='sold', category=cat_furniture)
     _make_listing(9610, 't96-seller', status='active', category=cat_furniture,
