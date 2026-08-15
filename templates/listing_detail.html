@@ -1101,6 +1101,25 @@
           {% elif not is_owner %}
           <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
           {% endif %}
+        {% elif listing.status == 'pending' %}
+          <div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:6px;">⏳</div>
+            <div style="font-weight:700;color:#713f12;font-size:0.95rem;margin-bottom:4px;">Sale in Progress</div>
+            <div style="font-size:0.82rem;color:#92400e;line-height:1.5;">The seller has a buyer and is completing the transaction. New offers are not being accepted right now.</div>
+          </div>
+          {% if not is_owner %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+                <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label">{% if is_favorited %}Watching{% else %}Notify Me If It Falls Through{% endif %}</span>
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Notify Me If It Falls Through</a>
+            {% endif %}
+          {% endif %}
         {% endif %}
       </div><!-- /mobile CTA -->
 
@@ -1552,6 +1571,25 @@
           </form>
           {% elif not is_owner %}
           <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Save Listing</a>
+          {% endif %}
+        {% elif listing.status == 'pending' %}
+          <div style="background:#fef9c3;border:1.5px solid #fde047;border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:6px;">⏳</div>
+            <div style="font-weight:700;color:#713f12;font-size:0.95rem;margin-bottom:4px;">Sale in Progress</div>
+            <div style="font-size:0.82rem;color:#92400e;line-height:1.5;">The seller has a buyer and is completing the transaction. New offers are not being accepted right now.</div>
+          </div>
+          {% if not is_owner %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form-desktop">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavoriteDesktop()">
+                <span id="fav-icon-desktop">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
+                <span id="fav-label-desktop">{% if is_favorited %}Watching{% else %}Notify Me If It Falls Through{% endif %}</span>
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-fav">🤍 Notify Me If It Falls Through</a>
+            {% endif %}
           {% endif %}
         {% endif %}
       </div>
