@@ -3352,11 +3352,19 @@ def invite(role=None):
     if role == 'customer':
         session['invited_role'] = role
     if current_user.is_authenticated:
+        # Admin check must come first — admins may have a null user_type which would
+        # otherwise fall into the choose_role redirect, creating a silent dead-end.
         if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
+            return render_template('invite_landing.html', role=role, authenticated_non_customer=True,
+                                   viewer_type='admin')
+        if current_user.user_type == 'customer':
+            # Actual customers go straight to the request form
+            return redirect(url_for('customer_request'))
         if not current_user.user_type:
             return redirect(url_for('choose_role'))
-        return redirect(url_for('customer_dashboard'))
+        # Sellers and haulers see the landing page with a helpful explanation
+        return render_template('invite_landing.html', role=role, authenticated_non_customer=True,
+                               viewer_type=current_user.user_type)
     return render_template('invite_landing.html', role=role)
 
 @app.route("/choose-role")

@@ -26,7 +26,38 @@
 {% endblock %}
 {% block content %}
 
-{% if role == 'hauler' %}
+{% if authenticated_non_customer %}
+{# Seller / hauler / admin clicked "Request Service" — explain they need a customer account #}
+<div class="card" style="max-width:580px;margin:0 auto;text-align:center;padding:48px 40px;">
+    <div style="font-size:3rem;margin-bottom:16px;">📦</div>
+    <h1 style="font-size:1.9rem;margin-bottom:14px;">Haul &amp; Delivery Jobs Are Booked as a Customer</h1>
+    <p style="font-size:1.05rem;color:#4a5568;margin-bottom:20px;">
+        Your current account is a
+        {% if viewer_type == 'admin' %}
+            <strong>admin</strong>
+        {% elif viewer_type == 'hauler' %}
+            <strong>hauler</strong>
+        {% else %}
+            <strong>seller</strong>
+        {% endif %}
+        account. To schedule a haul or delivery pickup, you need a <strong>customer account</strong>.
+    </p>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:18px 20px;margin-bottom:28px;text-align:left;font-size:0.93rem;color:#78350f;">
+        <strong>Two options:</strong>
+        <ul style="margin:10px 0 0 0;padding-left:18px;line-height:2;">
+            <li>Sign in with a <strong>different Google account</strong> that has a customer role.</li>
+            <li>Create a <strong>new customer account</strong> using a different email address.</li>
+        </ul>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-primary" style="font-size:1.05rem;padding:14px 40px;display:inline-block;margin-bottom:12px;">
+        Sign Out &amp; Switch Account
+    </a>
+    <p style="margin-top:16px;color:#a0aec0;font-size:0.85rem;">
+        After signing out, sign in with a customer account<br>or create a new one to request service.
+    </p>
+</div>
+
+{% elif role == 'hauler' %}
 <div class="card" style="max-width:560px;margin:0 auto;text-align:center;padding:48px 40px;">
     <div style="font-size:3rem;margin-bottom:16px;">🚛</div>
     <h1 style="font-size:2rem;margin-bottom:12px;">Join the JHE Haul Delivery Team</h1>
