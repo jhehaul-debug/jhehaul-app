@@ -501,6 +501,10 @@ def _marketplace_homepage_ctx(hide_sold=False):
     _prop_base   = _active if hide_sold else _base
     recent = (_recent_base.filter(Listing.listing_type == 'item')
               .order_by(Listing.created_at.desc()).limit(8).all())
+    # NOTE: free_items intentionally always uses _active (status='active') regardless of the
+    # hide_sold preference.  A free item that is sold or reserved has nothing left to give
+    # away, so showing it in the "Free Items" section would be misleading.  _active already
+    # guarantees only live, available listings appear here — hide_sold adds nothing extra.
     free_items = (_active.filter_by(price_type='free')
                   .filter(Listing.listing_type == 'item')
                   .order_by(Listing.created_at.desc()).limit(8).all())

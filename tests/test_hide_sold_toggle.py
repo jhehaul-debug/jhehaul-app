@@ -12,6 +12,8 @@ Verifies:
 6. Toggling hide_sold in a search result (/marketplace?q=x&hide_sold=1) writes
    to the same session key, so navigating back to / shows the updated preference.
 7. Toggling hide_sold=0 in search also clears the session key.
+8. Free Items section always shows active-only regardless of hide_sold preference
+   (intentional: sold/reserved free items have nothing left to give away).
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -156,6 +158,78 @@ with app.app_context():
     check('homepage after search reset: "Show active only" present',
           b'Show active only' in r7b.data,
           'search reset did not sync back to homepage')
+
+    # ── 8. Free Items section always shows active-only regardless of hide_sold ──
+    # Confirm that _marketplace_homepage_ctx returns the same free_items list
+    # whether hide_sold is True or False (both paths use _active for free items).
+    from routes import _marketplace_homepage_ctx
+    from models import Category, Listing
+
+    # Ensure there is at least one root category so listings can be created
+    cat = Category.query.filter_by(parent_id=None, is_active=True).first()
+    if cat is None:
+        cat = Category(name='Test Category', is_active=True, display_order=0)
+        db.session.add(cat)
+        db.session.commit()
+
+    # Remove any leftover test listings from prior runs
+    Listing.query.filter(Listing.title.in_(
+        ['Active Free Widget T164', 'Sold Free Widget T164']
+    ), Listing.seller_id == user.id).delete(synchronize_session=False)
+    db.session.commit()
+
+    # Create one active free listing and one sold free listing (let DB assign id)
+    active_free = Listing(
+        seller_id=user.id,
+        title='Active Free Widget T164',
+        status='active',
+        moderation_status='approved',
+        price_type='free',
+        listing_type='item',
+        category_id=cat.id,
+    )
+    sold_free = Listing(
+        seller_id=user.id,
+        title='Sold Free Widget T164',
+        status='sold',
+        moderation_status='approved',
+        price_type='free',
+        listing_type='item',
+        category_id=cat.id,
+    )
+    db.session.add_all([active_free, sold_free])
+    db.session.commit()
+
+    # Grab assigned IDs after flush
+    active_free_id = active_free.id
+    sold_free_id   = sold_free.id
+
+    ctx_hide_off = _marketplace_homepage_ctx(hide_sold=False)
+    ctx_hide_on  = _marketplace_homepage_ctx(hide_sold=True)
+
+    free_ids_off = {l.id for l in ctx_hide_off['free_listings']}
+    free_ids_on  = {l.id for l in ctx_hide_on['free_listings']}
+
+    check('free_items (hide_sold=False): active free listing included',
+          active_free_id in free_ids_off,
+          'active free listing missing when hide_sold=False')
+    check('free_items (hide_sold=False): sold free listing excluded',
+          sold_free_id not in free_ids_off,
+          'sold free listing appeared when hide_sold=False — _active filter not applied')
+    check('free_items (hide_sold=True): active free listing included',
+          active_free_id in free_ids_on,
+          'active free listing missing when hide_sold=True')
+    check('free_items (hide_sold=True): sold free listing excluded',
+          sold_free_id not in free_ids_on,
+          'sold free listing appeared when hide_sold=True')
+    check('free_items: same results regardless of hide_sold preference',
+          free_ids_off == free_ids_on,
+          f'mismatch — hide_sold=False ids differ from hide_sold=True ids')
+
+    # Clean up test listings
+    db.session.delete(active_free)
+    db.session.delete(sold_free)
+    db.session.commit()
 
 
 # ── Summary ───────────────────────────────────────────────────────────────────
