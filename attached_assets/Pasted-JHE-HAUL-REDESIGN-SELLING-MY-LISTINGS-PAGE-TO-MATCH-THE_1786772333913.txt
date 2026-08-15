@@ -1,0 +1,238 @@
+JHE HAUL — REDESIGN SELLING / MY LISTINGS PAGE TO MATCH THE REFERENCE LAYOUT
+
+The current JHE Haul seller dashboard does NOT match the layout I showed in my Facebook Marketplace reference screenshots.
+
+I am NOT asking you to copy Facebook branding, colors, logos, icons, or proprietary design.
+
+I AM asking you to closely follow the SAME PAGE STRUCTURE, SPACING, CARD ORGANIZATION, AND SELLER WORKFLOW using JHE Haul branding.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. SELLING PAGE HEADER
+==================================================
+
+At the top of the page show:
+
+SELLING
+
+Then directly underneath, add horizontal pill/tab navigation similar to the reference:
+
+Inbox
+Your Listings
+Offers
+Sold
+Deliveries
+
+Only include tabs that correspond to actual JHE Haul functionality.
+
+Do not create fake features.
+
+==================================================
+2. LARGE CREATE LISTING BUTTON
+==================================================
+
+Immediately below the tabs, place a large full-width button:
+
++ Create Listing
+
+This must open the EXISTING JHE Haul Sell/Create Listing flow.
+
+Do not create a second listing workflow.
+
+==================================================
+3. OVERVIEW SECTION
+==================================================
+
+Add heading:
+
+Overview
+
+Below it, use a clean 2-column mobile card grid.
+
+Cards should include actual JHE Haul data such as:
+
+Chats to Answer
+Active Listings
+Offers Received
+Sold Listings
+Listings to Renew
+Inactive / Expired Listings
+
+If a feature does not exist, do not fake it.
+
+Each card should be clickable and open the corresponding information.
+
+==================================================
+4. PERFORMANCE SECTION
+==================================================
+
+Add heading:
+
+Performance
+
+Use the same 2-column card style.
+
+Show ONLY real JHE Haul metrics.
+
+Examples:
+
+Listing Views
+Messages Received
+Offers Received
+Items Sold
+Seller Rating — ONLY if ratings actually exist
+Video Views — ONLY if video viewing is actually tracked
+
+Do NOT put fake numbers such as:
+
+342
+4.9
+96
+
+Those were Facebook's data and must NOT appear in JHE Haul.
+
+All numbers must come from the logged-in seller's actual JHE Haul activity.
+
+==================================================
+5. YOUR LISTINGS
+==================================================
+
+Add a clear:
+
+Your Listings
+
+section/tab.
+
+The seller should see their own listings with:
+
+Photo
+Title
+Price
+Status
+Date posted
+
+Seller controls:
+
+View
+Edit
+Mark Sold
+Delete
+Relist / Renew where applicable
+
+Only show the logged-in seller's listings.
+
+==================================================
+6. REMOVE UNNECESSARY CLUTTER
+==================================================
+
+Do NOT add Facebook's:
+
+Listing Ideas
+Timeless Picks
+Jobs
+Followers
+Announcements
+
+unless JHE Haul actually supports those features.
+
+I want the clean seller-management organization from the reference, NOT unrelated Facebook features.
+
+==================================================
+7. MOBILE DESIGN
+==================================================
+
+The page must be optimized for iPhone/mobile.
+
+Use:
+
+- large readable headings
+- 2-column overview cards
+- large touch targets
+- consistent spacing
+- full-width Create Listing button
+- horizontal seller tabs
+- clean white cards
+- JHE Haul colors and branding
+
+The layout should visually feel much closer to the seller dashboard reference screenshots I provided.
+
+==================================================
+8. ACCOUNT PAGE CONNECTION
+==================================================
+
+Account
+→ Selling / My Listings
+→ opens this redesigned Selling dashboard
+
+Do not hide it behind an unused route.
+
+==================================================
+9. KEEP MARKETPLACE HOME SEPARATE
+==================================================
+
+Do NOT redesign the public Marketplace Home page as part of this task.
+
+Marketplace Home remains the shopping/buyer page.
+
+Selling is the seller-management page.
+
+==================================================
+10. TEST WITH REAL DATA
+==================================================
+
+Test using the existing seller account and actual JHE Haul data.
+
+Make sure:
+
+- Active listing count is accurate
+- Sold count is accurate
+- Messages are accurate
+- Offers are accurate
+- Listing views are accurate if tracked
+
+Do not hard-code demo values.
+
+==================================================
+11. PUSH AND DEPLOY
+==================================================
+
+After completing the redesign:
+
+1. Run tests.
+2. Commit changes.
+3. Push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+4. Verify the GitHub push succeeds.
+5. Verify DigitalOcean creates a NEW deployment.
+6. Verify LIVE jhehaul.com on mobile.
+
+Report:
+
+SELLING PAGE REDESIGNED: YES/NO
+FACEBOOK-REFERENCE STRUCTURE FOLLOWED: YES/NO
+CREATE LISTING BUTTON WORKING: YES/NO
+OVERVIEW CARDS USING REAL DATA: YES/NO
+PERFORMANCE CARDS USING REAL DATA: YES/NO
+YOUR LISTINGS WORKING: YES/NO
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL MATCH: YES/NO
+LIVE MOBILE VERIFIED: YES/NO
+
+CRITICAL:
+
+Do not copy Facebook branding.
+Do not use fake Facebook numbers.
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated working functionality exactly as it is.
