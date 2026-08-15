@@ -33,6 +33,7 @@ def _run_checks(app):
             notify_seller_listing_expiring_soon,
             notify_buyer_offer_expired_listing,
             notify_buyer_offer_timed_out,
+            notify_admin_listing_expired_no_email,
         )
         from sms_service import (
             notify_customer_appointment_reminder_sms,
@@ -114,16 +115,44 @@ def _run_checks(app):
 
                 # Notify the seller by email (and SMS if opted-in)
                 seller = User.query.get(lst.seller_id) if lst.seller_id else None
+                seller_notified = False
                 if seller and seller.email:
                     try:
                         notify_seller_listing_expired(seller.email, lst.id, lst.title)
+                        seller_notified = True
                     except Exception as e:
                         log.error("Listing expired email failed (listing #%s): %s", lst.id, e)
                 if seller and seller.notify_sms and seller.sms_consent and seller.phone:
                     try:
                         notify_seller_listing_expired_sms(seller.phone, lst.id, lst.title)
+                        seller_notified = True
                     except Exception as e:
                         log.error("Listing expired SMS failed (listing #%s): %s", lst.id, e)
+
+                # If the seller exists but has no email and no SMS opt-in, they
+                # received zero notification.  Alert admin so they can follow up.
+                if seller and not seller_notified:
+                    log.warning(
+                        "Listing #%s expired — seller #%s has no email and no SMS opt-in; "
+                        "alerting admin for manual follow-up",
+                        lst.id, seller.id,
+                    )
+                    try:
+                        seller_name = ' '.join(
+                            filter(None, [seller.first_name, seller.last_name])
+                        ) or None
+                        notify_admin_listing_expired_no_email(
+                            lst.id,
+                            lst.title,
+                            seller.id,
+                            seller_name,
+                            seller.phone,
+                        )
+                    except Exception as e:
+                        log.error(
+                            "Admin no-email expiry alert failed (listing #%s): %s",
+                            lst.id, e,
+                        )
 
                 # Notify each buyer whose pending/countered offer was killed by the expiry.
                 # This is distinct from the time-based offer-expiry notification: the

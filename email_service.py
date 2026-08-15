@@ -774,6 +774,36 @@ def notify_admin_job_expired(job_id, customer_name, bid_count):
     )
 
 
+def notify_admin_listing_expired_no_email(listing_id, listing_title, seller_id, seller_name, seller_phone):
+    """Admin alert: a listing expired but the seller has no email address, so they received no notification."""
+    phone_html = (
+        f'<p><strong>Phone:</strong> {seller_phone}</p>' if seller_phone
+        else '<p><strong>Phone:</strong> <em>None on file</em></p>'
+    )
+    body = f"""
+    <div class="info-box">
+      <p><strong>Listing #:</strong> {listing_id}</p>
+      <p><strong>Title:</strong> {listing_title}</p>
+      <p><strong>Seller ID:</strong> {seller_id}</p>
+      <p><strong>Seller Name:</strong> {seller_name or 'Unknown'}</p>
+      {phone_html}
+      <p><strong>Status:</strong> <span class="pill pill-red">Expired</span></p>
+    </div>
+    <p>This listing expired automatically, but the seller has <strong>no email address on file</strong>
+       and did not receive an expiry notification. Please follow up with the seller manually if possible.</p>
+    <a href="{_APP_URL}/admin/listings/{listing_id}" class="btn">View Listing in Admin →</a>"""
+    return notify_admin(
+        f"[JHE Haul] ACTION NEEDED — Listing #{listing_id} expired, seller has no email",
+        _html(
+            "Listing Expired — Seller Not Notified",
+            f"Listing #{listing_id} auto-expired but no expiry email could be sent (seller has no email address).",
+            "⚠️ No-Email Expiry",
+            body,
+        ),
+        'admin_listing_expired_no_email',
+    )
+
+
 def notify_hauler_new_review(hauler_email, job_id, customer_name, rating, comment):
     stars = '★' * rating + '☆' * (5 - rating)
     comment_html = (
