@@ -1,0 +1,257 @@
+JHE HAUL — STOP REUSING THE OLD MARKETPLACE HOME FOR SELLERS
+
+The live site is STILL showing the old buyer-style Marketplace Home.
+
+I do NOT want the seller dashboard to be a modified version of the current Marketplace Home.
+
+CREATE A SEPARATE SELLER DASHBOARD PAGE/ROUTE.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. KEEP MARKETPLACE HOME AS BUYER PAGE
+==================================================
+
+Leave the current Marketplace Home for shoppers.
+
+It may continue showing:
+- Search marketplace
+- Categories
+- Filters
+- Recently Listed
+- Buyer browsing
+
+Do NOT use this page as the seller dashboard.
+
+==================================================
+2. CREATE A NEW SELLER DASHBOARD ROUTE
+==================================================
+
+Create a dedicated authenticated seller page such as:
+
+/selling
+
+or
+
+/account/selling
+
+This must be a NEW seller-management page, not the old marketplace template.
+
+==================================================
+3. CONNECT ACCOUNT TO SELLING
+==================================================
+
+On Account, add a clear:
+
+Selling / My Listings
+
+button/card.
+
+When pressed:
+→ open the NEW seller dashboard.
+
+Do not route back to Marketplace Home.
+
+==================================================
+4. NEW SELLER DASHBOARD DESIGN
+==================================================
+
+Use JHE Haul branding and make it mobile-first.
+
+TOP:
+
+Selling
+
+Subtitle:
+Manage your listings, offers and sales
+
+Large full-width button:
+
++ Create Listing
+
+Then horizontal navigation:
+
+Your Listings
+Messages
+Offers
+Sold
+
+==================================================
+5. ACTION ALERTS
+==================================================
+
+Only show an alert when the seller has something requiring attention.
+
+Examples:
+
+“You have 2 new offers”
+“1 listing expires soon”
+“3 unread buyer messages”
+
+Use REAL data only.
+
+Do not show fake demo alerts.
+
+==================================================
+6. OVERVIEW
+==================================================
+
+Create a clean 2-column card grid:
+
+Active Listings
+Offers Received
+New Messages
+Items Sold
+
+Each card:
+- shows actual count
+- is clickable
+- opens the correct seller information
+
+==================================================
+7. YOUR LISTINGS
+==================================================
+
+Below Overview, show:
+
+Your Listings
+
+Display the logged-in seller’s actual listings.
+
+Each card/row must show:
+- Photo
+- Title
+- Price
+- Status
+- Posted date
+
+Seller controls:
+- View
+- Edit
+- Mark Sold
+- Delete
+- Renew/Relist if supported
+
+Do not show listings belonging to other users.
+
+==================================================
+8. PERFORMANCE
+==================================================
+
+Add:
+
+Performance — Last 7 Days
+
+Only use metrics JHE Haul actually tracks:
+
+Listing Views
+Buyer Inquiries
+Offers Received
+Items Sold
+
+Do NOT invent:
+- ratings
+- followers
+- video views
+- fake statistics
+
+If a metric is not tracked, omit it.
+
+==================================================
+9. DO NOT COPY FACEBOOK
+==================================================
+
+Use the Facebook screenshots only as a reference for:
+- seller-first organization
+- large Create Listing button
+- overview cards
+- seller navigation
+- mobile spacing
+
+Do NOT copy:
+- Facebook branding
+- Facebook colors
+- Facebook icons
+- fake Facebook numbers
+- Listing Ideas
+- Jobs
+- Followers
+- Announcements
+
+==================================================
+10. REMOVE OLD SELLER REDIRECTS
+==================================================
+
+Inspect current routes/templates.
+
+If Account → Selling currently redirects to:
+- Marketplace Home
+- Browse
+- Recently Listed
+- old listing feed
+
+remove that redirect.
+
+The seller dashboard must load its own template/page.
+
+==================================================
+11. TEST EXACTLY
+==================================================
+
+Test:
+
+Login
+→ Account
+→ Selling / My Listings
+→ NEW seller dashboard opens
+
+Verify seller dashboard does NOT show:
+- Recently Listed
+- general marketplace search
+- buyer category filters
+- Have something to list? buyer CTA
+
+Those belong on Marketplace Home, not Selling.
+
+==================================================
+12. PUSH AND DEPLOY
+==================================================
+
+After implementation:
+
+- commit the NEW seller dashboard
+- push to EXISTING repo:
+  jhehaul-debug/jhehaul-app
+- branch:
+  main
+
+Verify push succeeds.
+
+Verify DigitalOcean creates a NEW deployment.
+
+Verify LIVE jhehaul.com.
+
+Report:
+
+NEW SELLER ROUTE CREATED: YES/NO
+ACCOUNT → SELLING CONNECTED: YES/NO
+SELLER PAGE SEPARATE FROM MARKETPLACE HOME: YES/NO
+OLD BUYER CONTENT REMOVED FROM SELLER PAGE: YES/NO
+YOUR LISTINGS WORKING: YES/NO
+OVERVIEW USING REAL DATA: YES/NO
+PERFORMANCE USING REAL DATA: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL MATCH: YES/NO
+
+LIVE MOBILE VERIFIED: YES/NO
+
+CRITICAL:
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
