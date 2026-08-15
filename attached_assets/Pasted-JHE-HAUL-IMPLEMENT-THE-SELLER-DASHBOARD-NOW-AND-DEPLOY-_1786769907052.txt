@@ -1,0 +1,225 @@
+JHE HAUL — IMPLEMENT THE SELLER DASHBOARD NOW AND DEPLOY IT LIVE
+
+The LIVE jhehaul.com marketplace is STILL unchanged.
+
+I am still seeing the old Marketplace Home page with:
+- Search marketplace
+- Category filters
+- Recently Listed
+- The listing card
+- Have something to list?
+
+The seller dashboard / My Listings experience I requested is NOT visible.
+
+DO NOT only inspect or report this time.
+IMPLEMENT THE CHANGE NOW.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. ADD SELLER MANAGEMENT TO ACCOUNT
+==================================================
+
+On the logged-in Account page, add a clear section/button:
+
+SELLING / MY LISTINGS
+
+When tapped, open a dedicated seller dashboard.
+
+Do NOT make users manage their listings from Recently Listed.
+
+==================================================
+2. SELLER DASHBOARD
+==================================================
+
+Create a mobile-friendly seller dashboard inspired by the organization of the Facebook Marketplace seller screenshots I provided, but DO NOT copy Facebook branding.
+
+Include:
+
++ Create Listing
+
+Overview cards:
+- Active Listings
+- Sold Listings
+- Messages / Inquiries
+- Expired / Inactive Listings
+
+Seller performance, using ONLY real JHE Haul data:
+- Listing views/clicks if tracked
+- Messages/inquiries received
+- Sold listing count
+- Seller rating only if JHE Haul actually has ratings
+
+Do not invent fake numbers.
+
+==================================================
+3. MY LISTINGS
+==================================================
+
+Add a My Listings page showing the logged-in seller's own listings.
+
+Each listing should show:
+- Photo
+- Title
+- Price
+- Status
+- Posted date
+
+Where appropriate provide seller controls:
+- View
+- Edit
+- Mark Sold
+- Renew / Relist
+- Delete
+
+Do not show another user's listings.
+
+==================================================
+4. KEEP BUYER HOME SEPARATE
+==================================================
+
+The public Marketplace Home page may continue to show:
+- Search
+- Categories
+- City/ZIP filter
+- Recently Listed
+
+That is the buyer/shopping area.
+
+The NEW seller dashboard belongs under:
+
+Account → Selling / My Listings
+
+==================================================
+5. ACCOUNT NAVIGATION MUST ACTUALLY WORK
+==================================================
+
+Wire the Account page/button to the new seller dashboard route.
+
+Verify the route is reachable on MOBILE.
+
+Do not leave the seller dashboard as an unused template or unused route.
+
+==================================================
+6. IMPLEMENT — DO NOT JUST PLAN
+==================================================
+
+Check the actual code.
+
+If these pages/routes/templates do not already exist:
+CREATE THEM NOW.
+
+If they exist but are not connected:
+CONNECT THEM NOW.
+
+If they are hidden by old navigation:
+FIX THE NAVIGATION NOW.
+
+==================================================
+7. TEST LOCALLY
+==================================================
+
+Test:
+
+Login
+→ Account
+→ Selling / My Listings
+→ Seller dashboard opens
+
+My Listings
+→ seller's current listing appears
+
+Create Listing
+→ existing Sell flow opens
+
+Active Listings
+→ correct listings shown
+
+Sold Listings
+→ correct sold listings shown
+
+==================================================
+8. COMMIT AND PUSH
+==================================================
+
+After implementing:
+
+git status
+commit all seller-dashboard changes
+
+Use a clear commit message such as:
+
+Add seller dashboard and My Listings management
+
+Push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Do NOT create a new repository.
+Do NOT create a new unrelated branch.
+
+==================================================
+9. FORCE/VERIFY NEW DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Do not assume auto-deploy happened.
+
+Verify DigitalOcean creates a NEW deployment from the NEW commit.
+
+If needed, manually trigger a redeploy.
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+DIGITALOCEAN DEPLOYED SHA:
+
+These must match.
+
+==================================================
+10. VERIFY LIVE PRODUCTION
+==================================================
+
+Open the actual LIVE:
+
+https://jhehaul.com
+
+Do NOT only test Replit preview.
+
+Log in and test:
+
+Account
+→ Selling / My Listings
+
+Confirm the seller dashboard is visible LIVE on mobile.
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+Report exactly:
+
+SELLER DASHBOARD IMPLEMENTED: YES/NO
+ACCOUNT → SELLING LINK VISIBLE: YES/NO
+MY LISTINGS PAGE VISIBLE: YES/NO
+CURRENT LISTING DISPLAYED IN MY LISTINGS: YES/NO
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL 3 SHAs MATCH: YES/NO
+LIVE MOBILE VERIFIED: YES/NO
+
+If the live site still shows the old experience, DO NOT mark the task complete.
+
+Find and fix the exact deployment/navigation problem before stopping.
+
+CRITICAL:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
