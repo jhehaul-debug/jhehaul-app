@@ -1,0 +1,176 @@
+JHE HAUL — FIX SELLER DASHBOARD + CHECK SWITCH ACCOUNT VISIBILITY
+
+The LIVE jhehaul.com Account page is still NOT showing the seller dashboard / Selling / My Listings experience I requested.
+
+Also, my John Hunter account currently shows:
+
+SIGN OUT
+SWITCH ACCOUNT
+
+I need you to inspect whether “Switch Account” is showing on every user account or only where it is actually appropriate.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. SELLER DASHBOARD STILL MISSING
+==================================================
+
+The live Account page still does NOT show:
+
+Selling / My Listings
+Seller Dashboard
+Active Listings
+Sold Listings
+Messages/Inquiries
+Seller performance
+My Listings management
+
+Implement this NOW.
+
+Under Account, add a clear:
+
+SELLING / MY LISTINGS
+
+button/card.
+
+When tapped, it must open the seller dashboard.
+
+Do not leave the route hidden or disconnected.
+
+==================================================
+2. SELLER DASHBOARD CONTENT
+==================================================
+
+The seller dashboard should include:
+
++ Create Listing
+
+Overview:
+- Active Listings
+- Sold Listings
+- Messages / Inquiries
+- Expired / Inactive Listings
+
+Seller performance using ONLY actual JHE Haul data:
+- Listing views/clicks if tracked
+- Messages/inquiries
+- Sold listing count
+- Seller rating only if the feature really exists
+
+My Listings must show:
+- Photo
+- Title
+- Price
+- Status
+- Posted date
+
+Controls where appropriate:
+- View
+- Edit
+- Mark Sold
+- Renew / Relist
+- Delete
+
+==================================================
+3. CHECK “SWITCH ACCOUNT” BUTTON
+==================================================
+
+Inspect the current Account page logic.
+
+Tell me whether “Switch Account” is currently displayed for:
+
+- Every normal marketplace user
+- Admin only
+- Specific users
+- Users with multiple linked accounts
+- Everyone regardless of account type
+
+Do NOT guess.
+
+Check the actual code and route logic.
+
+==================================================
+4. CORRECT SWITCH ACCOUNT BEHAVIOR
+==================================================
+
+If “Switch Account” is showing for EVERY ordinary marketplace user without a real linked-account feature, remove it from normal users.
+
+Regular users should normally see:
+
+SIGN OUT
+
+Only show “Switch Account” when there is an actual supported reason, such as:
+
+- multiple linked accounts
+- Admin switching between authorized accounts
+- another existing multi-account feature
+
+Do not remove Account switching from Admin if Admin legitimately needs it.
+
+Do not break Sign Out.
+
+==================================================
+5. TEST MULTIPLE ACCOUNT TYPES
+==================================================
+
+Test the live UI as:
+
+- Primary Admin
+- John Hunter normal/personal account
+- Another ordinary marketplace user
+
+Report exactly which accounts see:
+
+SIGN OUT
+SWITCH ACCOUNT
+SELLING / MY LISTINGS
+
+==================================================
+6. COMMIT / PUSH / DEPLOY
+==================================================
+
+After fixing:
+
+1. Run tests.
+2. Commit changes.
+3. Push to EXISTING production repository:
+   jhehaul-debug/jhehaul-app
+4. Branch:
+   main
+5. Verify local HEAD = GitHub main.
+6. Trigger/verify a NEW DigitalOcean deployment.
+7. Verify LIVE jhehaul.com on mobile.
+
+==================================================
+7. FINAL REPORT
+==================================================
+
+Report exactly:
+
+SELLER DASHBOARD LIVE: YES/NO
+SELLING / MY LISTINGS VISIBLE: YES/NO
+MY LISTINGS WORKING: YES/NO
+
+SWITCH ACCOUNT CURRENTLY SHOWN TO:
+[describe exact account types]
+
+SWITCH ACCOUNT AFTER FIX SHOWN TO:
+[describe exact account types]
+
+NORMAL USER SIGN OUT WORKING: YES/NO
+ADMIN ACCOUNT SWITCHING WORKING: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL MATCH: YES/NO
+
+LIVE MOBILE VERIFIED: YES/NO
+
+CRITICAL:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
