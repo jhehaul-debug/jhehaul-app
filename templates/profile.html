@@ -109,6 +109,13 @@
          onmouseover="this.style.background='#2d3748'" onmouseout="this.style.background='#1a202c'">
         🚪 Sign Out
       </a>
+      {% if current_user.is_admin %}
+      <a href="{{ url_for('auth.switch_account') }}"
+         style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;background:#fff;color:#374151;font-weight:600;font-size:.95rem;border-radius:9px;text-decoration:none;border:2px solid #d1d5db;white-space:nowrap;"
+         onmouseover="this.style.borderColor='#6b7280'" onmouseout="this.style.borderColor='#d1d5db'">
+        🔄 Switch Account
+      </a>
+      {% endif %}
     </div>
   </div>
 </div>
