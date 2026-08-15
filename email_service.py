@@ -962,6 +962,42 @@ def notify_buyer_offer_timed_out(buyer_email, listing_title, listing_id, offer_a
     )
 
 
+def notify_buyer_listing_pending(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when a seller marks their listing as Pending Sale.
+
+    The buyer's offer is not expired — it stays on hold — so the message
+    conveys uncertainty rather than finality.
+    """
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>We wanted to give you a quick update on a listing you made an offer on:</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Pending Sale</span></p>
+    </div>
+    <p>The seller is currently completing a sale with another buyer. Your offer is
+       <strong>on hold</strong> — no action is needed from you right now.</p>
+    <p>If the deal falls through, the seller may reactivate the listing and your offer
+       could still be considered. We'll notify you if that happens.</p>
+    <a href="{listing_url}" class="btn">View Listing →</a>"""
+    return send_email(
+        buyer_email,
+        f"Update on your offer for \"{subject_title}\"",
+        _html(
+            "Listing Is Pending Sale",
+            "The seller is completing a sale — your offer is on hold.",
+            "⏳ Pending Sale",
+            body,
+        ),
+        'buyer_listing_pending',
+    )
+
+
 def notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amount):
     """Email the buyer when their pending offer expires because the listing was sold or removed."""
     import html as _html_mod

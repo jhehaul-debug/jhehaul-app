@@ -30,6 +30,7 @@ from email_service import (
     notify_admin_new_request,
     notify_buyer_offer_expired,
     notify_buyer_offer_timed_out,
+    notify_buyer_listing_pending,
     notify_seller_new_message,
     notify_buyer_delivery_quote_ready,
 )
@@ -1842,6 +1843,50 @@ def listing_set_status(listing_id):
                                                 offer_buyer_ids=offer_buyer_ids)
         except Exception as _notif_err:
             app.logger.warning("listing_set_status: reserved notification failed: %s", _notif_err)
+    # Notify buyers with active offers when the listing moves to Pending Sale
+    if new_status == 'pending' and prior_status != 'pending':
+        try:
+            from models import ListingOffer as _LO2
+            _pending_offers = (
+                _LO2.query
+                .filter(
+                    _LO2.listing_id == listing_id,
+                    _LO2.status.in_(['pending', 'countered'])
+                )
+                .join(User, _LO2.buyer_id == User.id)
+                .with_entities(_LO2.amount, User.email, User.id)
+                .all()
+            )
+            _safe_title = (listing.title or f"Listing #{listing_id}")[:60]
+            for _offer_amount, _buyer_email, _buyer_id in _pending_offers:
+                if _buyer_email:
+                    try:
+                        notify_buyer_listing_pending(
+                            _buyer_email, listing.title, listing_id, _offer_amount
+                        )
+                    except Exception as _email_err:
+                        app.logger.warning(
+                            "listing_set_status: pending email failed for listing %s buyer %s: %s",
+                            listing_id, _buyer_id, _email_err
+                        )
+                if _buyer_id:
+                    try:
+                        from notification_service import create_notification
+                        create_notification(
+                            user_id=_buyer_id,
+                            notif_type='offer_on_hold',
+                            title="Listing is pending sale",
+                            message=f'Your offer on "{_safe_title}" is on hold — the seller is completing a sale. You\'ll be notified if it falls through.',
+                            action_url=f"/listing/{listing_id}",
+                            related_listing_id=listing_id,
+                        )
+                    except Exception as _notif_err:
+                        app.logger.warning(
+                            "listing_set_status: pending in-app notification failed for listing %s buyer %s: %s",
+                            listing_id, _buyer_id, _notif_err
+                        )
+        except Exception as _pending_err:
+            app.logger.warning("listing_set_status: pending sale notifications failed: %s", _pending_err)
     return redirect(url_for('my_listings'))
 
 
