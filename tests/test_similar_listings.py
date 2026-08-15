@@ -227,6 +227,83 @@ with app.app_context():
               'pending-moderation listing leaked into similar_listings')
 
 # ---------------------------------------------------------------------------
+# Task 161: similar listings after category re-assignment
+# ---------------------------------------------------------------------------
+#
+# Scenario A: sold listing moved from cat_furniture → cat_electronics.
+#   The detail page must now show electronics peers, not furniture peers.
+#
+# Scenario B: sold listing moved to a category with no active approved peers.
+#   The sim-section must be absent from the HTML.
+# ---------------------------------------------------------------------------
+
+with app.app_context():
+    client_t161 = app.test_client()
+
+    # Seed categories (reuse helpers; these slugs are new so they get created)
+    cat_a = _make_category('t161-cat-a', 'T161 Category A')
+    cat_b = _make_category('t161-cat-b', 'T161 Category B')
+    cat_c = _make_category('t161-cat-c', 'T161 Category C')
+
+    seller161 = _make_user('t161-seller')
+    buyer161  = _make_user('t161-buyer')
+
+    # ── Scenario A ────────────────────────────────────────────────────────
+    # Sold listing originally in cat_a; two active peers in cat_b only.
+    sold_161 = _make_listing(16101, 't161-seller', status='sold', category=cat_a)
+    peer_b1  = _make_listing(16102, 't161-seller', status='active', category=cat_b)
+    peer_b2  = _make_listing(16103, 't161-seller', status='active', category=cat_b)
+    # A peer in cat_a to confirm it is NOT shown after reassignment
+    peer_a1  = _make_listing(16104, 't161-seller', status='active', category=cat_a)
+
+    # Re-assign sold listing to cat_b (simulates admin re-categorisation)
+    with app.app_context():
+        from models import Listing as _RL
+        _lst = db.session.get(_RL, 16101)
+        _lst.category_id = cat_b.id
+        db.session.commit()
+
+    _flu._get_user = lambda: buyer161
+    resp_a = client_t161.get(f'/listing/16101', follow_redirects=False)
+    html_a = resp_a.data.decode('utf-8', errors='replace')
+
+    check('t161-A: page loads after category re-assignment (200)',
+          resp_a.status_code == 200,
+          f'status={resp_a.status_code}')
+    check('t161-A: sim-section present after moving to cat_b',
+          '<div class="sim-section">' in html_a,
+          'sim-section div not found in HTML')
+    check('t161-A: cat_b peer 16102 appears in similar row',
+          '/listing/16102' in html_a,
+          'cat_b peer 16102 missing from similar row')
+    check('t161-A: cat_b peer 16103 appears in similar row',
+          '/listing/16103' in html_a,
+          'cat_b peer 16103 missing from similar row')
+    check('t161-A: former cat_a peer 16104 NOT in similar row',
+          '/listing/16104' not in html_a,
+          'old cat_a peer 16104 wrongly appeared after re-categorisation')
+
+    # ── Scenario B ────────────────────────────────────────────────────────
+    # Sold listing moved to cat_c which has no active approved peers.
+    sold_161b = _make_listing(16110, 't161-seller', status='sold', category=cat_a)
+
+    with app.app_context():
+        from models import Listing as _RL2
+        _lst2 = db.session.get(_RL2, 16110)
+        _lst2.category_id = cat_c.id
+        db.session.commit()
+
+    resp_b = client_t161.get(f'/listing/16110', follow_redirects=False)
+    html_b = resp_b.data.decode('utf-8', errors='replace')
+
+    check('t161-B: page loads when new category has no peers (200)',
+          resp_b.status_code == 200,
+          f'status={resp_b.status_code}')
+    check('t161-B: sim-section absent when new category has zero active peers',
+          '<div class="sim-section">' not in html_b,
+          'sim-section unexpectedly present when new category has no active approved peers')
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 failed = [r for r in results if not r[1]]
