@@ -32,6 +32,7 @@ def _run_checks(app):
             notify_seller_listing_expired,
             notify_seller_listing_expiring_soon,
             notify_buyer_offer_expired_listing,
+            notify_buyer_offer_timed_out,
         )
         from sms_service import (
             notify_customer_appointment_reminder_sms,
@@ -43,10 +44,37 @@ def _run_checks(app):
         # ── ListingOffer time-based expiry ────────────────────────────────────
         try:
             from models import expire_stale_timed_offers
-            expired_offers = expire_stale_timed_offers()
-            if expired_offers:
+            # expire_stale_timed_offers() returns notification targets for every
+            # offer it just expired, so we can email each affected buyer.
+            timed_out_targets = expire_stale_timed_offers()
+            if timed_out_targets:
                 db.session.commit()
-                log.info("Offer expiry run: expired=%d stale pending/countered offers", expired_offers)
+                log.info(
+                    "Offer expiry run: expired=%d stale pending/countered offers",
+                    len(timed_out_targets),
+                )
+                for target in timed_out_targets:
+                    buyer_email = target.get('buyer_email')
+                    if not buyer_email:
+                        continue
+                    try:
+                        notify_buyer_offer_timed_out(
+                            buyer_email,
+                            target['listing_title'],
+                            target['listing_id'],
+                            target['offer_amount'],
+                        )
+                        log.info(
+                            "Buyer timed-offer-expired email sent "
+                            "(offer #%s, listing #%s, buyer %s)",
+                            target['offer_id'], target['listing_id'], target['buyer_id'],
+                        )
+                    except Exception as e:
+                        log.error(
+                            "Buyer timed-offer-expired email failed "
+                            "(offer #%s, listing #%s): %s",
+                            target['offer_id'], target['listing_id'], e,
+                        )
         except Exception as e:
             log.error("Offer expiry sweep error: %s", e)
             db.session.rollback()

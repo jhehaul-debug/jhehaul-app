@@ -29,6 +29,7 @@ from email_service import (
     notify_customer_appointment_confirmed,
     notify_admin_new_request,
     notify_buyer_offer_expired,
+    notify_buyer_offer_timed_out,
     notify_seller_new_message,
     notify_buyer_delivery_quote_ready,
 )
@@ -1958,6 +1959,19 @@ def listing_detail(listing_id):
             buyer_offer.updated_at = datetime.now()
             try:
                 db.session.commit()
+                # Notify the buyer that their own offer window closed
+                try:
+                    notify_buyer_offer_timed_out(
+                        current_user.email,
+                        listing.title,
+                        listing_id,
+                        buyer_offer.amount,
+                    )
+                except Exception as _ne:
+                    app.logger.warning(
+                        "on-read timed-offer notify failed (listing #%s): %s",
+                        listing_id, _ne,
+                    )
             except Exception:
                 db.session.rollback()
 
@@ -1967,9 +1981,24 @@ def listing_detail(listing_id):
         from models import ListingOffer
         # Sweep time-expired offers before rendering so the seller sees accurate statuses
         try:
-            swept = expire_stale_timed_offers()
-            if swept:
+            timed_out_targets = expire_stale_timed_offers()
+            if timed_out_targets:
                 db.session.commit()
+                for _t in timed_out_targets:
+                    if not _t.get('buyer_email'):
+                        continue
+                    try:
+                        notify_buyer_offer_timed_out(
+                            _t['buyer_email'],
+                            _t['listing_title'],
+                            _t['listing_id'],
+                            _t['offer_amount'],
+                        )
+                    except Exception as _ne:
+                        app.logger.warning(
+                            "listing detail sweep: timed-offer notify failed "
+                            "(offer #%s): %s", _t['offer_id'], _ne,
+                        )
         except Exception:
             db.session.rollback()
         seller_offers = (ListingOffer.query
@@ -2223,8 +2252,27 @@ def offer_seller_respond(listing_id, offer_id):
             and offer.expires_at and offer.expires_at < datetime.now()):
         offer.status = 'expired'
         offer.updated_at = datetime.now()
+        _expired_buyer = offer.buyer
+        _expired_listing_title = listing.title
+        _expired_listing_id = listing_id
+        _expired_amount = offer.amount
+        _expired_offer_id = offer.id
         try:
             db.session.commit()
+            # Notify the buyer that their offer window closed
+            if _expired_buyer and _expired_buyer.email:
+                try:
+                    notify_buyer_offer_timed_out(
+                        _expired_buyer.email,
+                        _expired_listing_title,
+                        _expired_listing_id,
+                        _expired_amount,
+                    )
+                except Exception as _ne:
+                    app.logger.warning(
+                        "offer_seller_respond: timed-offer notify failed "
+                        "(offer #%s): %s", _expired_offer_id, _ne,
+                    )
         except Exception:
             db.session.rollback()
         flash("This offer has expired and can no longer be accepted, declined, or countered.", "error")
@@ -2434,10 +2482,28 @@ def offer_buyer_respond(listing_id, offer_id):
     # Enforce time-based expiry before any action
     if (offer.status in ('pending', 'countered')
             and offer.expires_at and offer.expires_at < datetime.now()):
+        _expired_listing = offer.listing
+        _expired_listing_title = _expired_listing.title if _expired_listing else None
+        _expired_amount = offer.amount
+        _expired_offer_id = offer.id
         offer.status = 'expired'
         offer.updated_at = datetime.now()
         try:
             db.session.commit()
+            # Notify the buyer (current_user) that their offer window closed
+            if current_user.email:
+                try:
+                    notify_buyer_offer_timed_out(
+                        current_user.email,
+                        _expired_listing_title,
+                        listing_id,
+                        _expired_amount,
+                    )
+                except Exception as _ne:
+                    app.logger.warning(
+                        "offer_buyer_respond: timed-offer notify failed "
+                        "(offer #%s): %s", _expired_offer_id, _ne,
+                    )
         except Exception:
             db.session.rollback()
         flash("This offer has expired. You can make a fresh offer if the listing is still active.", "error")
@@ -2563,9 +2629,24 @@ def seller_offers():
     from models import ListingOffer
     # Sweep time-expired offers before rendering so counts are accurate
     try:
-        swept = expire_stale_timed_offers()
-        if swept:
+        timed_out_targets = expire_stale_timed_offers()
+        if timed_out_targets:
             db.session.commit()
+            for _t in timed_out_targets:
+                if not _t.get('buyer_email'):
+                    continue
+                try:
+                    notify_buyer_offer_timed_out(
+                        _t['buyer_email'],
+                        _t['listing_title'],
+                        _t['listing_id'],
+                        _t['offer_amount'],
+                    )
+                except Exception as _ne:
+                    app.logger.warning(
+                        "seller inbox sweep: timed-offer notify failed "
+                        "(offer #%s): %s", _t['offer_id'], _ne,
+                    )
     except Exception:
         db.session.rollback()
     offers = (ListingOffer.query

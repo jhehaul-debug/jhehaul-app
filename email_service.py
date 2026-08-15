@@ -925,6 +925,43 @@ def notify_customer_quote_withdrawn(customer_email, job_id, service_type, withdr
     )
 
 
+def notify_buyer_offer_timed_out(buyer_email, listing_title, listing_id, offer_amount):
+    """Email the buyer when their offer expires because the offer's own response window elapsed.
+
+    This is intentionally distinct from notify_buyer_offer_expired (listing sold/removed)
+    and notify_buyer_offer_expired_listing (listing itself auto-expired). Here the listing
+    may still be active — the seller simply did not respond before the offer deadline.
+    """
+    import html as _html_mod
+    raw_title = listing_title or f"Listing #{listing_id}"
+    safe_title = _html_mod.escape(raw_title)
+    subject_title = raw_title.replace('\n', ' ').replace('\r', ' ')
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    body = f"""
+    <p>Your offer of <span class="pill pill-orange">${offer_amount:,.2f}</span> on
+       <strong>{safe_title}</strong> has expired because the seller didn't respond
+       within the offer window.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Your Offer:</strong> ${offer_amount:,.2f}</p>
+      <p><strong>Status:</strong> <span class="pill pill-red">Offer Timed Out</span></p>
+    </div>
+    <p>The listing may still be available. You can visit the listing to make a new offer
+       or contact the seller directly.</p>
+    <a href="{listing_url}" class="btn">View Listing →</a>"""
+    return send_email(
+        buyer_email,
+        f"Your offer timed out — \"{subject_title}\"",
+        _html(
+            "Your Offer Window Has Closed",
+            "The seller didn't respond in time — the listing may still be available.",
+            "⏰ Offer Timed Out",
+            body,
+        ),
+        'buyer_offer_timed_out',
+    )
+
+
 def notify_buyer_offer_expired(buyer_email, listing_title, listing_id, offer_amount):
     """Email the buyer when their pending offer expires because the listing was sold or removed."""
     import html as _html_mod

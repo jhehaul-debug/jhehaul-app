@@ -741,18 +741,39 @@ def expire_pending_offers(listing_id):
 
 
 def expire_stale_timed_offers():
-    """Bulk-expire all pending/countered offers whose expires_at has passed.
+    """Expire all pending/countered offers whose own expires_at deadline has passed.
 
-    Called from the background expiry thread and from seller/buyer action
-    endpoints so time-based expiry is enforced even when no page is visited.
-    Returns the count of rows updated.
+    Called from the background expiry thread and from seller/buyer page views so
+    time-based expiry is enforced even when no scheduled task fires.
+
+    Returns a list of dicts with buyer notification info for each offer that was
+    just expired, so callers can send per-buyer notifications after committing:
+        [{'offer_id': ..., 'buyer_id': ..., 'buyer_email': ...,
+          'listing_id': ..., 'listing_title': ..., 'offer_amount': ...}]
+
+    Returns an empty list when nothing was expired.
     """
-    count = (ListingOffer.query
-             .filter(
-                 ListingOffer.status.in_(['pending', 'countered']),
-                 ListingOffer.expires_at != None,   # noqa: E711
-                 ListingOffer.expires_at <= datetime.now(),
-             )
-             .update({'status': 'expired', 'updated_at': datetime.now()},
-                     synchronize_session=False))
-    return count
+    affected = (ListingOffer.query
+                .filter(
+                    ListingOffer.status.in_(['pending', 'countered']),
+                    ListingOffer.expires_at != None,   # noqa: E711
+                    ListingOffer.expires_at <= datetime.now(),
+                )
+                .all())
+
+    targets = []
+    for offer in affected:
+        buyer = offer.buyer
+        listing = offer.listing
+        targets.append({
+            'offer_id': offer.id,
+            'buyer_id': offer.buyer_id,
+            'buyer_email': buyer.email if buyer else None,
+            'listing_id': offer.listing_id,
+            'listing_title': listing.title if listing else None,
+            'offer_amount': offer.amount,
+        })
+        offer.status = 'expired'
+        offer.updated_at = datetime.now()
+
+    return targets

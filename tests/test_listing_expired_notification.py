@@ -94,7 +94,7 @@ from job_expiry import _run_checks
 with (
     patch('email_service.notify_seller_listing_expired', return_value=True) as mock_email,
     patch('sms_service.notify_seller_listing_expired_sms', return_value=True) as mock_sms,
-    patch('models.expire_stale_timed_offers', return_value=0),
+    patch('models.expire_stale_timed_offers', return_value=[]),
     patch('models.expire_pending_offers'),
 ):
     _run_checks(app)
@@ -142,7 +142,7 @@ with app.app_context():
 with (
     patch('email_service.notify_seller_listing_expired', return_value=True) as mock_email2,
     patch('sms_service.notify_seller_listing_expired_sms', return_value=True) as mock_sms2,
-    patch('models.expire_stale_timed_offers', return_value=0),
+    patch('models.expire_stale_timed_offers', return_value=[]),
     patch('models.expire_pending_offers'),
 ):
     _run_checks(app)
@@ -182,7 +182,7 @@ with app.app_context():
 with (
     patch('email_service.notify_seller_listing_expired', return_value=True) as mock_email3,
     patch('sms_service.notify_seller_listing_expired_sms', return_value=True) as mock_sms3,
-    patch('models.expire_stale_timed_offers', return_value=0),
+    patch('models.expire_stale_timed_offers', return_value=[]),
     patch('models.expire_pending_offers'),
 ):
     _run_checks(app)
@@ -210,7 +210,7 @@ with app.app_context():
 with (
     patch('email_service.notify_seller_listing_expired', return_value=True) as mock_email4,
     patch('sms_service.notify_seller_listing_expired_sms', return_value=True) as mock_sms4,
-    patch('models.expire_stale_timed_offers', return_value=0),
+    patch('models.expire_stale_timed_offers', return_value=[]),
     patch('models.expire_pending_offers'),
 ):
     _run_checks(app)
@@ -253,7 +253,7 @@ with (
     patch('sms_service.notify_seller_listing_expired_sms', return_value=True) as mock_sms5,
     # also mock expiring-soon email so future listing doesn't trigger that path
     patch('email_service.notify_seller_listing_expiring_soon', return_value=True),
-    patch('models.expire_stale_timed_offers', return_value=0),
+    patch('models.expire_stale_timed_offers', return_value=[]),
     patch('models.expire_pending_offers'),
 ):
     _run_checks(app)
