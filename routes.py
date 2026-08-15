@@ -1904,6 +1904,11 @@ def my_listings():
                             .filter(ListingOffer.status.in_(['pending', 'countered']))
                             .count())
 
+    # Total offers ever received (all statuses) — for Performance card
+    total_offers_count = (ListingOffer.query
+                          .filter_by(seller_id=current_user.id)
+                          .count())
+
     # Apply status filter for the listing list below the dashboard
     valid_filters = ('active', 'sold', 'reserved', 'pending', 'expired', 'removed')
     if status_filter in valid_filters:
@@ -1918,6 +1923,7 @@ def my_listings():
                            total_views=total_views,
                            total_conversations=total_conversations,
                            pending_offers_count=pending_offers_count,
+                           total_offers_count=total_offers_count,
                            status_filter=status_filter,
                            hidden_draft_count=0,
                            now=_dt.now())
