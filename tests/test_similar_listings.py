@@ -304,6 +304,78 @@ with app.app_context():
           'sim-section unexpectedly present when new category has no active approved peers')
 
 # ---------------------------------------------------------------------------
+# Task 162: sold item with no category set (non-property) — fallback path
+# ---------------------------------------------------------------------------
+#
+# Scenario A: sold item has no category_id and listing_type='item' (not a
+#   property).  The route must fall back to sitewide active listings,
+#   similar_fallback must be True, and the heading must read
+#   "Other active listings".
+#
+# Scenario B: sold item has a category set — heading must remain
+#   "Similar listings you might like" (similar_fallback=False path).
+# ---------------------------------------------------------------------------
+
+with app.app_context():
+    client_t162 = app.test_client()
+
+    seller162 = _make_user('t162-seller')
+    buyer162  = _make_user('t162-buyer')
+
+    # Seed a few generic active approved items with no category so the
+    # fallback query has something to return.
+    _make_listing(16201, 't162-seller', status='active', category=None,
+                  listing_type='item')
+    _make_listing(16202, 't162-seller', status='active', category=None,
+                  listing_type='item')
+
+    # ── Scenario A: no category, not a property ───────────────────────────
+    sold_no_cat = _make_listing(16200, 't162-seller', status='sold',
+                                category=None, listing_type='item')
+
+    _flu._get_user = lambda: buyer162
+    resp_t162a = client_t162.get(f'/listing/{sold_no_cat.id}',
+                                 follow_redirects=False)
+    html_t162a = resp_t162a.data.decode('utf-8', errors='replace')
+
+    check('t162-A: page loads for sold item with no category (200)',
+          resp_t162a.status_code == 200,
+          f'status={resp_t162a.status_code}')
+    check('t162-A: sim-section present when sold item has no category',
+          '<div class="sim-section">' in html_t162a,
+          'sim-section div not found — fallback query not rendering section')
+    check('t162-A: heading reads "Other active listings" (fallback)',
+          'Other active listings' in html_t162a,
+          '"Other active listings" heading missing from HTML')
+    check('t162-A: "Similar listings you might like" NOT shown in fallback',
+          'Similar listings you might like' not in html_t162a,
+          'wrong heading shown — fallback should say "Other active listings"')
+
+    # ── Scenario B: sold item WITH a category → standard heading ─────────
+    cat_162 = _make_category('t162-cat', 'T162 Category')
+    _make_listing(16211, 't162-seller', status='active', category=cat_162)
+
+    sold_with_cat = _make_listing(16210, 't162-seller', status='sold',
+                                  category=cat_162)
+
+    resp_t162b = client_t162.get(f'/listing/{sold_with_cat.id}',
+                                 follow_redirects=False)
+    html_t162b = resp_t162b.data.decode('utf-8', errors='replace')
+
+    check('t162-B: page loads for sold item with category (200)',
+          resp_t162b.status_code == 200,
+          f'status={resp_t162b.status_code}')
+    check('t162-B: sim-section present for sold item with category',
+          '<div class="sim-section">' in html_t162b,
+          'sim-section div not found for categorised sold item')
+    check('t162-B: heading reads "Similar listings you might like"',
+          'Similar listings you might like' in html_t162b,
+          '"Similar listings you might like" heading missing')
+    check('t162-B: "Other active listings" NOT shown when category is set',
+          'Other active listings' not in html_t162b,
+          'fallback heading wrongly shown for listing that has a category')
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 failed = [r for r in results if not r[1]]
