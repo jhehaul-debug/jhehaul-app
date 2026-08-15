@@ -1352,7 +1352,7 @@ def listing_step(listing_id, step):
                 listing.expires_at = _dt_pub.now() + _td_pub(days=30)
             db.session.commit()
             flash("Your listing is now live! 🎉", "success")
-            return redirect(url_for('my_listings'))
+            return redirect(url_for('selling'))
 
         # Stamp draft_activity_at so the reminder system knows the seller
         # actively returned to this draft.  Only applies to steps 1-5 (step 6
@@ -1698,7 +1698,7 @@ def listing_edit(listing_id):
             listing.expiry_reminder_sent = False
         db.session.commit()
         flash("Listing updated.", "success")
-        return redirect(url_for('my_listings'))
+        return redirect(url_for('selling'))
 
     return render_template('listing_edit.html', listing=listing, categories=categories)
 
@@ -1745,7 +1745,7 @@ def listing_delete(listing_id):
     except Exception as exc:
         app.logger.warning("listing_delete: storage import failed: %s", exc)
     flash("Listing deleted.", "success")
-    return redirect(url_for('my_listings'))
+    return redirect(url_for('selling'))
 
 
 @app.route("/listing/<int:listing_id>/discard", methods=["POST"])
@@ -1792,14 +1792,14 @@ def listing_set_status(listing_id):
     allowed = ('sold', 'reserved', 'active', 'pending')
     if new_status not in allowed:
         flash("Invalid status.", "error")
-        return redirect(url_for('my_listings'))
+        return redirect(url_for('selling'))
     # Only allow transitioning from sensible states
     if new_status == 'active' and listing.status not in ('sold', 'reserved', 'expired', 'pending'):
         flash("Cannot reactivate a listing that is not sold, reserved, pending, or expired.", "error")
-        return redirect(url_for('my_listings'))
+        return redirect(url_for('selling'))
     if new_status in ('sold', 'reserved', 'pending') and listing.status not in ('active', 'reserved', 'sold', 'pending'):
         flash("Only active or sold/reserved/pending listings can be updated.", "error")
-        return redirect(url_for('my_listings'))
+        return redirect(url_for('selling'))
     prior_status = listing.status   # capture before overwriting
     listing.status = new_status
     if new_status == 'sold':
@@ -1887,7 +1887,7 @@ def listing_set_status(listing_id):
                         )
         except Exception as _pending_err:
             app.logger.warning("listing_set_status: pending sale notifications failed: %s", _pending_err)
-    return redirect(url_for('my_listings'))
+    return redirect(url_for('selling'))
 
 
 @app.route("/listing/<int:listing_id>/renew", methods=["POST"])
@@ -1899,19 +1899,26 @@ def listing_renew(listing_id):
     listing = _listing_owner_or_403(listing_id)
     if listing.status != 'expired':
         flash("Only expired listings can be renewed.", "error")
-        return redirect(url_for('my_listings'))
+        return redirect(url_for('selling'))
     listing.status = 'active'
     listing.expires_at = datetime.datetime.now() + datetime.timedelta(days=30)
     listing.expired_at = None
     listing.expiry_reminder_sent = False  # start a fresh expiry cycle
     db.session.commit()
     flash("Your listing has been renewed and is active for 30 more days.", "success")
-    return redirect(url_for('my_listings'))
+    return redirect(url_for('selling'))
 
 
 @app.route("/my-listings")
+def my_listings_redirect():
+    """Backward-compat redirect — canonical seller dashboard is now /selling."""
+    from flask import redirect
+    return redirect(url_for('selling'), 301)
+
+
+@app.route("/selling")
 @require_login
-def my_listings():
+def selling():
     """Seller dashboard: overview stats, status counts, filtered listing list."""
     from models import Listing, ListingOffer, ListingConversation
     from sqlalchemy import func
@@ -1962,7 +1969,7 @@ def my_listings():
         status_filter = 'all'
         listings = all_listings
 
-    return render_template('my_listings.html',
+    return render_template('selling.html',
                            listings=listings,
                            status_counts=status_counts,
                            total_views=total_views,

@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% block title %}Selling — JHE Haul{% endblock %}
+
+{% block content %}
+<style>
+/* ── Shell ── */
+.sl-page { max-width: 680px; margin: 0 auto; padding: 0 0 80px; background: #f5f6f7; min-height: 100vh; }
+
+/* ── Header ── */
+.sl-header { background: #fff; padding: 20px 18px 0; border-bottom: 1px solid #e4e6e9; }
+.sl-header h1 { font-size: 1.55rem; font-weight: 800; color: #1a1a2e; margin: 0 0 2px; }
+.sl-header-sub { font-size: 0.82rem; color: #606770; margin: 0 0 14px; }
+
+/* ── Tab nav ── */
+.sl-tabs { display: flex; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.sl-tabs::-webkit-scrollbar { display: none; }
+.sl-tab {
+  flex-shrink: 0; padding: 10px 18px; font-size: 0.88rem; font-weight: 700;
+  color: #606770; text-decoration: none; border-bottom: 3px solid transparent;
+  white-space: nowrap; transition: color .12s, border-color .12s;
+}
+.sl-tab:hover { color: #1a1a2e; text-decoration: none; }
+.sl-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+/* ── Create Listing button ── */
+.sl-create-wrap { padding: 14px 16px; background: #fff; border-bottom: 6px solid #f5f6f7; }
+.sl-create-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 15px; background: #2563eb; color: #fff;
+  font-size: 1rem; font-weight: 800; border-radius: 10px; text-decoration: none;
+  letter-spacing: .01em; transition: background .12s;
+}
+.sl-create-btn:hover { background: #1d4ed8; color: #fff; text-decoration: none; }
+
+/* ── Action alerts ── */
+.sl-alerts { padding: 10px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.sl-alert {
+  display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+  border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+  text-decoration: none; color: inherit;
+}
+.sl-alert:hover { opacity: .9; text-decoration: none; color: inherit; }
+.sl-alert-offers  { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
+.sl-alert-expiry  { background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; }
+.sl-alert-msgs    { background: #f5f3ff; border: 1.5px solid #ddd6fe; color: #5b21b6; }
+.sl-alert-icon    { font-size: 1.1rem; flex-shrink: 0; }
+
+/* ── Section container ── */
+.sl-section { background: #fff; margin-top: 8px; padding: 16px 16px 4px; }
+.sl-section-title { font-size: 1rem; font-weight: 800; color: #1a1a2e; margin: 0 0 14px; }
+
+/* ── 2-column overview / performance grid ── */
+.sl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.sl-card {
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 16px 14px; background: #f7f8fa; border: 1.5px solid #e4e6e9;
+  border-radius: 12px; text-decoration: none; color: inherit; min-height: 82px;
+  transition: border-color .12s, box-shadow .12s;
+}
+.sl-card:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,.10); text-decoration: none; color: inherit; }
+.sl-card-val { font-size: 1.7rem; font-weight: 800; color: #1a1a2e; line-height: 1; margin-bottom: 6px; }
+.sl-card-val.highlight { color: #2563eb; }
+.sl-card-val.warning  { color: #d97706; }
+.sl-card-val.success  { color: #16a34a; }
+.sl-card-lbl { font-size: 0.76rem; font-weight: 700; color: #606770; line-height: 1.3; }
+.sl-stat {
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 16px 14px; background: #f7f8fa; border: 1.5px solid #e4e6e9;
+  border-radius: 12px; min-height: 82px;
+}
+.sl-stat-val { font-size: 1.7rem; font-weight: 800; color: #1a1a2e; line-height: 1; margin-bottom: 6px; }
+.sl-stat-lbl { font-size: 0.76rem; font-weight: 700; color: #606770; line-height: 1.3; }
+
+/* ── Your Listings section ── */
+.sl-listings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sl-listings-header h2 { font-size: 1rem; font-weight: 800; color: #1a1a2e; margin: 0; }
+.sl-listings-count { font-size: 0.8rem; color: #606770; font-weight: 600; }
+
+/* ── Listing row card ── */
+.sl-listing { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.sl-listing:last-child { border-bottom: none; }
+.sl-listing-thumb {
+  width: 80px; height: 80px; border-radius: 8px; flex-shrink: 0;
+  background: #e4e6e9; display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; overflow: hidden; text-decoration: none;
+}
+.sl-listing-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.sl-listing-body { flex: 1; min-width: 0; }
+.sl-listing-title { font-size: 0.92rem; font-weight: 700; color: #1a1a2e; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sl-listing-price { font-size: 0.88rem; font-weight: 700; color: #2563eb; margin-bottom: 3px; }
+.sl-listing-price.free { color: #16a34a; }
+.sl-listing-meta { font-size: 0.74rem; color: #606770; margin-bottom: 6px; }
+.sl-listing-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sl-btn {
+  font-size: 0.75rem; font-weight: 700; padding: 5px 11px; border-radius: 6px;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 3px;
+  border: 1.5px solid; background: none; cursor: pointer; line-height: 1.3; white-space: nowrap;
+}
+.sl-btn-view       { color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
+.sl-btn-edit       { color: #374151; border-color: #d1d5db; background: #f9fafb; }
+.sl-btn-sold       { color: #3730a3; border-color: #c7d2fe; background: #eef2ff; }
+.sl-btn-renew      { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
+.sl-btn-reactivate { color: #15803d; border-color: #86efac; background: #f0fdf4; }
+.sl-btn-pending    { color: #b45309; border-color: #fde68a; background: #fffbeb; }
+.sl-btn-reserved   { color: #7e22ce; border-color: #e9d5ff; background: #fdf4ff; }
+.sl-btn-delete     { color: #dc2626; border-color: #fca5a5; background: none; }
+.sl-btn:hover { opacity: .85; text-decoration: none; }
+
+/* status badge inline */
+.sl-badge { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.sl-badge-active   { background: #dcfce7; color: #15803d; }
+.sl-badge-sold     { background: #e0e7ff; color: #3730a3; }
+.sl-badge-reserved { background: #fae8ff; color: #7e22ce; }
+.sl-badge-expired  { background: #f3f4f6; color: #6b7280; }
+.sl-badge-removed  { background: #fee2e2; color: #dc2626; }
+.sl-badge-pending  { background: #fef3c7; color: #b45309; }
+
+/* ── Empty state ── */
+.sl-empty { text-align: center; padding: 48px 20px; }
+.sl-empty .em { font-size: 3rem; display: block; margin-bottom: 14px; }
+.sl-empty h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin: 0 0 8px; }
+.sl-empty p { color: #606770; font-size: .9rem; margin: 0 0 20px; }
+
+/* ── Mobile tweaks ── */
+@media (max-width: 400px) {
+  .sl-card-val, .sl-stat-val { font-size: 1.45rem; }
+  .sl-listing-thumb { width: 68px; height: 68px; }
+}
+</style>
+
+<div class="sl-page">
+
+  <!-- ── Header + tabs ────────────────────────────────────────────────── -->
+  <div class="sl-header">
+    <h1>Selling</h1>
+    <p class="sl-header-sub">Manage your listings, offers and sales</p>
+    <div class="sl-tabs">
+      <a href="{{ url_for('selling') }}"
+         class="sl-tab {% if status_filter == 'all' %}active{% endif %}">Your Listings</a>
+      <a href="{{ url_for('marketplace_messages') }}"
+         class="sl-tab">Messages{% if total_conversations > 0 %} ({{ total_conversations }}){% endif %}</a>
+      <a href="{{ url_for('seller_offers') }}"
+         class="sl-tab">Offers{% if pending_offers_count > 0 %} ({{ pending_offers_count }}){% endif %}</a>
+      <a href="{{ url_for('selling') }}?filter=sold"
+         class="sl-tab {% if status_filter == 'sold' %}active{% endif %}">Sold{% if status_counts.sold > 0 %} ({{ status_counts.sold }}){% endif %}</a>
+    </div>
+  </div>
+
+  <!-- ── Create Listing ───────────────────────────────────────────────── -->
+  <div class="sl-create-wrap">
+    <a href="{{ url_for('sell') }}" class="sl-create-btn">＋ Create Listing</a>
+  </div>
+
+  <!-- ── Action alerts (real data only, only show when something needs attention) ── -->
+  {% if pending_offers_count > 0 or status_counts.expired > 0 or total_conversations > 0 %}
+  <div class="sl-alerts">
+    {% if pending_offers_count > 0 %}
+    <a href="{{ url_for('seller_offers') }}" class="sl-alert sl-alert-offers">
+      <span class="sl-alert-icon">📬</span>
+      You have {{ pending_offers_count }} pending offer{{ 's' if pending_offers_count != 1 }} waiting for a response
+    </a>
+    {% endif %}
+    {% if status_counts.expired > 0 %}
+    <a href="{{ url_for('selling') }}?filter=expired" class="sl-alert sl-alert-expiry">
+      <span class="sl-alert-icon">⏰</span>
+      {{ status_counts.expired }} listing{{ 's' if status_counts.expired != 1 }} expired — tap to renew
+    </a>
+    {% endif %}
+    {% if total_conversations > 0 %}
+    <a href="{{ url_for('marketplace_messages') }}" class="sl-alert sl-alert-msgs">
+      <span class="sl-alert-icon">💬</span>
+      {{ total_conversations }} buyer conversation{{ 's' if total_conversations != 1 }} in your inbox
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ── Overview ─────────────────────────────────────────────────────── -->
+  <div class="sl-section">
+    <div class="sl-section-title">Overview</div>
+    <div class="sl-grid">
+
+      <a href="{{ url_for('selling') }}?filter=active" class="sl-card">
+        <div class="sl-card-val {% if status_counts.active > 0 %}success{% endif %}">{{ status_counts.active }}</div>
+        <div class="sl-card-lbl">Active Listings</div>
+      </a>
+
+      <a href="{{ url_for('seller_offers') }}" class="sl-card">
+        <div class="sl-card-val {% if pending_offers_count > 0 %}highlight{% endif %}">{{ pending_offers_count }}</div>
+        <div class="sl-card-lbl">Offers Received</div>
+      </a>
+
+      <a href="{{ url_for('marketplace_messages') }}" class="sl-card">
+        <div class="sl-card-val {% if total_conversations > 0 %}highlight{% endif %}">{{ total_conversations }}</div>
+        <div class="sl-card-lbl">New Messages</div>
+      </a>
+
+      <a href="{{ url_for('selling') }}?filter=sold" class="sl-card">
+        <div class="sl-card-val {% if status_counts.sold > 0 %}success{% endif %}">{{ status_counts.sold }}</div>
+        <div class="sl-card-lbl">Items Sold</div>
+      </a>
+
+      {% if status_counts.expired > 0 %}
+      <a href="{{ url_for('selling') }}?filter=expired" class="sl-card">
+        <div class="sl-card-val warning">{{ status_counts.expired }}</div>
+        <div class="sl-card-lbl">Listings to Renew</div>
+      </a>
+      {% endif %}
+
+      {% if status_counts.reserved > 0 %}
+      <a href="{{ url_for('selling') }}?filter=reserved" class="sl-card">
+        <div class="sl-card-val">{{ status_counts.reserved }}</div>
+        <div class="sl-card-lbl">Reserved</div>
+      </a>
+      {% endif %}
+
+      {% if status_counts.pending > 0 %}
+      <a href="{{ url_for('selling') }}?filter=pending" class="sl-card">
+        <div class="sl-card-val warning">{{ status_counts.pending }}</div>
+        <div class="sl-card-lbl">Pending Sale</div>
+      </a>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- ── Performance ──────────────────────────────────────────────────── -->
+  <div class="sl-section">
+    <div class="sl-section-title">Performance</div>
+    <div class="sl-grid">
+      <div class="sl-stat">
+        <div class="sl-stat-val">{{ total_views }}</div>
+        <div class="sl-stat-lbl">Listing Views</div>
+      </div>
+      <div class="sl-stat">
+        <div class="sl-stat-val">{{ total_conversations }}</div>
+        <div class="sl-stat-lbl">Buyer Inquiries</div>
+      </div>
+      <div class="sl-stat">
+        <div class="sl-stat-val">{{ total_offers_count }}</div>
+        <div class="sl-stat-lbl">Offers Received</div>
+      </div>
+      <div class="sl-stat">
+        <div class="sl-stat-val">{{ status_counts.sold }}</div>
+        <div class="sl-stat-lbl">Items Sold</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Your Listings ─────────────────────────────────────────────────── -->
+  <div class="sl-section" style="padding-bottom: 16px;">
+    <div class="sl-listings-header">
+      <h2>
+        {% if status_filter == 'all' %}Your Listings
+        {% elif status_filter == 'sold' %}Sold Listings
+        {% elif status_filter == 'active' %}Active Listings
+        {% elif status_filter == 'expired' %}Expired Listings
+        {% elif status_filter == 'reserved' %}Reserved Listings
+        {% elif status_filter == 'pending' %}Pending Sale
+        {% else %}Your Listings{% endif %}
+      </h2>
+      <span class="sl-listings-count">{{ listings | length }} listing{{ 's' if listings | length != 1 }}</span>
+    </div>
+
+    {% if not listings %}
+    <div class="sl-empty">
+      {% if status_filter == 'all' %}
+        <span class="em">📦</span>
+        <h3>No listings yet</h3>
+        <p>Tap Create Listing to start selling on JHE Haul.</p>
+        <a href="{{ url_for('sell') }}" class="sl-create-btn" style="max-width: 260px; margin: 0 auto;">＋ Create Listing</a>
+      {% else %}
+        <span class="em">📭</span>
+        <h3>No {{ status_filter }} listings</h3>
+        <p>You don't have any {{ status_filter }} listings right now.</p>
+        <a href="{{ url_for('selling') }}" class="sl-btn sl-btn-view" style="margin: 0 auto;">← All Listings</a>
+      {% endif %}
+    </div>
+
+    {% else %}
+
+    {% for listing in listings %}
+    <div class="sl-listing">
+
+      <!-- Thumb -->
+      {% set primary = listing.primary_photo %}
+      <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="sl-listing-thumb">
+        {% if primary %}
+          <img src="{{ primary.storage_url or url_for('serve_listing_photo', photo_id=primary.id) }}"
+               alt="{{ listing.title }}">
+        {% elif listing.listing_type == 'property_sale' %}🏠
+        {% elif listing.listing_type == 'rental' %}🔑
+        {% else %}📦
+        {% endif %}
+      </a>
+
+      <!-- Body -->
+      <div class="sl-listing-body">
+        <div class="sl-listing-title" title="{{ listing.title }}">{{ listing.title or '(untitled)' }}</div>
+
+        {% if listing.price_type == 'free' %}
+          <div class="sl-listing-price free">Free</div>
+        {% elif listing.price is not none %}
+          <div class="sl-listing-price">
+            ${{ listing.price|fmt_price }}{% if listing.listing_type == 'rental' %}<span style="font-size:.75rem;color:#6b7280;font-weight:400">/mo</span>{% endif %}{% if listing.price_type == 'negotiable' %} <span style="font-size:.75rem;color:#9ca3af;font-weight:400">OBO</span>{% endif %}
+          </div>
+        {% else %}
+          <div class="sl-listing-price" style="color:#9ca3af;">—</div>
+        {% endif %}
+
+        <div class="sl-listing-meta">
+          <span class="sl-badge sl-badge-{{ listing.status }}">
+            {% if listing.status == 'active' %}● Active
+            {% elif listing.status == 'sold' %}✓ Sold
+            {% elif listing.status == 'reserved' %}⏸ Reserved
+            {% elif listing.status == 'pending' %}⏳ Pending Sale
+            {% elif listing.status == 'expired' %}⏰ Expired
+            {% elif listing.status == 'removed' %}✕ Removed
+            {% else %}{{ listing.status | title }}{% endif %}
+          </span>
+          &nbsp;{{ listing.created_at.strftime('%b %-d, %Y') }}
+          {% if listing.view_count %}&nbsp;· {{ listing.view_count }}v{% endif %}
+        </div>
+
+        <!-- Action buttons -->
+        <div class="sl-listing-actions">
+          <a href="{{ url_for('listing_detail', listing_id=listing.id) }}" class="sl-btn sl-btn-view">View</a>
+          <a href="{{ url_for('listing_edit', listing_id=listing.id) }}" class="sl-btn sl-btn-edit">Edit</a>
+
+          {% if listing.status == 'active' %}
+            <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="sold">
+              <button type="submit" class="sl-btn sl-btn-sold">Mark Sold</button>
+            </form>
+            <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="pending">
+              <button type="submit" class="sl-btn sl-btn-pending">Pending</button>
+            </form>
+            <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="reserved">
+              <button type="submit" class="sl-btn sl-btn-reserved">Reserve</button>
+            </form>
+
+          {% elif listing.status in ('sold', 'reserved', 'pending') %}
+            <form action="{{ url_for('listing_set_status', listing_id=listing.id) }}" method="POST" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="active">
+              <button type="submit" class="sl-btn sl-btn-reactivate">Reactivate</button>
+            </form>
+
+          {% elif listing.status == 'expired' %}
+            <form action="{{ url_for('listing_renew', listing_id=listing.id) }}" method="POST" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="sl-btn sl-btn-renew">🔄 Renew</button>
+            </form>
+          {% endif %}
+
+          <form action="{{ url_for('listing_delete', listing_id=listing.id) }}" method="POST" style="display:inline"
+                onsubmit="return confirm('Delete \'{{ listing.title | default('this listing') | replace("'", "\\'") }}\'?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="sl-btn sl-btn-delete">Delete</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+    {% endif %}
+  </div><!-- /Your Listings -->
+
+</div><!-- /sl-page -->
+{% endblock %}

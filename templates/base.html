@@ -55,7 +55,7 @@
                         <button class="nav-account-btn" id="navAccountBtn" aria-haspopup="true" aria-expanded="false">Account ▾</button>
                         <div class="nav-account-dropdown" id="navAccountDropdown">
                             <a href="{{ url_for('profile') }}">👤 My Account</a>
-                            <a href="{{ url_for('my_listings') }}">📦 My Listings</a>
+                            <a href="{{ url_for('selling') }}">🏪 Selling</a>
                             <a href="{{ url_for('saved_items') }}">❤️ Saved Items</a>
                             {% if current_user.is_admin %}
                             <div class="dropdown-divider"></div>
@@ -97,7 +97,7 @@
             <a href="{{ url_for('marketplace_messages') if current_user.is_authenticated else url_for('auth.login') }}">💬 Messages{% if customer_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ customer_unread_count }}</span>{% endif %}</a>
             <a href="{{ url_for('notifications_page') }}">🔔 Notifications{% if notif_unread_count > 0 %} <span id="notif-count-mobile" style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ notif_unread_count }}</span>{% else %}<span id="notif-count-mobile" style="display:none;background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;"></span>{% endif %}</a>
             <a href="{{ url_for('profile') }}">👤 My Account</a>
-            <a href="{{ url_for('my_listings') }}">📦 My Listings</a>
+            <a href="{{ url_for('selling') }}">🏪 Selling</a>
             <a href="{{ url_for('seller_offers') }}" style="position:relative;">📬 Incoming Offers</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
             {% if current_user.user_type == 'customer' %}
