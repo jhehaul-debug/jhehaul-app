@@ -146,7 +146,7 @@ def get_listing(listing_id: int) -> dict:
     try:
         from models import Listing
         l = Listing.query.get(int(listing_id))
-        if not l or l.status not in ("active", "reserved", "sold"):
+        if not l or l.status not in ("active", "reserved", "sold") or l.moderation_status != "approved":
             return {"error": "Listing not found or not public."}
         return {"listing": _safe_listing(l), "full_description": (l.description or "")[:2000]}
     except Exception as e:

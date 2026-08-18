@@ -8855,8 +8855,21 @@ def copilot_chat():
     from models import CopilotSession
 
     t0 = _time.time()
-    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
-    ip_hash   = hashlib.sha256((client_ip or "").encode()).hexdigest()[:16]
+    # Use remote_addr, which ProxyFix has already normalised using the trusted
+    # proxy chain.  Never read X-Forwarded-For here: callers can spoof it to
+    # bypass per-IP rate limits or inject arbitrary strings into the key store.
+    client_ip = request.remote_addr or "unknown"
+    ip_hash   = hashlib.sha256(client_ip.encode()).hexdigest()[:16]
+
+    # CSRF validation — the frontend sends X-CSRFToken on every POST.
+    # A cross-site attacker cannot read or set this header, so this prevents
+    # third-party pages from silently consuming rate quota and API spend.
+    try:
+        from flask_wtf.csrf import validate_csrf, ValidationError as _CSRFValidationError
+        _csrf_token = request.headers.get("X-CSRFToken", "")
+        validate_csrf(_csrf_token)
+    except Exception:
+        return jsonify({"reply": "", "cards": [], "nav_links": [], "error": "Invalid request."}), 403
 
     data = request.get_json(silent=True) or {}
     message  = (data.get("message") or "").strip()[:800]

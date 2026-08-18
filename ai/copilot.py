@@ -19,20 +19,45 @@ log = logging.getLogger("jhe.copilot")
 # Rate limiter  (in-memory, per IP)
 # ---------------------------------------------------------------------------
 
-_RATE_WINDOW = 3600          # 1 hour window
-_RATE_LIMIT  = 20            # max requests per IP per window
+_RATE_WINDOW        = 3600  # sliding window in seconds (1 hour)
+_RATE_LIMIT         = 20    # max requests per IP per window
+_RATE_CLEANUP_EVERY = 200   # evict stale keys every N allowed requests
+
 _rate_store: dict[str, deque] = defaultdict(deque)
+_rate_allowed_count: int = 0
+
 
 def _check_rate_limit(ip: str) -> bool:
-    """Return True if the IP is within limits, False if throttled."""
-    now = time.time()
-    dq = _rate_store[ip]
-    # Purge old timestamps
-    while dq and dq[0] < now - _RATE_WINDOW:
+    """Return True if the IP is within limits, False if throttled.
+
+    The rate store is a dict of deques keyed by IP.  Old timestamps are
+    purged on every call; the entire store is pruned of fully-expired keys
+    every _RATE_CLEANUP_EVERY allowed requests so memory stays proportional
+    to the number of *active* unique IPs, not the all-time count.
+    """
+    global _rate_allowed_count
+    now    = time.time()
+    cutoff = now - _RATE_WINDOW
+    dq     = _rate_store[ip]
+
+    # Remove timestamps that have slid out of the window
+    while dq and dq[0] < cutoff:
         dq.popleft()
+
     if len(dq) >= _RATE_LIMIT:
         return False
+
     dq.append(now)
+    _rate_allowed_count += 1
+
+    # Periodic cleanup: remove IPs whose newest recorded request is older
+    # than the window (i.e. fully inactive for at least one full window).
+    if _rate_allowed_count % _RATE_CLEANUP_EVERY == 0:
+        stale = [k for k, v in list(_rate_store.items())
+                 if not v or v[-1] < cutoff]
+        for k in stale:
+            _rate_store.pop(k, None)
+
     return True
 
 
