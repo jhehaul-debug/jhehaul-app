@@ -48,8 +48,11 @@ def _make_seller(uid, email='seller@example.com'):
 
 
 def _make_draft(listing_id, seller_id, age_hours, reminder_sent=False,
-                activity_hours=None):
-    """Create an untitled draft listing aged to *age_hours* ago.
+                activity_hours=None, title=''):
+    """Create a draft listing aged to *age_hours* ago.
+
+    title — defaults to '' (untitled, eligible for reminder).  Pass a non-empty
+    string to simulate a seller who has already started filling in the wizard.
 
     activity_hours — if given, sets draft_activity_at to that many hours ago,
     simulating a seller who recently touched the draft.  None (default) leaves
@@ -64,7 +67,7 @@ def _make_draft(listing_id, seller_id, age_hours, reminder_sent=False,
     lst = Listing(
         id=listing_id,
         seller_id=seller_id,
-        title='',            # untitled — required for draft-reminder eligibility
+        title=title,
         price=0.0,
         price_type='fixed',
         status='draft',
@@ -296,6 +299,71 @@ with app.app_context():
           f"returned={sent6}")
 
     _cleanup((Listing, LISTING_6), (User, SELLER_6))
+
+# ---------------------------------------------------------------------------
+# Test 7 — draft with a non-empty title (seller is mid-wizard) → no email
+#           The eligibility filter requires title IS NULL or title == ''.
+#           A draft that already has a title is excluded so the seller isn't
+#           interrupted while they're actively filling in the form.
+# ---------------------------------------------------------------------------
+
+SELLER_7 = 'test-dr-seller-07'
+LISTING_7 = 910008
+SELLER_EMAIL_7 = 'draft_reminder_7@example.com'
+
+with app.app_context():
+    _make_seller(SELLER_7, email=SELLER_EMAIL_7)
+    # Seller has already typed a title — they are mid-wizard; draft is 24.5 h old
+    _make_draft(LISTING_7, SELLER_7, age_hours=24.5, title='My Old Lawnmower')
+
+with patch('email_service.notify_seller_draft_expiring', return_value=True) as mock_email7:
+    sent7 = send_draft_reminders(app)
+
+with app.app_context():
+    lst7 = db.session.get(Listing, LISTING_7)
+    check("mid-wizard draft (title set): email NOT called",
+          mock_email7.call_count == 0,
+          f"call_count={mock_email7.call_count}")
+    check("mid-wizard draft (title set): draft_reminder_sent still False",
+          lst7 is not None and lst7.draft_reminder_sent is False,
+          f"flag={lst7.draft_reminder_sent if lst7 else 'NOT FOUND'}")
+    check("mid-wizard draft (title set): returns 0 sent",
+          sent7 == 0,
+          f"returned={sent7}")
+
+    _cleanup((Listing, LISTING_7), (User, SELLER_7))
+
+# ---------------------------------------------------------------------------
+# Test 8 — draft with an empty title (24.5 h old) still qualifies
+#           Mirrors Test 1 but is an explicit companion to Test 7 so that
+#           both sides of the title guard are captured together.
+# ---------------------------------------------------------------------------
+
+SELLER_8 = 'test-dr-seller-08'
+LISTING_8 = 910009
+SELLER_EMAIL_8 = 'draft_reminder_8@example.com'
+
+with app.app_context():
+    _make_seller(SELLER_8, email=SELLER_EMAIL_8)
+    # title='' (default) — seller never reached the title field; reminder expected
+    _make_draft(LISTING_8, SELLER_8, age_hours=24.5)
+
+with patch('email_service.notify_seller_draft_expiring', return_value=True) as mock_email8:
+    sent8 = send_draft_reminders(app)
+
+with app.app_context():
+    lst8 = db.session.get(Listing, LISTING_8)
+    check("untitled draft (empty title): email called once",
+          mock_email8.call_count == 1,
+          f"call_count={mock_email8.call_count}")
+    check("untitled draft (empty title): draft_reminder_sent set to True",
+          lst8 is not None and lst8.draft_reminder_sent is True,
+          f"flag={lst8.draft_reminder_sent if lst8 else 'NOT FOUND'}")
+    check("untitled draft (empty title): returns 1 sent",
+          sent8 == 1,
+          f"returned={sent8}")
+
+    _cleanup((Listing, LISTING_8), (User, SELLER_8))
 
 # ---------------------------------------------------------------------------
 # Summary
