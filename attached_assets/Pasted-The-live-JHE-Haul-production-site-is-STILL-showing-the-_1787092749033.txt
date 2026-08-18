@@ -1,0 +1,161 @@
+The live JHE Haul production site is STILL showing the old broken Automotive Model dropdown.
+
+Current live behavior:
+
+* Year dropdown works
+* Make dropdown is present
+* Model dropdown opens
+* Model dropdown contains ONLY:
+    — Select model —
+* No actual models are being loaded
+
+This means the previous fix is NOT live or the deployed code is still broken.
+
+DO NOT JUST EDIT THE CODE AGAIN
+
+First determine why production is not updating.
+
+1. VERIFY THE MODEL DATA EXISTS
+
+Find the exact file/component that provides Automotive Make → Model data.
+
+Confirm that the deployed code contains actual arrays/mappings such as:
+
+Chevrolet → Silverado, Tahoe, Suburban, Equinox, Traverse, etc.
+
+Ford → F-150, Explorer, Escape, Bronco, Mustang, etc.
+
+Toyota → Camry, Corolla, RAV4, Highlander, Tacoma, Tundra, etc.
+
+If those arrays do not exist, add them.
+
+If they do exist, trace why the Model <select> is receiving an empty list.
+
+2. DEBUG THE MAKE → MODEL VALUE MATCH
+
+Check the actual selected Make value against the keys in the model data.
+
+For example, verify this does NOT happen:
+
+Selected value:
+Chevrolet
+
+Data key:
+chevrolet
+
+or:
+
+Selected value:
+Mercedes Benz
+
+Data key:
+Mercedes-Benz
+
+Normalize/match the values correctly so the model data loads.
+
+3. ADD A SAFE FALLBACK
+
+If year-specific filtering returns zero models, DO NOT leave the Model dropdown empty.
+
+Fallback to:
+
+all known models for the selected Make
+
+Then include:
+
+Other / Not Listed
+
+as the final option.
+
+4. TEST LOCALLY BEFORE PUSHING
+
+Test the exact UI flow:
+
+Select:
+2024 → Chevrolet
+
+Model dropdown must contain actual Chevrolet models.
+
+Also test:
+
+* Ford
+* Toyota
+* Honda
+* GMC
+* Nissan
+
+Do not continue until the Model dropdown is visibly populated in the running app.
+
+5. VERIFY THE GIT PUSH
+
+Then run and report the actual Git information:
+
+* Current branch
+* Latest local commit hash
+* Remote branch
+* Push result
+
+Confirm the commit containing this fix exists on GitHub.
+
+Do not say “pushed” without checking the remote commit.
+
+6. VERIFY DIGITALOCEAN IS DEPLOYING THE SAME COMMIT
+
+Check the production DigitalOcean App Platform deployment.
+
+Confirm:
+
+* Which GitHub repository DigitalOcean is connected to
+* Which branch DigitalOcean is connected to
+* Which commit SHA DigitalOcean is currently deploying/running
+* Whether the deployment succeeded or failed
+
+The commit SHA running in DigitalOcean must match the commit containing this Automotive Model fix.
+
+If it does not match, fix the GitHub/DigitalOcean deployment connection.
+
+7. FORCE A NEW PRODUCTION DEPLOYMENT IF NECESSARY
+
+If DigitalOcean did not automatically deploy the new commit, trigger a new production deployment from the correct branch/commit.
+
+Do not rebuild unrelated functionality.
+
+8. VERIFY ON THE LIVE WEBSITE
+
+After deployment finishes, open the actual live production site:
+
+jhehaul.com
+
+Go to Automotive and test:
+
+Year → Make → Model
+
+Select Chevrolet.
+
+The live Model dropdown MUST show actual Chevrolet models.
+
+Then test Ford.
+
+Do not mark this complete based only on Replit or local preview.
+
+REPORT BACK WITH PROOF
+
+Give me:
+
+* Git branch
+* Git commit SHA
+* GitHub push confirmation
+* DigitalOcean deployed commit SHA
+* Deployment status
+* Chevrolet models shown in the live dropdown
+* Ford models shown in the live dropdown
+
+If the Git commit and DigitalOcean commit do not match, tell me that directly and fix it.
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+Do not change the Automotive UI layout that is already corrected.
+
+The only functional issue here is that the Automotive Model dropdown has no data, and I need that fix actually running on production.
