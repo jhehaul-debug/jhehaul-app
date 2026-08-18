@@ -52,6 +52,11 @@
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">
                 &#9881; Settings
             </a>
+            <a href="{{ url_for('admin_operations') }}"
+               style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_operations' %}#a78bfa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_operations' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_operations' %}#7c3aed{% else %}transparent{% endif %};white-space:nowrap;"
+               onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='{% if request.endpoint == 'admin_operations' %}#a78bfa{% else %}#94a3b8{% endif %}'">
+                ✨ Ops AI
+            </a>
             <a href="{{ url_for('admin_security_settings') }}"
                style="display:flex;align-items:center;gap:6px;padding:13px 16px;color:{% if request.endpoint == 'admin_security_settings' %}#60a5fa{% else %}#94a3b8{% endif %};font-weight:{% if request.endpoint == 'admin_security_settings' %}700{% else %}500{% endif %};font-size:0.88rem;text-decoration:none;border-bottom:3px solid {% if request.endpoint == 'admin_security_settings' %}#3b82f6{% else %}transparent{% endif %};white-space:nowrap;"
                onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">

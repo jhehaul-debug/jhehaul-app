@@ -9057,6 +9057,160 @@ def _ensure_rec_session_key():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# PHASE L — AI ADMIN + MARKETPLACE OPERATIONS ASSISTANT
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route("/admin/operations")
+@require_admin
+def admin_operations():
+    """Admin-only AI Operations Assistant page — Phase L."""
+    from datetime import timedelta as _td_ops
+    from models import (Listing, ListingReport, FraudFlag,
+                        BackgroundJob, NotificationLog)
+
+    today = datetime.utcnow() - _td_ops(hours=24)
+
+    new_users_today    = User.query.filter(User.created_at >= today).count()
+    new_listings_today = Listing.query.filter(Listing.created_at >= today,
+                                              Listing.status != 'draft').count()
+    active_listings    = Listing.query.filter_by(status='active',
+                                                 moderation_status='approved').count()
+    pending_mod        = Listing.query.filter(
+        db.or_(Listing.status == 'pending',
+               Listing.moderation_status == 'pending')
+    ).count()
+    open_reports       = ListingReport.query.filter_by(status='pending').count()
+    high_risk_flags    = FraudFlag.query.filter(
+        FraudFlag.risk_level.in_(['HIGH', 'CRITICAL']),
+        FraudFlag.status == 'pending',
+    ).count()
+    failed_jobs        = BackgroundJob.query.filter_by(status='FAILED').count()
+    failed_emails_24h  = NotificationLog.query.filter(
+        NotificationLog.status == 'failed',
+        NotificationLog.created_at >= today,
+    ).count()
+
+    # Attention items for the page (deterministic, no AI call on load)
+    attention_items = []
+    if FraudFlag.query.filter(FraudFlag.risk_level == 'CRITICAL',
+                              FraudFlag.status == 'pending').count():
+        n = FraudFlag.query.filter(FraudFlag.risk_level == 'CRITICAL',
+                                   FraudFlag.status == 'pending').count()
+        attention_items.append({'severity': 'CRITICAL',
+                                'label': f'{n} critical fraud flag(s) pending',
+                                'url': '/admin/fraud-queue'})
+    if FraudFlag.query.filter(FraudFlag.risk_level == 'HIGH',
+                              FraudFlag.status == 'pending').count():
+        n = FraudFlag.query.filter(FraudFlag.risk_level == 'HIGH',
+                                   FraudFlag.status == 'pending').count()
+        attention_items.append({'severity': 'HIGH',
+                                'label': f'{n} high-risk fraud flag(s) pending',
+                                'url': '/admin/fraud-queue'})
+    if open_reports:
+        attention_items.append({'severity': 'MEDIUM',
+                                'label': f'{open_reports} unresolved listing report(s)',
+                                'url': '/admin/reports'})
+    if pending_mod:
+        attention_items.append({'severity': 'LOW',
+                                'label': f'{pending_mod} listing(s) awaiting moderation',
+                                'url': '/admin/listings'})
+    if failed_jobs:
+        attention_items.append({'severity': 'MEDIUM',
+                                'label': f'{failed_jobs} failed background job(s)',
+                                'url': '/admin'})
+    if failed_emails_24h >= 3:
+        attention_items.append({'severity': 'LOW',
+                                'label': f'{failed_emails_24h} email failure(s) in last 24 h',
+                                'url': '/admin/notifications'})
+
+    return render_template(
+        'admin_operations.html',
+        new_users_today=new_users_today,
+        new_listings_today=new_listings_today,
+        active_listings=active_listings,
+        pending_mod=pending_mod,
+        open_reports=open_reports,
+        high_risk_flags=high_risk_flags,
+        failed_jobs=failed_jobs,
+        failed_emails_24h=failed_emails_24h,
+        attention_items=attention_items,
+    )
+
+
+@app.route("/api/admin/copilot/chat", methods=["POST"])
+@require_admin
+def api_admin_copilot_chat():
+    """Admin-only AI Operations copilot chat endpoint — Phase L.
+
+    Accepts JSON: { message, history, page_context }
+    Returns JSON: { reply, nav_links, tokens_in, tokens_out, error, rate_limited }
+
+    Security:
+    - require_admin enforced (double-checked inside run_admin_copilot)
+    - CSRF enforced via standard Flask-WTF before_request
+    - No raw DB access exposed to the AI model
+    - User-generated content delimited in system prompt
+    - Admin AI usage logged (AIUsageLog tool_name='admin_copilot')
+    """
+    import time as _time
+    data = request.get_json(silent=True) or {}
+
+    # Sanitise inputs
+    message      = str(data.get('message', ''))[:1200]
+    history      = data.get('history', [])
+    page_context = str(data.get('page_context', ''))[:80]
+
+    if not isinstance(history, list):
+        history = []
+
+    # Log this admin AI usage
+    t0 = _time.time()
+    try:
+        from ai.admin_copilot import run_admin_copilot
+        result = run_admin_copilot(
+            message=message,
+            history=history,
+            page_context=page_context,
+            current_user=current_user,
+        )
+    except Exception as exc:
+        log.error("admin copilot endpoint error: %s", exc)
+        result = {
+            'reply': 'AI Operations Assistant is temporarily unavailable. All normal admin controls continue to work.',
+            'nav_links': [],
+            'tokens_in': 0,
+            'tokens_out': 0,
+            'error': str(exc),
+            'rate_limited': False,
+        }
+
+    elapsed_ms = int((_time.time() - t0) * 1000)
+
+    # Persist usage log
+    try:
+        from models import AIUsageLog
+        log_entry = AIUsageLog(
+            user_id=current_user.id,
+            tool_name='admin_copilot',
+            success=not bool(result.get('error')),
+            response_ms=elapsed_ms,
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return jsonify({
+        'reply':        result.get('reply', ''),
+        'nav_links':    result.get('nav_links', []),
+        'tokens_in':    result.get('tokens_in', 0),
+        'tokens_out':   result.get('tokens_out', 0),
+        'error':        result.get('error'),
+        'rate_limited': result.get('rate_limited', False),
+    })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # PHASE G — AI MARKETPLACE COPILOT
 # ══════════════════════════════════════════════════════════════════════════════
 

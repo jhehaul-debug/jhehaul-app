@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Operations — JHE Haul Admin</title>
+<link rel="stylesheet" href="/static/css/admin_ops.css">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+  body { background: #0f172a; margin: 0; padding: 12px; }
+</style>
+</head>
+<body>
+{% include 'admin_nav.html' %}
+
+<div class="ao-page">
+
+  <!-- ── Page header ──────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="font-size:1.5rem;">✨</div>
+    <div>
+      <div style="font-size:1.1rem;font-weight:800;color:#e2e8f0;">AI Operations Assistant</div>
+      <div style="font-size:0.78rem;color:#64748b;">Admin-only intelligence · Real data only · Read-only</div>
+    </div>
+  </div>
+
+  <!-- ── Morning brief summary cards ─────────────────────── -->
+  <div class="ao-section-head">📊 Marketplace Today</div>
+  <div class="ao-brief-grid">
+    <div class="ao-brief-card {% if new_users_today > 0 %}ao-ok{% endif %}">
+      <div class="ao-val">{{ new_users_today }}</div>
+      <div class="ao-label">New Users</div>
+    </div>
+    <div class="ao-brief-card {% if new_listings_today > 0 %}ao-ok{% endif %}">
+      <div class="ao-val">{{ new_listings_today }}</div>
+      <div class="ao-label">New Listings</div>
+    </div>
+    <div class="ao-brief-card">
+      <div class="ao-val">{{ active_listings }}</div>
+      <div class="ao-label">Active</div>
+    </div>
+    <div class="ao-brief-card {% if pending_mod > 0 %}ao-warn{% endif %}">
+      <div class="ao-val">{{ pending_mod }}</div>
+      <div class="ao-label">Pending Mod</div>
+    </div>
+    <div class="ao-brief-card {% if open_reports > 0 %}ao-warn{% endif %}">
+      <div class="ao-val">{{ open_reports }}</div>
+      <div class="ao-label">Open Reports</div>
+    </div>
+    <div class="ao-brief-card {% if high_risk_flags > 0 %}ao-danger{% endif %}">
+      <div class="ao-val">{{ high_risk_flags }}</div>
+      <div class="ao-label">High-Risk</div>
+    </div>
+    <div class="ao-brief-card {% if failed_jobs > 0 %}ao-warn{% endif %}">
+      <div class="ao-val">{{ failed_jobs }}</div>
+      <div class="ao-label">Failed Jobs</div>
+    </div>
+    <div class="ao-brief-card {% if failed_emails_24h > 0 %}ao-warn{% endif %}">
+      <div class="ao-val">{{ failed_emails_24h }}</div>
+      <div class="ao-label">Email Fails 24h</div>
+    </div>
+  </div>
+
+  <!-- ── Attention items ──────────────────────────────────── -->
+  {% if attention_items %}
+  <div class="ao-attention">
+    <div class="ao-attention-title">⚠️ Needs Attention</div>
+    {% for item in attention_items %}
+    <a href="{{ item.url }}" class="ao-attn-item" data-sev="{{ item.severity }}">
+      <span class="ao-sev-badge {{ item.severity }}">{{ item.severity }}</span>
+      <span>{{ item.label }}</span>
+      <span style="margin-left:auto;color:#475569;font-size:0.8rem;">→</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── AI Operations Chat ───────────────────────────────── -->
+  <div class="ao-section-head">🤖 Ask JHE Haul Admin</div>
+
+  <div class="ao-chat-panel">
+    <div class="ao-chat-header">
+      <span class="ao-chat-header-icon">✨</span>
+      <span class="ao-chat-header-title">AI Operations Assistant</span>
+      <span class="ao-chat-header-sub" id="ao-status">Ready</span>
+    </div>
+
+    <!-- Quick prompts -->
+    <div class="ao-quick-prompts">
+      <button class="ao-qp-btn" data-q="What needs my attention right now?">🚨 Attention</button>
+      <button class="ao-qp-btn" data-q="Give me the morning brief.">☀️ Morning Brief</button>
+      <button class="ao-qp-btn" data-q="Show me marketplace activity for the last 7 days.">📈 7-Day Activity</button>
+      <button class="ao-qp-btn" data-q="Show high-risk fraud flags.">🛡 Safety</button>
+      <button class="ao-qp-btn" data-q="Are background workers healthy?">⚙️ Workers</button>
+      <button class="ao-qp-btn" data-q="How many emails failed today?">📧 Emails</button>
+      <button class="ao-qp-btn" data-q="Which categories are most active?">📂 Categories</button>
+      <button class="ao-qp-btn" data-q="Show delivery operations summary.">🚚 Deliveries</button>
+      <button class="ao-qp-btn" data-q="How much AI has been used this month?">🤖 AI Usage</button>
+      <button class="ao-qp-btn" data-q="How many new users joined this week?">👤 Users</button>
+    </div>
+
+    <!-- Messages -->
+    <div class="ao-chat-messages" id="ao-messages">
+      <div class="ao-msg assistant">Hello! I'm the JHE Haul Operations Assistant. I can help you understand what's happening across the marketplace using real data.
+
+Try asking: <em>"What needs my attention?"</em> or <em>"Give me the morning brief."</em></div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="ao-typing" id="ao-typing">
+      <span></span><span></span><span></span>
+    </div>
+
+    <!-- Nav links from AI -->
+    <div class="ao-nav-links" id="ao-nav-links" style="display:none;"></div>
+
+    <!-- Input -->
+    <div class="ao-chat-input-row">
+      <textarea
+        class="ao-chat-input"
+        id="ao-input"
+        placeholder="Ask about users, listings, reports, workers, emails, AI usage…"
+        rows="1"
+        maxlength="1200"
+      ></textarea>
+      <button class="ao-chat-send" id="ao-send">Send</button>
+    </div>
+  </div>
+
+  <!-- ── Quick navigation ──────────────────────────────────── -->
+  <div class="ao-section-head">🔗 Quick Navigation</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+    <a href="/admin/fraud-queue"  class="ao-nav-link">🛡 Fraud Queue</a>
+    <a href="/admin/reports"      class="ao-nav-link">🚩 Reports</a>
+    <a href="/admin/listings"     class="ao-nav-link">📋 Listings</a>
+    <a href="/admin/users"        class="ao-nav-link">👥 Users</a>
+    <a href="/admin/deliveries"   class="ao-nav-link">🚚 Deliveries</a>
+    <a href="/admin/notifications" class="ao-nav-link">📧 Notifications</a>
+    <a href="/admin/ai-usage"     class="ao-nav-link">🤖 AI Usage</a>
+    <a href="/admin/analytics"    class="ao-nav-link">📊 Analytics</a>
+    <a href="/admin"              class="ao-nav-link">⚙️ Dashboard</a>
+  </div>
+
+</div><!-- /ao-page -->
+
+<script>
+(function() {
+  var messagesEl = document.getElementById('ao-messages');
+  var inputEl    = document.getElementById('ao-input');
+  var sendBtn    = document.getElementById('ao-send');
+  var typingEl   = document.getElementById('ao-typing');
+  var navLinksEl = document.getElementById('ao-nav-links');
+  var statusEl   = document.getElementById('ao-status');
+  var csrf       = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+  var history    = [];
+  var busy       = false;
+  var PAGE_CTX   = 'admin_operations';
+
+  function scrollBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMsg(role, text) {
+    var div = document.createElement('div');
+    div.className = 'ao-msg ' + role;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function setTyping(on) {
+    typingEl.style.display = on ? 'flex' : 'none';
+    if (on) scrollBottom();
+  }
+
+  function setStatus(txt) {
+    statusEl.textContent = txt;
+  }
+
+  function renderNavLinks(links) {
+    navLinksEl.innerHTML = '';
+    if (!links || !links.length) {
+      navLinksEl.style.display = 'none';
+      return;
+    }
+    navLinksEl.style.display = 'flex';
+    links.slice(0, 6).forEach(function(lk) {
+      var a = document.createElement('a');
+      a.href = lk.url;
+      a.className = 'ao-nav-link';
+      a.textContent = '→ ' + lk.label;
+      navLinksEl.appendChild(a);
+    });
+  }
+
+  function send(text) {
+    text = (text || '').trim();
+    if (!text || busy) return;
+    busy = true;
+
+    addMsg('user', text);
+    history.push({role: 'user', content: text});
+
+    setTyping(true);
+    setStatus('Thinking…');
+    sendBtn.disabled = true;
+    inputEl.disabled = true;
+    navLinksEl.style.display = 'none';
+
+    fetch('/api/admin/copilot/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf,
+      },
+      body: JSON.stringify({
+        message:      text,
+        history:      history.slice(-12),
+        page_context: PAGE_CTX,
+      }),
+    })
+    .then(function(r) { return r.ok ? r.json() : r.json().then(function(d) { throw d; }); })
+    .then(function(data) {
+      setTyping(false);
+      if (data.rate_limited) {
+        addMsg('error', data.reply || 'Rate limit reached. Please wait a moment.');
+      } else if (data.error && !data.reply) {
+        addMsg('error', 'AI Operations Assistant is temporarily unavailable. Use the quick navigation links below.');
+      } else {
+        var reply = data.reply || '';
+        addMsg('assistant', reply);
+        history.push({role: 'assistant', content: reply});
+        renderNavLinks(data.nav_links || []);
+      }
+      setStatus('Ready');
+    })
+    .catch(function(err) {
+      setTyping(false);
+      addMsg('error', 'Request failed. AI Operations Assistant is temporarily unavailable.');
+      setStatus('Error');
+      console.error('Admin copilot error:', err);
+    })
+    .finally(function() {
+      busy = false;
+      sendBtn.disabled = false;
+      inputEl.disabled = false;
+      inputEl.focus();
+    });
+  }
+
+  // Send button
+  sendBtn.addEventListener('click', function() {
+    send(inputEl.value);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+  });
+
+  // Enter to send (Shift+Enter for newline)
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send(inputEl.value);
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+    }
+  });
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // Quick prompt buttons
+  document.querySelectorAll('.ao-qp-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var q = this.dataset.q;
+      if (q && !busy) {
+        inputEl.value = '';
+        send(q);
+      }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
