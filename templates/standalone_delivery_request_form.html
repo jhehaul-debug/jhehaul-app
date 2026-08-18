@@ -24,7 +24,7 @@
   <!-- Contact Info -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">👤 Contact Information</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="dr-grid-2">
       <div>
         <label class="form-label">Your Name</label>
         <input class="form-control" type="text" name="contact_name"
@@ -41,12 +41,12 @@
   <!-- Item Info -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📦 What Needs to Be Delivered?</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div style="grid-column:1/-1;">
-        <label class="form-label">Item Description <span style="color:#dc2626;">*</span></label>
-        <textarea class="form-control" name="item_description" rows="2"
-                  placeholder="e.g. 3-piece sectional sofa, refrigerator, moving boxes" required></textarea>
-      </div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">Item Description <span style="color:#dc2626;">*</span></label>
+      <textarea class="form-control" name="item_description" rows="2"
+                placeholder="e.g. 3-piece sectional sofa, refrigerator, moving boxes" required></textarea>
+    </div>
+    <div class="dr-grid-3">
       <div>
         <label class="form-label">Approximate Size / Dimensions</label>
         <input class="form-control" type="text" name="approx_dimensions"
@@ -55,10 +55,10 @@
       <div>
         <label class="form-label">Approximate Weight</label>
         <input class="form-control" type="text" name="approx_weight"
-               placeholder='e.g. "~200 lbs" or "Heavy"'>
+               placeholder='e.g. "~200 lbs"'>
       </div>
       <div>
-        <label class="form-label">Quantity / Number of Items</label>
+        <label class="form-label">Number of Items</label>
         <input class="form-control" type="number" name="item_count" value="1" min="1" max="99">
       </div>
     </div>
@@ -67,75 +67,103 @@
   <!-- Pickup -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📍 Pickup Location</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div style="grid-column:1/-1;">
-        <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private — not shared publicly)</span></label>
-        <input class="form-control" type="text" name="pickup_address" placeholder="123 Main St" required>
-      </div>
-      <div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private)</span></label>
+      <input class="form-control" type="text" name="pickup_address"
+             placeholder="123 Main St" autocomplete="street-address" required>
+    </div>
+    <div class="dr-grid-city">
+      <div style="position:relative;">
         <label class="form-label">City</label>
-        <input class="form-control" type="text" name="pickup_city" placeholder="Minneapolis" required>
+        <input class="form-control" type="text" id="pickup_city" name="pickup_city"
+               placeholder="Minneapolis" autocomplete="off" required
+               oninput="drCitySuggest('pickup',this.value)">
+        <div id="pickup-city-drop" class="dr-drop" style="display:none;"></div>
       </div>
       <div>
-        <label class="form-label">ZIP Code</label>
-        <input class="form-control" type="text" name="pickup_zip" placeholder="55401" maxlength="5" required>
+        <label class="form-label">State</label>
+        <input class="form-control" type="text" id="pickup_state" name="pickup_state"
+               value="MN" placeholder="MN" maxlength="2">
       </div>
-      <input type="hidden" name="pickup_state" value="MN">
+      <div style="position:relative;">
+        <label class="form-label">ZIP Code <span style="color:#dc2626;">*</span></label>
+        <input class="form-control" type="text" id="pickup_zip" name="pickup_zip"
+               placeholder="55401" maxlength="5" autocomplete="off" required
+               oninput="drZipInput('pickup',this.value)">
+        <div id="pickup-zip-drop" class="dr-drop" style="display:none;"></div>
+      </div>
+      <input type="hidden" name="pickup_state_hidden" value="MN">
     </div>
-    <div style="margin-top:14px;">
-      <label class="form-label">Stairs at pickup?</label>
-      <div style="display:flex;gap:16px;margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="pickup_stairs" value="1"> Yes</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="pickup_stairs" value="0" checked> No</label>
-      </div>
+    <div style="margin-top:14px;display:flex;gap:24px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="pickup_stairs" value="1"> Stairs at pickup
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="pickup_stairs" value="0" checked> No stairs
+      </label>
     </div>
-    <div style="margin-top:14px;">
-      <label class="form-label">Need help loading?</label>
-      <div style="display:flex;gap:16px;margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_loading" value="1"> Yes</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_loading" value="0" checked> No</label>
-      </div>
+    <div style="margin-top:10px;display:flex;gap:24px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="need_loading" value="1"> Need loading help
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="need_loading" value="0" checked> No loading help
+      </label>
     </div>
   </div>
 
   <!-- Delivery -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">🏁 Drop-off Location</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div style="grid-column:1/-1;">
-        <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private — not shared publicly)</span></label>
-        <input class="form-control" type="text" name="delivery_address" placeholder="456 Oak Ave" required>
-      </div>
-      <div>
+    <div style="margin-bottom:12px;">
+      <label class="form-label">Street Address <span style="color:#718096;font-size:0.8rem;">(kept private)</span></label>
+      <input class="form-control" type="text" name="delivery_address"
+             placeholder="456 Oak Ave" autocomplete="street-address" required>
+    </div>
+    <div class="dr-grid-city">
+      <div style="position:relative;">
         <label class="form-label">City</label>
-        <input class="form-control" type="text" name="delivery_city" placeholder="St. Paul" required>
+        <input class="form-control" type="text" id="delivery_city" name="delivery_city"
+               placeholder="St. Paul" autocomplete="off" required
+               oninput="drCitySuggest('delivery',this.value)">
+        <div id="delivery-city-drop" class="dr-drop" style="display:none;"></div>
       </div>
       <div>
-        <label class="form-label">ZIP Code</label>
-        <input class="form-control" type="text" name="delivery_zip" placeholder="55102" maxlength="5" required>
+        <label class="form-label">State</label>
+        <input class="form-control" type="text" id="delivery_state" name="delivery_state"
+               value="MN" placeholder="MN" maxlength="2">
       </div>
-      <input type="hidden" name="delivery_state" value="MN">
+      <div style="position:relative;">
+        <label class="form-label">ZIP Code <span style="color:#dc2626;">*</span></label>
+        <input class="form-control" type="text" id="delivery_zip" name="delivery_zip"
+               placeholder="55102" maxlength="5" autocomplete="off" required
+               oninput="drZipInput('delivery',this.value)">
+        <div id="delivery-zip-drop" class="dr-drop" style="display:none;"></div>
+      </div>
+      <input type="hidden" name="delivery_state_hidden" value="MN">
     </div>
-    <div style="margin-top:14px;">
-      <label class="form-label">Stairs at drop-off?</label>
-      <div style="display:flex;gap:16px;margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="delivery_stairs" value="1"> Yes</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="delivery_stairs" value="0" checked> No</label>
-      </div>
+    <div style="margin-top:14px;display:flex;gap:24px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="delivery_stairs" value="1"> Stairs at drop-off
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="delivery_stairs" value="0" checked> No stairs
+      </label>
     </div>
-    <div style="margin-top:14px;">
-      <label class="form-label">Need help unloading?</label>
-      <div style="display:flex;gap:16px;margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_unloading" value="1"> Yes</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="need_unloading" value="0" checked> No</label>
-      </div>
+    <div style="margin-top:10px;display:flex;gap:24px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="need_unloading" value="1"> Need unloading help
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="radio" name="need_unloading" value="0" checked> No unloading help
+      </label>
     </div>
   </div>
 
   <!-- Scheduling -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📅 Scheduling</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="dr-grid-2">
       <div>
         <label class="form-label">Preferred Pickup Date</label>
         <input class="form-control" type="date" name="preferred_date">
@@ -153,7 +181,7 @@
       <div style="grid-column:1/-1;">
         <label class="form-label">Additional Instructions</label>
         <textarea class="form-control" name="special_instructions" rows="3"
-                  placeholder="Fragile items, gate code, elevator building, assembly/disassembly needed, etc."></textarea>
+                  placeholder="Fragile items, gate code, elevator building, assembly needed, etc."></textarea>
       </div>
     </div>
   </div>
@@ -164,8 +192,6 @@
     <p style="color:#718096;font-size:0.84rem;margin:0 0 14px;">
       Add up to 5 photos of the item(s) you need delivered. Multiple angles help us provide an accurate quote.
     </p>
-
-    <!-- Drop zone / file picker -->
     <label id="photo-drop-zone"
            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
                   border:2px dashed #cbd5e0;border-radius:10px;padding:24px 16px;cursor:pointer;
@@ -177,8 +203,6 @@
              accept="image/*,.heic,.heif"
              style="display:none;" onchange="drAddPhotos(this)">
     </label>
-
-    <!-- Preview grid -->
     <div id="photo-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;"></div>
     <div id="photo-count-note" style="font-size:0.8rem;color:#718096;margin-top:6px;"></div>
   </div>
@@ -192,26 +216,140 @@
 </form>
 
 <style>
-@media (max-width:600px) {
-  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+/* ── Responsive grids ─────────────────────────────────────────── */
+.dr-grid-2    { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.dr-grid-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.dr-grid-city { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
+
+@media (max-width:520px) {
+  .dr-grid-2, .dr-grid-3, .dr-grid-city { grid-template-columns:1fr !important; }
 }
-#photo-drop-zone:hover,#photo-drop-zone:focus-within { border-color:#3498db; }
+
+/* All inputs fill their cell */
+.form-control { width:100%; box-sizing:border-box; }
+
+/* Bottom padding so fixed nav never covers the submit button */
+form[action*="request-delivery"],
+.page-content { padding-bottom:110px; }
+
+/* Autocomplete dropdown */
+.dr-drop {
+  position:absolute; top:100%; left:0; right:0; z-index:1000;
+  background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12); max-height:220px; overflow-y:auto;
+  margin-top:2px;
+}
+.dr-drop-item {
+  padding:9px 12px; cursor:pointer; font-size:0.88rem; color:#1a202c;
+  border-bottom:1px solid #f1f5f9;
+}
+.dr-drop-item:last-child { border-bottom:none; }
+.dr-drop-item:hover, .dr-drop-item.focused { background:#eff6ff; }
+
+/* Photo upload */
+#photo-drop-zone:hover, #photo-drop-zone:focus-within { border-color:#3498db; }
 .dr-thumb-wrap {
-  position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;
-  border:1px solid #e2e8f0;background:#f1f5f9;flex-shrink:0;
+  position:relative; width:80px; height:80px; border-radius:8px;
+  overflow:hidden; border:1px solid #e2e8f0; background:#f1f5f9; flex-shrink:0;
 }
-.dr-thumb-wrap img { width:100%;height:100%;object-fit:cover; }
+.dr-thumb-wrap img { width:100%; height:100%; object-fit:cover; }
 .dr-thumb-remove {
-  position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;
-  border:none;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+  position:absolute; top:3px; right:3px; background:rgba(0,0,0,.6); color:#fff;
+  border:none; border-radius:50%; width:20px; height:20px; font-size:12px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
 }
 </style>
 
 <script>
+/* ── Address autocomplete ─────────────────────────────────────── */
+var _drTimers = {};
+var _drXhr    = {};
+
+function drZipInput(prefix, val) {
+  var clean = val.replace(/\D/g,'');
+  // 5 digits → auto-fill city+state
+  if (clean.length === 5) {
+    fetch('/api/zip_lookup?zip=' + clean)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.found) {
+          drHide(prefix+'-zip-drop');
+          document.getElementById(prefix+'_city').value  = d.city  || '';
+          document.getElementById(prefix+'_state').value = d.state || '';
+        }
+      });
+    return;
+  }
+  // 2–4 digits → show ZIP suggestions dropdown
+  if (clean.length >= 2) {
+    drFetch(prefix+'-zip', '/api/zip-suggest?q='+encodeURIComponent(clean), function(results){
+      drShowDrop(prefix+'-zip-drop', results, function(r){
+        document.getElementById(prefix+'_zip').value   = r.zip;
+        document.getElementById(prefix+'_city').value  = r.city;
+        document.getElementById(prefix+'_state').value = r.state;
+        drHide(prefix+'-zip-drop');
+      });
+    });
+  } else {
+    drHide(prefix+'-zip-drop');
+  }
+}
+
+function drCitySuggest(prefix, val) {
+  if (val.length < 2) { drHide(prefix+'-city-drop'); return; }
+  drFetch(prefix+'-city', '/api/zip-suggest?q='+encodeURIComponent(val), function(results){
+    drShowDrop(prefix+'-city-drop', results, function(r){
+      document.getElementById(prefix+'_city').value  = r.city;
+      document.getElementById(prefix+'_state').value = r.state;
+      document.getElementById(prefix+'_zip').value   = r.zip;
+      drHide(prefix+'-city-drop');
+    });
+  });
+}
+
+function drFetch(key, url, cb) {
+  clearTimeout(_drTimers[key]);
+  _drTimers[key] = setTimeout(function(){
+    if (_drXhr[key]) _drXhr[key].abort && _drXhr[key].abort();
+    fetch(url).then(function(r){ return r.json(); }).then(function(d){ cb(d.results||[]); });
+  }, 220);
+}
+
+function drShowDrop(id, results, onSelect) {
+  var el = document.getElementById(id);
+  if (!el || !results.length) { if(el) el.style.display='none'; return; }
+  el.innerHTML = '';
+  results.forEach(function(r) {
+    var item = document.createElement('div');
+    item.className = 'dr-drop-item';
+    item.textContent = r.city + ', ' + r.state + ' ' + r.zip;
+    item.addEventListener('mousedown', function(e){ e.preventDefault(); onSelect(r); });
+    el.appendChild(item);
+  });
+  el.style.display = 'block';
+}
+
+function drHide(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  ['pickup-city-drop','pickup-zip-drop','delivery-city-drop','delivery-zip-drop']
+    .forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && !el.contains(e.target) &&
+          !document.getElementById(id.replace('-drop','').replace('-','_')).contains(e.target)) {
+        el.style.display = 'none';
+      }
+    });
+});
+
+/* ── Photo upload ─────────────────────────────────────────────── */
 (function() {
   var MAX = 5;
-  var selectedFiles = [];   // DataTransfer-backed list
+  var selectedFiles = [];
 
   function refreshInput() {
     var dt = new DataTransfer();
@@ -224,39 +362,29 @@
   function updateNote() {
     var n = selectedFiles.length;
     var el = document.getElementById('photo-count-note');
-    if (!n) { el.textContent = ''; return; }
-    el.textContent = n + ' photo' + (n!==1?'s':'') + ' selected' + (n===MAX ? ' (maximum reached)' : '');
+    el.textContent = n ? (n + ' photo' + (n!==1?'s':'') + ' selected' + (n===MAX?' (maximum)':'')) : '';
   }
 
   function renderPreviews() {
     var grid = document.getElementById('photo-preview');
     grid.innerHTML = '';
     selectedFiles.forEach(function(f, i) {
-      var wrap = document.createElement('div');
-      wrap.className = 'dr-thumb-wrap';
-      var img = document.createElement('img');
-      img.alt = f.name;
+      var wrap = document.createElement('div'); wrap.className = 'dr-thumb-wrap';
+      var img = document.createElement('img'); img.alt = f.name;
       var reader = new FileReader();
       reader.onload = function(e){ img.src = e.target.result; };
       reader.readAsDataURL(f);
       var btn = document.createElement('button');
-      btn.type = 'button'; btn.className = 'dr-thumb-remove'; btn.textContent = '×';
-      btn.title = 'Remove ' + f.name;
-      (function(idx){ btn.addEventListener('click', function(){
-        selectedFiles.splice(idx,1); refreshInput();
-      }); })(i);
-      wrap.appendChild(img);
-      wrap.appendChild(btn);
+      btn.type='button'; btn.className='dr-thumb-remove'; btn.textContent='×';
+      btn.title='Remove '+f.name;
+      (function(idx){ btn.addEventListener('click', function(){ selectedFiles.splice(idx,1); refreshInput(); }); })(i);
+      wrap.appendChild(img); wrap.appendChild(btn);
       grid.appendChild(wrap);
     });
   }
 
   window.drAddPhotos = function(input) {
-    var files = Array.from(input.files);
-    files.forEach(function(f){
-      if (selectedFiles.length < MAX) selectedFiles.push(f);
-    });
-    // Reset the native input so the same file can be re-added after removal
+    Array.from(input.files).forEach(function(f){ if(selectedFiles.length < MAX) selectedFiles.push(f); });
     input.value = '';
     refreshInput();
   };

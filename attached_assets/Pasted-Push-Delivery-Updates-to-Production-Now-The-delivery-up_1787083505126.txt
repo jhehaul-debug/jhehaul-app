@@ -1,0 +1,44 @@
+Push Delivery Updates to Production Now
+
+The delivery updates were completed, but they are not showing on the live JHE Haul website.
+
+Do not redo the features unless necessary. First verify that the completed changes are actually committed and pushed to the GitHub branch that DigitalOcean production uses.
+
+The changes that should already be included are:
+
+* Admin can delete delivery requests
+* Admin can delete test delivery requests
+* Address/city/state/ZIP autocomplete or suggestions
+* Mobile delivery form layout fixed
+* No overlapping fields
+* City / State / ZIP stack correctly on mobile
+* Contact fields stack correctly on mobile
+* Dimensions / Weight / Item Count stack correctly on mobile
+* Bottom navigation does not cover the form
+
+Now do the following:
+
+1. Check git status.
+2. Confirm all delivery-related modified files are included.
+3. Commit any uncommitted completed changes.
+4. Confirm which GitHub branch DigitalOcean production is connected to.
+5. Push the commit to that exact branch.
+6. Verify the push successfully reached GitHub.
+7. Verify DigitalOcean starts a new production deployment from that commit.
+8. Wait for the deployment to complete successfully.
+9. Confirm the live production site is running the new commit.
+10. Give me:
+
+* GitHub branch name
+* Commit hash
+* Push confirmation
+* DigitalOcean deployment status
+* Confirmation that production is running that exact commit
+
+Do not tell me the work is complete just because the code was changed locally. I need it pushed and deployed so I can test it on jhehaul.com.
+
+If Git says there is nothing to push, compare the local commit hash, GitHub commit hash, and the commit currently deployed by DigitalOcean and determine why production has not updated.
+
+If DigitalOcean does not automatically deploy after the push, trigger the production deployment using the existing deployment setup.
+
+IMPORTANT: Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.

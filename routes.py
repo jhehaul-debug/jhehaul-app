@@ -3087,6 +3087,39 @@ def api_zip_lookup():
     return jsonify({'found': False})
 
 
+@app.route("/api/zip-suggest")
+def api_zip_suggest():
+    """ZIP and city prefix suggestions for delivery form autocomplete.
+
+    ?q=PREFIX  — returns matching {zip, city, state} objects.
+    Numeric queries (3–5 digits) match by ZIP prefix; text queries match by city prefix.
+    Results are deduplicated by city+state for city queries (max 10).
+    """
+    from sqlalchemy import func as _func
+    q = request.args.get('q', '').strip()[:20]
+    if not q or len(q) < 2:
+        return jsonify(results=[])
+
+    if q.isdigit():
+        rows = ZipCode.query.filter(ZipCode.zip.like(q + '%')).order_by(ZipCode.zip).limit(8).all()
+        results = [{'zip': r.zip, 'city': r.city or '', 'state': r.state or ''} for r in rows]
+    else:
+        rows = ZipCode.query.filter(
+            _func.lower(ZipCode.city).like(q.lower() + '%')
+        ).order_by(ZipCode.city, ZipCode.zip).limit(30).all()
+        seen = set()
+        results = []
+        for r in rows:
+            key = f"{(r.city or '').lower()}|{(r.state or '').lower()}"
+            if key not in seen:
+                seen.add(key)
+                results.append({'zip': r.zip, 'city': r.city or '', 'state': r.state or ''})
+            if len(results) >= 8:
+                break
+
+    return jsonify(results=results)
+
+
 @app.route("/api/search-suggestions")
 def api_search_suggestions():
     """Return typeahead suggestions for the marketplace search box."""
@@ -5732,6 +5765,70 @@ def admin_deliveries():
 
 
 # ── end MARKETPLACE DELIVERY ──────────────────────────────────────────────────
+
+
+@app.route("/admin/delivery/<int:dr_id>/delete", methods=["POST"])
+@require_admin
+def admin_delivery_delete(dr_id):
+    """Admin-only: permanently delete any delivery request and all its associated records.
+
+    Safety guarantees:
+    - Admin-only (require_admin decorator).
+    - Never deletes user accounts, listing records, or unrelated customer data.
+    - Test DRs: delegates to admin_test_delivery_delete (same thorough cleanup).
+    - Real DRs: removes DR, photos, notifications, and the linked standalone delivery
+      job with its messages/bids/quotes/photos; listing FK is preserved.
+    """
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+
+    # Delegate test DRs to the existing specialised cleanup route
+    if dr.is_test:
+        return admin_test_delivery_delete(dr_id)
+
+    job_id = dr.job_id
+
+    try:
+        deleted = {}
+
+        # Notifications referencing this DR
+        deleted['notifications'] = Notification.query.filter_by(
+            related_delivery_request_id=dr_id
+        ).delete()
+
+        # Photo count (cascade handles actual deletion with the DR)
+        deleted['delivery_photos'] = DeliveryRequestPhoto.query.filter_by(
+            delivery_request_id=dr_id
+        ).count()
+
+        # The DeliveryRequest itself (cascade removes DeliveryRequestPhoto rows)
+        db.session.delete(dr)
+        db.session.flush()
+
+        # Linked job records — only for standalone_delivery jobs (never touch
+        # listing-level or customer-job records that pre-date this DR)
+        if job_id:
+            job = Job.query.get(job_id)
+            if job and job.service_type == 'standalone_delivery':
+                deleted['messages']          = Message.query.filter_by(job_id=job_id).delete()
+                deleted['bids']              = Bid.query.filter_by(job_id=job_id).delete()
+                deleted['quotes']            = Quote.query.filter_by(job_id=job_id).delete()
+                deleted['job_photos']        = JobPhoto.query.filter_by(job_id=job_id).delete()
+                deleted['completion_photos'] = CompletionPhoto.query.filter_by(job_id=job_id).delete()
+                deleted['reviews']           = Review.query.filter_by(job_id=job_id).delete()
+                db.session.delete(job)
+                deleted['job'] = 1
+
+        db.session.commit()
+        summary = ", ".join(f"{v} {k}" for k, v in deleted.items() if v)
+        app.logger.info("Admin %s deleted DR #%s. Cleaned: %s", current_user.id, dr_id, summary)
+        flash(f"✅ Delivery #{dr_id} permanently deleted. ({summary})", "success")
+
+    except Exception as _e:
+        db.session.rollback()
+        app.logger.error("Failed to delete DR #%s: %s", dr_id, _e)
+        flash(f"Error deleting delivery: {_e}", "error")
+
+    return redirect(url_for('admin_deliveries'))
 
 
 # ── ADMIN TEST DELIVERY QUOTE ─────────────────────────────────────────────────

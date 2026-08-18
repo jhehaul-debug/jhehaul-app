@@ -44,7 +44,7 @@
     <!-- Contact info -->
     <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
       <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">Contact (optional)</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="tq-grid-3">
         <div>
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">Name</label>
           <input type="text" name="contact_name" class="form-control" placeholder="Test Customer"
@@ -71,7 +71,7 @@
         <textarea name="item_description" class="form-control" rows="2" required
                   placeholder="e.g. 3-cushion sofa, dark brown leather" style="margin-top:4px;">{{ form.get('item_description','') if form else '' }}</textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="tq-grid-3">
         <div>
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">Approx dimensions</label>
           <input type="text" name="approx_dimensions" class="form-control" placeholder='84"W x 36"D x 34"H'
@@ -102,20 +102,25 @@
         <input type="text" name="pickup_address" class="form-control" placeholder="123 Main St"
                value="{{ form.get('pickup_address','') if form else '' }}" style="margin-top:4px;">
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;">
-        <div>
+      <div class="tq-grid-city">
+        <div style="position:relative;">
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
-          <input type="text" name="pickup_city" class="form-control" placeholder="Minneapolis"
-                 value="{{ form.get('pickup_city','') if form else '' }}" style="margin-top:4px;">
+          <input type="text" id="pickup_city" name="pickup_city" class="form-control" placeholder="Minneapolis"
+                 value="{{ form.get('pickup_city','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drCitySuggest('pickup',this.value)">
+          <div id="pickup-city-drop" class="dr-drop" style="display:none;"></div>
         </div>
         <div>
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
-          <input type="text" name="pickup_state" class="form-control" value="{{ form.get('pickup_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+          <input type="text" id="pickup_state" name="pickup_state" class="form-control"
+                 value="{{ form.get('pickup_state','MN') if form else 'MN' }}" style="margin-top:4px;" maxlength="2">
         </div>
-        <div>
+        <div style="position:relative;">
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
-          <input type="text" name="pickup_zip" class="form-control" placeholder="55401" required
-                 value="{{ form.get('pickup_zip','') if form else '' }}" style="margin-top:4px;">
+          <input type="text" id="pickup_zip" name="pickup_zip" class="form-control" placeholder="55401" required
+                 value="{{ form.get('pickup_zip','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drZipInput('pickup',this.value)">
+          <div id="pickup-zip-drop" class="dr-drop" style="display:none;"></div>
         </div>
       </div>
       <div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;">
@@ -138,20 +143,25 @@
         <input type="text" name="delivery_address" class="form-control" placeholder="456 Oak Ave"
                value="{{ form.get('delivery_address','') if form else '' }}" style="margin-top:4px;">
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;">
-        <div>
+      <div class="tq-grid-city">
+        <div style="position:relative;">
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
-          <input type="text" name="delivery_city" class="form-control" placeholder="St. Paul"
-                 value="{{ form.get('delivery_city','') if form else '' }}" style="margin-top:4px;">
+          <input type="text" id="delivery_city" name="delivery_city" class="form-control" placeholder="St. Paul"
+                 value="{{ form.get('delivery_city','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drCitySuggest('delivery',this.value)">
+          <div id="delivery-city-drop" class="dr-drop" style="display:none;"></div>
         </div>
         <div>
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
-          <input type="text" name="delivery_state" class="form-control" value="{{ form.get('delivery_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+          <input type="text" id="delivery_state" name="delivery_state" class="form-control"
+                 value="{{ form.get('delivery_state','MN') if form else 'MN' }}" style="margin-top:4px;" maxlength="2">
         </div>
-        <div>
+        <div style="position:relative;">
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
-          <input type="text" name="delivery_zip" class="form-control" placeholder="55102" required
-                 value="{{ form.get('delivery_zip','') if form else '' }}" style="margin-top:4px;">
+          <input type="text" id="delivery_zip" name="delivery_zip" class="form-control" placeholder="55102" required
+                 value="{{ form.get('delivery_zip','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drZipInput('delivery',this.value)">
+          <div id="delivery-zip-drop" class="dr-drop" style="display:none;"></div>
         </div>
       </div>
       <div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;">
@@ -169,7 +179,7 @@
     <!-- Scheduling -->
     <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;">
       <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📅 Preferred Schedule (optional)</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="tq-grid-2">
         <div>
           <label style="font-size:0.83rem;font-weight:600;color:#718096;">Date</label>
           <input type="date" name="preferred_date" class="form-control"
@@ -214,6 +224,35 @@
 </div>
 
 <style>
+/* ── Responsive grids ─────────────────────────────────────────── */
+.tq-grid-2    { display:grid; grid-template-columns:1fr 1fr;     gap:12px; }
+.tq-grid-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.tq-grid-city { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
+
+@media (max-width:520px) {
+  .tq-grid-2, .tq-grid-3, .tq-grid-city { grid-template-columns:1fr !important; }
+  .card { padding:16px !important; }
+}
+
+.form-control { width:100%; box-sizing:border-box; }
+
+/* Bottom padding so fixed nav doesn't cover submit button */
+.page-content, form { padding-bottom:110px; }
+
+/* Address autocomplete dropdown */
+.dr-drop {
+  position:absolute; top:100%; left:0; right:0; z-index:1000;
+  background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12); max-height:220px; overflow-y:auto; margin-top:2px;
+}
+.dr-drop-item {
+  padding:9px 12px; cursor:pointer; font-size:0.88rem; color:#1a202c;
+  border-bottom:1px solid #f1f5f9;
+}
+.dr-drop-item:last-child { border-bottom:none; }
+.dr-drop-item:hover { background:#eff6ff; }
+
+/* Photo thumbnails */
 #tq-photo-zone:hover,#tq-photo-zone:focus-within { border-color:#7c3aed; }
 .tq-thumb { position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #d8b4fe;flex-shrink:0; }
 .tq-thumb img { width:100%;height:100%;object-fit:cover; }
@@ -221,6 +260,64 @@
                width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0; }
 </style>
 <script>
+/* ── Address autocomplete (shared with customer form) ─────────── */
+var _drTimers={}, _drXhr={};
+function drZipInput(prefix,val){
+  var c=val.replace(/\D/g,'');
+  if(c.length===5){
+    fetch('/api/zip_lookup?zip='+c).then(function(r){return r.json();}).then(function(d){
+      if(d.found){drHide(prefix+'-zip-drop');
+        document.getElementById(prefix+'_city').value=d.city||'';
+        document.getElementById(prefix+'_state').value=d.state||'';}
+    });return;
+  }
+  if(c.length>=2){drFetch(prefix+'-zip','/api/zip-suggest?q='+encodeURIComponent(c),function(res){
+    drShowDrop(prefix+'-zip-drop',res,function(r){
+      document.getElementById(prefix+'_zip').value=r.zip;
+      document.getElementById(prefix+'_city').value=r.city;
+      document.getElementById(prefix+'_state').value=r.state;
+      drHide(prefix+'-zip-drop');
+    });
+  });}else{drHide(prefix+'-zip-drop');}
+}
+function drCitySuggest(prefix,val){
+  if(val.length<2){drHide(prefix+'-city-drop');return;}
+  drFetch(prefix+'-city','/api/zip-suggest?q='+encodeURIComponent(val),function(res){
+    drShowDrop(prefix+'-city-drop',res,function(r){
+      document.getElementById(prefix+'_city').value=r.city;
+      document.getElementById(prefix+'_state').value=r.state;
+      document.getElementById(prefix+'_zip').value=r.zip;
+      drHide(prefix+'-city-drop');
+    });
+  });
+}
+function drFetch(key,url,cb){
+  clearTimeout(_drTimers[key]);
+  _drTimers[key]=setTimeout(function(){
+    fetch(url).then(function(r){return r.json();}).then(function(d){cb(d.results||[]);});
+  },220);
+}
+function drShowDrop(id,results,onSelect){
+  var el=document.getElementById(id);
+  if(!el||!results.length){if(el)el.style.display='none';return;}
+  el.innerHTML='';
+  results.forEach(function(r){
+    var item=document.createElement('div'); item.className='dr-drop-item';
+    item.textContent=r.city+', '+r.state+' '+r.zip;
+    item.addEventListener('mousedown',function(e){e.preventDefault();onSelect(r);});
+    el.appendChild(item);
+  });
+  el.style.display='block';
+}
+function drHide(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+document.addEventListener('click',function(e){
+  ['pickup-city-drop','pickup-zip-drop','delivery-city-drop','delivery-zip-drop'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el&&!el.contains(e.target))el.style.display='none';
+  });
+});
+
+/* ── Photo upload ─────────────────────────────────────────────── */
 (function(){
   var MAX=5, sel=[];
   function refresh(){
