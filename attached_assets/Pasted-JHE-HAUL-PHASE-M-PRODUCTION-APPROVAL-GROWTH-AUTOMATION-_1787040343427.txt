@@ -1,0 +1,690 @@
+JHE HAUL — PHASE M PRODUCTION APPROVAL
+GROWTH AUTOMATION + RE-ENGAGEMENT
+
+Phase M implementation is complete and approved.
+
+Now safely move the completed Phase M Growth Automation features through:
+
+LOCAL
+→ GITHUB MAIN
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+Do NOT begin Phase N yet.
+
+IMPORTANT:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. FINAL PHASE M REVIEW
+==================================================
+
+Before deployment verify:
+
+- Notification Preference Center works
+- Saved Search alerts work
+- Price Drop alerts work
+- Unread Message reminders work
+- Offer reminders work
+- Listing Expiration alerts work
+- Relist reminders work
+- Delivery alerts work
+- Seller Performance alerts work
+- New Near You logic works
+- In-app Notification Center works
+- Email integration works
+- Deduplication works
+- Cooldowns work
+- User preferences are enforced
+- Background workers process applicable jobs
+- Scheduled jobs operate correctly
+- No SMS is used
+
+==================================================
+2. ANTI-SPAM TEST
+==================================================
+
+This is critical.
+
+Verify the same event cannot repeatedly create:
+
+- duplicate notifications
+- duplicate emails
+- notification loops
+
+Test:
+
+Same saved-search match triggered twice
+→ ONE appropriate alert
+
+Same price-drop event processed twice
+→ ONE appropriate alert
+
+Same offer event processed twice
+→ ONE appropriate alert
+
+Same delivery status event processed twice
+→ ONE appropriate alert
+
+Report:
+
+DEDUPLICATION VERIFIED: YES/NO
+
+==================================================
+3. COOLDOWN TEST
+==================================================
+
+Verify reminder cooldowns prevent excessive alerts.
+
+Examples:
+
+Unread message
+→ reminder
+→ no repeated immediate reminder
+
+Pending offer
+→ appropriate reminder
+→ no repeated notification spam
+
+Seller-performance insight
+→ reasonable frequency
+
+Recommendation alert
+→ reasonable frequency
+
+Report:
+
+COOLDOWNS VERIFIED: YES/NO
+
+==================================================
+4. USER PREFERENCE TEST
+==================================================
+
+Test notification preferences.
+
+If user disables:
+
+Saved Search Email
+→ no Saved Search email
+
+Price Drop Email
+→ no Price Drop email
+
+Recommendations
+→ no optional recommendation alert
+
+Delivery notifications should follow the approved transactional-notification rules.
+
+Do not disable essential account/security messages through marketing preferences.
+
+==================================================
+5. NO SMS
+==================================================
+
+Verify Phase M does NOT send SMS.
+
+Report:
+
+SMS USED: NO
+
+Do not activate Twilio or another paid SMS provider.
+
+==================================================
+6. SAVED SEARCH LIVE-EQUIVALENT TEST
+==================================================
+
+Create/use a safe test saved search.
+
+Create/use an appropriate matching test listing.
+
+Verify:
+
+LISTING PUBLISHED
+→ MATCHING EVENT
+→ PHASE F WORKER
+→ SAVED SEARCH MATCH
+→ PREFERENCE CHECK
+→ DEDUPLICATION CHECK
+→ IN-APP NOTIFICATION
+→ OPTIONAL EMAIL
+
+Do not send the test alert to unrelated production users.
+
+==================================================
+7. PRICE DROP TEST
+==================================================
+
+Use a controlled test listing.
+
+Example:
+
+Original:
+$1,000
+
+Updated:
+$900
+
+Verify notification correctly says the actual previous and current prices.
+
+Do not fabricate price history.
+
+Then restore test data if appropriate.
+
+==================================================
+8. MESSAGE REMINDER TEST
+==================================================
+
+Verify:
+
+Message received
+→ unread
+
+Cooldown passes
+→ reminder eligible
+
+Message read before reminder
+→ reminder cancelled/not sent where appropriate
+
+Do not expose unnecessary private message content in notification/email previews.
+
+==================================================
+9. OFFER TEST
+==================================================
+
+Verify:
+
+Offer created
+→ seller receives correct notification
+
+Offer still pending
+→ reminder according to cooldown
+
+Offer accepted/declined/expired
+→ pending reminder no longer sent
+
+Do not automatically accept or decline offers.
+
+==================================================
+10. LISTING EXPIRATION TEST
+==================================================
+
+Verify:
+
+Active listing approaching expiration
+→ seller reminder
+
+Expired listing
+→ optional relist opportunity
+
+Sold listing
+→ no inappropriate expiration/relist reminders
+
+Removed listing
+→ no inappropriate reminders
+
+Relist must require seller action.
+
+==================================================
+11. DELIVERY NOTIFICATION TEST
+==================================================
+
+Verify actual delivery events correctly trigger approved notifications.
+
+Examples:
+
+Requested
+Assigned where applicable
+Scheduled
+Picked Up
+Delivered
+Issue requiring attention
+
+Do not expose private addresses unnecessarily.
+
+Do not allow notification automation to change delivery state.
+
+==================================================
+12. EMAIL FAILURE TEST
+==================================================
+
+This is important because email delivery has previously required troubleshooting.
+
+Verify architecture:
+
+MARKETPLACE EVENT
+→ IN-APP NOTIFICATION CREATED
+
+EMAIL JOB
+→ QUEUED SEPARATELY
+
+If email fails:
+→ failure logged
+→ controlled retry
+→ in-app notification remains
+→ marketplace action remains successful
+
+Email failure must NOT roll back the marketplace action.
+
+==================================================
+13. EMAIL DUPLICATE PROTECTION
+==================================================
+
+Verify temporary failure/retry cannot send multiple copies of the same email.
+
+Use idempotency protection.
+
+Report:
+
+EMAIL RETRY WORKING: YES/NO
+
+DUPLICATE EMAIL PROTECTION: YES/NO
+
+==================================================
+14. SENDGRID CONFIGURATION
+==================================================
+
+Verify required production email configuration exists in DigitalOcean.
+
+Report variable NAMES only.
+
+Do NOT display:
+
+API keys
+secret values
+passwords
+tokens
+
+Report:
+
+SENDGRID CONFIGURED: YES/NO
+
+FROM ADDRESS CONFIGURED: YES/NO
+
+EMAIL TEST SUCCESSFUL: YES/NO
+
+If required configuration is missing:
+
+STOP BEFORE DEPLOYMENT.
+
+==================================================
+15. WORKER / QUEUE
+==================================================
+
+Verify:
+
+WORKER HEALTHY: YES/NO
+QUEUE HEALTHY: YES/NO
+
+Verify Phase M jobs such as:
+
+saved-search matching
+email delivery
+reminder processing
+expiration checks
+notification cleanup
+
+are functioning.
+
+==================================================
+16. SCHEDULED JOB SAFETY
+==================================================
+
+Review every scheduled Phase M job.
+
+Report:
+
+JOB NAME:
+SCHEDULE:
+PURPOSE:
+
+Verify there are no accidentally high-frequency schedules that could cause:
+
+- excessive emails
+- excessive database load
+- excessive AI/API usage
+- duplicate alerts
+
+==================================================
+17. FRAUD / SAFETY INTEGRATION
+==================================================
+
+Verify Phase J restrictions.
+
+Listings that are:
+
+removed
+suspended
+private
+restricted from discovery
+
+must not generate normal recommendation/saved-search growth alerts.
+
+Do not expose internal fraud information to users.
+
+==================================================
+18. AI COST CONTROL
+==================================================
+
+Routine notifications should use templates.
+
+Do NOT call an AI model just to produce:
+
+“Your listing expires soon.”
+
+“You received an offer.”
+
+“Your saved search has a new match.”
+
+Report any Phase M workflows that actually use AI and why.
+
+==================================================
+19. PRIVACY
+==================================================
+
+Verify emails/notifications do not unnecessarily expose:
+
+- exact private addresses
+- seller phone numbers
+- private email addresses
+- full private message contents
+- internal IDs
+- fraud scores
+- Admin notes
+
+==================================================
+20. REGRESSION TEST
+==================================================
+
+Verify all previous phases still work:
+
+Marketplace Home
+Seller Dashboard
+Phase D AI Listing Assistant
+Phase E AI Search
+Phase F Workers/Queue
+Phase G Copilot
+Phase H Controlled Actions
+Phase I Seller Intelligence
+Phase J Fraud/Safety
+Phase K Recommendations
+Phase L Admin AI
+Messages
+Offers
+Saved Items
+Delivery
+Notifications
+Email
+Admin
+Admin Analytics
+Photos
+Videos
+Vehicle fields
+SEO
+Authentication
+Stripe
+
+==================================================
+21. GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do NOT commit:
+
+.env
+API keys
+secrets
+logs
+screenshots
+temporary files
+local databases
+
+==================================================
+22. COMMIT PHASE M
+==================================================
+
+Commit ONLY approved Phase M changes.
+
+Suggested commit:
+
+Phase M: add marketplace growth automation and re-engagement
+
+==================================================
+23. PUSH
+==================================================
+
+Push to EXISTING:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT:
+
+- create another repository
+- create another production branch
+- force push
+
+==================================================
+24. VERIFY GITHUB
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB MAIN SHA:
+
+LOCAL = GITHUB: YES/NO
+
+AHEAD: 0
+BEHIND: 0
+
+If they do not match:
+
+STOP and fix Git.
+
+==================================================
+25. DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Verify DigitalOcean remains connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Make sure a NEW deployment starts using the Phase M commit.
+
+If Auto Deploy does not trigger:
+
+Deploy the newest GitHub main commit manually.
+
+Never deploy an older SHA.
+
+==================================================
+26. VERIFY PRODUCTION SOURCE
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA:
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+Do not mark deployment complete unless YES.
+
+==================================================
+27. LIVE JHEHAUL.COM TEST
+==================================================
+
+Test actual production:
+
+jhehaul.com
+
+Verify:
+
+NOTIFICATION CENTER LIVE: YES/NO
+
+PREFERENCE CENTER LIVE: YES/NO
+
+SAVED SEARCH ALERTS LIVE: YES/NO
+
+PRICE DROP ALERTS LIVE: YES/NO
+
+MESSAGE REMINDERS LIVE: YES/NO
+
+OFFER ALERTS LIVE: YES/NO
+
+EXPIRATION ALERTS LIVE: YES/NO
+
+RELIST FLOW LIVE: YES/NO
+
+DELIVERY ALERTS LIVE: YES/NO
+
+SELLER ALERTS LIVE: YES/NO
+
+EMAIL LIVE: YES/NO
+
+==================================================
+28. MOBILE TEST
+==================================================
+
+Verify on iPhone-sized screen:
+
+Notification badge
+
+Notification Center
+
+Notification cards
+
+Read/unread states
+
+Tap destinations
+
+Preference Center
+
+Email preference controls
+
+No unusable horizontal overflow
+
+==================================================
+29. ADMIN OPERATIONS TEST
+==================================================
+
+Test Phase L Admin AI:
+
+“How many notifications were sent today?”
+
+“How many emails failed?”
+
+“Are notification workers healthy?”
+
+“How many saved-search alerts were created?”
+
+Verify actual production data is used.
+
+==================================================
+30. FINAL REPORT
+==================================================
+
+PHASE M DEPLOYED: YES/NO
+
+NOTIFICATION CENTER LIVE: YES/NO
+
+PREFERENCE CENTER LIVE: YES/NO
+
+SAVED SEARCH ALERTS LIVE: YES/NO
+
+PRICE DROP ALERTS LIVE: YES/NO
+
+UNREAD MESSAGE REMINDERS LIVE: YES/NO
+
+OFFER REMINDERS LIVE: YES/NO
+
+LISTING EXPIRATION ALERTS LIVE: YES/NO
+
+RELIST REMINDERS LIVE: YES/NO
+
+DELIVERY ALERTS LIVE: YES/NO
+
+SELLER PERFORMANCE ALERTS LIVE: YES/NO
+
+EMAIL LIVE: YES/NO
+
+SENDGRID VERIFIED: YES/NO
+
+EMAIL RETRY VERIFIED: YES/NO
+
+DUPLICATE EMAIL PROTECTION VERIFIED: YES/NO
+
+DEDUPLICATION VERIFIED: YES/NO
+
+COOLDOWNS VERIFIED: YES/NO
+
+USER PREFERENCES VERIFIED: YES/NO
+
+NO SMS VERIFIED: YES/NO
+
+WORKER/QUEUE VERIFIED: YES/NO
+
+PRIVACY VERIFIED: YES/NO
+
+ANTI-SPAM PROTECTION VERIFIED: YES/NO
+
+MOBILE VERIFIED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA:
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+==================================================
+31. STOP
+==================================================
+
+After Phase M is fully deployed and verified:
+
+STOP.
+
+Do NOT begin Phase N.
+
+Wait for approval.
+
+==================================================
+CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not use SMS.
+
+Do not send mass or repetitive emails.
+
+Do not allow notification automation to alter marketplace records except the notification/delivery records specifically required for the notification system.
+
+Do not begin Phase N until Phase M is verified live.
