@@ -555,6 +555,9 @@
 }
 </style>
 
+{# ── Early variable definitions (must precede compact/hero forms) ── #}
+{% set _zip_radius_mi = zip_radius_mi if zip_radius_mi is defined else 25 %}
+
 {# ── New-member welcome banner (shown exactly once after first login) ── #}
 {% if show_welcome %}
 <div id="welcome-banner" style="
@@ -641,6 +644,7 @@ function dismissProfileNudge() {
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
         {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
         {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        {% if city_zip_filter and _zip_radius_mi != 25 %}<input type="hidden" name="radius" value="{{ _zip_radius_mi }}">{% endif %}
         <button type="submit">🔍</button>
     </form>
     <button type="button" class="jhe-ais-trigger" style="margin:6px 0 2px;font-size:.82rem;padding:5px 12px;background:rgba(124,58,237,.12);border-color:#c4b5fd;color:#4c1d95;" onclick="toggleAiSearch()">✨ Ask JHE Haul</button>
@@ -659,6 +663,7 @@ function dismissProfileNudge() {
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
         {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
         {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        {% if city_zip_filter and _zip_radius_mi != 25 %}<input type="hidden" name="radius" value="{{ _zip_radius_mi }}">{% endif %}
         {% if area_filter %}<input type="hidden" name="area" value="{{ area_filter }}">{% endif %}
         <button type="submit">Search</button>
     </form>
@@ -843,6 +848,7 @@ document.addEventListener('DOMContentLoaded',function(){
 {% set _q_val = (search_query if search_query is defined and search_query else request.args.get('q', '')) %}
 {% set _pq = ('?q=' ~ _q_val ~ '&') if _q_val else '?' %}
 {% set _pcity = ('city_zip=' ~ city_zip_filter ~ '&') if city_zip_filter else '' %}
+{% set _pradius = ('radius=' ~ _zip_radius_mi ~ '&') if city_zip_filter else '' %}
 {# Determine active states for pills #}
 {% set _items_active = listing_type_filter == 'item' and not active_category %}
 {% set _vehicles_active = active_category and active_category.slug == 'vehicles' %}
@@ -852,11 +858,11 @@ document.addEventListener('DOMContentLoaded',function(){
        class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if not listing_type_filter and not active_category }}">All</a>
 
     {# ITEMS — physical merchandise only, excludes vehicles/property/rentals #}
-    <a href="/marketplace{{ _pq ~ _pcity ~ 'listing_type=item&no_vehicles=1' }}"
+    <a href="/marketplace{{ _pq ~ _pcity ~ _pradius ~ 'listing_type=item&no_vehicles=1' }}"
        class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if _items_active and _no_veh }}">📦 Items</a>
 
     {# VEHICLES — vehicles category #}
-    <a href="/marketplace{{ _pq ~ _pcity ~ 'category=vehicles' }}"
+    <a href="/marketplace{{ _pq ~ _pcity ~ _pradius ~ 'category=vehicles' }}"
        class="mp-pill mp-pill-main mp-pill-nav {{ 'active' if _vehicles_active }}">🚗 Vehicles</a>
 
     {# FOR SALE — real estate for sale #}
@@ -879,7 +885,7 @@ document.addEventListener('DOMContentLoaded',function(){
     {# FILTERS — not single-select; can be active alongside any mode #}
     <button type="button" class="mp-pill {{ 'active' if city_zip_filter or hide_sold }}"
             onclick="mpTogglePanel('mp-filters-panel', this)">
-        Filters{% if city_zip_filter %}: {{ city_zip_filter }}{% endif %} ▾
+        Filters{% if city_zip_filter %}: {{ city_zip_filter }}{% if _zip_radius_mi and _zip_radius_mi != 25 %} · {{ _zip_radius_mi }} mi{% endif %}{% endif %} ▾
     </button>
 
     {% if _has_filters %}
@@ -893,6 +899,7 @@ document.addEventListener('DOMContentLoaded',function(){
         {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
         {% if listing_type_filter %}<input type="hidden" name="listing_type" value="{{ listing_type_filter }}">{% endif %}
         {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
+        {% if city_zip_filter and _zip_radius_mi != 25 %}<input type="hidden" name="radius" value="{{ _zip_radius_mi }}">{% endif %}
         {% if hide_sold %}<input type="hidden" name="hide_sold" value="{{ hide_sold }}">{% endif %}
         <div class="mp-filter-panel-inner">
             <div class="mp-panel-group">
@@ -912,7 +919,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </form>
 </div>
 
-{# Filters panel (city/zip + hide sold) #}
+{# Filters panel (city/zip + radius + hide sold) #}
 <div id="mp-filters-panel" class="mp-filter-panel">
     <form method="get" action="/marketplace">
         {% if _q_val %}<input type="hidden" name="q" value="{{ _q_val }}">{% endif %}
@@ -922,7 +929,17 @@ document.addEventListener('DOMContentLoaded',function(){
             <div class="mp-panel-group">
                 <label for="mp-city-panel">City or ZIP</label>
                 <input type="text" name="city_zip" id="mp-city-panel" class="mp-panel-text-input"
-                       value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" autocomplete="off">
+                       value="{{ city_zip_filter or '' }}" placeholder="e.g. Edina or 55416" autocomplete="off"
+                       oninput="mpToggleRadius(this.value)">
+            </div>
+            <div class="mp-panel-group" id="mp-radius-group" style="{{ '' if city_zip_filter else 'display:none' }}">
+                <label for="mp-radius-sel">Search Radius</label>
+                <select name="radius" id="mp-radius-sel">
+                    <option value="5"  {{ 'selected' if _zip_radius_mi == 5  }}>5 mi</option>
+                    <option value="10" {{ 'selected' if _zip_radius_mi == 10 }}>10 mi</option>
+                    <option value="25" {{ 'selected' if not city_zip_filter or _zip_radius_mi == 25 }}>25 mi</option>
+                    <option value="50" {{ 'selected' if _zip_radius_mi == 50 }}>50 mi</option>
+                </select>
             </div>
             <div class="mp-panel-group">
                 <label for="mp-hide-sold-sel">Listing status</label>
@@ -936,6 +953,15 @@ document.addEventListener('DOMContentLoaded',function(){
         </div>
     </form>
 </div>
+<script>
+function mpToggleRadius(val) {
+    var grp = document.getElementById('mp-radius-group');
+    if (!grp) return;
+    // Show radius selector only when the value looks like a 5-digit ZIP
+    var isZip = /^\d{5}$/.test(val.trim());
+    grp.style.display = isZip ? '' : 'none';
+}
+</script>
 
 {# For Sale panel (auto-opens when listing_type_filter == property_sale) #}
 <div id="mp-forsale-panel" class="mp-filter-panel {{ 'open' if listing_type_filter == 'property_sale' }}">
@@ -951,6 +977,15 @@ document.addEventListener('DOMContentLoaded',function(){
                 <input type="text" name="city_zip" class="mp-panel-text-input"
                        value="{{ city_zip_filter if listing_type_filter == 'property_sale' else '' }}"
                        placeholder="e.g. Edina or 55416" autocomplete="off">
+            </div>
+            <div class="mp-panel-group">
+                <label>Search Radius</label>
+                <select name="radius">
+                    <option value="5"  {{ 'selected' if listing_type_filter == 'property_sale' and _zip_radius_mi == 5  }}>5 mi</option>
+                    <option value="10" {{ 'selected' if listing_type_filter == 'property_sale' and _zip_radius_mi == 10 }}>10 mi</option>
+                    <option value="25" {{ 'selected' if not city_zip_filter or _zip_radius_mi == 25 }}>25 mi</option>
+                    <option value="50" {{ 'selected' if listing_type_filter == 'property_sale' and _zip_radius_mi == 50 }}>50 mi</option>
+                </select>
             </div>
             <div class="mp-panel-group">
                 <label>Min Price</label>
@@ -1018,6 +1053,15 @@ document.addEventListener('DOMContentLoaded',function(){
                 <input type="text" name="city_zip" class="mp-panel-text-input"
                        value="{{ city_zip_filter if listing_type_filter == 'rental' else '' }}"
                        placeholder="e.g. Edina or 55416" autocomplete="off">
+            </div>
+            <div class="mp-panel-group">
+                <label>Search Radius</label>
+                <select name="radius">
+                    <option value="5"  {{ 'selected' if listing_type_filter == 'rental' and _zip_radius_mi == 5  }}>5 mi</option>
+                    <option value="10" {{ 'selected' if listing_type_filter == 'rental' and _zip_radius_mi == 10 }}>10 mi</option>
+                    <option value="25" {{ 'selected' if not city_zip_filter or _zip_radius_mi == 25 }}>25 mi</option>
+                    <option value="50" {{ 'selected' if listing_type_filter == 'rental' and _zip_radius_mi == 50 }}>50 mi</option>
+                </select>
             </div>
             <div class="mp-panel-group">
                 <label>Max Rent /mo</label>
@@ -1233,6 +1277,7 @@ document.addEventListener('DOMContentLoaded',function(){
             {% if listing_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'listing_type=' ~ listing_type_filter ~ '&' %}{% endif %}
             {% if area_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'area=' ~ area_filter ~ '&' %}{% endif %}
             {% if city_zip_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'city_zip=' ~ city_zip_filter ~ '&' %}{% endif %}
+            {% if city_zip_filter and _zip_radius_mi != 25 %}{% set ns.toggle_url = ns.toggle_url ~ 'radius=' ~ _zip_radius_mi ~ '&' %}{% endif %}
             {% if price_type_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'price_type=' ~ price_type_filter ~ '&' %}{% endif %}
             {% if featured_filter %}{% set ns.toggle_url = ns.toggle_url ~ 'featured=1&' %}{% endif %}
             {% if min_price is not none %}{% set ns.toggle_url = ns.toggle_url ~ 'min_price=' ~ min_price ~ '&' %}{% endif %}

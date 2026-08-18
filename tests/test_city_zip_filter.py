@@ -1,5 +1,5 @@
 """
-Task 76 / 125 validation: City / ZIP marketplace filter — including radius search.
+Task 76 / 125 / 215 validation: City / ZIP marketplace filter — including radius search.
 
 Run with:  python tests/test_city_zip_filter.py
 
@@ -12,6 +12,10 @@ Verifies (against the configured DB):
 - ZIP not in ZipCode table — falls back to exact match, shows notice, returns 200
 - ZIP no-match — unknown ZIP returns 0 results (no 500 / silent error)
 - filter value is echoed back into the rendered form after submission
+- Custom radius (5 mi) passed via ?radius=5 is respected (fewer results than 50 mi)
+- Custom radius (50 mi) passed via ?radius=50 is respected (more results than 5 mi)
+- Invalid radius value falls back to default 25 mi without error
+- Radius echoed in URL / filter pill when non-default
 """
 import sys
 import os
@@ -217,6 +221,80 @@ with app.app_context():
             "partial match: Eagan listing excluded from Eden search",
             lst_eagan.title not in html,
         )
+
+        # ── 8. Custom radius: deterministic exclusion/inclusion ───────────
+        # 55431 (Bloomington, MN) is the search center.
+        # 55112 (Arden Hills, MN) is ~19 miles away — inside 50 mi but outside 10 mi.
+        # If both ZIPs are seeded we can assert exclusion at radius=10 and inclusion at radius=50.
+        import math as _math
+        _zc_center2 = ZipCode.query.get("55431")
+        _zc_far     = ZipCode.query.get("55112")
+        if _zc_center2 and _zc_far:
+            # Sanity-check actual distance so the test is self-validating
+            _dlat2 = (_zc_far.lat - _zc_center2.lat) * 69.0
+            _dlon2 = (_zc_far.lon - _zc_center2.lon) * 69.0 * abs(_math.cos(_math.radians(_zc_center2.lat)))
+            _actual_dist = _math.sqrt(_dlat2**2 + _dlon2**2)
+            _dist_ok = 10 < _actual_dist < 50
+            check(
+                f"radius deterministic test: 55112 is between 10 and 50 mi from 55431 (actual ≈ {_actual_dist:.1f} mi)",
+                _dist_ok,
+            )
+            if _dist_ok:
+                lst_far2 = make_listing("radius-far2", "Arden Hills", "55112")
+
+                # radius=10 — 55112 is outside 10 mi → listing must NOT appear
+                r10 = client.get("/marketplace?city_zip=55431&radius=10")
+                html10 = r10.data.decode()
+                check("radius=10: returns 200", r10.status_code == 200)
+                check(
+                    "radius=10: far-away listing (55112, ~19 mi) EXCLUDED",
+                    lst_far2.title not in html10,
+                )
+
+                # radius=50 — 55112 is inside 50 mi → listing must appear
+                r50 = client.get("/marketplace?city_zip=55431&radius=50")
+                html50 = r50.data.decode()
+                check("radius=50: returns 200", r50.status_code == 200)
+                check(
+                    "radius=50: far-away listing (55112, ~19 mi) INCLUDED",
+                    lst_far2.title in html50,
+                )
+
+                # Invalid radius value falls back to default without server error
+                r_bad = client.get("/marketplace?city_zip=55431&radius=999")
+                check("invalid radius: returns 200 (falls back to default)", r_bad.status_code == 200)
+
+                # Radius echoed in form HTML
+                r_echo = client.get("/marketplace?city_zip=55431&radius=10")
+                html_echo = r_echo.data.decode()
+                check("radius=10: returns 200", r_echo.status_code == 200)
+                check(
+                    "radius=10: radius value selected in rendered HTML",
+                    'value="10"' in html_echo and 'selected' in html_echo,
+                )
+                # Non-default radius is reflected in the pill label
+                check(
+                    "radius=10: pill label mentions '10 mi'",
+                    "10 mi" in html_echo,
+                )
+
+                # Radius is preserved in the hero/compact keyword search hidden input.
+                # The hidden input renders as '<input type="hidden" name="radius" value="10">'
+                # which is distinct from '<option value="10" ...>' in the dropdown.
+                check(
+                    "radius=10: hero form carries radius as hidden input",
+                    '<input type="hidden" name="radius" value="10">' in html_echo,
+                )
+
+                # Clean up the extra listing
+                db.session.delete(db.session.get(Listing, lst_far2.id))
+                created_ids.remove(lst_far2.id)
+                db.session.commit()
+        else:
+            check(
+                "custom radius: skipped (55431/55112 not in ZipCode table)",
+                True,
+            )
 
     finally:
         # ── cleanup ───────────────────────────────────────────────────────

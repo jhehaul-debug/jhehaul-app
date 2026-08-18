@@ -667,6 +667,7 @@ def marketplace():
     min_baths_raw      = request.args.get('min_baths',    '').strip()
     garage_size_f      = request.args.get('garage_size',  '').strip()
     open_house_only    = request.args.get('open_house',   '').strip()
+    radius_raw         = request.args.get('radius',        '').strip()
     # ── Phase E: extended search params ──────────────────────────────────
     vehicle_make_f    = request.args.get('vehicle_make',        '').strip()
     vehicle_model_f   = request.args.get('vehicle_model',       '').strip()
@@ -708,6 +709,13 @@ def marketplace():
     except ValueError: veh_yr_max = None
     try: veh_mileage_max = int(veh_mile_raw) if veh_mile_raw   else None
     except ValueError: veh_mileage_max = None
+    _VALID_RADII = {5, 10, 25, 50}
+    try:
+        zip_radius_mi = int(radius_raw) if radius_raw else 25
+        if zip_radius_mi not in _VALID_RADII:
+            zip_radius_mi = 25
+    except ValueError:
+        zip_radius_mi = 25
 
     is_search = bool(q or category_slug or price_type_filter or featured_filter
                      or listing_type_filter or area_filter or city_zip_filter
@@ -828,7 +836,6 @@ def marketplace():
 
         # City / ZIP filter — applies to any listing type
         zip_radius_fallback = False
-        _ZIP_RADIUS_MI = 25  # configurable search radius in miles
         if city_zip_filter:
             _czf = city_zip_filter.strip()
             _is_zip = _czf.isdigit() and len(_czf) == 5
@@ -837,8 +844,8 @@ def marketplace():
                 _center = _ZipCode.query.get(_czf)
                 if _center:
                     # Bounding-box radius lookup (1° lat ≈ 69 mi; lon shrinks by cos(lat))
-                    _dlat = _ZIP_RADIUS_MI / 69.0
-                    _dlon = _ZIP_RADIUS_MI / (69.0 * abs(math.cos(math.radians(_center.lat))) + 1e-9)
+                    _dlat = zip_radius_mi / 69.0
+                    _dlon = zip_radius_mi / (69.0 * abs(math.cos(math.radians(_center.lat))) + 1e-9)
                     _nearby_zips = [
                         row[0] for row in _ZipCode.query.filter(
                             _ZipCode.lat >= _center.lat - _dlat,
@@ -913,6 +920,7 @@ def marketplace():
                                no_vehicles_filter=no_vehicles_filter,
                                area_filter=area_filter,
                                city_zip_filter=city_zip_filter,
+                               zip_radius_mi=zip_radius_mi,
                                min_price=min_price, max_price=max_price,
                                min_beds=min_beds, min_baths=min_baths,
                                garage_size=garage_size_f,
@@ -7164,7 +7172,6 @@ def admin_listing_restore(listing_id):
         app.logger.warning("admin_listing_restore: gallery pin reactivation failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" restored to active.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
-
 
 
 @app.route("/admin/listings/cleanup-drafts", methods=["POST"])
