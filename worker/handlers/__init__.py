@@ -13,6 +13,8 @@ from worker.handlers.saved_search_match      import handle as _ssm_handle
 from worker.handlers.fraud_scan              import handle as _fraud_handle
 from worker.handlers.analytics_event         import handle as _analytics_handle
 from worker.handlers.recommendation_refresh  import handle as _rec_handle
+from worker.handlers.price_drop_notify       import handle as _price_drop_handle
+from worker.handlers.growth_reminder         import handle as _growth_reminder_handle
 
 # ── Job type → handler function ───────────────────────────────────────────────
 # None = job type is registered but not yet implemented (will raise ValueError)
@@ -38,6 +40,10 @@ _REGISTRY = {
 
     # ── Recommendations / personalisation (Phase K) ──────────────────────────
     'RECOMMENDATION_REFRESH': _rec_handle,
+
+    # ── Phase M: Growth Automation ───────────────────────────────────────────
+    'PRICE_DROP_NOTIFY':      _price_drop_handle,    # per-listing price drop alerts
+    'GROWTH_REMINDER':        _growth_reminder_handle, # batch scheduled reminders
 
     # ── Future ──────────────────────────────────────────────────────────────
     'FUTURE_IMAGE_ANALYSIS': None,

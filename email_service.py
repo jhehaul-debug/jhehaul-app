@@ -1340,3 +1340,129 @@ def notify_admin_successful_recovery(admin_email):
               "✅ Password Reset Complete", body),
         'admin_security'
     )
+
+
+# ── Phase M: Growth Automation Emails ─────────────────────────────────────────
+
+def notify_price_drop_alert(buyer_email, listing_title, listing_id,
+                            old_price, new_price):
+    """Alert a buyer who saved a listing that the price dropped."""
+    safe_title = listing_title or f"Listing #{listing_id}"
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    savings = old_price - new_price
+    body = f"""
+    <p>Good news — a listing you saved just dropped in price.</p>
+    <div class="info-box">
+      <p><strong>{safe_title}</strong></p>
+      <p>Was: <s>${old_price:,.0f}</s> &nbsp; Now: <strong>${new_price:,.0f}</strong></p>
+      <p>You save: <strong>${savings:,.0f}</strong></p>
+    </div>
+    <p>Act quickly — price drops attract other buyers.</p>
+    <a href="{listing_url}" class="btn">View Listing &rarr;</a>
+    <p style="margin-top:24px;font-size:12px;color:#888;">
+      <a href="{_APP_URL}/settings/notifications">Manage notification preferences</a>
+    </p>"""
+    return send_email(
+        buyer_email,
+        f"Price drop: \"{safe_title}\" is now ${new_price:,.0f}",
+        _html("Price Drop Alert", "A saved listing just got cheaper.",
+              "🏷️ Price Drop", body),
+        'price_drop_alert',
+    )
+
+
+def notify_seller_pending_offers_reminder(seller_email, listing_title,
+                                          listing_id, offer_count):
+    """Remind a seller they have pending offers awaiting a response."""
+    safe_title = listing_title or f"Listing #{listing_id}"
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+    offer_word = "offer" if offer_count == 1 else "offers"
+    _havent = "" if offer_count == 1 else "haven't "
+    body = f"""
+    <p>You have <strong>{offer_count} pending {offer_word}</strong> on your listing
+       that {_havent}been responded to yet.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Pending offers:</strong> {offer_count}</p>
+    </div>
+    <p>Responding quickly increases buyer trust and closes sales faster.</p>
+    <a href="{listing_url}" class="btn">Respond to {offer_word.capitalize()} &rarr;</a>
+    <p style="margin-top:24px;font-size:12px;color:#888;">
+      <a href="{_APP_URL}/settings/notifications">Manage notification preferences</a>
+    </p>"""
+    return send_email(
+        seller_email,
+        f"You have {offer_count} pending {offer_word} on \"{safe_title}\"",
+        _html("Pending Offer Reminder",
+              "A buyer is waiting to hear back from you.",
+              "💰 Pending Offers", body),
+        'seller_offer_reminder',
+    )
+
+
+def notify_relist_reminder_email(seller_email, listing_title, listing_id):
+    """Remind a seller their listing expired and encourage them to relist."""
+    safe_title = listing_title or f"Listing #{listing_id}"
+    edit_url = f"{_APP_URL}/listing/{listing_id}/edit"
+    body = f"""
+    <p>Your listing <strong>{safe_title}</strong> has expired and is no longer
+       visible to buyers on JHE Haul.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Status:</strong> <span class="pill pill-orange">Expired</span></p>
+    </div>
+    <p>Relisting takes seconds — just open the listing and extend the expiry date.</p>
+    <a href="{edit_url}" class="btn">Relist My Item &rarr;</a>
+    <p style="margin-top:24px;font-size:12px;color:#888;">
+      <a href="{_APP_URL}/settings/notifications">Manage notification preferences</a>
+    </p>"""
+    return send_email(
+        seller_email,
+        f"Your listing \"{safe_title}\" expired — relist it now",
+        _html("Listing Expired", "Relist your item to keep it visible.",
+              "⏰ Listing Expired", body),
+        'relist_reminder',
+    )
+
+
+def notify_seller_insight_email(seller_email, listing_title, listing_id,
+                                insight_type, count=None):
+    """Send a seller performance milestone or insight email."""
+    safe_title = listing_title or f"Listing #{listing_id}"
+    listing_url = f"{_APP_URL}/listing/{listing_id}"
+
+    if insight_type == 'views_milestone' and count:
+        subject = f"Your listing has {count:,} views!"
+        headline = f"🎉 {count:,} Views!"
+        header_title = "Listing Milestone"
+        header_sub = "Your listing is getting noticed."
+        body = f"""
+    <p>Your listing <strong>{safe_title}</strong> has reached
+       <strong>{count:,} views</strong> on JHE Haul.</p>
+    <div class="info-box">
+      <p><strong>Listing:</strong> {safe_title}</p>
+      <p><strong>Views:</strong> {count:,}</p>
+    </div>
+    <p>High view counts mean strong buyer interest. Make sure your photos and
+       description are up to date, and respond quickly to messages and offers.</p>
+    <a href="{listing_url}" class="btn">View My Listing &rarr;</a>"""
+    else:
+        subject = f"Seller update for \"{safe_title}\""
+        headline = "📊 Listing Update"
+        header_title = "Seller Insight"
+        header_sub = "Here's what's happening with your listing."
+        body = f"""
+    <p>There's new activity on your listing <strong>{safe_title}</strong>.</p>
+    <a href="{listing_url}" class="btn">View My Listing &rarr;</a>"""
+
+    body += f"""
+    <p style="margin-top:24px;font-size:12px;color:#888;">
+      <a href="{_APP_URL}/settings/notifications">Manage notification preferences</a>
+    </p>"""
+
+    return send_email(
+        seller_email,
+        subject,
+        _html(header_title, header_sub, headline, body),
+        'seller_insight',
+    )

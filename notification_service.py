@@ -3,8 +3,13 @@ notification_service.py — In-app notification helpers for JHE Haul Marketplace
 
 All public helpers are fire-and-forget: they catch their own exceptions so a
 notification failure never breaks the calling request.
+
+Phase M additions:
+  • create_notification_deduped() — dedup-aware wrapper
+  • notify_price_drop()           — alert favorited-listing buyers on price drop
+  • NOTIF_CATEGORIES and NOTIF_ICONS extended for Phase M types
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 
@@ -12,41 +17,135 @@ _log = logging.getLogger(__name__)
 
 # ── Category → type mapping (used by the notifications page filter) ────────────
 NOTIF_CATEGORIES = {
-    'messages': ['new_message'],
+    'messages': ['new_message', 'unread_message_reminder'],
     'offers':   ['new_offer', 'offer_accepted', 'offer_declined',
                  'offer_countered', 'offer_expired', 'offer_withdrawn',
-                 'offer_on_hold'],
+                 'offer_on_hold', 'offer_reminder'],
     'listings': ['listing_expired', 'listing_removed',
-                 'listing_sold', 'listing_reserved'],
+                 'listing_sold', 'listing_reserved',
+                 'listing_expiry_reminder', 'relist_reminder', 'price_drop'],
     'delivery': ['delivery_request', 'delivery_quote_ready',
                  'delivery_status', 'delivery_accepted', 'delivery_declined'],
+    'insights': ['seller_insight'],
     'account':  ['admin_notice'],
+    'discover': ['saved_search_match', 'recommendation'],
 }
 
 # ── Icon map (also referenced from templates) ──────────────────────────────────
 NOTIF_ICONS = {
-    'new_message':          '💬',
-    'new_offer':            '💰',
-    'offer_accepted':       '✅',
-    'offer_declined':       '❌',
-    'offer_countered':      '🔄',
-    'offer_expired':        '⏳',
-    'offer_withdrawn':      '↩️',
-    'offer_on_hold':        '⏸️',
-    'listing_expired':      '⏰',
-    'listing_removed':      '🚫',
-    'listing_sold':         '🏷️',
-    'listing_reserved':     '📌',
-    'delivery_request':     '🚛',
-    'delivery_quote_ready': '💵',
-    'delivery_status':      '🚛',
-    'delivery_accepted':    '✅',
-    'delivery_declined':    '❌',
-    'admin_notice':         '⚙️',
+    'new_message':              '💬',
+    'unread_message_reminder':  '💬',
+    'new_offer':                '💰',
+    'offer_accepted':           '✅',
+    'offer_declined':           '❌',
+    'offer_countered':          '🔄',
+    'offer_expired':            '⏳',
+    'offer_withdrawn':          '↩️',
+    'offer_on_hold':            '⏸️',
+    'offer_reminder':           '💰',
+    'listing_expired':          '⏰',
+    'listing_expiry_reminder':  '⏰',
+    'relist_reminder':          '🔄',
+    'listing_removed':          '🚫',
+    'listing_sold':             '🏷️',
+    'listing_reserved':         '📌',
+    'price_drop':               '🏷️',
+    'delivery_request':         '🚛',
+    'delivery_quote_ready':     '💵',
+    'delivery_status':          '🚛',
+    'delivery_accepted':        '✅',
+    'delivery_declined':        '❌',
+    'seller_insight':           '📊',
+    'saved_search_match':       '🔔',
+    'recommendation':           '✨',
+    'admin_notice':             '⚙️',
+}
+
+# ── Notification priority classification ───────────────────────────────────────
+NOTIF_PRIORITY = {
+    'admin_notice':             'URGENT',
+    'new_offer':                'IMPORTANT',
+    'offer_accepted':           'IMPORTANT',
+    'offer_declined':           'IMPORTANT',
+    'offer_countered':          'IMPORTANT',
+    'new_message':              'IMPORTANT',
+    'delivery_request':         'IMPORTANT',
+    'delivery_quote_ready':     'IMPORTANT',
+    'delivery_status':          'IMPORTANT',
+    'delivery_accepted':        'IMPORTANT',
+    'delivery_declined':        'IMPORTANT',
+    'price_drop':               'NORMAL',
+    'saved_search_match':       'NORMAL',
+    'listing_expiry_reminder':  'NORMAL',
+    'relist_reminder':          'NORMAL',
+    'offer_reminder':           'NORMAL',
+    'unread_message_reminder':  'NORMAL',
+    'listing_expired':          'NORMAL',
+    'listing_reserved':         'NORMAL',
+    'seller_insight':           'LOW',
+    'recommendation':           'LOW',
+    'offer_expired':            'LOW',
+    'offer_withdrawn':          'LOW',
+    'offer_on_hold':            'LOW',
+    'listing_removed':          'LOW',
+    'listing_sold':             'LOW',
 }
 
 
+# ── Preference helper ──────────────────────────────────────────────────────────
+
+def _check_pref(user, pref_attr, default=True):
+    """Return True if a user notification preference is enabled (default=True)."""
+    return bool(getattr(user, pref_attr, default))
+
+
 # ── Core create / read helpers ─────────────────────────────────────────────────
+
+def create_notification_deduped(user_id, notif_type, title, dedup_key,
+                                message=None, action_url=None,
+                                related_listing_id=None, related_offer_id=None,
+                                related_conversation_id=None,
+                                related_delivery_request_id=None,
+                                related_user_id=None, metadata=None):
+    """Persist an in-app notification only if no identical dedup_key exists for this user.
+
+    Returns the Notification if created, None if deduplicated or on error.
+    """
+    try:
+        from app import db
+        from models import Notification
+        existing = Notification.query.filter_by(
+            user_id=str(user_id), dedup_key=dedup_key
+        ).first()
+        if existing:
+            return None  # already sent
+        n = Notification(
+            user_id=str(user_id),
+            type=notif_type,
+            title=title,
+            message=message,
+            action_url=action_url,
+            related_listing_id=related_listing_id,
+            related_offer_id=related_offer_id,
+            related_conversation_id=related_conversation_id,
+            related_delivery_request_id=related_delivery_request_id,
+            related_user_id=str(related_user_id) if related_user_id else None,
+            metadata_json=json.dumps(metadata) if metadata else None,
+            dedup_key=dedup_key,
+        )
+        db.session.add(n)
+        db.session.commit()
+        return n
+    except Exception as exc:
+        try:
+            from app import db as _db
+            _db.session.rollback()
+        except Exception:
+            pass
+        _log.error("create_notification_deduped failed (type=%s user=%s): %s",
+                   notif_type, user_id, exc)
+        return None
+
 
 def create_notification(user_id, notif_type, title, message=None,
                         action_url=None, related_listing_id=None,
@@ -273,6 +372,27 @@ def notify_delivery_status(buyer_id, status_label, listing_title, dr_id):
         action_url=f"/delivery/{dr_id}",
         related_delivery_request_id=dr_id,
     )
+
+
+def notify_price_drop(listing_id, old_price, new_price):
+    """Enqueue a PRICE_DROP_NOTIFY job for a listing price change.
+
+    Called from routes.py when a seller edits their listing and lowers the price.
+    Fire-and-forget — never raises.
+    """
+    try:
+        if new_price >= old_price:
+            return
+        from worker.queue import enqueue, NORMAL
+        enqueue('PRICE_DROP_NOTIFY', {
+            'listing_id': listing_id,
+            'old_price':  float(old_price),
+            'new_price':  float(new_price),
+        }, priority=NORMAL)
+        _log.info("notify_price_drop: enqueued for listing=%s %.2f→%.2f",
+                  listing_id, old_price, new_price)
+    except Exception as exc:
+        _log.error("notify_price_drop failed (listing=%s): %s", listing_id, exc)
 
 
 def notify_admin_notice(user_id, title, message=None, action_url=None):

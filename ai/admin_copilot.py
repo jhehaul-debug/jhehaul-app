@@ -49,6 +49,29 @@ ADMIN_COPILOT_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_growth_operations_summary",
+            "description": (
+                "Phase M growth automation analytics. "
+                "In-app notification counts by type (price drops, offer reminders, expiry reminders, etc.), "
+                "email delivery rates for growth events, user opt-out rates per preference, "
+                "and background job health for PRICE_DROP_NOTIFY / GROWTH_REMINDER. "
+                "Use for: 'How many notifications did we send?', 'Are users turning off emails?', "
+                "'What's the price-drop alert volume?', 'Growth automation health?'"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "description": "Look-back window in days (1=today, 7=this week, 30=this month). Default 7.",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_marketplace_overview",
             "description": (
                 "Full marketplace health snapshot — users, listings, reports, fraud flags, "
@@ -375,6 +398,7 @@ def _dispatch_admin_tool(name: str, args: dict, current_user) -> dict:
             get_email_delivery_summary,
             get_ai_usage_summary,
             get_morning_brief,
+            get_growth_operations_summary,
         )
 
         _OPS_REGISTRY = {
@@ -392,6 +416,7 @@ def _dispatch_admin_tool(name: str, args: dict, current_user) -> dict:
             'get_email_delivery_summary':      lambda a: get_email_delivery_summary(**{k: v for k, v in a.items() if k == 'days'}),
             'get_ai_usage_summary':            lambda a: get_ai_usage_summary(**{k: v for k, v in a.items() if k == 'days'}),
             'get_morning_brief':               lambda a: get_morning_brief(),
+            'get_growth_operations_summary':   lambda a: get_growth_operations_summary(**{k: v for k, v in a.items() if k == 'days'}),
         }
 
         if name in _OPS_REGISTRY:

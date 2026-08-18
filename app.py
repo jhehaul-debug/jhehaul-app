@@ -1031,6 +1031,30 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (Phase K) skipped: %s", _e)
 
+    # ── Phase M: Growth Automation notification preference + dedup columns ────
+    try:
+        _pm_cols = [
+            ("users",         "notify_saved_search_match",     "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_price_drop",             "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_offer_reminder",         "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_listing_expiry_reminder","BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_recommendations",        "BOOLEAN DEFAULT FALSE"),
+            ("users",         "notify_email_price_drop",       "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_email_offers",           "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_email_listing_expiry",   "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_email_recommendations",  "BOOLEAN DEFAULT FALSE"),
+            ("notifications", "dedup_key",                     "VARCHAR(200)"),
+        ]
+        for _tbl, _col, _defn in _pm_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: Phase M growth automation columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (Phase M) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category
@@ -1307,6 +1331,9 @@ start_expiry_thread(app)
 
 from draft_cleanup import start_draft_cleanup_thread
 start_draft_cleanup_thread(app)
+
+from growth_automation import start_growth_automation_thread
+start_growth_automation_thread(app)
 
 # Deactivate any pinned gallery listings whose listing is no longer active.
 try:

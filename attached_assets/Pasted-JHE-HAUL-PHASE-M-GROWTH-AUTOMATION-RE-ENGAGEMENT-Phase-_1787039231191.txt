@@ -1,0 +1,811 @@
+JHE HAUL — PHASE M
+GROWTH AUTOMATION + RE-ENGAGEMENT
+
+Phase L is complete and verified.
+
+Now begin Phase M.
+
+This phase adds intelligent growth automation designed to bring buyers and sellers back to JHE Haul without creating spam.
+
+IMPORTANT:
+
+Use:
+- In-app notifications
+- Email
+
+Do NOT use SMS.
+
+Do NOT begin monetization billing yet.
+Do NOT begin autonomous marketing agents yet.
+Do NOT send mass spam.
+Do NOT change unrelated working features.
+
+==================================================
+PHASE M OBJECTIVE
+==================================================
+
+Create growth automation that helps users return when something relevant happens.
+
+Potential triggers:
+
+- Saved search match
+- New matching listing
+- Price drop
+- Unread message reminder
+- Pending offer reminder
+- Listing expiration reminder
+- Relist reminder
+- Delivery update
+- Seller activity summary
+- New nearby inventory
+- Saved item activity
+- Buyer/seller follow-up
+
+Every notification must be based on real marketplace events.
+
+==================================================
+1. NOTIFICATION PREFERENCE CENTER
+==================================================
+
+Create or improve user notification preferences.
+
+Potential controls:
+
+Saved Search Matches
+Price Drops
+Messages
+Offers
+Listing Expiration
+Relist Reminders
+Delivery Updates
+Seller Performance
+Marketplace Recommendations
+
+Channels:
+
+In-App
+Email
+
+No SMS.
+
+Users should be able to turn non-essential notifications off.
+
+==================================================
+2. SAVED SEARCH ALERTS
+==================================================
+
+Reuse the Saved Search foundation from Phase E/K.
+
+Flow:
+
+User saves search
+→ new listing published
+→ Phase F worker matches search
+→ user receives notification
+
+Example:
+
+“New Toyota Camry listed under $18,000 near you.”
+
+Only send when the listing actually matches.
+
+Prevent duplicate notifications.
+
+==================================================
+3. PRICE DROP ALERTS
+==================================================
+
+If a user saved a listing:
+
+Listing price changes downward
+→ create price-drop alert
+
+Example:
+
+“Price dropped from $10,000 to $9,500.”
+
+Use actual stored price history/current values.
+
+Do not invent previous pricing.
+
+Do not notify if price increased.
+
+==================================================
+4. UNREAD MESSAGE REMINDERS
+==================================================
+
+If a user has unread buyer/seller messages:
+
+Create a reminder after an appropriate delay.
+
+Do not repeatedly notify every few minutes.
+
+Use sensible deduplication and cooldown rules.
+
+Example:
+
+“You have an unread message about your Chevrolet Volt.”
+
+Do not include unnecessary private message content in email subject lines.
+
+==================================================
+5. OFFER REMINDERS
+==================================================
+
+For pending marketplace offers:
+
+Seller:
+“You have 2 pending offers.”
+
+Buyer:
+“Your offer is still awaiting a response.”
+
+Avoid excessive reminders.
+
+Do not automatically accept/decline offers.
+
+==================================================
+6. LISTING EXPIRATION REMINDERS
+==================================================
+
+Before an active listing expires:
+
+Send an in-app reminder.
+
+Optional email if enabled.
+
+Example:
+
+“Your listing expires in 3 days.”
+
+Use actual expiration rules.
+
+==================================================
+7. RELIST REMINDERS
+==================================================
+
+If a listing expires or becomes inactive under existing marketplace rules:
+
+Offer:
+
+Relist
+
+Do not automatically relist without seller confirmation.
+
+If strict abandoned-draft deletion rules apply, preserve them.
+
+==================================================
+8. SOLD LISTING BEHAVIOR
+==================================================
+
+Do not send:
+
+- expiration alerts
+- relist alerts
+- price-drop alerts
+
+for sold listings unless a specific seller action makes sense.
+
+==================================================
+9. DELIVERY UPDATES
+==================================================
+
+Use actual JHE Haul delivery states.
+
+Potential notifications:
+
+Delivery requested
+Driver/hauler assigned
+Scheduled
+Picked up
+Delivered
+Issue requiring attention
+
+Do not invent delivery status.
+
+Do not expose private addresses in unnecessary notification content.
+
+==================================================
+10. SELLER PERFORMANCE ALERTS
+==================================================
+
+Reuse Phase I Seller Intelligence.
+
+Examples:
+
+“Your listing has received 50 views.”
+
+“You have 3 unanswered messages.”
+
+“Your listing has strong activity.”
+
+“Your listing may need attention.”
+
+Use real data only.
+
+Do not over-notify for every view.
+
+==================================================
+11. NEW NEAR YOU
+==================================================
+
+Where personalization is enabled:
+
+Periodically surface meaningful new inventory near a user.
+
+Use:
+- general location
+- saved interests
+- search activity
+- marketplace category interest
+
+Do not send generic daily spam.
+
+Only notify when relevance is high enough.
+
+==================================================
+12. RECOMMENDATION RE-ENGAGEMENT
+==================================================
+
+Reuse Phase K RecommendationService.
+
+Potential message:
+
+“New vehicles similar to ones you viewed are available.”
+
+Do not reveal private browsing history in a way that feels invasive.
+
+Keep notification wording general.
+
+==================================================
+13. NOTIFICATION DEDUPLICATION
+==================================================
+
+Critical:
+
+Do not repeatedly send the same alert.
+
+Create deduplication rules using:
+
+user
+event type
+listing/resource
+time window
+
+Example:
+
+Same price drop
+→ one notification
+
+Same saved-search match
+→ one notification per matched listing
+
+==================================================
+14. COOLDOWNS
+==================================================
+
+Implement cooldown periods.
+
+Examples:
+
+Unread message reminder
+→ not every hour indefinitely
+
+Seller performance reminder
+→ limited frequency
+
+Recommendation alert
+→ limited frequency
+
+Do not create notification fatigue.
+
+==================================================
+15. PRIORITY
+==================================================
+
+Classify notifications.
+
+Potential levels:
+
+URGENT
+IMPORTANT
+NORMAL
+LOW
+
+Examples:
+
+URGENT:
+Account/security issue
+Critical delivery issue
+
+IMPORTANT:
+Offer received
+Unread buyer message
+Delivery update
+
+NORMAL:
+Saved search match
+Price drop
+
+LOW:
+Marketplace recommendation
+
+Do not abuse high-priority classifications.
+
+==================================================
+16. IN-APP NOTIFICATION CENTER
+==================================================
+
+Ensure users have a clean notification center.
+
+Support:
+
+Unread
+Read
+Mark Read
+Open related listing/message/delivery
+
+Keep alerts concise.
+
+==================================================
+17. EMAIL
+==================================================
+
+Use SendGrid or the existing email system.
+
+Email should support:
+
+- saved search matches
+- price drops
+- important offers
+- important messages/reminders
+- listing expiration
+- delivery updates
+
+Do not send email if user disabled that category/channel.
+
+==================================================
+18. SENDGRID FAILURE SAFETY
+==================================================
+
+Because prior SendGrid delivery problems existed, growth automation must not assume email always works.
+
+Flow:
+
+Notification event
+→ create in-app notification
+→ enqueue email separately
+→ email failure logged
+→ in-app notification remains available
+
+Email failure must not break marketplace action.
+
+==================================================
+19. EMAIL RETRIES
+==================================================
+
+Reuse Phase F queue.
+
+Temporary SendGrid/network failure:
+→ retry safely
+
+Permanent delivery failure:
+→ stop retrying after limit
+
+Prevent duplicate emails.
+
+==================================================
+20. UNSUBSCRIBE / PREFERENCES
+==================================================
+
+Non-essential marketing/recommendation emails must respect user preferences.
+
+Provide a clear preference-management path.
+
+Do not disable transactional/security email merely because marketing preferences are off.
+
+==================================================
+21. NOTIFICATION EVENT SERVICE
+==================================================
+
+Create or extend a service such as:
+
+NotificationService
+
+Potential methods:
+
+notify_saved_search_match()
+
+notify_price_drop()
+
+notify_unread_message()
+
+notify_offer_received()
+
+notify_listing_expiring()
+
+notify_delivery_update()
+
+notify_seller_insight()
+
+Keep notification logic centralized.
+
+==================================================
+22. EVENT-DRIVEN ARCHITECTURE
+==================================================
+
+Prefer event-driven triggers.
+
+Examples:
+
+listing_published
+listing_price_changed
+message_received
+offer_created
+delivery_status_changed
+listing_expiring
+
+Event
+→ NotificationService
+→ preference check
+→ deduplication check
+→ in-app notification
+→ optional queued email
+
+Do not scatter duplicate notification logic across templates/routes.
+
+==================================================
+23. BACKGROUND WORKERS
+==================================================
+
+Reuse Phase F workers for:
+
+Saved search matching
+Email sending
+Reminder scheduling
+Expiration checks
+Recommendation refresh
+Notification cleanup
+
+Do not block web requests.
+
+==================================================
+24. SCHEDULED JOBS
+==================================================
+
+Use safe scheduled jobs for:
+
+Listing expiration checks
+Unread reminder checks
+Relist reminder checks
+Periodic saved-search matching if event-driven matching is not sufficient
+
+Do not create high-frequency unnecessary jobs.
+
+==================================================
+25. ADMIN GROWTH OPERATIONS
+==================================================
+
+Integrate with Phase L Admin AI.
+
+Admin may ask:
+
+“How many notifications were sent today?”
+
+“How many emails failed?”
+
+“Which alert gets the most clicks?”
+
+“How many saved-search matches were sent?”
+
+“Are users turning notifications off?”
+
+Use real tracked data only.
+
+==================================================
+26. GROWTH ANALYTICS
+==================================================
+
+Track aggregate funnel metrics such as:
+
+Notification sent
+Notification opened
+Listing viewed
+Saved
+Message started
+Offer created
+
+Where supported.
+
+Do not falsely claim causation.
+
+==================================================
+27. EMAIL / NOTIFICATION COST CONTROL
+==================================================
+
+Prevent uncontrolled volume.
+
+Implement:
+
+- deduplication
+- cooldowns
+- preference checks
+- batch/digest opportunities
+- rate limits
+
+Do not call AI just to generate routine notification text.
+
+Use templates for standard events.
+
+==================================================
+28. AI USE
+==================================================
+
+AI may assist later with personalized summaries, but Phase M should primarily use deterministic event templates.
+
+Examples:
+
+“New listing matches your saved search.”
+
+does not need an AI call.
+
+Use AI only where it provides real value.
+
+==================================================
+29. DIGEST FOUNDATION
+==================================================
+
+Prepare for optional future:
+
+Daily Digest
+Weekly Digest
+
+Potential content:
+
+New matches
+Saved-item price changes
+Pending offers
+Unread messages
+Seller activity
+
+Do NOT automatically subscribe users to marketing digests without appropriate consent/preferences.
+
+==================================================
+30. ANTI-SPAM SAFETY
+==================================================
+
+Implement limits that prevent:
+
+- repeated alerts
+- duplicate emails
+- mass generic blasts
+- notification loops
+- alerts for removed/private listings
+
+==================================================
+31. FRAUD / SAFETY INTEGRATION
+==================================================
+
+Do not recommend or notify users about listings that Phase J has removed/suspended/restricted from discovery.
+
+Do not expose internal risk flags in user notifications.
+
+==================================================
+32. PRIVACY
+==================================================
+
+Do not include unnecessary:
+
+- exact addresses
+- private message content
+- seller phone/email
+- internal IDs
+- fraud notes
+
+in notifications or emails.
+
+==================================================
+33. MOBILE UX
+==================================================
+
+Optimize notification center for mobile.
+
+Include:
+
+badge count
+compact cards
+clear timestamps
+tap destination
+mark read
+
+Avoid large cluttered cards.
+
+==================================================
+34. FAILURE FALLBACK
+==================================================
+
+If queue or email is unavailable:
+
+Core marketplace remains operational.
+
+Notifications may retry later.
+
+Do not block:
+
+listing creation
+messages
+offers
+delivery
+browsing
+
+==================================================
+35. SECURITY TESTING
+==================================================
+
+Test:
+
+User A cannot read User B notifications.
+
+User cannot modify another user's preferences.
+
+Private listing does not trigger public saved-search alert.
+
+Removed listing does not trigger recommendation notification.
+
+Duplicate event does not create duplicate alert/email.
+
+==================================================
+36. FUNCTIONAL TESTS
+==================================================
+
+Test:
+
+Saved search match
+→ in-app notification
+→ optional email
+
+Price drop
+→ correct previous/current price
+
+Unread message
+→ reminder after cooldown
+
+Offer received
+→ seller alert
+
+Listing expiring
+→ seller reminder
+
+Relist
+→ requires user action
+
+Delivery update
+→ correct state
+
+Email fails
+→ in-app notification still exists
+
+==================================================
+37. PRESERVE EXISTING SYSTEM
+==================================================
+
+Do not break:
+
+Marketplace Home
+Seller Dashboard
+Phase D AI Listing Assistant
+Phase E AI Search
+Phase F Workers/Queue
+Phase G Copilot
+Phase H Controlled Actions
+Phase I Seller Intelligence
+Phase J Fraud/Safety
+Phase K Recommendations
+Phase L Admin AI
+Messages
+Offers
+Saved Items
+Delivery
+Notifications
+Email
+Admin
+Photos
+Videos
+Vehicle fields
+SEO
+Authentication
+Stripe
+
+==================================================
+38. IMPLEMENT LOCALLY / STAGING FIRST
+==================================================
+
+Implement Phase M locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation report:
+
+NOTIFICATION PREFERENCE CENTER: YES/NO
+
+SAVED SEARCH ALERTS: YES/NO
+
+PRICE DROP ALERTS: YES/NO
+
+UNREAD MESSAGE REMINDERS: YES/NO
+
+OFFER REMINDERS: YES/NO
+
+LISTING EXPIRATION ALERTS: YES/NO
+
+RELIST REMINDERS: YES/NO
+
+DELIVERY ALERTS: YES/NO
+
+SELLER PERFORMANCE ALERTS: YES/NO
+
+NEW NEAR YOU ALERTS: YES/NO
+
+IN-APP NOTIFICATION CENTER: YES/NO
+
+EMAIL INTEGRATION: YES/NO
+
+EMAIL FAILURE FALLBACK: YES/NO
+
+DEDUPLICATION: YES/NO
+
+COOLDOWNS: YES/NO
+
+USER PREFERENCES ENFORCED: YES/NO
+
+BACKGROUND WORKERS USED: YES/NO
+
+SCHEDULED JOBS USED:
+
+ADMIN GROWTH ANALYTICS: YES/NO
+
+NO SMS VERIFIED: YES/NO
+
+PRIVACY TESTED: YES/NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+NEW ENVIRONMENT VARIABLES:
+
+EXPECTED EMAIL COST:
+
+EXPECTED INFRASTRUCTURE COST:
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+39. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not use SMS.
+
+Do not send mass spam.
+
+Do not begin Phase N yet.
+
+BEGIN PHASE M IMPLEMENTATION.

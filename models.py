@@ -45,6 +45,19 @@ class User(UserMixin, db.Model):
     notify_listing_status_changes = db.Column(db.Boolean, default=True)  # email when a saved listing is reserved/sold
     hide_sold_pref = db.Column(db.Boolean, default=False)                # persist hide-sold toggle across sessions
 
+    # ── Phase M: Growth Automation notification preferences ───────────────────
+    # In-app channels (non-essential; users may disable)
+    notify_saved_search_match    = db.Column(db.Boolean, default=True)
+    notify_price_drop            = db.Column(db.Boolean, default=True)
+    notify_offer_reminder        = db.Column(db.Boolean, default=True)
+    notify_listing_expiry_reminder = db.Column(db.Boolean, default=True)
+    notify_recommendations       = db.Column(db.Boolean, default=False)  # marketing/low-priority
+    # Email channels (separate from in-app)
+    notify_email_price_drop      = db.Column(db.Boolean, default=True)
+    notify_email_offers          = db.Column(db.Boolean, default=True)
+    notify_email_listing_expiry  = db.Column(db.Boolean, default=True)
+    notify_email_recommendations = db.Column(db.Boolean, default=False)  # opt-in marketing
+
     # Admin security fields (only meaningful on is_admin=True accounts)
     admin_password_hash          = db.Column(db.String(256), nullable=True)
     admin_recovery_email         = db.Column(db.String(256), nullable=True)   # verified recovery address
@@ -745,6 +758,9 @@ class Notification(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     read_at = db.Column(db.DateTime, nullable=True)
     metadata_json = db.Column(db.Text, nullable=True)
+    # Phase M deduplication key — format: "{type}:{resource_id}:{window}"
+    # Allows application-level dedup without DB unique constraints.
+    dedup_key = db.Column(db.String(200), nullable=True, index=True)
 
     user = db.relationship('User', foreign_keys=[user_id],
                            backref=db.backref('notifications', lazy='dynamic',

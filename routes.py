@@ -1759,6 +1759,8 @@ def listing_edit(listing_id):
 
     if request.method == "POST":
         _check_listing_csrf()
+        # Capture current price before edits for price-drop detection (Phase M)
+        _price_before_edit = listing.price
         # Apply all fields through whitelist helper (not yet committed)
         _apply_listing_fields(listing, request.form)
 
@@ -1780,6 +1782,17 @@ def listing_edit(listing_id):
                 listing.expires_at > _dt_now.now() + _td_now(days=3)):
             listing.expiry_reminder_sent = False
         db.session.commit()
+
+        # Phase M: trigger price-drop notifications if price dropped for active listing
+        try:
+            if (_price_before_edit is not None and listing.price is not None and
+                    listing.price < _price_before_edit and
+                    listing.status in ('active', 'approved')):
+                from notification_service import notify_price_drop as _notify_pd
+                _notify_pd(listing.id, float(_price_before_edit), float(listing.price))
+        except Exception as _pd_err:
+            app.logger.warning("listing_edit: price-drop notification failed: %s", _pd_err)
+
         flash("Listing updated.", "success")
         return redirect(url_for('selling'))
 
@@ -9027,6 +9040,38 @@ def api_recommendations_event():
     session_key = session.get('rec_session_key')
     _rec_event(user_id, int(listing_id), event_type, source, session_key)
     return jsonify({'ok': True})
+
+
+@app.route("/settings/notifications", methods=["GET", "POST"])
+@require_login
+def settings_notifications():
+    """Notification Preference Center — Phase M Growth Automation."""
+    BOOL_PREFS = [
+        # (form_field, model_attr, label, category)
+        ('notify_saved_search_match',    'notify_saved_search_match',    'Saved search matches',       'discover'),
+        ('notify_price_drop',            'notify_price_drop',            'Price drops on saved items', 'discover'),
+        ('notify_offer_reminder',        'notify_offer_reminder',        'Pending offer reminders',    'offers'),
+        ('notify_listing_expiry_reminder','notify_listing_expiry_reminder','Listing expiry reminders', 'listings'),
+        ('notify_listing_status_changes','notify_listing_status_changes', 'Listing status changes',    'listings'),
+        ('notify_recommendations',       'notify_recommendations',       'Personalised recommendations','discover'),
+        ('notify_email_price_drop',      'notify_email_price_drop',      'Price drop emails',          'email'),
+        ('notify_email_offers',          'notify_email_offers',          'Offer reminder emails',      'email'),
+        ('notify_email_listing_expiry',  'notify_email_listing_expiry',  'Listing expiry emails',      'email'),
+        ('notify_email_recommendations', 'notify_email_recommendations', 'Recommendation emails',      'email'),
+    ]
+    if request.method == "POST":
+        _check_listing_csrf()
+        for field, attr, *_ in BOOL_PREFS:
+            val = request.form.get(field) == 'on'
+            setattr(current_user, attr, val)
+        db.session.commit()
+        flash("Notification preferences saved.", "success")
+        return redirect(url_for('settings_notifications'))
+    return render_template(
+        'settings_notifications.html',
+        prefs=BOOL_PREFS,
+        user=current_user,
+    )
 
 
 @app.route("/api/settings/personalization", methods=["POST"])

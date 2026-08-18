@@ -21,17 +21,30 @@ from email_service import (
     notify_buyer_offer_timed_out,
     notify_buyer_listing_pending,
     notify_buyer_delivery_quote_ready,
+    # Phase M: Growth Automation emails
+    notify_price_drop_alert,
+    notify_seller_pending_offers_reminder,
+    notify_relist_reminder_email,
+    notify_seller_insight_email,
+    notify_seller_listing_expiring_soon,
 )
 
 log = logging.getLogger('jhe.worker.email')
 
 # ── Safe dispatch table (add functions here as email calls are migrated) ───────
 _ALLOWED_FUNCTIONS = {
-    'notify_seller_new_message':      notify_seller_new_message,
-    'notify_buyer_offer_expired':     notify_buyer_offer_expired,
-    'notify_buyer_offer_timed_out':   notify_buyer_offer_timed_out,
-    'notify_buyer_listing_pending':   notify_buyer_listing_pending,
-    'notify_buyer_delivery_quote_ready': notify_buyer_delivery_quote_ready,
+    # Existing
+    'notify_seller_new_message':           notify_seller_new_message,
+    'notify_buyer_offer_expired':          notify_buyer_offer_expired,
+    'notify_buyer_offer_timed_out':        notify_buyer_offer_timed_out,
+    'notify_buyer_listing_pending':        notify_buyer_listing_pending,
+    'notify_buyer_delivery_quote_ready':   notify_buyer_delivery_quote_ready,
+    # Phase M Growth Automation
+    'notify_price_drop_alert':             notify_price_drop_alert,
+    'notify_seller_pending_offers_reminder': notify_seller_pending_offers_reminder,
+    'notify_relist_reminder_email':        notify_relist_reminder_email,
+    'notify_seller_insight_email':         notify_seller_insight_email,
+    'notify_seller_listing_expiring_soon': notify_seller_listing_expiring_soon,
 }
 
 

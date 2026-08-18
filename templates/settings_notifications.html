@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Notification Preferences — JHE Haul{% endblock %}
+
+{% block content %}
+<style>
+.notif-pref-page {
+  max-width: 640px;
+  margin: 32px auto;
+  padding: 0 16px 64px;
+}
+.notif-pref-page h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.notif-pref-page .subtitle {
+  color: #666;
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+.notif-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.notif-section h2 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.notif-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f7f7f7;
+}
+.notif-row:last-child { border-bottom: none; }
+.notif-label {
+  font-size: 0.95rem;
+  color: #222;
+}
+/* Toggle switch */
+.toggle-wrap { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle-wrap input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: #d1d5db;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-slider:before {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  left: 3px; top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle-wrap input:checked + .toggle-slider { background: #2563eb; }
+.toggle-wrap input:checked + .toggle-slider:before { transform: translateX(20px); }
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 14px 0;
+  text-align: right;
+  margin-top: 8px;
+}
+.save-bar button {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.save-bar button:hover { background: #1d4ed8; }
+.notif-pref-note {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.back-link { color: #2563eb; text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { text-decoration: underline; }
+.transactional-note {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #0369a1;
+  margin-bottom: 20px;
+}
+</style>
+
+<div class="notif-pref-page">
+  <a href="{{ url_for('selling') }}" class="back-link">← Back to dashboard</a>
+
+  <h1 style="margin-top:16px;">Notification Preferences</h1>
+  <p class="subtitle">Choose what you want to hear about and how.</p>
+
+  <div class="transactional-note">
+    <strong>Note:</strong> Transactional notifications — new messages, offer responses,
+    and delivery updates — are always delivered regardless of these settings.
+    Only non-essential growth and marketing alerts can be turned off here.
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}" style="margin-bottom:16px;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('settings_notifications') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {# ── In-app notifications ─────────────────────────────────────── #}
+    <div class="notif-section">
+      <h2>🔔 In-App Notifications</h2>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Saved search matches</div>
+          <div class="notif-pref-note">When a new listing matches a search you saved.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_saved_search_match"
+                 {% if user.notify_saved_search_match != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Price drops on saved items</div>
+          <div class="notif-pref-note">When a seller reduces the price on a listing you saved.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_price_drop"
+                 {% if user.notify_price_drop != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Pending offer reminders</div>
+          <div class="notif-pref-note">Reminders about offers you haven't responded to yet.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_offer_reminder"
+                 {% if user.notify_offer_reminder != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Listing expiry reminders</div>
+          <div class="notif-pref-note">A heads-up when your listing is about to expire or has expired.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_listing_expiry_reminder"
+                 {% if user.notify_listing_expiry_reminder != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Listing status changes</div>
+          <div class="notif-pref-note">When a listing you saved is reserved or sold.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_listing_status_changes"
+                 {% if user.notify_listing_status_changes != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Personalised recommendations</div>
+          <div class="notif-pref-note">Listings similar to ones you've viewed or saved.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_recommendations"
+                 {% if user.notify_recommendations %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    {# ── Email notifications ───────────────────────────────────────── #}
+    <div class="notif-section">
+      <h2>📧 Email Notifications</h2>
+      <p class="notif-pref-note" style="margin-bottom:16px;">
+        Controlling email here only affects non-essential alert emails.
+        Offer responses, message threads, and account emails are always sent.
+      </p>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Price drop emails</div>
+          <div class="notif-pref-note">Email when a saved listing drops in price.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_price_drop"
+                 {% if user.notify_email_price_drop != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Offer reminder emails</div>
+          <div class="notif-pref-note">Email reminders about pending or awaiting offers.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_offers"
+                 {% if user.notify_email_offers != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Listing expiry emails</div>
+          <div class="notif-pref-note">Email when your listing is expiring soon or has expired.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_listing_expiry"
+                 {% if user.notify_email_listing_expiry != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Recommendation emails</div>
+          <div class="notif-pref-note">Occasional emails about listings you might like.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_recommendations"
+                 {% if user.notify_email_recommendations %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button type="submit">Save Preferences</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

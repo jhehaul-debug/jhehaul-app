@@ -1045,3 +1045,163 @@ def get_morning_brief() -> dict:
     except Exception as exc:
         log.error("get_morning_brief error: %s", exc)
         return {'error': 'Could not generate morning brief.'}
+
+
+# ---------------------------------------------------------------------------
+# 15. get_growth_operations_summary (Phase M)
+# ---------------------------------------------------------------------------
+
+def get_growth_operations_summary(days: int = 7) -> dict:
+    """Phase M growth automation analytics.
+
+    Returns:
+      - Notification counts by type (all, unread, in window)
+      - Price drop alerts sent
+      - Offer reminders sent
+      - Expiry / relist reminders sent
+      - Email counts by Phase M event type
+      - User opt-out rates for Phase M notification preferences
+      - Background job stats for PRICE_DROP_NOTIFY / GROWTH_REMINDER
+    """
+    try:
+        from app import db
+        from models import Notification, NotificationLog, User, BackgroundJob
+        from sqlalchemy import func
+
+        since = _since(days)
+
+        # ── In-app notification counts ────────────────────────────────────────
+        _GROWTH_TYPES = [
+            'price_drop', 'offer_reminder', 'unread_message_reminder',
+            'listing_expiry_reminder', 'relist_reminder', 'seller_insight',
+            'saved_search_match', 'recommendation',
+        ]
+
+        notif_totals: dict = {}
+        for ntype in _GROWTH_TYPES:
+            notif_totals[ntype] = (
+                Notification.query
+                .filter(
+                    Notification.type == ntype,
+                    Notification.created_at >= since,
+                )
+                .count()
+            )
+
+        total_sent     = sum(notif_totals.values())
+        total_unread   = (
+            Notification.query
+            .filter(
+                Notification.type.in_(_GROWTH_TYPES),
+                Notification.created_at >= since,
+                Notification.is_read == False,
+            )
+            .count()
+        )
+        read_rate = (
+            round((1 - total_unread / total_sent) * 100, 1)
+            if total_sent > 0 else None
+        )
+
+        # ── Email counts (Phase M event types in notification_logs) ───────────
+        _GROWTH_EMAIL_TYPES = [
+            'price_drop_alert', 'seller_offer_reminder',
+            'relist_reminder', 'seller_insight',
+            'seller_listing_expiring_soon',
+        ]
+        email_counts: dict = {}
+        for etype in _GROWTH_EMAIL_TYPES:
+            rows = (
+                db.session.query(
+                    NotificationLog.status,
+                    func.count(NotificationLog.id).label('cnt')
+                )
+                .filter(
+                    NotificationLog.event_type == etype,
+                    NotificationLog.created_at >= since,
+                )
+                .group_by(NotificationLog.status)
+                .all()
+            )
+            totals = {'ok': 0, 'failed': 0, 'total': 0}
+            for status, cnt in rows:
+                if status in ('sent', 'ok'):
+                    totals['ok'] += cnt
+                else:
+                    totals['failed'] += cnt
+                totals['total'] += cnt
+            email_counts[etype] = totals
+
+        total_growth_emails = sum(v['total'] for v in email_counts.values())
+        total_growth_email_failures = sum(v['failed'] for v in email_counts.values())
+
+        # ── User opt-out rates (Phase M preference columns) ───────────────────
+        total_users = User.query.count() or 1
+        opt_outs: dict = {}
+        pref_cols = [
+            'notify_saved_search_match', 'notify_price_drop',
+            'notify_offer_reminder', 'notify_listing_expiry_reminder',
+            'notify_recommendations', 'notify_email_price_drop',
+            'notify_email_offers', 'notify_email_listing_expiry',
+            'notify_email_recommendations',
+        ]
+        for col in pref_cols:
+            try:
+                off_count = (
+                    db.session.query(func.count(User.id))
+                    .filter(getattr(User, col) == False)
+                    .scalar() or 0
+                )
+                opt_outs[col] = {
+                    'opted_out': off_count,
+                    'pct': round(off_count / total_users * 100, 1),
+                }
+            except Exception:
+                opt_outs[col] = {'opted_out': 0, 'pct': 0.0}
+
+        # ── Background job health for growth jobs ─────────────────────────────
+        growth_job_types = ['PRICE_DROP_NOTIFY', 'GROWTH_REMINDER']
+        job_stats: dict = {}
+        for jtype in growth_job_types:
+            try:
+                queued = BackgroundJob.query.filter_by(
+                    job_type=jtype, status='QUEUED').count()
+                done = BackgroundJob.query.filter_by(
+                    job_type=jtype, status='DONE').filter(
+                    BackgroundJob.created_at >= since).count()
+                failed = BackgroundJob.query.filter_by(
+                    job_type=jtype, status='FAILED').filter(
+                    BackgroundJob.created_at >= since).count()
+                job_stats[jtype] = {'queued': queued, 'done': done, 'failed': failed}
+            except Exception:
+                job_stats[jtype] = {'queued': 0, 'done': 0, 'failed': 0}
+
+        return {
+            'period_days': days,
+            'generated_at': _fmt_dt(_now_utc()),
+            'in_app_notifications': {
+                'by_type': notif_totals,
+                'total_sent': total_sent,
+                'total_unread': total_unread,
+                'read_rate_pct': read_rate,
+            },
+            'emails': {
+                'by_event_type': email_counts,
+                'total_sent': total_growth_emails,
+                'total_failed': total_growth_email_failures,
+                'delivery_rate_pct': (
+                    round((total_growth_emails - total_growth_email_failures)
+                          / total_growth_emails * 100, 1)
+                    if total_growth_emails > 0 else None
+                ),
+            },
+            'user_opt_outs': opt_outs,
+            'background_jobs': job_stats,
+            'nav_links': [
+                {'label': 'Notification Preferences', 'url': '/settings/notifications'},
+                {'label': 'Admin Operations',         'url': '/admin/operations'},
+            ],
+        }
+    except Exception as exc:
+        log.error("get_growth_operations_summary error: %s", exc)
+        return {'error': 'Could not generate growth operations summary.'}
