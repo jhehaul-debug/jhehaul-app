@@ -190,6 +190,246 @@ with app.app_context():
     )
 
 
+# ── Route integration tests: admin_withdraw_quote → SMS ──────────────────────
+#
+# These tests POST directly to /admin/quote/<id>/withdraw and verify that
+# notify_customer_quote_withdrawn_sms is called (or skipped) depending on the
+# ev_quote_withdrawn setting.
+#
+# Both the email notifier (routes.notify_customer_quote_withdrawn) and the SMS
+# notifier (routes.notify_customer_quote_withdrawn_sms) are always patched so
+# no real SendGrid or Twilio call is ever made.
+#
+# SMS settings are saved before each test and restored in finally-blocks so
+# the test suite is order-independent.
+#
+
+import uuid as _uuid
+import contextlib as _cl
+
+with app.app_context():
+    from models import db, User, Job, Quote, SmsSettings
+
+    # Patch targets — both live in the routes module namespace
+    _EMAIL_PATCH = "routes.notify_customer_quote_withdrawn"
+    _SMS_PATCH   = "routes.notify_customer_quote_withdrawn_sms"
+
+    # ── Helper: create a disposable customer + job + pending quote ────────────
+    def _make_test_fixtures(tag):
+        customer = User(
+            id=str(_uuid.uuid4()),
+            email=f"route_test_{tag}_{_uuid.uuid4().hex[:6]}@example.invalid",
+            first_name="Route",
+            last_name="Test",
+            user_type="customer",
+            phone="+16515559900",
+            notify_sms=True,
+            sms_consent=True,
+            age_confirmed=True,
+        )
+        db.session.add(customer)
+        db.session.flush()
+
+        job = Job(
+            customer_id=customer.id,
+            customer_name="Route Test",
+            pickup_address="123 Test St",
+            pickup_zip="55401",
+            job_description="Test description",
+            service_type="Junk Removal",
+            status="quoted",
+        )
+        db.session.add(job)
+        db.session.flush()
+
+        quote = Quote(
+            job_id=job.id,
+            price=150.0,
+            deposit_amount=50.0,
+            status="pending",
+        )
+        db.session.add(quote)
+        db.session.commit()
+        return customer, job, quote
+
+    def _cleanup_fixtures(*objs):
+        """Delete test DB rows, ignoring rows that were already removed."""
+        db.session.expire_all()
+        for obj in objs:
+            try:
+                merged = db.session.merge(obj)
+                db.session.delete(merged)
+            except Exception:
+                pass
+        db.session.commit()
+
+    @_cl.contextmanager
+    def _sms_settings_saved():
+        """Context manager: save ev_quote_withdrawn + global flag, restore on exit."""
+        s = SmsSettings.query.first()
+        if not s:
+            s = SmsSettings()
+            db.session.add(s)
+            db.session.commit()
+        orig_global = s.sms_globally_enabled
+        orig_ev     = s.ev_quote_withdrawn
+        try:
+            yield s
+        finally:
+            db.session.expire_all()
+            s2 = SmsSettings.query.first()
+            if s2:
+                s2.sms_globally_enabled = orig_global
+                s2.ev_quote_withdrawn   = orig_ev
+                db.session.commit()
+
+    admin = User.query.filter_by(is_admin=True).first()
+    assert admin, "Route integration tests require an admin user in the dev DB"
+
+    _flu._get_user = lambda: admin
+    client = app.test_client()
+
+    # ── Test A: SMS IS called when ev_quote_withdrawn=True ───────────────────
+    with _sms_settings_saved() as _s_a:
+        _s_a.sms_globally_enabled = True
+        _s_a.ev_quote_withdrawn   = True
+        db.session.commit()
+
+        _cust_a, _job_a, _quote_a = _make_test_fixtures("a")
+        try:
+            with patch(_EMAIL_PATCH) as _email_mock_a, \
+                 patch(_SMS_PATCH)   as sms_mock_a:
+                _email_mock_a.return_value = True
+                sms_mock_a.return_value    = True
+                resp_a = client.post(
+                    f"/admin/quote/{_quote_a.id}/withdraw",
+                    data={"withdrawal_note": "Price changed"},
+                )
+
+            check(
+                "Route: POST /admin/quote/<id>/withdraw redirects (ev_quote_withdrawn=True)",
+                resp_a.status_code in (302, 303),
+                f"status={resp_a.status_code}",
+            )
+            check(
+                "Route: notify_customer_quote_withdrawn_sms IS called when ev_quote_withdrawn=True",
+                sms_mock_a.called,
+                f"called={sms_mock_a.called}, call_args={sms_mock_a.call_args}",
+            )
+            # Verify the phone, job_id, and withdrawal_note are passed correctly
+            _sms_kw_a  = sms_mock_a.call_args[1] if sms_mock_a.called else {}
+            _sms_pos_a = sms_mock_a.call_args[0] if sms_mock_a.called else ()
+            _got_phone  = _sms_kw_a.get("phone")  or (len(_sms_pos_a) > 0 and _sms_pos_a[0])
+            _got_job_id = _sms_kw_a.get("job_id") or (len(_sms_pos_a) > 1 and _sms_pos_a[1])
+            _got_note   = _sms_kw_a.get("withdrawal_note")
+            check(
+                "Route: SMS call passes correct phone, job_id and withdrawal_note",
+                sms_mock_a.called
+                    and _got_phone  == _cust_a.phone
+                    and _got_job_id == _job_a.id
+                    and _got_note   == "Price changed",
+                f"phone={_got_phone!r} (want {_cust_a.phone!r}), "
+                f"job_id={_got_job_id!r} (want {_job_a.id!r}), "
+                f"note={_got_note!r}",
+            )
+            # Verify the quote was actually withdrawn in the DB
+            db.session.expire_all()
+            _qt_a = db.session.get(Quote, _quote_a.id)
+            check(
+                "Route: quote status set to 'withdrawn' in DB after POST",
+                _qt_a is not None and _qt_a.status == "withdrawn",
+                f"status={getattr(_qt_a, 'status', 'MISSING')}",
+            )
+        finally:
+            _cleanup_fixtures(_quote_a, _job_a, _cust_a)
+
+    # ── Test B: route still invokes the SMS fn when ev_quote_withdrawn=False ──
+    # (The fn itself gate-keeps; unit tests above confirm it returns False then.)
+    with _sms_settings_saved() as _s_b:
+        _s_b.sms_globally_enabled = True
+        _s_b.ev_quote_withdrawn   = False
+        db.session.commit()
+
+        _cust_b, _job_b, _quote_b = _make_test_fixtures("b")
+        try:
+            with patch(_EMAIL_PATCH) as _email_mock_b, \
+                 patch(_SMS_PATCH)   as sms_mock_b:
+                _email_mock_b.return_value = True
+                sms_mock_b.return_value    = False
+                resp_b = client.post(
+                    f"/admin/quote/{_quote_b.id}/withdraw",
+                    data={"withdrawal_note": ""},
+                )
+
+            check(
+                "Route: POST /admin/quote/<id>/withdraw redirects (ev_quote_withdrawn=False)",
+                resp_b.status_code in (302, 303),
+                f"status={resp_b.status_code}",
+            )
+            # The route invokes the fn; the fn's own gate returns False (tested in unit tests above).
+            check(
+                "Route: notify_customer_quote_withdrawn_sms IS invoked regardless of toggle "
+                "(toggle check lives inside the fn, not the route)",
+                sms_mock_b.called,
+                f"called={sms_mock_b.called}",
+            )
+        finally:
+            _cleanup_fixtures(_quote_b, _job_b, _cust_b)
+
+    # ── Test C: SMS fn NOT called when customer has no phone ─────────────────
+    with _sms_settings_saved() as _s_c:
+        _s_c.sms_globally_enabled = True
+        _s_c.ev_quote_withdrawn   = True
+        db.session.commit()
+
+        cust_c = User(
+            id=str(_uuid.uuid4()),
+            email=f"route_test_c_{_uuid.uuid4().hex[:6]}@example.invalid",
+            first_name="No",
+            last_name="Phone",
+            user_type="customer",
+            phone=None,        # no phone → route guard skips SMS fn entirely
+            notify_sms=True,
+            sms_consent=True,
+            age_confirmed=True,
+        )
+        db.session.add(cust_c)
+        db.session.flush()
+        job_c = Job(
+            customer_id=cust_c.id,
+            customer_name="No Phone",
+            pickup_address="123 Test St",
+            pickup_zip="55401",
+            job_description="Test",
+            service_type="Junk Removal",
+            status="quoted",
+        )
+        db.session.add(job_c)
+        db.session.flush()
+        quote_c = Quote(
+            job_id=job_c.id,
+            price=100.0,
+            deposit_amount=30.0,
+            status="pending",
+        )
+        db.session.add(quote_c)
+        db.session.commit()
+
+        try:
+            with patch(_EMAIL_PATCH) as _email_mock_c, \
+                 patch(_SMS_PATCH)   as sms_mock_c:
+                _email_mock_c.return_value = True
+                resp_c = client.post(f"/admin/quote/{quote_c.id}/withdraw", data={})
+
+            check(
+                "Route: notify_customer_quote_withdrawn_sms NOT called when customer has no phone",
+                not sms_mock_c.called,
+                f"called={sms_mock_c.called}",
+            )
+        finally:
+            _cleanup_fixtures(quote_c, job_c, cust_c)
+
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 failed = [r for r in results if not r[1]]
 print(f"\n{len(results) - len(failed)}/{len(results)} passed")
