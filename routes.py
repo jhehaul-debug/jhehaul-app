@@ -649,6 +649,8 @@ def marketplace():
     min_price_raw      = request.args.get('min_price',    '').strip()
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
+    min_baths_raw      = request.args.get('min_baths',    '').strip()
+    garage_size_f      = request.args.get('garage_size',  '').strip()
     open_house_only    = request.args.get('open_house',   '').strip()
     # ── Phase E: extended search params ──────────────────────────────────
     vehicle_make_f    = request.args.get('vehicle_make',        '').strip()
@@ -683,6 +685,8 @@ def marketplace():
     except ValueError: max_price = None
     try: min_beds = float(min_beds_raw) if min_beds_raw else None
     except ValueError: min_beds = None
+    try: min_baths = float(min_baths_raw) if min_baths_raw else None
+    except ValueError: min_baths = None
     try: veh_yr_min = int(veh_yr_min_raw)    if veh_yr_min_raw else None
     except ValueError: veh_yr_min = None
     try: veh_yr_max = int(veh_yr_max_raw)    if veh_yr_max_raw else None
@@ -694,6 +698,7 @@ def marketplace():
                      or listing_type_filter or area_filter or city_zip_filter
                      or min_price is not None or max_price is not None
                      or min_beds is not None or open_house_only or hide_sold
+                     or min_baths is not None or garage_size_f
                      or vehicle_make_f or vehicle_model_f
                      or veh_yr_min is not None or veh_yr_max is not None
                      or veh_mileage_max is not None or condition_f
@@ -798,6 +803,10 @@ def marketplace():
             qobj = qobj.filter(Listing.price <= max_price)
         if min_beds is not None:
             qobj = qobj.filter(Listing.bedrooms >= min_beds)
+        if min_baths is not None:
+            qobj = qobj.filter(Listing.bathrooms >= min_baths)
+        if garage_size_f:
+            qobj = qobj.filter(Listing.garage_parking == garage_size_f)
         if open_house_only:
             from datetime import datetime as _now_dt
             qobj = qobj.filter(Listing.open_house_dt >= _now_dt.utcnow())
@@ -890,7 +899,9 @@ def marketplace():
                                area_filter=area_filter,
                                city_zip_filter=city_zip_filter,
                                min_price=min_price, max_price=max_price,
-                               min_beds=min_beds, open_house_only=open_house_only,
+                               min_beds=min_beds, min_baths=min_baths,
+                               garage_size=garage_size_f,
+                               open_house_only=open_house_only,
                                hide_sold=hide_sold,
                                search_limit=_limit,
                                has_more=has_more,

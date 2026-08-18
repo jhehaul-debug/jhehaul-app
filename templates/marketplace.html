@@ -972,6 +972,24 @@ document.addEventListener('DOMContentLoaded',function(){
                 </select>
             </div>
             <div class="mp-panel-group">
+                <label>Min Baths</label>
+                <select name="min_baths">
+                    <option value="">Any</option>
+                    {% for b in ['0.5','1','1.5','2','2.5','3','4'] %}
+                    <option value="{{ b }}" {{ 'selected' if listing_type_filter == 'property_sale' and request.args.get('min_baths','') == b }}>{{ b }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mp-panel-group">
+                <label>Garage</label>
+                <select name="garage_size">
+                    <option value="">Any</option>
+                    {% for g in ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+                    <option value="{{ g }}" {{ 'selected' if listing_type_filter == 'property_sale' and request.args.get('garage_size','') == g }}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mp-panel-group">
                 <label>Open House</label>
                 <select name="open_house">
                     <option value="">Any</option>
@@ -979,7 +997,7 @@ document.addEventListener('DOMContentLoaded',function(){
                 </select>
             </div>
             <button type="submit" class="mp-panel-submit">Apply</button>
-            {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
+            {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('min_baths') or request.args.get('garage_size') or request.args.get('open_house')) %}
             <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>
             {% endif %}
         </div>
@@ -1015,8 +1033,26 @@ document.addEventListener('DOMContentLoaded',function(){
                     {% endfor %}
                 </select>
             </div>
+            <div class="mp-panel-group">
+                <label>Min Baths</label>
+                <select name="min_baths">
+                    <option value="">Any</option>
+                    {% for b in ['0.5','1','1.5','2','2.5','3','4'] %}
+                    <option value="{{ b }}" {{ 'selected' if listing_type_filter == 'rental' and request.args.get('min_baths','') == b }}>{{ b }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mp-panel-group">
+                <label>Garage</label>
+                <select name="garage_size">
+                    <option value="">Any</option>
+                    {% for g in ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+                    <option value="{{ g }}" {{ 'selected' if listing_type_filter == 'rental' and request.args.get('garage_size','') == g }}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <button type="submit" class="mp-panel-submit">Apply</button>
-            {% if listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds')) %}
+            {% if listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('min_baths') or request.args.get('garage_size')) %}
             <a href="/marketplace?listing_type=rental{{ ('&q=' ~ _q_val) if _q_val else '' }}" class="mp-panel-clear">✕ Clear</a>
             {% endif %}
         </div>
