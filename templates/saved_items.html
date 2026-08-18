@@ -281,6 +281,9 @@
         wrapper._jheHide = setTimeout(() => {
           wrapper._jheHide = null;
           wrapper.style.display = 'none';
+          // Unavailable cards cannot be undone, so show the empty state as soon
+          // as this card is physically hidden rather than waiting for the toast.
+          if (unavailable) maybeShowEmptyState();
         }, 260);
 
         showToast(listingId, csrf, wrapper, btn, unavailable);
