@@ -578,6 +578,9 @@ def home():
         show_profile_nudge = (profile_incomplete and
                               not getattr(current_user, 'profile_nudge_dismissed', False) and
                               not show_welcome)
+        # Seed city_zip_pref session from DB preference if not already in session
+        if 'city_zip_pref' not in session and current_user.is_authenticated and current_user.preferred_area:
+            session['city_zip_pref'] = current_user.preferred_area
         _home_resp = make_response(render_template(
             'marketplace.html', categories=categories, is_search=False,
             hide_sold='1' if hide_sold_pref else '',
@@ -635,16 +638,28 @@ def marketplace():
     area_filter        = request.args.get('area',         '').strip()
     _city_zip_in_url   = 'city_zip' in request.args
     city_zip_filter    = request.args.get('city_zip',     '').strip()
-    # Persist buyer's preferred area in session so it pre-fills on future visits.
-    # Only update the session when city_zip was explicitly present in this request
+    # Persist buyer's preferred area in session (all users) and on the User
+    # record (logged-in users) so it survives across devices and browsers.
+    # Only update when city_zip was explicitly present in this request
     # (including an empty value, which means the buyer cleared it).
     if _city_zip_in_url:
         if city_zip_filter:
             session['city_zip_pref'] = city_zip_filter
+            # Persist to DB for logged-in buyers
+            if current_user.is_authenticated:
+                if current_user.preferred_area != city_zip_filter:
+                    current_user.preferred_area = city_zip_filter
+                    db.session.commit()
         else:
             session.pop('city_zip_pref', None)
+            # Clear stored preference for logged-in buyers
+            if current_user.is_authenticated and current_user.preferred_area:
+                current_user.preferred_area = None
+                db.session.commit()
     else:
-        # Not in URL — restore from saved preference so the filter pre-fills
+        # Not in URL — restore from session, or from DB for logged-in users
+        if 'city_zip_pref' not in session and current_user.is_authenticated and current_user.preferred_area:
+            session['city_zip_pref'] = current_user.preferred_area
         city_zip_filter = session.get('city_zip_pref', '')
     min_price_raw      = request.args.get('min_price',    '').strip()
     max_price_raw      = request.args.get('max_price',    '').strip()

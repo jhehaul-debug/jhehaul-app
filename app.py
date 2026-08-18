@@ -359,6 +359,16 @@ with app.app_context():
         logging.info("Column migration (users.notify_listing_status_changes) skipped: %s", _e)
 
     try:
+        db.session.execute(_text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_area VARCHAR(200)"
+        ))
+        db.session.commit()
+        logging.info("Column migration: users.preferred_area ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (users.preferred_area) skipped: %s", _e)
+
+    try:
         from sqlalchemy import inspect as _sa_inspect2
         _inspector2 = _sa_inspect2(db.engine)
         _user_cols2 = {c['name'] for c in _inspector2.get_columns('users')}

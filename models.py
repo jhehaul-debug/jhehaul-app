@@ -63,6 +63,9 @@ class User(UserMixin, db.Model):
     notify_email_offer_accepted  = db.Column(db.Boolean, default=True)   # buyer: offer accepted
     notify_email_delivery_quote  = db.Column(db.Boolean, default=True)   # buyer: delivery quote ready
 
+    # ── Buyer area preference (persists across devices for logged-in users) ───
+    preferred_area               = db.Column(db.String(200), nullable=True)  # City name or ZIP code
+
     # ── Phase N: Monetization plan + Stripe customer reference ────────────────
     # Stripe handles all card data — only the customer/subscription IDs are stored here.
     stripe_customer_id          = db.Column(db.String(128), nullable=True)
