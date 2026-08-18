@@ -9875,14 +9875,16 @@ def landing():
             .limit(6)
             .all()
         )
-    return render_template(
+    response = make_response(render_template(
         'landing.html',
         gallery_photos=_gallery_photos(active_only=True),
         preview_listings=preview_listings,
         for_sale_listings=for_sale_listings,
         rental_listings=rental_listings,
         recent_listings=recent_listings,
-    )
+    ))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 @app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
 @require_admin
