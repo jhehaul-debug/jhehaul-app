@@ -533,6 +533,26 @@ def get_listing_intelligence(listing_id: int, current_user) -> dict:
     return get_listing_intel(int(listing_id), current_user.id)
 
 
+# ---------------------------------------------------------------------------
+# Phase J — Admin Fraud & Safety tools (admin-only, never exposed to regular users)
+# ---------------------------------------------------------------------------
+
+def get_fraud_queue_summary(current_user) -> dict:
+    """Return aggregate fraud queue stats for admin Copilot.
+    Answers: 'Show me high-risk listings', 'Summarize today's reports', 'Any critical flags?'
+    """
+    from ai.fraud_safety import get_admin_queue_summary
+    return get_admin_queue_summary()
+
+
+def get_account_risk_profile(user_id: str, current_user) -> dict:
+    """Return a full account risk profile for admin Copilot.
+    Answers: 'Which accounts have repeated reports?', 'Is user X flagged?'
+    """
+    from ai.fraud_safety import get_account_risk_profile as _get
+    return _get(str(user_id))
+
+
 _TOOL_REGISTRY = {
     # Phase G — read-only
     "search_listings":              search_listings,
@@ -546,6 +566,9 @@ _TOOL_REGISTRY = {
     "get_delivery_status":          get_delivery_status,
     "get_seller_performance":       get_seller_performance,
     "get_account_navigation_help":  get_account_navigation_help,
+    # Phase J — admin fraud & safety (admin-only)
+    "get_fraud_queue_summary":          get_fraud_queue_summary,
+    "get_account_risk_profile":         get_account_risk_profile,
     # Phase I — seller intelligence (read-only)
     "get_seller_intelligence_overview": get_seller_intelligence_overview,
     "get_listing_intelligence":         get_listing_intelligence,
@@ -559,6 +582,12 @@ _TOOL_REGISTRY = {
 }
 
 # Tools that require authentication
+# Admin-only tools — user must be authenticated AND is_admin=True
+_ADMIN_REQUIRED_TOOLS = {
+    "get_fraud_queue_summary",
+    "get_account_risk_profile",
+}
+
 _AUTH_REQUIRED_TOOLS = {
     "get_user_listings",
     "get_saved_items",
@@ -566,6 +595,9 @@ _AUTH_REQUIRED_TOOLS = {
     "get_user_messages_summary",
     "get_delivery_status",
     "get_seller_performance",
+    # Phase J (admin tools also need auth)
+    "get_fraud_queue_summary",
+    "get_account_risk_profile",
     # Phase I
     "get_seller_intelligence_overview",
     "get_listing_intelligence",
@@ -582,6 +614,11 @@ def dispatch_tool(name: str, args: dict, current_user) -> dict:
     """Call a whitelisted tool with validated inputs.  No arbitrary dispatch."""
     if name not in _TOOL_REGISTRY:
         return {"error": f"Unknown tool: {name}"}
+    # Admin-only tools: reject non-admin callers unconditionally
+    if name in _ADMIN_REQUIRED_TOOLS:
+        if not current_user or not getattr(current_user, 'is_admin', False):
+            return {"error": "Admin access required for this tool."}
+        return _TOOL_REGISTRY[name](current_user=current_user, **args)
     if name in _AUTH_REQUIRED_TOOLS:
         return _TOOL_REGISTRY[name](current_user=current_user, **args)
     return _TOOL_REGISTRY[name](**args)

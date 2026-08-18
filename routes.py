@@ -12,7 +12,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, expire_pending_offers, expire_stale_timed_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -6666,6 +6666,12 @@ def admin_listing_approve(listing_id):
             _reactivate_gallery_pins(listing.id)
         except Exception as _gp_err:
             app.logger.warning("admin_listing_approve: gallery pin reactivation failed: %s", _gp_err)
+    # Phase J: enqueue background fraud scan for newly approved listing
+    try:
+        from worker.queue import enqueue, NORMAL
+        enqueue('FRAUD_SCAN', {'listing_id': listing.id, 'trigger': 'listing_approved'}, priority=NORMAL)
+    except Exception as _fe:
+        app.logger.warning("admin_listing_approve: could not enqueue fraud scan: %s", _fe)
     flash(f'Listing "{listing.title}" approved.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -9107,6 +9113,223 @@ def seller_listing_insights_api(listing_id):
     except Exception as e:
         app.logger.error("seller_listing_insights_api error: %s", e)
         return jsonify({"error": "Could not load listing insights."}), 500
+
+
+# ── Phase J: Admin Fraud & Safety Queue ──────────────────────────────────────
+
+@app.route("/admin/fraud-queue")
+@require_admin
+def admin_fraud_queue():
+    """Admin fraud & safety review queue with risk-level filtering."""
+    from models import FraudFlag
+    from sqlalchemy import case as sa_case
+
+    status_filter = request.args.get('status', '').strip()
+    risk_filter   = request.args.get('risk',   '').strip()
+    q             = request.args.get('q',      '').strip()
+    page          = max(1, int(request.args.get('page', 1) or 1))
+    per_page      = 20
+
+    query = FraudFlag.query
+    if status_filter:
+        query = query.filter(FraudFlag.status == status_filter)
+    if risk_filter:
+        query = query.filter(FraudFlag.risk_level == risk_filter)
+    if q:
+        from models import User as _U, Listing as _L
+        uid_hits = [u.id for u in _U.query.filter(
+            db.or_(_U.email.ilike(f'%{q}%'), _U.first_name.ilike(f'%{q}%'), _U.last_name.ilike(f'%{q}%'))
+        ).limit(30)]
+        lid_hits = [l.id for l in _L.query.filter(_L.title.ilike(f'%{q}%')).limit(30)]
+        query = query.filter(db.or_(
+            FraudFlag.user_id.in_(uid_hits),
+            FraudFlag.listing_id.in_(lid_hits),
+        ))
+
+    risk_order = sa_case({'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1}, value=FraudFlag.risk_level)
+    query = query.order_by(risk_order.desc(), FraudFlag.created_at.desc())
+
+    total       = query.count()
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    flags       = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    open_q = FraudFlag.status.in_(['pending', 'reviewing'])
+    pending_count  = FraudFlag.query.filter_by(status='pending').count()
+    critical_count = FraudFlag.query.filter(open_q, FraudFlag.risk_level == 'CRITICAL').count()
+    high_count     = FraudFlag.query.filter(open_q, FraudFlag.risk_level == 'HIGH').count()
+    medium_count   = FraudFlag.query.filter(open_q, FraudFlag.risk_level == 'MEDIUM').count()
+
+    return render_template('admin_fraud_queue.html',
+        flags=flags, page=page, total_pages=total_pages,
+        status_filter=status_filter, risk_filter=risk_filter, q=q,
+        pending_count=pending_count, critical_count=critical_count,
+        high_count=high_count, medium_count=medium_count,
+    )
+
+
+@app.route("/admin/fraud-queue/<int:flag_id>")
+@require_admin
+def admin_fraud_flag_detail(flag_id):
+    """Detail view for one fraud flag including moderation history."""
+    from models import FraudFlag, ModerationAuditLog
+    flag = FraudFlag.query.get_or_404(flag_id)
+    mod_logs = []
+    filters = []
+    if flag.user_id:
+        filters.append(db.and_(
+            ModerationAuditLog.target_type == 'user',
+            ModerationAuditLog.target_id == str(flag.user_id),
+        ))
+    if flag.listing_id:
+        filters.append(db.and_(
+            ModerationAuditLog.target_type == 'listing',
+            ModerationAuditLog.target_id == str(flag.listing_id),
+        ))
+    if filters:
+        mod_logs = (ModerationAuditLog.query
+                    .filter(db.or_(*filters))
+                    .order_by(ModerationAuditLog.created_at.desc())
+                    .limit(20).all())
+    return render_template('admin_fraud_detail.html', flag=flag, mod_logs=mod_logs)
+
+
+@app.route("/admin/fraud-queue/<int:flag_id>/action", methods=["POST"])
+@require_admin
+def admin_fraud_flag_action(flag_id):
+    """Handle admin actions on a fraud flag."""
+    from models import FraudFlag
+    _check_listing_csrf()
+    flag   = FraudFlag.query.get_or_404(flag_id)
+    action = request.form.get('action', '').strip()
+    note   = request.form.get('note',   '').strip()
+    now    = datetime.now()
+
+    if action == 'dismiss':
+        flag.status = 'dismissed'
+        flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('dismiss', 'fraud_flag', flag.id, notes=f"Flag #{flag.id} dismissed")
+        flash('Flag dismissed.', 'success')
+
+    elif action == 'false_positive':
+        flag.status = 'false_positive'; flag.is_false_positive = True
+        flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('dismiss', 'fraud_flag', flag.id, notes=f"Flag #{flag.id} marked false positive")
+        flash('Marked as false positive.', 'success')
+
+    elif action == 'mark_reviewing':
+        flag.status = 'reviewing'
+        _log_mod_action('flag_investigate', 'fraud_flag', flag.id, notes=f"Flag #{flag.id} under review")
+        flash('Flag moved to Reviewing.', 'info')
+
+    elif action == 'reopen':
+        flag.status = 'pending'; flag.is_false_positive = False
+        flag.resolved_at = None; flag.resolved_by_id = None
+        _log_mod_action('flag_investigate', 'fraud_flag', flag.id, notes=f"Flag #{flag.id} reopened")
+        flash('Flag reopened.', 'info')
+
+    elif action == 'add_note':
+        if note:
+            stamp  = now.strftime('%b %-d')
+            prefix = flag.admin_note or ''
+            flag.admin_note = (prefix + f"\n[{stamp} {current_user.first_name or '?'}]: {note}").strip()
+            _log_mod_action('add_note', 'fraud_flag', flag.id, notes=note[:200])
+            flash('Note added.', 'success')
+
+    elif action == 'warn_user' and flag.flagged_user:
+        u = flag.flagged_user
+        u.marketplace_warning_count = (u.marketplace_warning_count or 0) + 1
+        flag.status = 'actioned'; flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('warn', 'user', u.id, notes=f"Warning via fraud flag #{flag.id}")
+        flash(f'Warning issued to {u.first_name or u.email or u.id}.', 'warning')
+
+    elif action == 'suspend_listing' and flag.listing:
+        lst = flag.listing
+        lst.moderation_status = 'flagged'; lst.status = 'removed'
+        try:
+            _expire_offers_and_notify(lst.id, lst.title)
+            _deactivate_stale_gallery_pins()
+        except Exception as _ge:
+            app.logger.warning("fraud_flag suspend_listing cleanup: %s", _ge)
+        flag.status = 'actioned'; flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('suspend_listing', 'listing', lst.id, notes=f"Suspended via fraud flag #{flag.id}")
+        flash(f'Listing "{lst.title[:40]}" suspended.', 'warning')
+
+    elif action == 'remove_listing' and flag.listing:
+        lst = flag.listing
+        lst.moderation_status = 'removed'; lst.status = 'removed'
+        try:
+            _expire_offers_and_notify(lst.id, lst.title)
+            _deactivate_stale_gallery_pins()
+        except Exception as _ge:
+            app.logger.warning("fraud_flag remove_listing cleanup: %s", _ge)
+        flag.status = 'actioned'; flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('remove_listing', 'listing', lst.id, notes=f"Removed via fraud flag #{flag.id}")
+        flash(f'Listing "{lst.title[:40]}" removed.', 'danger')
+
+    elif action == 'restore_listing' and flag.listing:
+        lst = flag.listing
+        lst.moderation_status = 'approved'; lst.status = 'active'
+        try:
+            _reactivate_gallery_pins(lst.id)
+        except Exception as _ge:
+            app.logger.warning("fraud_flag restore_listing: %s", _ge)
+        flag.status = 'dismissed'; flag.is_false_positive = True
+        flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('restore_listing', 'listing', lst.id, notes=f"Restored (false positive) via fraud flag #{flag.id}")
+        flash(f'Listing "{lst.title[:40]}" restored.', 'success')
+
+    elif action == 'suspend_account' and flag.flagged_user:
+        u = flag.flagged_user; u.is_suspended = True
+        flag.status = 'actioned'; flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('suspend', 'user', u.id, notes=f"Suspended via fraud flag #{flag.id}")
+        flash(f'Account for {u.email or u.id} suspended.', 'warning')
+
+    elif action == 'ban_account' and flag.flagged_user:
+        u = flag.flagged_user; u.is_banned = True; u.is_suspended = True
+        flag.status = 'actioned'; flag.resolved_at = now; flag.resolved_by_id = current_user.id
+        _log_mod_action('ban', 'user', u.id, notes=f"Banned via fraud flag #{flag.id}")
+        flash(f'Account for {u.email or u.id} permanently banned.', 'danger')
+
+    else:
+        flash('Unknown or invalid action.', 'warning')
+        return redirect(url_for('admin_fraud_flag_detail', flag_id=flag_id))
+
+    db.session.commit()
+    return redirect(url_for('admin_fraud_flag_detail', flag_id=flag_id))
+
+
+@app.route("/admin/fraud-queue/scan", methods=["POST"])
+@require_admin
+def admin_fraud_manual_scan():
+    """Trigger an immediate (synchronous) fraud scan for a listing or user."""
+    _check_listing_csrf()
+    listing_id = request.form.get('listing_id', '').strip()
+    user_id    = request.form.get('user_id',    '').strip()
+    if not listing_id and not user_id:
+        flash('Provide a listing ID or user ID to scan.', 'warning')
+        return redirect(url_for('admin_fraud_queue'))
+    try:
+        from ai.fraud_safety import calculate_risk_and_flag
+        result = calculate_risk_and_flag(
+            listing_id=int(listing_id) if listing_id else None,
+            user_id=str(user_id)       if user_id    else None,
+            trigger='manual',
+        )
+        if 'error' in result:
+            flash(f'Scan error: {result["error"]}', 'danger')
+        elif 'flag_id' in result:
+            risk = result.get('risk_level', '?')
+            sigs = len(result.get('signals', []))
+            flash(f'Scan complete: {risk} risk, {sigs} signal(s). Flag #{result["flag_id"]} created/updated.',
+                  'warning' if risk in ('HIGH', 'CRITICAL') else 'info')
+            return redirect(url_for('admin_fraud_flag_detail', flag_id=result['flag_id']))
+        else:
+            risk = result.get('risk_level', 'LOW')
+            flash(f'Scan complete: {risk} risk — no flag created (below MEDIUM threshold).', 'success')
+    except Exception as _e:
+        app.logger.error("admin_fraud_manual_scan error: %s", _e)
+        flash(f'Scan failed: {_e}', 'danger')
+    return redirect(url_for('admin_fraud_queue'))
 
 
 @app.route("/admin/copilot-analytics")

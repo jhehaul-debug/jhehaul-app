@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Flag #{{ flag.id }} — Fraud Review{% endblock %}
+{% block content %}
+<div class="container" style="max-width:860px;padding:24px 16px;">
+
+  <div style="margin-bottom:16px;">
+    <a href="/admin/fraud-queue" style="color:#6b7280;font-size:.88rem;">← Back to Fraud Queue</a>
+  </div>
+
+  {% set rl = flag.risk_level %}
+  {% set rl_color = {'CRITICAL':'#dc3545','HIGH':'#fd7e14','MEDIUM':'#6c757d','LOW':'#198754'}[rl] or '#6c757d' %}
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <span style="background:{{rl_color}};color:#fff;padding:4px 12px;border-radius:6px;font-size:1rem;font-weight:700;">{{rl}} RISK</span>
+    <h2 style="margin:0;font-size:1.2rem;font-weight:700;">Fraud Flag #{{flag.id}}</h2>
+    <span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:5px;font-size:.85rem;">
+      {{flag.status.replace('_',' ').title()}}
+    </span>
+    {% if flag.is_false_positive %}
+    <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:5px;font-size:.85rem;">False Positive</span>
+    {% endif %}
+  </div>
+
+  <!-- Entity cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+    {% if flag.flagged_user %}
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+      <div style="font-weight:600;margin-bottom:6px;font-size:.9rem;">👤 Account</div>
+      <div style="font-size:.88rem;color:#374151;">
+        <div>{{flag.flagged_user.first_name or ''}} {{flag.flagged_user.last_name or ''}}</div>
+        <div style="color:#6b7280;">{{flag.flagged_user.email or 'no email'}}</div>
+        <div style="margin-top:4px;">
+          Joined: {{flag.flagged_user.created_at.strftime('%b %-d, %Y') if flag.flagged_user.created_at else '—'}}
+        </div>
+        {% if flag.flagged_user.is_banned %}<div style="color:#dc3545;font-weight:600;">BANNED</div>{% endif %}
+        {% if flag.flagged_user.is_suspended %}<div style="color:#fd7e14;font-weight:600;">SUSPENDED</div>{% endif %}
+        {% if flag.flagged_user.marketplace_warning_count %}
+        <div style="color:#92400e;">{{flag.flagged_user.marketplace_warning_count}} warning(s)</div>
+        {% endif %}
+      </div>
+      <a href="/admin/users/{{flag.flagged_user.id}}/detail" class="btn btn-sm btn-outline-secondary" style="margin-top:8px;font-size:.8rem;">View User</a>
+    </div>
+    {% endif %}
+
+    {% if flag.listing %}
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+      <div style="font-weight:600;margin-bottom:6px;font-size:.9rem;">📦 Listing</div>
+      <div style="font-size:.88rem;color:#374151;">
+        <div style="font-weight:500;">{{flag.listing.title[:80]}}</div>
+        <div style="color:#6b7280;">
+          {% if flag.listing.price %}${{'{:,.0f}'.format(flag.listing.price)}}{% else %}{{flag.listing.price_type|title}}{% endif %}
+          · {{flag.listing.status|title}} · {{flag.listing.moderation_status|title}}
+        </div>
+        {% if flag.listing.category %}<div style="color:#6b7280;">{{flag.listing.category.name}}</div>{% endif %}
+        <div style="margin-top:4px;color:#6b7280;">Posted {{flag.listing.created_at.strftime('%b %-d, %Y') if flag.listing.created_at else '—'}}</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <a href="/listing/{{flag.listing.id}}" target="_blank" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem;">View</a>
+        <a href="/admin/listings/{{flag.listing.id}}" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem;">Admin Detail</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Signals -->
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+    <div style="font-weight:700;margin-bottom:12px;">⚠️ Risk Signals Detected</div>
+    {% if flag.signals %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for sig in flag.signals %}
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#fef9ee;border:1px solid #fde68a;border-radius:6px;">
+        <span style="font-weight:700;color:#b45309;font-size:.8rem;text-transform:uppercase;min-width:80px;">
+          +{{sig.weight}}pt{% if sig.weight != 1 %}s{% endif %}
+        </span>
+        <span style="font-size:.88rem;color:#374151;">
+          <strong>{{ sig.type.replace('_',' ').title() }}</strong> — {{ sig.detail }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:#9ca3af;font-size:.88rem;">No signals recorded.</div>
+    {% endif %}
+
+    {% if flag.ai_explanation %}
+    <div style="margin-top:12px;padding:10px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:.88rem;color:#0c4a6e;">
+      <strong>🤖 AI Analysis:</strong> {{ flag.ai_explanation }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Trigger + meta -->
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:16px;font-size:.85rem;color:#6b7280;">
+    Trigger: <strong>{{flag.trigger.replace('_',' ')}}</strong> ·
+    Created: <strong>{{flag.created_at.strftime('%b %-d, %Y %-I:%M %p') if flag.created_at else '—'}}</strong>
+    {% if flag.resolved_at %}
+    · Resolved: <strong>{{flag.resolved_at.strftime('%b %-d, %Y')}}</strong>
+    by <strong>{{flag.resolved_by.first_name if flag.resolved_by else 'admin'}}</strong>
+    {% endif %}
+  </div>
+
+  {% if flag.admin_note %}
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:16px;">
+    <div style="font-weight:600;margin-bottom:4px;font-size:.88rem;">📝 Admin Note</div>
+    <div style="font-size:.88rem;color:#166534;">{{flag.admin_note}}</div>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  {% if flag.status in ('pending', 'reviewing') %}
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+    <div style="font-weight:700;margin-bottom:14px;">Admin Actions</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="mark_reviewing">
+        <button type="submit" class="btn btn-sm btn-outline-primary">🔍 Mark Reviewing</button>
+      </form>
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="false_positive">
+        <button type="submit" class="btn btn-sm btn-outline-success"
+                onclick="return confirm('Mark as false positive and dismiss?')">👍 False Positive</button>
+      </form>
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="dismiss">
+        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                onclick="return confirm('Dismiss this flag?')">✓ Dismiss</button>
+      </form>
+
+      {% if flag.flagged_user %}
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="warn_user">
+        <button type="submit" class="btn btn-sm btn-outline-warning"
+                onclick="return confirm('Send a marketplace warning to this user?')">⚠️ Warn User</button>
+      </form>
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="suspend_account">
+        <button type="submit" class="btn btn-sm btn-warning"
+                onclick="return confirm('Suspend this account? The user will not be able to log in.')">🔒 Suspend Account</button>
+      </form>
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="ban_account">
+        <button type="submit" class="btn btn-sm btn-danger"
+                onclick="return confirm('PERMANENTLY BAN this account? This cannot be undone without admin access.')">🚫 Ban Account</button>
+      </form>
+      {% endif %}
+
+      {% if flag.listing and flag.listing.status not in ('removed','sold') %}
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="suspend_listing">
+        <button type="submit" class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('Hide this listing from the marketplace?')">👁 Suspend Listing</button>
+      </form>
+
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="remove_listing">
+        <button type="submit" class="btn btn-sm btn-danger"
+                onclick="return confirm('Remove this listing permanently?')">🗑 Remove Listing</button>
+      </form>
+      {% endif %}
+
+      {% if flag.listing and flag.listing.status == 'removed' %}
+      <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="action" value="restore_listing">
+        <button type="submit" class="btn btn-sm btn-outline-success"
+                onclick="return confirm('Restore this listing to active?')">↩ Restore Listing</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Add note -->
+    <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+      <input type="hidden" name="action" value="add_note">
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea name="note" rows="2" placeholder="Add internal note…"
+                  class="form-control form-control-sm" style="flex:1;"></textarea>
+        <button type="submit" class="btn btn-sm btn-secondary" style="white-space:nowrap;">💬 Add Note</button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:16px;color:#6b7280;font-size:.88rem;">
+    This flag has been <strong>{{flag.status.replace('_',' ')}}</strong> and is closed.
+    {% if flag.status == 'false_positive' or flag.status == 'dismissed' %}
+    <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action" style="display:inline;">
+      <input type="hidden" name="action" value="reopen">
+      <button type="submit" class="btn btn-sm btn-outline-secondary" style="margin-left:8px;font-size:.8rem;">↩ Reopen</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Existing moderation history -->
+  {% if mod_logs %}
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
+    <div style="font-weight:700;margin-bottom:10px;font-size:.9rem;">📋 Moderation History</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      {% for log in mod_logs[:10] %}
+      <div style="display:flex;gap:10px;font-size:.84rem;padding:6px 0;border-bottom:1px solid #f3f4f6;">
+        <span style="color:#9ca3af;white-space:nowrap;">{{log.created_at.strftime('%b %-d, %-I:%M %p') if log.created_at else '—'}}</span>
+        <span style="font-weight:600;color:#374151;">{{log.action.replace('_',' ').title()}}</span>
+        <span style="color:#6b7280;">{{log.notes or ''}}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

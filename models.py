@@ -677,6 +677,49 @@ class ModerationAuditLog(db.Model):
                             backref=db.backref('moderation_actions', lazy=True))
 
 
+class FraudFlag(db.Model):
+    """Phase J — AI Fraud & Safety Intelligence flag for admin review.
+
+    Created automatically when listing/account risk signals exceed MEDIUM threshold.
+    Admins must review and explicitly act; AI alone never permanently bans or removes.
+
+    Status values: pending | reviewing | dismissed | actioned | false_positive
+    Risk levels:   LOW | MEDIUM | HIGH | CRITICAL
+    Trigger values: new_listing | new_user | report_threshold | manual | reported_conversation
+    """
+    __tablename__ = 'fraud_flags'
+    id               = db.Column(db.Integer, primary_key=True)
+    listing_id       = db.Column(db.Integer, db.ForeignKey('listings.id', ondelete='SET NULL'), nullable=True)
+    user_id          = db.Column(db.String,  db.ForeignKey('users.id'),    nullable=True)
+    trigger          = db.Column(db.String(50),  nullable=False, default='auto')
+    risk_level       = db.Column(db.String(10),  nullable=False)           # LOW|MEDIUM|HIGH|CRITICAL
+    signals_json     = db.Column(db.Text, nullable=False, default='[]')    # JSON list of signal dicts
+    ai_explanation   = db.Column(db.Text, nullable=True)
+    status           = db.Column(db.String(20), default='pending')
+    is_false_positive= db.Column(db.Boolean, default=False)
+    admin_note       = db.Column(db.Text, nullable=True)
+    resolved_by_id   = db.Column(db.String, db.ForeignKey('users.id'), nullable=True)
+    resolved_at      = db.Column(db.DateTime, nullable=True)
+    created_at       = db.Column(db.DateTime, default=datetime.now)
+
+    listing     = db.relationship('Listing', foreign_keys=[listing_id],
+                                  backref=db.backref('fraud_flags', lazy=True))
+    flagged_user= db.relationship('User', foreign_keys=[user_id],
+                                  backref=db.backref('fraud_flags', lazy=True))
+    resolved_by = db.relationship('User', foreign_keys=[resolved_by_id])
+
+    @property
+    def signals(self) -> list:
+        try:
+            return json.loads(self.signals_json or '[]')
+        except Exception:
+            return []
+
+    @property
+    def risk_level_order(self) -> int:
+        return {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1}.get(self.risk_level, 0)
+
+
 class Notification(db.Model):
     """In-app notification for marketplace events (messages, offers, delivery, admin)."""
     __tablename__ = 'notifications'

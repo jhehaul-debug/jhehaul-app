@@ -189,6 +189,39 @@ COPILOT_TOOLS = [
         },
     },
 
+    # ── Phase J admin fraud & safety tools (admin-only — never shown to regular users) ─
+    {
+        "type": "function",
+        "function": {
+            "name": "get_fraud_queue_summary",
+            "description": (
+                "Return aggregate fraud & safety queue stats for admin review: pending flags, "
+                "CRITICAL/HIGH counts, false positives, and top open flags. "
+                "Use when admin asks: 'Show me high-risk listings', 'How many flags are pending?', "
+                "'Summarize today\\'s safety queue', 'Any critical flags?'"
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_account_risk_profile",
+            "description": (
+                "Return a full risk profile for a user account: behavior signals, risk level, "
+                "report counts, listing counts, and existing fraud flags. "
+                "Use when admin asks about a specific account's safety history or repeated reports."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "string", "description": "UUID of the user to profile"},
+                },
+                "required": ["user_id"],
+            },
+        },
+    },
+
     # ── Phase I seller intelligence tools (read-only, auth required) ──────────
     {
         "type": "function",

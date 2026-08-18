@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Fraud & Safety Queue — JHE Admin{% endblock %}
+{% block content %}
+<div class="container-fluid" style="max-width:1200px;padding:24px 16px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h2 style="margin:0;font-size:1.4rem;font-weight:700;">🛡️ Fraud &amp; Safety Queue</h2>
+      <div style="color:#666;font-size:.85rem;margin-top:2px;">
+        AI-assisted fraud signals for admin review — no automatic enforcement
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      {% for lvl,cnt,cls in [('CRITICAL',critical_count,'danger'),('HIGH',high_count,'warning'),('MEDIUM',medium_count,'secondary')] %}
+        {% if cnt %}
+        <span class="badge bg-{{cls}}" style="font-size:.9rem;padding:6px 10px;">
+          {{lvl}}: {{cnt}}
+        </span>
+        {% endif %}
+      {% endfor %}
+      <a href="/admin/fraud-queue?status=pending" class="btn btn-sm btn-primary">Pending ({{pending_count}})</a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+      <option value=""        {% if not status_filter %}selected{% endif %}>All statuses</option>
+      <option value="pending" {% if status_filter=='pending'   %}selected{% endif %}>Pending</option>
+      <option value="reviewing" {% if status_filter=='reviewing' %}selected{% endif %}>Reviewing</option>
+      <option value="dismissed" {% if status_filter=='dismissed' %}selected{% endif %}>Dismissed</option>
+      <option value="actioned"  {% if status_filter=='actioned'  %}selected{% endif %}>Actioned</option>
+      <option value="false_positive" {% if status_filter=='false_positive' %}selected{% endif %}>False Positive</option>
+    </select>
+    <select name="risk" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+      <option value=""         {% if not risk_filter %}selected{% endif %}>All risk levels</option>
+      <option value="CRITICAL" {% if risk_filter=='CRITICAL' %}selected{% endif %}>CRITICAL</option>
+      <option value="HIGH"     {% if risk_filter=='HIGH'     %}selected{% endif %}>HIGH</option>
+      <option value="MEDIUM"   {% if risk_filter=='MEDIUM'   %}selected{% endif %}>MEDIUM</option>
+    </select>
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="Search user/listing…"
+           class="form-control form-control-sm" style="width:200px;">
+    <button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button>
+    {% if status_filter or risk_filter or q %}
+    <a href="/admin/fraud-queue" class="btn btn-sm btn-link">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Flag cards -->
+  {% if flags %}
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    {% for flag in flags %}
+    {% set rl = flag.risk_level %}
+    {% set rl_color = {'CRITICAL':'#dc3545','HIGH':'#fd7e14','MEDIUM':'#6c757d','LOW':'#198754'}[rl] or '#6c757d' %}
+    <div style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid {{rl_color}};border-radius:8px;padding:16px 18px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <!-- Left: summary -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <span style="background:{{rl_color}};color:#fff;padding:2px 8px;border-radius:4px;font-size:.78rem;font-weight:700;">{{rl}}</span>
+            <span style="font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:.5px;">{{flag.trigger.replace('_',' ')}}</span>
+            <span style="font-size:.8rem;color:#aaa;">{{ flag.created_at.strftime('%b %-d, %Y %-I:%M %p') if flag.created_at else '' }}</span>
+            {% if flag.status != 'pending' %}
+            <span style="background:#f3f4f6;color:#374151;padding:2px 7px;border-radius:4px;font-size:.78rem;">{{flag.status.replace('_',' ').title()}}</span>
+            {% endif %}
+            {% if flag.is_false_positive %}
+            <span style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:4px;font-size:.78rem;">False Positive</span>
+            {% endif %}
+          </div>
+
+          <!-- Entity info -->
+          <div style="font-size:.88rem;color:#374151;margin-bottom:8px;display:flex;gap:16px;flex-wrap:wrap;">
+            {% if flag.listing %}
+            <span>📦 <a href="/admin/listings/{{flag.listing.id}}" style="color:#1d4ed8;">{{flag.listing.title[:60]}}</a></span>
+            {% endif %}
+            {% if flag.flagged_user %}
+            <span>👤 <a href="/admin/users/{{flag.flagged_user.id}}/detail" style="color:#1d4ed8;">
+              {{flag.flagged_user.first_name or ''}} {{flag.flagged_user.last_name or ''}} — {{flag.flagged_user.email or 'no email'}}
+            </a></span>
+            {% endif %}
+          </div>
+
+          <!-- Signals -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            {% for sig in flag.signals[:6] %}
+            <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:12px;font-size:.78rem;">
+              ⚠️ {{ sig.detail[:80] }}
+            </span>
+            {% endfor %}
+            {% if flag.signals|length > 6 %}
+            <span style="color:#9ca3af;font-size:.78rem;">+{{flag.signals|length - 6}} more</span>
+            {% endif %}
+          </div>
+
+          {% if flag.ai_explanation %}
+          <div style="font-size:.83rem;color:#6b7280;font-style:italic;border-left:3px solid #e5e7eb;padding-left:8px;margin-bottom:6px;">
+            🤖 {{ flag.ai_explanation[:200] }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Right: actions -->
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:140px;">
+          <a href="/admin/fraud-queue/{{ flag.id }}" class="btn btn-sm btn-outline-primary">🔍 Review</a>
+          {% if flag.status in ('pending', 'reviewing') %}
+          <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+            <input type="hidden" name="action" value="dismiss">
+            <button type="submit" class="btn btn-sm btn-outline-secondary w-100"
+                    onclick="return confirm('Dismiss this flag?')">✓ Dismiss</button>
+          </form>
+          <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+            <input type="hidden" name="action" value="false_positive">
+            <button type="submit" class="btn btn-sm btn-outline-success w-100"
+                    onclick="return confirm('Mark as false positive?')">👍 False Positive</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;gap:8px;margin-top:20px;">
+    {% if page > 1 %}
+    <a href="?page={{page-1}}&status={{status_filter or ''}}&risk={{risk_filter or ''}}&q={{q or ''}}" class="btn btn-sm btn-outline-secondary">← Prev</a>
+    {% endif %}
+    <span style="padding:6px 12px;color:#666;">Page {{page}} of {{total_pages}}</span>
+    {% if page < total_pages %}
+    <a href="?page={{page+1}}&status={{status_filter or ''}}&risk={{risk_filter or ''}}&q={{q or ''}}" class="btn btn-sm btn-outline-secondary">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:48px 16px;color:#9ca3af;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🛡️</div>
+    <div style="font-size:1.1rem;font-weight:600;margin-bottom:6px;">No flags found</div>
+    <div style="font-size:.9rem;">
+      {% if status_filter or risk_filter or q %}Adjust your filters to see more results.
+      {% else %}No fraud or safety flags are currently pending review.{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Manual scan section -->
+  <div style="margin-top:28px;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+    <div style="font-weight:600;margin-bottom:8px;font-size:.95rem;">🔎 Manual Scan</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <form method="POST" action="/admin/fraud-queue/scan" style="display:flex;gap:6px;">
+        <input type="number" name="listing_id" placeholder="Listing ID" class="form-control form-control-sm" style="width:130px;">
+        <button type="submit" class="btn btn-sm btn-warning">Scan Listing</button>
+      </form>
+      <form method="POST" action="/admin/fraud-queue/scan" style="display:flex;gap:6px;">
+        <input type="text" name="user_id" placeholder="User ID" class="form-control form-control-sm" style="width:260px;">
+        <button type="submit" class="btn btn-sm btn-warning">Scan Account</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
