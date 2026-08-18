@@ -25,6 +25,18 @@
     <a href="{{ url_for('sell') }}" class="sl-create-btn">＋ Create Listing</a>
   </div>
 
+  <!-- ── Expiring-draft warning ──────────────────────────────────────── -->
+  {% if expiring_drafts %}
+  <div class="sl-alerts">
+    {% for draft in expiring_drafts %}
+    <a href="{{ url_for('listing_step', listing_id=draft.id, step=1) }}" class="sl-alert sl-alert-expiry">
+      <span class="sl-alert-icon">⚠️</span>
+      Your draft listing will be deleted soon — tap to finish or discard it
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- ── Action alerts (only render when something needs attention) ─── -->
   {% if pending_offers_count > 0 or status_counts.expired > 0 or total_conversations > 0 %}
   <div class="sl-alerts">

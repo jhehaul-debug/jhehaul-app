@@ -2022,7 +2022,7 @@ def selling():
     """Seller dashboard: overview stats, status counts, filtered listing list."""
     from models import Listing, ListingOffer, ListingConversation
     from sqlalchemy import func
-    from datetime import datetime as _dt
+    from datetime import datetime as _dt, timedelta
 
     status_filter = request.args.get('filter', '').lower().strip()
 
@@ -2032,6 +2032,38 @@ def selling():
                             Listing.status != 'draft')
                     .order_by(Listing.created_at.desc())
                     .all())
+
+    # Find draft listings that are close to being auto-deleted — these are the
+    # ones whose expiry warning will be displayed on this page.  Only drafts in
+    # the same window used by the reminder email (≥ 24 h old, < 48 h old, no
+    # title) qualify.  We touch draft_last_seen_at on exactly those listings so
+    # the reminder email is skipped — the seller has already seen the warning.
+    from draft_cleanup import REMINDER_MIN_HOURS, DRAFT_MAX_AGE_HOURS
+    now_ts = _dt.now()
+    _reminder_cutoff = now_ts - timedelta(hours=REMINDER_MIN_HOURS)
+    _delete_cutoff   = now_ts - timedelta(hours=DRAFT_MAX_AGE_HOURS)
+    expiring_drafts = (Listing.query
+                       .filter(
+                           Listing.seller_id == current_user.id,
+                           Listing.status == 'draft',
+                           db.or_(Listing.title == None, Listing.title == ''),
+                           Listing.created_at <= _reminder_cutoff,
+                           Listing.created_at > _delete_cutoff,
+                       )
+                       .order_by(Listing.created_at.asc())
+                       .all())
+    if expiring_drafts:
+        try:
+            expiring_ids = [d.id for d in expiring_drafts]
+            (
+                Listing.query
+                .filter(Listing.id.in_(expiring_ids))
+                .update({Listing.draft_last_seen_at: now_ts}, synchronize_session=False)
+            )
+            db.session.commit()
+        except Exception as _dls_err:
+            db.session.rollback()
+            app.logger.debug("selling: draft_last_seen_at touch failed: %s", _dls_err)
 
     # Per-status counts for the dashboard overview cards
     status_counts = {s: 0 for s in ('active', 'sold', 'reserved', 'pending', 'expired', 'removed')}
@@ -2078,6 +2110,7 @@ def selling():
                            total_offers_count=total_offers_count,
                            status_filter=status_filter,
                            hidden_draft_count=0,
+                           expiring_drafts=expiring_drafts,
                            now=_dt.now())
 
 

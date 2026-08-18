@@ -375,6 +375,7 @@ class Listing(db.Model):
     expiry_reminder_sent = db.Column(db.Boolean, default=False)  # 3-day-ahead reminder sent
     draft_reminder_sent = db.Column(db.Boolean, default=False)   # 24h-before-deletion reminder sent
     draft_activity_at = db.Column(db.DateTime, nullable=True)    # last time seller touched this draft (photo/video/field); NULL = untouched since creation
+    draft_last_seen_at = db.Column(db.DateTime, nullable=True)   # last time owner viewed My Listings or this draft's detail page; suppresses redundant reminder email
 
     # ── Housing & Real Estate fields ──────────────────────────────────────────
     # listing_type: 'item' | 'property_sale' | 'rental'

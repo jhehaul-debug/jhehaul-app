@@ -54,8 +54,15 @@ def send_draft_reminders(app):
         # video endpoints only write to child rows (ListingPhoto / ListingVideo), so
         # Listing.updated_at would NOT reflect those changes — hence the dedicated column.
         #
-        # NULL means the draft predates the column or was never touched after creation;
-        # in that case we allow the reminder (the seller has not actively returned to it).
+        # draft_last_seen_at is set when the seller views the expiry warning on
+        # My Listings (/selling).  Any non-NULL value means the seller has already
+        # acknowledged the warning during this reminder cycle, so the email would be
+        # a redundant nag — skip it entirely.  The column is only written when the
+        # draft is already inside the 24h–48h deletion window, so a non-NULL value
+        # reliably indicates the seller was shown the warning before this email run.
+        #
+        # NULL means the seller has never been shown the in-app expiry warning;
+        # in that case we allow the reminder.
         candidates = (
             Listing.query
             .filter(
@@ -68,6 +75,7 @@ def send_draft_reminders(app):
                     Listing.draft_activity_at == None,
                     Listing.draft_activity_at <= recency_cutoff,
                 ),
+                Listing.draft_last_seen_at == None,  # seen = already showed in-app warning; skip email
             )
             .all()
         )
@@ -94,6 +102,7 @@ def send_draft_reminders(app):
                         "  AND created_at <= :reminder_cutoff "
                         "  AND created_at > :delete_cutoff "
                         "  AND (draft_activity_at IS NULL OR draft_activity_at <= :recency_cutoff)"
+                        "  AND draft_last_seen_at IS NULL"
                     ),
                     {
                         "lid": listing.id,
