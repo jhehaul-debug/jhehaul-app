@@ -30,6 +30,7 @@ class starts with a clean slate.
 import os
 import sys
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch, MagicMock, call
 
@@ -216,6 +217,61 @@ class TestClaimAndNotify(unittest.TestCase):
                 _wsgi._claim_and_notify(self.FAKE_ERRORS)
 
             self.assertTrue(os.path.exists(sentinel))
+
+    def test_concurrent_workers_notify_exactly_once(self):
+        """N threads racing to call _claim_and_notify invoke _notify_admin exactly once.
+
+        This exercises the O_CREAT|O_EXCL atomic-claim guarantee under real
+        concurrency — multiple threads hit the sentinel open at the same instant,
+        only one should win the race and fire the notification.
+        """
+        NUM_WORKERS = 16
+
+        notify_call_count = []
+        count_lock = threading.Lock()
+
+        def counting_notify(errors):
+            with count_lock:
+                notify_call_count.append(1)
+
+        barrier = threading.Barrier(NUM_WORKERS)
+        results = []
+        results_lock = threading.Lock()
+
+        def worker(sentinel):
+            barrier.wait()  # all threads released simultaneously
+            result = _wsgi._claim_and_notify(self.FAKE_ERRORS)
+            with results_lock:
+                results.append(result)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sentinel = os.path.join(tmpdir, "jhe_health_alert_sent")
+            with patch.object(_wsgi, "_ALERT_SENTINEL", sentinel), \
+                 patch.object(_wsgi, "_notify_admin", side_effect=counting_notify):
+
+                threads = [
+                    threading.Thread(target=worker, args=(sentinel,))
+                    for _ in range(NUM_WORKERS)
+                ]
+                for t in threads:
+                    t.start()
+                for t in threads:
+                    t.join()
+
+        # Exactly one worker should have claimed the slot and fired the alert.
+        self.assertEqual(
+            sum(notify_call_count), 1,
+            f"_notify_admin was called {sum(notify_call_count)} times; expected exactly 1"
+        )
+        # Exactly one worker returns True; all others return False.
+        self.assertEqual(
+            results.count(True), 1,
+            f"Expected exactly 1 True result from _claim_and_notify, got {results.count(True)}"
+        )
+        self.assertEqual(
+            results.count(False), NUM_WORKERS - 1,
+            f"Expected {NUM_WORKERS - 1} False results, got {results.count(False)}"
+        )
 
 
 class TestRunStartupHealthCheck(unittest.TestCase):
