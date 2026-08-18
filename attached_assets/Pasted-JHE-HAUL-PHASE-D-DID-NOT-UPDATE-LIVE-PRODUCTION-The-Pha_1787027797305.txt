@@ -1,0 +1,179 @@
+JHE HAUL — PHASE D DID NOT UPDATE LIVE PRODUCTION
+
+The Phase D AI Listing Assistant changes are NOT visible on the live jhehaul.com site.
+
+Do NOT add new features.
+Do NOT begin Phase E.
+Do NOT make unrelated changes.
+
+Your task is to identify exactly why Phase D is not live and fix the deployment chain.
+
+==================================================
+1. VERIFY PHASE D EXISTS IN THE CODE
+==================================================
+
+Confirm whether these Phase D features are actually implemented in the current codebase:
+
+- AI Listing Assistant
+- AI title suggestion
+- AI description suggestion
+- AI category suggestion
+- listing completeness check
+- manual fallback if AI is unavailable
+- seller can edit/discard AI suggestions
+
+If any of these were only planned and not implemented, implement them now.
+
+==================================================
+2. CHECK LOCAL GIT STATE
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED CHANGES:
+UNTRACKED FILES:
+COMMITS AHEAD OF GITHUB:
+COMMITS BEHIND GITHUB:
+
+If Phase D files are uncommitted, commit them.
+
+==================================================
+3. VERIFY AI ENVIRONMENT REQUIREMENTS
+==================================================
+
+Report:
+
+AI PROVIDER:
+REQUIRED ENVIRONMENT VARIABLE NAME:
+PRESENT LOCALLY: YES/NO
+PRESENT IN DIGITALOCEAN: YES/NO
+
+Do NOT reveal secret values.
+
+If the required AI API key/environment variable is missing in DigitalOcean, STOP and tell me exactly what variable needs to be added.
+
+==================================================
+4. PUSH TO EXISTING GITHUB
+==================================================
+
+Push the completed Phase D changes to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Do NOT create a new repo.
+Do NOT create a new production branch.
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+LOCAL = GITHUB: YES/NO
+
+==================================================
+5. VERIFY DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Confirm DigitalOcean is connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Report:
+
+CURRENT DIGITALOCEAN DEPLOYED SHA:
+LATEST GITHUB SHA:
+
+If they do not match:
+
+Trigger a NEW DigitalOcean deployment using the newest GitHub main commit.
+
+Do NOT redeploy an old commit.
+
+==================================================
+6. CHECK DEPLOYMENT LOGS
+==================================================
+
+If deployment fails, inspect the actual logs for:
+
+- build errors
+- missing environment variables
+- import errors
+- dependency errors
+- migration errors
+- startup errors
+- AI package/configuration errors
+
+Fix only the actual deployment problem.
+
+Then:
+commit
+push
+redeploy
+
+==================================================
+7. VERIFY LIVE JHEHAUL.COM
+==================================================
+
+Do NOT test only Replit preview.
+
+Open the LIVE production site:
+
+jhehaul.com
+
+Log in as a seller.
+
+Go to:
+
+Sell
+→ Details
+
+Verify the AI Listing Assistant is actually visible.
+
+Confirm live:
+
+AI TITLE ASSISTANCE: YES/NO
+AI DESCRIPTION ASSISTANCE: YES/NO
+AI CATEGORY ASSISTANCE: YES/NO
+LISTING COMPLETENESS CHECK: YES/NO
+MANUAL LISTING STILL WORKS: YES/NO
+
+==================================================
+8. VERIFY THE EXACT SAME COMMIT
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+==================================================
+9. FINAL REPORT
+==================================================
+
+PHASE D CODE EXISTS: YES/NO
+PHASE D COMMITTED: YES/NO
+PHASE D PUSHED: YES/NO
+DIGITALOCEAN NEW DEPLOYMENT: YES/NO
+AI ENVIRONMENT VARIABLE PRESENT: YES/NO
+LIVE AI LISTING ASSISTANT VISIBLE: YES/NO
+
+If something prevented the update, state the exact reason.
+
+CRITICAL:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+Do not begin Phase E.
