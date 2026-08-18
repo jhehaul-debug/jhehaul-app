@@ -14,7 +14,8 @@ _log = logging.getLogger(__name__)
 NOTIF_CATEGORIES = {
     'messages': ['new_message'],
     'offers':   ['new_offer', 'offer_accepted', 'offer_declined',
-                 'offer_countered', 'offer_expired', 'offer_withdrawn'],
+                 'offer_countered', 'offer_expired', 'offer_withdrawn',
+                 'offer_on_hold'],
     'listings': ['listing_expired', 'listing_removed',
                  'listing_sold', 'listing_reserved'],
     'delivery': ['delivery_request', 'delivery_quote_ready',
@@ -31,6 +32,7 @@ NOTIF_ICONS = {
     'offer_countered':      '🔄',
     'offer_expired':        '⏳',
     'offer_withdrawn':      '↩️',
+    'offer_on_hold':        '⏸️',
     'listing_expired':      '⏰',
     'listing_removed':      '🚫',
     'listing_sold':         '🏷️',
@@ -282,6 +284,68 @@ def notify_admin_notice(user_id, title, message=None, action_url=None):
         message=message,
         action_url=action_url,
     )
+
+
+def notify_buyers_listing_pending(listing_id, listing_title):
+    """Send in-app notifications (and emails) to buyers with active offers when a listing is
+    marked Pending Sale.
+
+    Only buyers whose offer is currently 'pending' or 'countered' are notified — their
+    offers are NOT expired at this point (the sale hasn't completed yet).
+    Never raises — notification failure must not break the caller.
+    """
+    try:
+        from models import ListingOffer, User
+        from email_service import notify_buyer_listing_pending
+
+        safe_title = (listing_title or f"Listing #{listing_id}")[:60]
+        action_url = f"/listing/{listing_id}"
+        notified_ids: set = set()
+
+        active_offers = (
+            ListingOffer.query
+            .filter(
+                ListingOffer.listing_id == listing_id,
+                ListingOffer.status.in_(['pending', 'countered'])
+            )
+            .join(User, ListingOffer.buyer_id == User.id)
+            .with_entities(ListingOffer.amount, User.id, User.email)
+            .all()
+        )
+
+        for offer_amount, buyer_id, buyer_email in active_offers:
+            uid = str(buyer_id)
+            if uid in notified_ids:
+                continue
+            notified_ids.add(uid)
+
+            create_notification(
+                user_id=uid,
+                notif_type='offer_on_hold',
+                title="Listing is pending sale",
+                message=(
+                    f'Your offer on "{safe_title}" is on hold — the seller is completing '
+                    f'a sale. You\'ll be notified if it falls through.'
+                ),
+                action_url=action_url,
+                related_listing_id=listing_id,
+            )
+
+            if buyer_email:
+                try:
+                    notify_buyer_listing_pending(buyer_email, listing_title, listing_id, offer_amount)
+                except Exception as _email_err:
+                    _log.warning(
+                        "notify_buyers_listing_pending: email failed for listing %s buyer %s: %s",
+                        listing_id, uid, _email_err,
+                    )
+
+        _log.info(
+            "notify_buyers_listing_pending: listing=%s notified=%d buyers",
+            listing_id, len(notified_ids),
+        )
+    except Exception as exc:
+        _log.error("notify_buyers_listing_pending failed (listing=%s): %s", listing_id, exc)
 
 
 def notify_listing_reserved_to_watchers(listing_id, listing_title, offer_buyer_ids=None):
