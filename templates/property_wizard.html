@@ -525,7 +525,11 @@
         <label class="form-label">Garage Size <span class="opt">(optional)</span></label>
         <select class="form-control" name="garage_parking">
           <option value="">— Select —</option>
-          {% for g in ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+          {% set _known_garage = ['No Garage','1-Car Garage','1.5-Car Garage','2-Car Garage','2.5-Car Garage','3-Car Garage','3.5-Car Garage','4+ Car Garage'] %}
+          {% if listing.garage_parking and listing.garage_parking not in _known_garage %}
+          <option value="{{ listing.garage_parking }}" selected>{{ listing.garage_parking }} (keep existing value)</option>
+          {% endif %}
+          {% for g in _known_garage %}
           <option value="{{ g }}" {{ 'selected' if listing.garage_parking == g }}>{{ g }}</option>
           {% endfor %}
         </select>
