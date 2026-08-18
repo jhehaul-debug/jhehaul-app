@@ -128,6 +128,10 @@
   /* Square-ish on mobile, 4/3 on desktop */
   aspect-ratio: 1 / 1;
   max-height: 420px;
+  /* Tell iOS the gallery handles horizontal panning so vertical scroll is not blocked */
+  touch-action: pan-y;
+  /* Safari: prevent tap-highlight flash on gallery swipe */
+  -webkit-tap-highlight-color: transparent;
 }
 @media (min-width: 769px) {
   .ld-gallery {
@@ -142,7 +146,10 @@
   display: flex;
   height: 100%;
   transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  -webkit-transition: -webkit-transform 0.3s cubic-bezier(.4,0,.2,1);
   will-change: transform;
+  /* Prevent track itself from being a scroll container on iOS */
+  -webkit-overflow-scrolling: auto;
 }
 .ld-slide {
   flex: 0 0 100%;
@@ -177,6 +184,9 @@
   justify-content: center;
   cursor: pointer;
   z-index: 3;
+  /* Ensure the tap target works on iOS without tap-delay */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .ld-video-overlay-icon {
   width: 64px;
@@ -943,8 +953,8 @@
           {% if listing.videos %}
           {% set lv = listing.videos[0] %}
           <div class="ld-slide" id="ld-video-slide">
-            <video id="ld-video-player" controls playsinline preload="metadata"
-                   style="width:100%;height:100%;object-fit:contain;background:#000;">
+            <video id="ld-video-player" controls playsinline webkit-playsinline preload="metadata"
+                   style="width:100%;height:100%;object-fit:contain;-webkit-object-fit:contain;background:#000;">
               {% if lv.storage_url %}<source src="{{ lv.storage_url }}" type="{{ lv.content_type or 'video/mp4' }}">{% endif %}
             </video>
             {# Play overlay — hidden once video starts #}
@@ -1859,7 +1869,9 @@
   function updateGallery(idx) {
     if (!track) return;
     currentIdx = idx;
-    track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+    var tx = 'translateX(-' + (idx * 100) + '%)';
+    track.style.transform = tx;
+    track.style.webkitTransform = tx;   // Safari <9 prefix (belt-and-suspenders)
     // dots
     dots.forEach((d, i) => d.classList.toggle('active', i === idx));
     // badge
@@ -1902,25 +1914,59 @@
   // ── Touch / swipe ────────────────────────
   var gallery = document.getElementById('ld-gallery');
   if (gallery && totalMedia > 1) {
-    var startX = 0, startY = 0, moved = false;
+    var startX = 0, startY = 0, swipeAxis = null;
     gallery.addEventListener('touchstart', function(e) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      moved  = false;
+      startX    = e.touches[0].clientX;
+      startY    = e.touches[0].clientY;
+      swipeAxis = null;           // reset — direction determined on first move
     }, { passive: true });
+
+    // Non-passive so we can call preventDefault() for horizontal swipes on iOS Safari.
+    // We only suppress scroll once the axis is confirmed as horizontal, so vertical
+    // page scroll still works normally when the user swipes up/down.
     gallery.addEventListener('touchmove', function(e) {
-      moved = true;
-    }, { passive: true });
+      if (swipeAxis === null) {
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+          swipeAxis = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+        }
+      }
+      if (swipeAxis === 'h') {
+        // Block vertical page-scroll while the user is swiping the gallery sideways
+        e.preventDefault();
+      }
+    }, { passive: false });
+
     gallery.addEventListener('touchend', function(e) {
-      if (!moved) return;
+      if (swipeAxis !== 'h') return;     // ignore taps and vertical scrolls
       var dx = e.changedTouches[0].clientX - startX;
       var dy = e.changedTouches[0].clientY - startY;
-      // Only swipe if horizontal movement dominates
+      // Confirm horizontal dominance and minimum travel distance
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        // Prevent vertical scroll hijack
         ldNav(dx < 0 ? 1 : -1);
       }
     }, { passive: true });
+  }
+
+  // ── Video overlay — iOS Safari touch fallback ─────────────────────────────
+  // iOS Safari sometimes does not fire click on non-button elements; touchend
+  // is always reliable. We guard against accidental swipe-to-play by checking
+  // that the touch did not travel far.
+  if (vidOverlay) {
+    var _ovTouchX = 0, _ovTouchY = 0;
+    vidOverlay.addEventListener('touchstart', function(e) {
+      _ovTouchX = e.touches[0].clientX;
+      _ovTouchY = e.touches[0].clientY;
+    }, { passive: true });
+    vidOverlay.addEventListener('touchend', function(e) {
+      var ddx = Math.abs(e.changedTouches[0].clientX - _ovTouchX);
+      var ddy = Math.abs(e.changedTouches[0].clientY - _ovTouchY);
+      if (ddx < 10 && ddy < 10) {   // genuine tap, not a drag
+        e.preventDefault();          // stop the 300 ms click delay on iOS
+        ldPlayVideo();
+      }
+    }, { passive: false });
   }
 
   // ── Keyboard (for desktop) ───────────────
