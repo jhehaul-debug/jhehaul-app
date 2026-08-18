@@ -1,0 +1,457 @@
+JHE HAUL — PHASE K PRODUCTION APPROVAL
+RECOMMENDATION + PERSONALIZATION INTELLIGENCE
+
+Phase K implementation is complete and approved.
+
+Now safely move the completed Phase K recommendation/personalization features through:
+
+LOCAL
+→ GITHUB MAIN
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+Do NOT begin Phase L yet.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. FINAL PHASE K REVIEW
+==================================================
+
+Before deployment verify:
+
+- RecommendationService works
+- Recommended for You works
+- Similar Listings works
+- Recently Viewed works
+- New Near You works
+- Saved Search matching works
+- Personalization settings work
+- Copilot recommendation tools work
+- Removed/sold/private listings are excluded
+- No fake recommendations are shown
+- No sensitive traits are used
+
+==================================================
+2. PRIVACY CHECK
+==================================================
+
+Verify JHE Haul does NOT personalize using:
+
+- race
+- religion
+- health
+- political beliefs
+- sexual orientation
+- criminal history
+- other sensitive traits
+
+Recommendations should use only marketplace behavior such as:
+
+- viewed listings
+- saved listings
+- search activity
+- category interest
+- price range
+- vehicle attributes
+- delivery preference
+- general public location
+
+==================================================
+3. USER DATA ISOLATION
+==================================================
+
+Test:
+
+User A requests User B recommendations
+→ DENIED
+
+User A requests User B recently viewed
+→ DENIED
+
+User A requests User B search history
+→ DENIED
+
+Normal users must only access their own personalization information.
+
+==================================================
+4. LOW-DATA FALLBACK
+==================================================
+
+For a user with little or no marketplace activity:
+
+Do NOT fabricate personalized recommendations.
+
+Fallback should use real marketplace discovery such as:
+
+- Recently Listed
+- New Near You
+- Popular marketplace inventory
+- Categories
+
+==================================================
+5. SIMILAR LISTINGS TEST
+==================================================
+
+On an active listing:
+
+Verify Similar Listings uses actual available inventory.
+
+For vehicles, test relevance using:
+
+- category
+- make/model
+- year
+- price
+- mileage
+- location
+- condition
+
+Do not invent attributes.
+
+==================================================
+6. SOLD / REMOVED LISTING EXCLUSION
+==================================================
+
+Verify listings with statuses such as:
+
+- sold
+- removed
+- suspended
+- draft
+- private
+
+do NOT appear in active recommendations where inappropriate.
+
+==================================================
+7. RECENTLY VIEWED
+==================================================
+
+Verify:
+
+Viewing listing
+→ appears in Recently Viewed
+
+Other user's recently viewed
+→ inaccessible
+
+Removed listing
+→ no longer presented as active recommendation
+
+If user controls exist for clearing history, verify they work.
+
+==================================================
+8. SAVED SEARCH MATCHING
+==================================================
+
+If saved-search matching is implemented:
+
+Create a safe test saved search.
+
+Publish/use an existing matching test listing.
+
+Verify:
+
+matching job
+→ Phase F queue
+→ matching buyer identified
+→ approved in-app notification behavior
+
+Do NOT send spam.
+Do NOT use SMS.
+
+==================================================
+9. PERSONALIZATION SETTINGS
+==================================================
+
+Verify user settings work where implemented:
+
+Personalized Recommendations:
+ON/OFF
+
+Saved Search Alerts:
+ON/OFF
+
+Recently Viewed controls where applicable
+
+If personalization is turned OFF:
+
+Core marketplace browsing/search must continue working.
+
+==================================================
+10. COPILOT RECOMMENDATIONS
+==================================================
+
+Test Ask JHE Haul:
+
+“Show me more like this.”
+
+“Find similar cars near me.”
+
+“Show recommendations based on my saved items.”
+
+“Show new listings that match my searches.”
+
+Verify answers use RecommendationService and real listing data.
+
+==================================================
+11. BACKGROUND WORKERS / CACHE
+==================================================
+
+If Phase K uses Phase F infrastructure:
+
+WORKER HEALTHY: YES/NO
+QUEUE HEALTHY: YES/NO
+RECOMMENDATION JOBS PROCESSING: YES/NO
+
+If caching is used:
+
+CACHE HEALTHY: YES/NO
+
+Verify sold/removed listings do not remain recommended because of stale cache.
+
+==================================================
+12. PERFORMANCE CHECK
+==================================================
+
+Verify Marketplace Home still loads normally.
+
+Check for:
+
+- excessive database queries
+- N+1 query problems
+- slow recommendation generation
+- stale cache
+- heavy AI calls
+
+Normal marketplace browsing must remain responsive.
+
+==================================================
+13. AI COST CHECK
+==================================================
+
+Verify simple recommendations use normal application/database logic where practical.
+
+Do NOT call AI unnecessarily for:
+
+- same category
+- price range
+- location
+- recency
+- make/model
+- saved item overlap
+
+Report any AI/embedding usage and expected cost.
+
+==================================================
+14. REGRESSION TEST
+==================================================
+
+Verify all previous phases still work:
+
+Marketplace Home
+Seller Dashboard
+Phase D AI Listing Assistant
+Phase E AI Search
+Phase F Workers/Queue
+Phase G Copilot
+Phase H Controlled Actions
+Phase I Seller Intelligence
+Phase J Fraud/Safety
+Messages
+Offers
+Saved Items
+Delivery
+Notifications
+Email
+Admin
+Photos
+Videos
+Vehicle fields
+SEO
+Authentication
+Stripe
+
+==================================================
+15. GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do not commit:
+- secrets
+- .env
+- logs
+- screenshots
+- local databases
+- temporary files
+
+==================================================
+16. COMMIT PHASE K
+==================================================
+
+Commit only the approved Phase K implementation.
+
+Suggested commit:
+
+Phase K: add marketplace recommendation and personalization intelligence
+
+==================================================
+17. PUSH TO EXISTING GITHUB
+==================================================
+
+Push to:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Do NOT create another repository.
+Do NOT create another production branch.
+Do NOT force push.
+
+==================================================
+18. VERIFY GITHUB
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB MAIN SHA:
+
+LOCAL = GITHUB: YES/NO
+AHEAD: 0
+BEHIND: 0
+
+If they do not match:
+STOP and fix Git.
+
+==================================================
+19. DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Verify DigitalOcean remains connected to:
+
+jhehaul-debug/jhehaul-app
+main
+
+Make sure a NEW deployment starts from the Phase K commit.
+
+If Auto Deploy does not trigger:
+deploy the newest GitHub main commit manually.
+
+Do not deploy an older SHA.
+
+==================================================
+20. VERIFY PRODUCTION SHAs
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA if applicable
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+==================================================
+21. LIVE PRODUCTION TEST
+==================================================
+
+Test actual:
+
+jhehaul.com
+
+Verify:
+
+RECOMMENDED FOR YOU LIVE: YES/NO
+SIMILAR LISTINGS LIVE: YES/NO
+RECENTLY VIEWED LIVE: YES/NO
+NEW NEAR YOU LIVE: YES/NO
+SAVED SEARCH MATCHING LIVE: YES/NO
+PERSONALIZATION SETTINGS LIVE: YES/NO
+COPILOT RECOMMENDATIONS LIVE: YES/NO
+
+==================================================
+22. MOBILE TEST
+==================================================
+
+Verify mobile behavior:
+
+- recommendation cards
+- swipe/scroll behavior
+- Recently Viewed
+- Similar Listings
+- See All
+- Copilot recommendation results
+- no horizontal overflow
+- acceptable page length
+
+==================================================
+23. FINAL REPORT
+==================================================
+
+PHASE K DEPLOYED: YES/NO
+
+RECOMMENDATION SERVICE LIVE: YES/NO
+RECOMMENDED FOR YOU LIVE: YES/NO
+SIMILAR LISTINGS LIVE: YES/NO
+RECENTLY VIEWED LIVE: YES/NO
+NEW NEAR YOU LIVE: YES/NO
+SAVED SEARCH MATCHING LIVE: YES/NO
+PERSONALIZATION SETTINGS LIVE: YES/NO
+COPILOT RECOMMENDATIONS LIVE: YES/NO
+
+REAL DATA ONLY VERIFIED: YES/NO
+SENSITIVE PERSONALIZATION BLOCKED: YES/NO
+USER DATA ISOLATION VERIFIED: YES/NO
+SOLD/REMOVED LISTINGS EXCLUDED: YES/NO
+PERFORMANCE VERIFIED: YES/NO
+MOBILE VERIFIED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA:
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+==================================================
+24. STOP
+==================================================
+
+After Phase K is fully deployed and verified:
+
+STOP.
+
+Do NOT begin Phase L.
+
+Wait for approval.
+
+==================================================
+CRITICAL RULES
+==================================================
+
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
+
+Do not use sensitive personal information for personalization.
+Do not add paid ranking yet.
+Do not begin Phase L until Phase K is verified live.
