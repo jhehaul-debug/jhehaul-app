@@ -308,6 +308,37 @@
 </div>
 {% endif %}
 
+{# ── Notice History ── #}
+<h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:18px;">
+  Notices Sent ({{ sent_notices|length }})
+</h3>
+{% if sent_notices %}
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:1.5px solid #e5e7eb;">
+          <th style="padding:9px 14px;text-align:left;color:#64748b;font-weight:600;">Date</th>
+          <th style="padding:9px 14px;text-align:left;color:#64748b;font-weight:600;">Title</th>
+          <th style="padding:9px 14px;text-align:left;color:#64748b;font-weight:600;">Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in sent_notices %}
+        <tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:9px 14px;white-space:nowrap;color:#6b7280;font-size:.8rem;">{{ n.created_at.strftime('%b %d, %Y %H:%M') }}</td>
+          <td style="padding:9px 14px;font-weight:600;color:#1a202c;max-width:220px;">{{ n.title }}</td>
+          <td style="padding:9px 14px;color:#6b7280;max-width:320px;">{{ n.message or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:16px;color:#9ca3af;margin-bottom:14px;font-size:.875rem;">No notices sent yet.</div>
+{% endif %}
+
 {# ── Send Notice ── #}
 <h3 style="font-size:.9rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:18px;">
   Send Notice

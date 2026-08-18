@@ -7214,7 +7214,7 @@ def admin_listing_moderate(listing_id):
 @require_admin
 def admin_user_detail(user_id):
     """Admin: view a single user's profile, listings, reports, and moderation log."""
-    from models import Listing as _L, UserReport, ListingReport, ModerationAuditLog
+    from models import Listing as _L, UserReport, ListingReport, ModerationAuditLog, Notification
     seller = User.query.get_or_404(user_id)
     listings = _L.query.filter_by(seller_id=user_id).order_by(_L.created_at.desc()).all()
     user_reports = (UserReport.query
@@ -7235,13 +7235,18 @@ def admin_user_detail(user_id):
                 .limit(50).all())
     _admin_ids = {log.admin_id for log in mod_logs if log.admin_id}
     admin_map = {a.id: a for a in User.query.filter(User.id.in_(_admin_ids)).all()} if _admin_ids else {}
+    sent_notices = (Notification.query
+                    .filter_by(user_id=str(user_id), type='admin_notice')
+                    .order_by(Notification.created_at.desc())
+                    .limit(50).all())
     return render_template('admin_user_detail.html',
                            seller=seller,
                            listings=listings,
                            user_reports=user_reports,
                            listing_reports=listing_reports,
                            mod_logs=mod_logs,
-                           admin_map=admin_map)
+                           admin_map=admin_map,
+                           sent_notices=sent_notices)
 
 
 # ── Admin: Reports ─────────────────────────────────────────────────────────
