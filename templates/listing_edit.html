@@ -341,8 +341,12 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Year</label>
-            <input class="form-control" type="number" name="vehicle_year" id="vehicleYearEdit"
-                   value="{{ listing.vehicle_year or '' }}" min="1886" max="2030" placeholder="e.g. 2018">
+            <select class="form-control" name="vehicle_year" id="vehicleYearEdit">
+              <option value="">— Select year —</option>
+              {% for y in VEHICLE_YEARS %}
+              <option value="{{ y }}" {{ 'selected' if listing.vehicle_year == y }}>{{ y }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label">Mileage</label>

@@ -1,0 +1,134 @@
+Update the Automotive listing and Automotive Delivery forms to use vehicle templates/searchable dropdowns for Year, Make, and Model.
+
+Vehicle Year
+
+Create a dropdown for vehicle year.
+
+* Include vehicle years from 1980 through the current year (2026).
+* Put newest years first.
+* Make this easy to update automatically when a new calendar year begins.
+* Do not require users to manually type the year.
+
+Example:
+
+Year
+
+* 2026
+* 2025
+* 2024
+* 2023
+* etc.
+
+Vehicle Make
+
+Add a searchable Make dropdown containing common vehicle manufacturers, including:
+
+* Acura
+* Alfa Romeo
+* Audi
+* BMW
+* Buick
+* Cadillac
+* Chevrolet
+* Chrysler
+* Dodge
+* Ford
+* Genesis
+* GMC
+* Honda
+* Hyundai
+* Infiniti
+* Jaguar
+* Jeep
+* Kia
+* Land Rover
+* Lexus
+* Lincoln
+* Mazda
+* Mercedes-Benz
+* MINI
+* Mitsubishi
+* Nissan
+* Porsche
+* Ram
+* Subaru
+* Tesla
+* Toyota
+* Volkswagen
+* Volvo
+* Other
+
+The user should be able to start typing, such as Chev, and see Chevrolet as a suggestion.
+
+Vehicle Model
+
+The Model dropdown must depend on the selected Make.
+
+Example:
+
+If Chevrolet is selected, show Chevrolet models such as:
+
+* Blazer
+* Camaro
+* Colorado
+* Corvette
+* Equinox
+* Express
+* Impala
+* Malibu
+* Silverado 1500
+* Silverado 2500HD
+* Silverado 3500HD
+* Suburban
+* Tahoe
+* Trailblazer
+* Traverse
+
+If Ford is selected, show Ford models such as:
+
+* Bronco
+* Edge
+* Escape
+* Expedition
+* Explorer
+* F-150
+* F-250
+* F-350
+* Maverick
+* Mustang
+* Ranger
+* Transit
+
+Do this across the supported vehicle manufacturers rather than only Chevrolet and Ford.
+
+Smart Year → Make → Model Flow
+
+The fields should work in this order:
+
+Year → Make → Model
+
+Once the user selects a Make, populate the appropriate Model choices.
+
+Make all three fields searchable/mobile-friendly where appropriate.
+
+Include an Other option so older, uncommon, commercial, or specialty vehicles can still be entered manually.
+
+Apply This To Both Areas
+
+Use the same vehicle selector component for:
+
+1. Automotive Marketplace listings
+2. Automotive Delivery quote requests
+3. Admin Automotive Delivery Test Quote
+
+Do not create three separate incompatible systems.
+
+Also keep the previous fix for the Automotive Delivery Test Quote overlapping fields/buttons.
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+Preserve all current automotive listing, delivery quote, payment, admin, photo-upload, and marketplace functionality.
+
+After testing Year → Make → Model and confirming the overlapping Automotive Delivery Test layout is fixed, commit and push the changes to the existing GitHub production branch so DigitalOcean can deploy them.

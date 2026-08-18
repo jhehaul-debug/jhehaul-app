@@ -201,9 +201,16 @@ def _queue_email(fn_name, **kwargs):
         return False
 _VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
 
+import datetime as _dt
+_VEHICLE_YEARS = list(range(_dt.datetime.now().year, 1979, -1))  # current year → 1980, newest first
+
 @app.context_processor
 def _inject_vehicle_data():
-    return dict(VEHICLE_MAKES=_VMAKES, VEHICLE_MAKES_MODELS_JSON=_VEHICLE_MAKES_MODELS_JSON)
+    return dict(
+        VEHICLE_MAKES=_VMAKES,
+        VEHICLE_MAKES_MODELS_JSON=_VEHICLE_MAKES_MODELS_JSON,
+        VEHICLE_YEARS=_VEHICLE_YEARS,
+    )
 
 
 @app.before_request
@@ -6273,8 +6280,12 @@ def admin_test_vehicle_quote():
     contact_email  = request.form.get('contact_email', '').strip() or ''
 
     vt_year         = request.form.get('vt_year', '').strip() or None
-    vt_make         = request.form.get('vt_make', '').strip() or None
-    vt_model        = request.form.get('vt_model', '').strip() or None
+    _vt_make_raw    = request.form.get('vt_make', '').strip()
+    vt_make         = request.form.get('vt_make_other', '').strip() or None \
+                      if _vt_make_raw == 'Other' else (_vt_make_raw or None)
+    _vt_model_raw   = request.form.get('vt_model', '').strip()
+    vt_model        = request.form.get('vt_model_other', '').strip() or None \
+                      if _vt_model_raw == 'Other' else (_vt_model_raw or None)
     vt_vehicle_type = request.form.get('vt_vehicle_type', '').strip() or None
     vt_vin          = request.form.get('vt_vin', '').strip().upper() or None
     vt_is_running   = request.form.get('vt_is_running') != '0'    # default True

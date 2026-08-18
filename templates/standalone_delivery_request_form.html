@@ -38,6 +38,67 @@
     </div>
   </div>
 
+  <!-- Vehicle Transport Toggle -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 10px;font-size:1rem;color:#1a202c;">🚗 Is This a Vehicle Transport Request?</h3>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.95rem;color:#374151;">
+      <input type="checkbox" id="is-vehicle-toggle" name="is_vehicle_transport" value="1"
+             style="width:18px;height:18px;accent-color:#7c3aed;">
+      Yes — I need a vehicle (car, truck, SUV, motorcycle, etc.) transported
+    </label>
+
+    <!-- Vehicle details — hidden until checkbox checked -->
+    <div id="vehicle-info-section" style="display:none;margin-top:18px;border-top:1px solid #e5e7eb;padding-top:16px;">
+      <div style="font-size:0.85rem;color:#7c3aed;font-weight:600;margin-bottom:12px;">🚗 Vehicle Information</div>
+
+      <!-- Year -->
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Year</label>
+        <select class="form-control" id="dr_vt_year" name="dr_vt_year">
+          <option value="">— Select year —</option>
+          {% for y in VEHICLE_YEARS %}
+          <option value="{{ y }}">{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Make (searchable) -->
+      <div style="margin-bottom:6px;">
+        <label class="form-label">Make</label>
+        <input type="text" id="dr-make-search" class="form-control"
+               placeholder="🔍 Type to filter makes…" autocomplete="off"
+               style="margin-bottom:4px;border-color:#a5b4fc;">
+        <select class="form-control" id="dr_vt_make" name="dr_vt_make">
+          <option value="">— Select make —</option>
+          {% for m in VEHICLE_MAKES %}
+          <option value="{{ m }}">{{ m }}</option>
+          {% endfor %}
+          <option value="Other">Other / Not Listed</option>
+        </select>
+      </div>
+      <div id="dr-make-other-group" style="display:none;margin-bottom:6px;">
+        <input type="text" name="dr_vt_make_other" id="dr_vt_make_other" class="form-control"
+               placeholder="Enter make not listed above">
+      </div>
+
+      <!-- Model (dependent) -->
+      <div style="margin-bottom:6px;">
+        <label class="form-label">Model</label>
+        <input type="text" id="dr-model-search" class="form-control"
+               placeholder="🔍 Type to filter models…" autocomplete="off"
+               style="margin-bottom:4px;border-color:#a5b4fc;">
+        <select class="form-control" id="dr_vt_model" name="dr_vt_model">
+          <option value="">— Select model —</option>
+          <option value="Other">Other / Not Listed</option>
+        </select>
+      </div>
+      <div id="dr-model-other-group" style="display:none;margin-bottom:6px;">
+        <input type="text" name="dr_vt_model_other" id="dr_vt_model_other" class="form-control"
+               placeholder="Enter model not listed above">
+      </div>
+    </div>
+  </div>
+
   <!-- Item Info -->
   <div class="card" style="padding:20px;margin-bottom:16px;">
     <h3 style="margin:0 0 16px;font-size:1rem;color:#1a202c;">📦 What Needs to Be Delivered?</h3>
@@ -261,6 +322,61 @@ form[action*="request-delivery"],
 </style>
 
 <script>
+/* ── Vehicle transport toggle ─────────────────────────────────── */
+const SDR_MODELS = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+(function(){
+  var toggle = document.getElementById('is-vehicle-toggle');
+  var section = document.getElementById('vehicle-info-section');
+  var makeSearch  = document.getElementById('dr-make-search');
+  var makeSelect  = document.getElementById('dr_vt_make');
+  var modelSearch = document.getElementById('dr-model-search');
+  var modelSelect = document.getElementById('dr_vt_model');
+  if(!toggle||!section) return;
+
+  toggle.addEventListener('change', function(){ section.style.display = this.checked ? '' : 'none'; });
+
+  var _allMakeOpts = makeSelect ? Array.from(makeSelect.options) : [];
+  var _allModelOpts = [];
+
+  makeSearch?.addEventListener('input', function(){
+    var q=this.value.toLowerCase(), cur=makeSelect.value;
+    makeSelect.innerHTML='';
+    _allMakeOpts.filter(function(o){return !q||o.value===''||o.value==='Other'||o.text.toLowerCase().includes(q);})
+      .forEach(function(o){makeSelect.appendChild(o.cloneNode(true));});
+    if(makeSelect.querySelector('option[value="'+CSS.escape(cur)+'"]')) makeSelect.value=cur;
+  });
+
+  function buildModels(make){
+    var models=SDR_MODELS[make]||[];
+    _allModelOpts=[];
+    var blank=document.createElement('option');blank.value='';blank.textContent='— Select model —';_allModelOpts.push(blank);
+    models.forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=m;_allModelOpts.push(o);});
+    var oth=document.createElement('option');oth.value='Other';oth.textContent='Other / Not Listed';_allModelOpts.push(oth);
+  }
+  function renderModels(q){
+    if(!modelSelect)return;
+    var cur=modelSelect.value; modelSelect.innerHTML='';
+    _allModelOpts.filter(function(o){return !q||o.value===''||o.value==='Other'||o.text.toLowerCase().includes(q.toLowerCase());})
+      .forEach(function(o){modelSelect.appendChild(o.cloneNode(true));});
+    if(modelSelect.querySelector('option[value="'+CSS.escape(cur)+'"]')) modelSelect.value=cur;
+  }
+
+  modelSearch?.addEventListener('input', function(){ renderModels(this.value); });
+
+  modelSelect?.addEventListener('change', function(){
+    var og=document.getElementById('dr-model-other-group');
+    if(og) og.style.display=(this.value==='Other')?'':'none';
+  });
+
+  makeSelect?.addEventListener('change', function(){
+    var og=document.getElementById('dr-make-other-group');
+    if(og) og.style.display=(this.value==='Other')?'':'none';
+    buildModels(this.value); renderModels(''); if(modelSearch) modelSearch.value='';
+  });
+
+  buildModels(''); renderModels('');
+})();
+
 /* ── Address autocomplete ─────────────────────────────────────── */
 var _drTimers = {};
 var _drXhr    = {};
