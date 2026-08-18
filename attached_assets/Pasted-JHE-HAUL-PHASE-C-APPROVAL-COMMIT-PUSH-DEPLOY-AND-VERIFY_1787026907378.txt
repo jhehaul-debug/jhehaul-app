@@ -1,0 +1,278 @@
+JHE HAUL — PHASE C APPROVAL
+COMMIT, PUSH, DEPLOY, AND VERIFY SEO / DISCOVERY
+
+Phase C implementation is approved.
+
+Do NOT begin Phase D yet.
+
+Your task now is ONLY to move the approved Phase C changes safely through:
+
+LOCAL
+→ GITHUB
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. FINAL PRE-DEPLOYMENT REVIEW
+==================================================
+
+Verify Phase C includes:
+
+- SEO-friendly public listing URLs
+- page titles
+- meta descriptions
+- canonical URLs
+- Open Graph metadata
+- structured data / JSON-LD
+- sitemap.xml
+- robots.txt
+- category discovery improvements
+- share canonical URL behavior
+- listing image SEO improvements
+- seller privacy protections
+
+Also verify existing functionality still works:
+
+- Marketplace Home
+- Search
+- Filters
+- Seller dashboard
+- My Listings
+- Messages
+- Offers
+- Delivery
+- Saved Items
+- Admin
+- Authentication
+- Photos
+- Videos
+- Stripe
+- Email
+
+==================================================
+2. RUN FINAL TESTS
+==================================================
+
+Test:
+
+PUBLIC LISTING:
+- canonical URL loads
+- old URL still works or redirects correctly
+- title correct
+- meta description correct
+- Open Graph correct
+- JSON-LD valid
+- main image works
+
+SEO:
+- /sitemap.xml loads
+- /robots.txt loads
+- sitemap contains active public listings
+- sitemap excludes drafts/private/admin pages
+
+PRIVACY:
+Confirm no SEO metadata exposes:
+- seller email
+- seller phone
+- exact private address
+- private messages
+- offers
+- payment data
+- admin information
+
+==================================================
+3. GIT CHECK
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do not include:
+- secrets
+- logs
+- local database files
+- screenshots
+- temporary files
+- irrelevant generated files
+
+==================================================
+4. COMMIT
+==================================================
+
+Commit approved Phase C changes.
+
+Use a clear message such as:
+
+Phase C: improve marketplace SEO and public listing discovery
+
+==================================================
+5. PUSH
+==================================================
+
+Push to the EXISTING repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Do NOT create a new repository.
+Do NOT create another production branch.
+Do NOT force push unless explicitly approved.
+
+==================================================
+6. VERIFY GITHUB
+==================================================
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+
+Confirm:
+
+LOCAL = GITHUB: YES/NO
+AHEAD: 0
+BEHIND: 0
+
+If they do not match:
+STOP and fix the Git issue.
+
+==================================================
+7. DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Verify DigitalOcean production remains connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Verify DigitalOcean deploys the NEW Phase C commit.
+
+If auto-deploy does not trigger, manually deploy the latest GitHub main commit.
+
+Do not deploy an older SHA.
+
+==================================================
+8. VERIFY SHAs
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+==================================================
+9. LIVE PRODUCTION TEST
+==================================================
+
+Test the real production site:
+
+jhehaul.com
+
+Check:
+
+- Marketplace Home
+- Seller dashboard
+- Current Chevrolet Volt listing
+- New canonical listing URL
+- Old listing URL compatibility
+- Share button
+- sitemap.xml
+- robots.txt
+
+==================================================
+10. SEO LIVE VERIFICATION
+==================================================
+
+On the live Chevrolet Volt listing, confirm:
+
+TITLE:
+[actual title]
+
+META DESCRIPTION:
+[actual description]
+
+CANONICAL:
+[actual canonical URL]
+
+OPEN GRAPH:
+YES/NO
+
+JSON-LD:
+YES/NO
+
+PRIMARY IMAGE:
+YES/NO
+
+PRIVATE SELLER DATA EXPOSED:
+YES/NO
+
+The last answer must be NO.
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+PHASE C DEPLOYED: YES/NO
+
+SEO-FRIENDLY URLS LIVE: YES/NO
+CANONICAL LIVE: YES/NO
+META TITLES LIVE: YES/NO
+META DESCRIPTIONS LIVE: YES/NO
+OPEN GRAPH LIVE: YES/NO
+JSON-LD LIVE: YES/NO
+SITEMAP LIVE: YES/NO
+ROBOTS.TXT LIVE: YES/NO
+SHARE URL WORKING: YES/NO
+SELLER PRIVACY PRESERVED: YES/NO
+
+BUYER MARKETPLACE WORKING: YES/NO
+SELLER DASHBOARD WORKING: YES/NO
+MESSAGES WORKING: YES/NO
+OFFERS WORKING: YES/NO
+DELIVERY WORKING: YES/NO
+ADMIN WORKING: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL THREE MATCH: YES/NO
+
+LIVE PRODUCTION VERIFIED: YES/NO
+
+==================================================
+12. STOP
+==================================================
+
+After Phase C is verified live:
+
+STOP.
+
+Do NOT begin Phase D yet.
+
+Wait for approval.
+
+CRITICAL:
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
