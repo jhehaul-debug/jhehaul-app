@@ -705,6 +705,23 @@ class Notification(db.Model):
                                              cascade='all, delete-orphan'))
 
 
+class SavedSearch(db.Model):
+    """Foundation for buyer saved searches (Phase E).
+    Stores the raw query text and validated filter JSON.
+    Alert delivery and matching deferred to a future phase.
+    """
+    __tablename__ = 'saved_searches'
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.String, db.ForeignKey('users.id'), nullable=True, index=True)
+    query_text   = db.Column(db.String(300), nullable=True)
+    filters_json = db.Column(db.Text, nullable=True)   # validated JSON from parse_marketplace_search
+    alerts_on    = db.Column(db.Boolean, default=False)
+    created_at   = db.Column(db.DateTime, default=datetime.now)
+
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('saved_searches', lazy='dynamic'))
+
+
 class AIUsageLog(db.Model):
     """Lightweight log of AI listing-assistant requests.
     Stores no sensitive data — only success/fail, tool name, and response time.

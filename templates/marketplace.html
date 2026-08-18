@@ -639,6 +639,7 @@ function dismissProfileNudge() {
         {% if city_zip_filter %}<input type="hidden" name="city_zip" value="{{ city_zip_filter }}">{% endif %}
         <button type="submit">🔍</button>
     </form>
+    <button type="button" class="jhe-ais-trigger" style="margin:6px 0 2px;font-size:.82rem;padding:5px 12px;background:rgba(124,58,237,.12);border-color:#c4b5fd;color:#4c1d95;" onclick="toggleAiSearch()">✨ Ask JHE Haul</button>
 </div>
 
 {# ── Hero ── #}
@@ -658,7 +659,179 @@ function dismissProfileNudge() {
         <button type="submit">Search</button>
     </form>
 
+    {# ── ✨ Ask JHE Haul trigger (Phase E) ── #}
+    <div class="jhe-ais-trigger-bar">
+      <button type="button" class="jhe-ais-trigger" onclick="toggleAiSearch()">✨ Ask JHE Haul</button>
+      <span class="jhe-ais-trigger-hint">Describe what you're looking for in plain English</span>
+    </div>
+
 </div>
+
+{# ── ✨ AI Search panel (Phase E) ─────────────────────────────────────── #}
+<div class="jhe-ais-section" id="jheAisSection" style="display:none">
+  <div class="jhe-ais-panel">
+    <textarea class="jhe-ais-input" id="jheAisInput" rows="2"
+      placeholder="e.g. 'Toyota Camry 2018–2022 under $20,000' or 'Furniture under $500 near Maplewood'"></textarea>
+    <div class="jhe-ais-input-row">
+      <button type="button" class="jhe-ais-go" id="jheAisGo" onclick="runAiSearch()">✨ Search</button>
+      <button type="button" class="jhe-ais-cancel-btn" onclick="closeAiSearch()">✕ Close</button>
+    </div>
+    <div id="jheAisLoading" class="jhe-ai-loading" style="display:none" aria-live="polite">
+      <span class="jhe-ai-spinner"></span> Understanding your search…
+    </div>
+    <div id="jheAisError" class="jhe-ai-error" style="display:none"></div>
+    <div id="jheAisResult" style="display:none">
+      <div class="jhe-ais-summary" id="jheAisSummary"></div>
+      <div class="jhe-ais-chips" id="jheAisChips"></div>
+      <div class="jhe-ais-confirm-row">
+        <button type="button" class="jhe-ais-confirm-btn" onclick="applyAiSearch()">Search marketplace →</button>
+        <button type="button" class="jhe-ais-clear-btn" onclick="clearAiResult()">Start over</button>
+      </div>
+      <p class="jhe-ais-note">Tap × on any filter to remove it. <a href="/marketplace">Use regular search</a> instead.</p>
+    </div>
+  </div>
+</div>
+<script>
+// ── Phase E: AI Search Intelligence ──────────────────────────────────────
+var _aisData = null;
+var _aisFilters = {};
+
+function toggleAiSearch() {
+  var sec = document.getElementById('jheAisSection');
+  if (!sec) return;
+  var open = sec.style.display !== 'none';
+  sec.style.display = open ? 'none' : 'block';
+  if (!open) { setTimeout(function(){ var i=document.getElementById('jheAisInput'); if(i) i.focus(); }, 60); }
+}
+function closeAiSearch() {
+  var sec = document.getElementById('jheAisSection');
+  if (sec) sec.style.display = 'none';
+}
+function clearAiResult() {
+  _aisData = null; _aisFilters = {};
+  ['jheAisResult','jheAisError'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  var i = document.getElementById('jheAisInput'); if(i){ i.value=''; i.focus(); }
+}
+function runAiSearch() {
+  var inp = document.getElementById('jheAisInput');
+  var q = inp ? inp.value.trim() : '';
+  if (!q) { if(inp) inp.focus(); return; }
+  var btn=document.getElementById('jheAisGo'),
+      loading=document.getElementById('jheAisLoading'),
+      errDiv=document.getElementById('jheAisError'),
+      result=document.getElementById('jheAisResult');
+  btn.disabled=true; btn.textContent='Searching…';
+  loading.style.display='flex'; errDiv.style.display=result.style.display='none';
+  fetch('/api/ai/search-parse', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({query: q})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    loading.style.display='none'; btn.disabled=false; btn.textContent='✨ Search';
+    if (!data.ok) {
+      errDiv.textContent = data.error==='rate_limited'
+        ? 'Too many AI searches. Please wait a moment or use the regular search.'
+        : "We couldn't interpret that search. Try rephrasing, or use the regular search above.";
+      errDiv.style.display='block'; return;
+    }
+    _aisData=data; _aisFilters=JSON.parse(JSON.stringify(data.filters||{}));
+    renderAisChips();
+  })
+  .catch(function(){
+    loading.style.display='none'; btn.disabled=false; btn.textContent='✨ Search';
+    errDiv.textContent='AI search is temporarily unavailable. Please use the regular search.';
+    errDiv.style.display='block';
+  });
+}
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function renderAisChips() {
+  var f=_aisFilters, v=f.vehicle||{}, chips=[];
+  var p=function(label,key){ chips.push({label:label,key:key}); };
+  (f.keywords||[]).forEach(function(k,i){ p('🔍 '+k,'keyword:'+i); });
+  if(f.category) p('📂 '+f.category,'category');
+  if(v.make)  p('🚗 '+v.make,'vehicle_make');
+  if(v.model) p('Model: '+v.model,'vehicle_model');
+  if(v.year_min&&v.year_max) p(v.year_min+'–'+v.year_max,'vehicle_year_range');
+  else if(v.year_min) p(v.year_min+'+','vehicle_year_min');
+  else if(v.year_max) p('Up to '+v.year_max,'vehicle_year_max');
+  if(v.mileage_max) p('Under '+Number(v.mileage_max).toLocaleString()+' mi','vehicle_mileage_max');
+  if(f.min_price&&f.max_price) p('$'+Number(f.min_price).toLocaleString()+'–$'+Number(f.max_price).toLocaleString(),'price_range');
+  else if(f.max_price) p('Under $'+Number(f.max_price).toLocaleString(),'max_price');
+  else if(f.min_price) p('Over $'+Number(f.min_price).toLocaleString(),'min_price');
+  if(f.city_zip) p('📍 '+f.city_zip,'city_zip');
+  var cL={new:'New',like_new:'Like New',good:'Good',fair:'Fair',for_parts:'For Parts'};
+  (f.condition||[]).forEach(function(c){ p(cL[c]||c,'condition:'+c); });
+  if(f.delivery_available) p('🚚 JHE Haul Delivery','delivery_available');
+  var sL={newest:'Newest first',price_asc:'Price ↑',price_desc:'Price ↓'};
+  if(f.sort) p(sL[f.sort]||f.sort,'sort');
+  var rL={today:'Listed today',week:'This week',month:'This month'};
+  if(f.recency) p(rL[f.recency]||f.recency,'recency');
+
+  var box=document.getElementById('jheAisChips'); box.innerHTML='';
+  if(!chips.length) {
+    box.innerHTML='<span style="color:#6b7280;font-size:.88rem">No specific filters detected — will show all matching results.</span>';
+  } else {
+    chips.forEach(function(c){
+      var el=document.createElement('span'); el.className='jhe-ais-chip';
+      el.setAttribute('data-key',c.key);
+      el.innerHTML='<span class="jhe-ais-chip-label">'+escH(c.label)+'</span>'
+        +'<button type="button" class="jhe-ais-chip-x" onclick="removeAisChip(\''+escH(c.key)+'\')" aria-label="Remove">×</button>';
+      box.appendChild(el);
+    });
+  }
+  var se=document.getElementById('jheAisSummary');
+  if(_aisData&&_aisData.summary){ se.textContent=_aisData.summary; se.style.display='block'; }
+  else { se.style.display='none'; }
+  document.getElementById('jheAisResult').style.display='block';
+}
+function removeAisChip(key) {
+  var f=_aisFilters, v=f.vehicle||{};
+  if(key==='category')           { f.category=null; f.category_slug=null; }
+  else if(key==='vehicle_make')  { v.make=null; }
+  else if(key==='vehicle_model') { v.model=null; }
+  else if(key==='vehicle_year_range'){ v.year_min=null; v.year_max=null; }
+  else if(key==='vehicle_year_min')  { v.year_min=null; }
+  else if(key==='vehicle_year_max')  { v.year_max=null; }
+  else if(key==='vehicle_mileage_max'){ v.mileage_max=null; }
+  else if(key==='max_price')   { f.max_price=null; }
+  else if(key==='min_price')   { f.min_price=null; }
+  else if(key==='price_range') { f.min_price=null; f.max_price=null; }
+  else if(key==='city_zip')    { f.city_zip=null; }
+  else if(key==='delivery_available') { f.delivery_available=null; }
+  else if(key==='sort')    { f.sort=null; }
+  else if(key==='recency') { f.recency=null; }
+  else if(key.indexOf('condition:')==0){ var c=key.slice(10); f.condition=(f.condition||[]).filter(function(x){return x!==c;}); }
+  else if(key.indexOf('keyword:')==0) { f.keywords=[]; }
+  _aisFilters.vehicle=v;
+  renderAisChips();
+}
+function applyAiSearch() {
+  var f=_aisFilters, v=f.vehicle||{}, p=new URLSearchParams();
+  var kw=(f.keywords||[]).filter(Boolean);
+  if(kw.length)        p.set('q',kw.join(' '));
+  if(f.category_slug)  p.set('category',f.category_slug);
+  if(f.listing_type)   p.set('listing_type',f.listing_type);
+  if(v.make)           p.set('vehicle_make',v.make);
+  if(v.model)          p.set('vehicle_model',v.model);
+  if(v.year_min)       p.set('vehicle_year_min',v.year_min);
+  if(v.year_max)       p.set('vehicle_year_max',v.year_max);
+  if(v.mileage_max)    p.set('vehicle_mileage_max',v.mileage_max);
+  if(f.min_price!=null) p.set('min_price',f.min_price);
+  if(f.max_price!=null) p.set('max_price',f.max_price);
+  if(f.city_zip)       p.set('city_zip',f.city_zip);
+  if(f.condition&&f.condition[0]) p.set('condition',f.condition[0]);
+  if(f.delivery_available) p.set('delivery_available','1');
+  if(f.sort)    p.set('sort',f.sort);
+  if(f.recency) p.set('recency',f.recency);
+  window.location.href='/marketplace?'+p.toString();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var ta=document.getElementById('jheAisInput');
+  if(ta){ ta.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();runAiSearch();} }); }
+});
+// ── End Phase E AI Search ─────────────────────────────────────────────────
+</script>
 
 {# ── Pill filter row ── #}
 {% set _no_veh = no_vehicles_filter if no_vehicles_filter is defined else '' %}

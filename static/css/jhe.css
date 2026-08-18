@@ -416,6 +416,164 @@
   .sl-listing-thumb { width: 68px; height: 68px; }
 }
 
+/* ── ✨ AI Search Intelligence (Phase E) ───────────────────────────────── */
+.jhe-ais-trigger-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.jhe-ais-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.55);
+  border-radius: 24px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.jhe-ais-trigger:hover { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.8); }
+.jhe-ais-trigger-hint {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.72);
+  font-style: italic;
+}
+.jhe-ais-section {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 16px;
+}
+.jhe-ais-panel {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 0 20px;
+}
+.jhe-ais-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  color: #1a1a2e;
+}
+.jhe-ais-input:focus { border-color: #7c3aed; }
+.jhe-ais-input-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.jhe-ais-go {
+  padding: 9px 20px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.jhe-ais-go:hover:not(:disabled) { background: #6d28d9; }
+.jhe-ais-go:disabled { opacity: 0.6; cursor: not-allowed; }
+.jhe-ais-cancel-btn {
+  padding: 9px 16px;
+  background: none;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.jhe-ais-cancel-btn:hover { background: #f3f4f6; }
+.jhe-ais-summary {
+  font-size: 0.88rem;
+  color: #6b7280;
+  font-style: italic;
+  margin: 12px 0 6px;
+}
+.jhe-ais-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.jhe-ais-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0eeff;
+  border: 1px solid #c4b5fd;
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  color: #4c1d95;
+  font-weight: 600;
+}
+.jhe-ais-chip-x {
+  background: none;
+  border: none;
+  color: #7c3aed;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 2px;
+  font-weight: 700;
+}
+.jhe-ais-chip-x:hover { color: #dc2626; }
+.jhe-ais-confirm-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.jhe-ais-confirm-btn {
+  padding: 10px 22px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.93rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.jhe-ais-confirm-btn:hover { background: #1d4ed8; }
+.jhe-ais-clear-btn {
+  padding: 10px 16px;
+  background: none;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.jhe-ais-clear-btn:hover { background: #f3f4f6; }
+.jhe-ais-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 4px 0 0;
+}
+.jhe-ais-note a { color: #6b7280; text-decoration: underline; }
+@media (max-width: 600px) {
+  .jhe-ais-trigger      { font-size: 0.84rem; padding: 7px 14px; }
+  .jhe-ais-trigger-hint { display: none; }
+  .jhe-ais-go           { font-size: 0.88rem; padding: 9px 16px; }
+}
+/* ── End AI Search ──────────────────────────────────────────────────────── */
+
 /* ── ✨ AI Listing Assistant (Phase D) ──────────────────────────────────── */
 .jhe-ai-panel {
   border: 1.5px solid #c7d2fe;

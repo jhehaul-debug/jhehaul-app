@@ -179,6 +179,7 @@ from services.seo import (
     listing_jsonld as _listing_jsonld,
 )
 from ai.listing_assistant import suggest as _ai_suggest
+from ai.search_intelligence import parse_marketplace_search as _ai_search_parse
 _VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
 
 @app.context_processor
@@ -630,6 +631,16 @@ def marketplace():
     max_price_raw      = request.args.get('max_price',    '').strip()
     min_beds_raw       = request.args.get('min_beds',     '').strip()
     open_house_only    = request.args.get('open_house',   '').strip()
+    # ── Phase E: extended search params ──────────────────────────────────
+    vehicle_make_f    = request.args.get('vehicle_make',        '').strip()
+    vehicle_model_f   = request.args.get('vehicle_model',       '').strip()
+    veh_yr_min_raw    = request.args.get('vehicle_year_min',    '').strip()
+    veh_yr_max_raw    = request.args.get('vehicle_year_max',    '').strip()
+    veh_mile_raw      = request.args.get('vehicle_mileage_max', '').strip()
+    condition_f       = request.args.get('condition',           '').strip()
+    sort_f            = request.args.get('sort',                '').strip()
+    delivery_f        = request.args.get('delivery_available',  '').strip()
+    recency_f         = request.args.get('recency',             '').strip()
     _hide_sold_param   = request.args.get('hide_sold',    None)
     # Persist the hide_sold choice to session so it stays in sync with the homepage toggle.
     # Normalise to '1' / '' so Jinja truthiness works correctly (avoid '0' being truthy).
@@ -653,11 +664,21 @@ def marketplace():
     except ValueError: max_price = None
     try: min_beds = float(min_beds_raw) if min_beds_raw else None
     except ValueError: min_beds = None
+    try: veh_yr_min = int(veh_yr_min_raw)    if veh_yr_min_raw else None
+    except ValueError: veh_yr_min = None
+    try: veh_yr_max = int(veh_yr_max_raw)    if veh_yr_max_raw else None
+    except ValueError: veh_yr_max = None
+    try: veh_mileage_max = int(veh_mile_raw) if veh_mile_raw   else None
+    except ValueError: veh_mileage_max = None
 
     is_search = bool(q or category_slug or price_type_filter or featured_filter
                      or listing_type_filter or area_filter or city_zip_filter
                      or min_price is not None or max_price is not None
-                     or min_beds is not None or open_house_only or hide_sold)
+                     or min_beds is not None or open_house_only or hide_sold
+                     or vehicle_make_f or vehicle_model_f
+                     or veh_yr_min is not None or veh_yr_max is not None
+                     or veh_mileage_max is not None or condition_f
+                     or sort_f or delivery_f or recency_f)
 
     if is_search:
         if hide_sold:
@@ -792,8 +813,37 @@ def marketplace():
                 # City name search (case-insensitive partial match)
                 qobj = qobj.filter(Listing.city.ilike(f'%{_czf}%'))
 
+        # ── Phase E extended filters ──────────────────────────────────────
+        _VALID_CONDITIONS = {'new', 'like_new', 'good', 'fair', 'for_parts'}
+        if vehicle_make_f:
+            qobj = qobj.filter(Listing.vehicle_make.ilike(f'%{vehicle_make_f}%'))
+        if vehicle_model_f:
+            qobj = qobj.filter(Listing.vehicle_model.ilike(f'%{vehicle_model_f}%'))
+        if veh_yr_min is not None:
+            qobj = qobj.filter(Listing.vehicle_year >= veh_yr_min)
+        if veh_yr_max is not None:
+            qobj = qobj.filter(Listing.vehicle_year <= veh_yr_max)
+        if veh_mileage_max is not None:
+            qobj = qobj.filter(Listing.vehicle_mileage <= veh_mileage_max)
+        if condition_f in _VALID_CONDITIONS:
+            qobj = qobj.filter(Listing.condition == condition_f)
+        if delivery_f:
+            qobj = qobj.filter(Listing.delivery_option.ilike('%jhe_haul%'))
+        if recency_f:
+            from datetime import datetime as _rdt, timedelta as _rtd
+            _recency_days = {'today': 1, 'week': 7, 'month': 30}.get(recency_f)
+            if _recency_days:
+                qobj = qobj.filter(Listing.created_at >= _rdt.now() - _rtd(days=_recency_days))
+        # ── End Phase E filters ───────────────────────────────────────────
+
         _limit = min(max(int(request.args.get('limit', 24) or 24), 1), 192)
-        _all   = qobj.order_by(Listing.featured.desc(), Listing.created_at.desc()).limit(_limit + 1).all()
+        if sort_f == 'price_asc':
+            _mp_order = [Listing.featured.desc(), Listing.price.asc()]
+        elif sort_f == 'price_desc':
+            _mp_order = [Listing.featured.desc(), Listing.price.desc()]
+        else:
+            _mp_order = [Listing.featured.desc(), Listing.created_at.desc()]
+        _all   = qobj.order_by(*_mp_order).limit(_limit + 1).all()
         has_more = len(_all) > _limit
         search_results = _all[:_limit]
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
@@ -3124,6 +3174,66 @@ def api_search_suggestions():
          f'/marketplace?q={q}')
 
     return jsonify(suggestions=suggestions[:8])
+
+
+@app.route("/api/ai/search-parse", methods=["POST"])
+def api_ai_search_parse():
+    """Convert a natural-language buyer query into validated marketplace filters.
+    Rate-limited per IP (30/hr). Results cached 5 min per unique query.
+    No auth required — open to all visitors. No PII or private data sent to AI.
+    Prompt-injection guard: buyer text is isolated in the 'user' role only.
+    """
+    from models import AIUsageLog
+    import time as _time
+
+    data  = request.get_json(silent=True) or {}
+    query = (data.get("query") or "").strip()[:300]
+    if not query:
+        return jsonify({"ok": False, "error": "empty"}), 400
+
+    ip = request.remote_addr or ""
+    t0 = _time.time()
+    result = _ai_search_parse(query, ip=ip)
+    response_ms = result.get("response_ms") or int((_time.time() - t0) * 1000)
+
+    # Resolve category name → slug for the client to use in the URL
+    if result.get("ok") and result.get("filters", {}).get("category"):
+        _cat_name = result["filters"]["category"]
+        try:
+            _cat = Category.query.filter(
+                Category.name.ilike(_cat_name),
+                Category.is_active == True,
+                Category.parent_id.is_(None),
+            ).first()
+            if not _cat:
+                # Fuzzy fallback
+                _all_cats = Category.query.filter_by(is_active=True, parent_id=None).all()
+                _cn_lower = _cat_name.lower()
+                for _c in _all_cats:
+                    if _cn_lower in _c.name.lower() or _c.name.lower() in _cn_lower:
+                        _cat = _c
+                        break
+            if _cat:
+                result["filters"]["category_slug"] = _cat.slug
+        except Exception:
+            pass
+
+    # Log (aggregate only — no query text stored)
+    if not result.get("cached"):
+        try:
+            _uid = current_user.id if current_user.is_authenticated else None
+            db.session.add(AIUsageLog(
+                user_id=_uid,
+                tool_name="search_parse",
+                success=bool(result.get("ok")),
+                response_ms=response_ms,
+            ))
+            db.session.commit()
+        except Exception as _le:
+            db.session.rollback()
+            app.logger.warning("AIUsageLog (search) write failed: %s", _le)
+
+    return jsonify(result)
 
 
 @app.route("/api/ai/listing-assist", methods=["POST"])

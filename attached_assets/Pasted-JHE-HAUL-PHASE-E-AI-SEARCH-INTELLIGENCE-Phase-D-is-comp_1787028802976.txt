@@ -1,0 +1,596 @@
+JHE HAUL — PHASE E
+AI SEARCH INTELLIGENCE
+
+Phase D is complete and verified live.
+
+Now begin Phase E.
+
+This phase introduces intelligent marketplace search.
+
+Do NOT begin the full AI Copilot yet.
+
+Do NOT build autonomous AI agents yet.
+
+Do NOT remove or replace normal marketplace search.
+
+AI Search should ADD intelligence to the existing search system while preserving normal search and filters.
+
+IMPORTANT:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+PHASE E OBJECTIVE
+
+Allow buyers to search JHE Haul using normal conversational language.
+
+Examples:
+
+“Find me a reliable SUV under $15,000 within 30 miles.”
+
+“Show me refrigerators under $500 near Maplewood.”
+
+“Find me a Toyota Camry from 2018 to 2023.”
+
+“Show me furniture that JHE Haul can deliver.”
+
+“Find a car under $10,000 with less than 120,000 miles.”
+
+“Show me recently listed appliances.”
+
+The system should understand the request and translate it into safe marketplace search parameters.
+
+==================================================
+
+1. KEEP NORMAL SEARCH
+    ==================================================
+
+Preserve the existing:
+
+* Search box
+* Keyword search
+* Categories
+* Price filters
+* Condition filters
+* Location
+* Distance/radius
+* Vehicle filters
+* Delivery filters
+* Sort controls
+
+If AI Search fails or is unavailable:
+
+NORMAL SEARCH MUST STILL WORK.
+
+==================================================
+2. ADD “ASK JHE HAUL” SEARCH
+
+Add an optional AI-assisted search entry point.
+
+Potential interface:
+
+Search marketplace…
+
+and a secondary option:
+
+✨ Ask JHE Haul
+
+or:
+
+“Describe what you’re looking for”
+
+Example placeholder:
+
+“Find me a used SUV under $15,000 within 25 miles”
+
+Keep the interface simple on mobile.
+
+==================================================
+3. NATURAL-LANGUAGE QUERY PARSING
+
+Create a backend search-intelligence service that converts natural-language requests into structured search parameters.
+
+Example:
+
+User:
+
+“Toyota Camry under $18,000 from 2018 or newer within 50 miles.”
+
+AI output should become structured data similar to:
+
+category = Vehicles
+make = Toyota
+model = Camry
+min_year = 2018
+max_price = 18000
+radius = 50 miles
+
+Then the EXISTING backend search system should execute the actual query.
+
+Do NOT let the AI directly query unrestricted production data.
+
+==================================================
+4. STRUCTURED AI OUTPUT
+
+Require the AI to return a strict structured format.
+
+Example concept:
+
+{
+“keywords”: [],
+“category”: null,
+“min_price”: null,
+“max_price”: null,
+“condition”: [],
+“location”: null,
+“radius_miles”: null,
+“vehicle”: {
+“year_min”: null,
+“year_max”: null,
+“make”: null,
+“model”: null,
+“mileage_max”: null
+},
+“delivery_available”: null,
+“sort”: null
+}
+
+Validate every field server-side.
+
+Never trust raw AI output.
+
+==================================================
+5. SEARCH TOOL LAYER
+
+AI should NOT receive direct unrestricted database access.
+
+Create a controlled function/service such as:
+
+search_marketplace(filters)
+
+The backend should:
+
+1. Validate filters.
+2. Apply user permissions.
+3. Apply marketplace rules.
+4. Query only ACTIVE/public listings.
+5. Return safe public listing information.
+
+==================================================
+6. SEARCH RESULT PRIVACY
+
+AI Search must never expose:
+
+* Seller email
+* Seller phone
+* Exact private address
+* Private messages
+* Offers
+* Payment data
+* Internal admin data
+* Private delivery locations
+* Sensitive user identifiers
+
+Use only information that normal marketplace buyers are authorized to see.
+
+==================================================
+7. VEHICLE SEARCH INTELLIGENCE
+
+Use the structured vehicle fields already available in JHE Haul.
+
+Support queries such as:
+
+“Chevrolet Volt under $12,000”
+
+“SUV under 100,000 miles”
+
+“Toyota Camry 2018–2022”
+
+“Ford pickup under $20,000”
+
+Potential structured filters:
+
+Year
+Make
+Model
+Mileage
+Price
+Condition
+Location
+Distance
+
+Do not make up missing vehicle attributes.
+
+==================================================
+8. CATEGORY SEARCH
+
+AI should map conversational terms to existing marketplace categories where reasonable.
+
+Examples:
+
+“couch”
+→ Furniture
+
+“fridge”
+→ Appliances
+
+“car”
+→ Vehicles
+
+“restaurant fryer”
+→ Restaurant Equipment
+
+Do not create categories automatically.
+
+Use the existing configured category system.
+
+==================================================
+9. LOCATION INTELLIGENCE
+
+Support searches using general public locations.
+
+Example:
+
+“within 25 miles of Maplewood”
+
+Use the existing location/radius infrastructure where available.
+
+Do NOT send or expose a user’s exact private home address to the AI provider.
+
+Where appropriate, use city/ZIP or coordinates through existing backend logic.
+
+==================================================
+10. DELIVERY SEARCH
+
+Support search intent such as:
+
+“Show me items JHE Haul can deliver.”
+
+Filter based on actual delivery availability.
+
+Do not claim delivery is available when the listing does not support it.
+
+==================================================
+11. RECENCY SEARCH
+
+Support searches such as:
+
+“listed today”
+
+“added this week”
+
+“newest furniture”
+
+Use actual published timestamps.
+
+Do not use abandoned/draft listing timestamps.
+
+==================================================
+12. RESULT EXPLANATION
+
+Where useful, AI Search may show a small interpretation summary.
+
+Example:
+
+Searching for:
+
+Toyota Camry
+2018 or newer
+Under $18,000
+Within 50 miles
+
+Allow the user to edit/remove interpreted filters.
+
+This gives users control over what the AI understood.
+
+==================================================
+13. NO RESULTS
+
+If no listings match:
+
+Do not invent results.
+
+Show:
+
+“No matching listings found.”
+
+Offer useful actions such as:
+
+* Expand distance
+* Increase price
+* Remove a filter
+* Save this search
+
+Prepare for saved searches where appropriate.
+
+==================================================
+14. SAVED SEARCH FOUNDATION
+
+Evaluate whether Phase E should add a basic Saved Search capability.
+
+Potential saved search information:
+
+* query
+* parsed filters
+* user
+* location/radius
+* created date
+* alerts enabled/disabled
+
+This will support future AI matching and notifications.
+
+Do not add unnecessary complexity if the current architecture is not ready.
+
+If a migration is required, report it clearly.
+
+==================================================
+15. AI SEARCH SERVICE
+
+Extend the existing AI abstraction from Phase D rather than creating unrelated AI code.
+
+Potential service methods:
+
+parse_marketplace_search()
+suggest_search_relaxation()
+explain_search_filters()
+
+Do not duplicate provider configuration.
+
+==================================================
+16. AI PROVIDER
+
+Reuse the approved AI provider/service architecture from Phase D.
+
+Do not add another AI provider unless there is a clear technical reason.
+
+Never expose the AI API key in frontend code.
+
+==================================================
+17. COST CONTROL
+
+AI Search can generate many requests.
+
+Implement:
+
+* rate limiting
+* input length limit
+* request timeout
+* output-token limit
+* safe retry behavior
+* usage logging
+* caching where appropriate
+
+If the exact same user search is repeated, consider reusing a recent parsed result rather than unnecessarily calling AI again.
+
+==================================================
+18. PROMPT-INJECTION DEFENSE
+
+Treat the buyer’s search text as untrusted input.
+
+The buyer query must never be allowed to:
+
+* change AI system instructions
+* request secret data
+* access other users’ private records
+* bypass marketplace permissions
+* execute arbitrary tools
+* access Admin functionality
+
+AI Search should only perform marketplace-search interpretation.
+
+==================================================
+19. SEARCH ANALYTICS
+
+Prepare useful marketplace analytics such as:
+
+* AI searches performed
+* normal searches performed
+* popular categories
+* common no-result searches
+* popular price ranges
+* conversion from search to listing view
+
+Use aggregate data responsibly.
+
+Do not expose individual private search histories to unrelated users.
+
+==================================================
+20. MOBILE UX
+
+Optimize AI Search for mobile.
+
+Potential layout:
+
+Marketplace search bar
+
+✨ Ask JHE Haul
+
+When selected:
+
+Bottom sheet or compact search panel
+
+Input:
+“What are you looking for?”
+
+Then show interpreted filter chips such as:
+
+Toyota
+Camry
+2018+
+Under $18K
+Within 50 mi
+
+Users should be able to remove chips.
+
+==================================================
+21. PERFORMANCE
+
+Do not force every normal marketplace search through AI.
+
+Normal search should remain fast and database-driven.
+
+Only use AI when:
+
+* user selects AI Search
+* query clearly requires natural-language interpretation
+* future Copilot explicitly calls search intelligence
+
+==================================================
+22. AI FAILURE
+
+If AI parsing fails:
+
+Show:
+
+“We couldn’t interpret that search. Try the regular marketplace search or adjust your request.”
+
+Do not return fabricated results.
+
+Do not break Marketplace Home.
+
+==================================================
+23. EXISTING FEATURES MUST REMAIN WORKING
+
+Preserve:
+
+* Marketplace Home
+* Seller Dashboard
+* Phase D AI Listing Assistant
+* My Listings
+* Messages
+* Offers
+* Saved Items
+* Delivery
+* Admin
+* Notifications
+* Email
+* Photos
+* Videos
+* Vehicle fields
+* SEO / Phase C
+* Authentication
+* Stripe
+
+==================================================
+24. TEST QUERIES
+
+Test at minimum:
+
+“Toyota Camry under $15,000”
+
+“2018 or newer Toyota under $20,000”
+
+“Furniture under $500”
+
+“Appliances near Maplewood”
+
+“Items with JHE Haul delivery”
+
+“Vehicles under 100,000 miles”
+
+“Recently listed items”
+
+“XYZ impossible nonexistent item”
+
+Verify:
+
+* correct filters
+* no fabricated listings
+* privacy maintained
+* normal search fallback works
+
+==================================================
+25. SECURITY TESTING
+
+Test malicious queries attempting:
+
+* database access
+* Admin access
+* user email disclosure
+* exact address disclosure
+* prompt injection
+* secret/API-key retrieval
+
+All must fail safely.
+
+==================================================
+26. IMPLEMENT LOCALLY / STAGING FIRST
+
+Implement Phase E locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation report:
+
+AI SEARCH SERVICE: YES/NO
+
+NORMAL SEARCH PRESERVED: YES/NO
+
+ASK JHE HAUL SEARCH UI: YES/NO
+
+NATURAL LANGUAGE PARSING: YES/NO
+
+STRUCTURED FILTER VALIDATION: YES/NO
+
+VEHICLE SEARCH: YES/NO
+
+LOCATION SEARCH: YES/NO
+
+DELIVERY FILTER: YES/NO
+
+RECENCY SEARCH: YES/NO
+
+SAVED SEARCH FOUNDATION: YES/NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+NEW ENVIRONMENT VARIABLES:
+
+AI PROVIDER:
+
+AI FAILURE FALLBACK: YES/NO
+
+PROMPT-INJECTION TESTED: YES/NO
+
+PRIVACY TESTED: YES/NO
+
+MOBILE TESTED: YES/NO
+
+ESTIMATED AI COST PER SEARCH:
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+27. CRITICAL RULES
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not build the full Copilot yet.
+
+Do not give AI direct unrestricted database access.
+
+Do not remove normal search.
+
+Do not fabricate marketplace results.
+
+BEGIN PHASE E IMPLEMENTATION.
