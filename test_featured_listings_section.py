@@ -348,6 +348,44 @@ def test_section_hidden_on_category_filter_view():
         _cleanup((GalleryPhoto, gp_id), (User, user_id))
 
 
+def test_featured_items_rendered_in_display_order():
+    """Items with lower display_order appear before items with higher display_order in the HTML."""
+    user_id = gp_first_id = gp_second_id = None
+    with app.app_context():
+        user_id = _make_user()
+        # display_order=1 should appear first in the featured section
+        gp_first_id = _make_gallery_custom(
+            headline="FIRST ITEM LOW ORDER",
+            display_order=1,
+        )
+        # display_order=10 should appear after display_order=1
+        gp_second_id = _make_gallery_custom(
+            headline="SECOND ITEM HIGH ORDER",
+            display_order=10,
+        )
+
+    try:
+        mock_user = _mock_user_for(user_id)
+        with patch("flask_login.utils._get_user", return_value=mock_user):
+            client = app.test_client()
+            resp = client.get("/")
+        assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
+        html = resp.data.decode()
+        assert "FIRST ITEM LOW ORDER" in html, \
+            "Gallery item with display_order=1 should appear in homepage HTML"
+        assert "SECOND ITEM HIGH ORDER" in html, \
+            "Gallery item with display_order=10 should appear in homepage HTML"
+        pos_first = html.index("FIRST ITEM LOW ORDER")
+        pos_second = html.index("SECOND ITEM HIGH ORDER")
+        assert pos_first < pos_second, (
+            f"Item with display_order=1 (pos {pos_first}) should appear before "
+            f"item with display_order=10 (pos {pos_second}) in the rendered HTML"
+        )
+    finally:
+        from models import GalleryPhoto, User
+        _cleanup((GalleryPhoto, gp_first_id), (GalleryPhoto, gp_second_id), (User, user_id))
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -369,6 +407,8 @@ if __name__ == "__main__":
         test_inactive_pinned_listing_skipped_in_featured_section)
     run("section hidden on category filter view",
         test_section_hidden_on_category_filter_view)
+    run("featured items rendered in display_order sequence",
+        test_featured_items_rendered_in_display_order)
 
     print(f"\n{'='*60}")
     print(f"Results: {len(PASS)} passed, {len(FAIL)} failed")
