@@ -19,3 +19,4 @@ WTForms==3.2.2
 Pillow
 pillow-heif
 sqlalchemy
+openai>=1.0.0

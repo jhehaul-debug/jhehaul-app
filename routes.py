@@ -178,6 +178,7 @@ from services.seo import (
     listing_seo_description,
     listing_jsonld as _listing_jsonld,
 )
+from ai.listing_assistant import suggest as _ai_suggest
 _VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
 
 @app.context_processor
@@ -3114,6 +3115,83 @@ def api_search_suggestions():
     return jsonify(suggestions=suggestions[:8])
 
 
+@app.route("/api/ai/listing-assist", methods=["POST"])
+def api_ai_listing_assist():
+    """AI listing assistant — title, description, category, and quality tips
+    in one GPT-4o-mini call.  Rate-limited to 10 requests/seller/hour.
+    No PII is sent to the AI provider.
+    """
+    if not current_user.is_authenticated:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    from models import AIUsageLog
+    import time as _time
+
+    data = request.get_json(silent=True) or {}
+    listing_id = data.get("listing_id")
+    if not listing_id:
+        return jsonify({"ok": False, "error": "missing_listing_id"}), 400
+
+    listing = Listing.query.get(listing_id)
+    if not listing or listing.seller_id != current_user.id:
+        return jsonify({"ok": False, "error": "unauthorized"}), 403
+
+    # ── Rate limit: 10 AI calls per seller per hour ───────────────────────────
+    from datetime import datetime as _dt, timedelta as _td
+    one_hour_ago = _dt.now() - _td(hours=1)
+    recent_count = AIUsageLog.query.filter(
+        AIUsageLog.user_id == current_user.id,
+        AIUsageLog.created_at >= one_hour_ago,
+    ).count()
+    if recent_count >= 10:
+        return jsonify({"ok": False, "error": "rate_limited"}), 429
+
+    # ── Collect safe listing data — no PII ───────────────────────────────────
+    category_name = ""
+    if listing.category_id:
+        cat = Category.query.get(listing.category_id)
+        if cat:
+            category_name = cat.name
+
+    listing_data = {
+        "listing_type":         listing.listing_type or "item",
+        "category":             category_name,
+        "title":                (data.get("title") or listing.title or "")[:400],
+        "description":          (data.get("description") or listing.description or "")[:800],
+        "condition":            data.get("condition") or listing.condition or "",
+        "vehicle_year":         listing.vehicle_year,
+        "vehicle_make":         listing.vehicle_make,
+        "vehicle_model":        listing.vehicle_model,
+        "vehicle_mileage":      listing.vehicle_mileage,
+        "vehicle_trim":         listing.vehicle_trim,
+        "vehicle_fuel_type":    listing.vehicle_fuel_type,
+        "vehicle_transmission": listing.vehicle_transmission,
+        "photo_count":          len(listing.photos),
+        "has_price":            bool(listing.price),
+        "has_location":         bool(listing.city),
+    }
+
+    t0 = _time.time()
+    result = _ai_suggest(listing_data)
+    response_ms = result.get("response_ms") or int((_time.time() - t0) * 1000)
+
+    # ── Log the attempt (no sensitive content) ───────────────────────────────
+    try:
+        log_entry = AIUsageLog(
+            user_id=current_user.id,
+            tool_name="listing_assist",
+            success=bool(result.get("ok")),
+            response_ms=response_ms,
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+    except Exception as _le:
+        db.session.rollback()
+        app.logger.warning("AIUsageLog write failed: %s", _le)
+
+    return jsonify(result)
+
+
 @app.route("/api/notifications/count")
 @require_login
 def api_notification_count():
@@ -5731,6 +5809,28 @@ def admin_photo_health():
         broken_rows=broken_rows,
         no_url_rows=no_url_rows,
         total_checked=len(jobs),
+    )
+
+
+@app.route("/admin/ai-usage")
+def admin_ai_usage():
+    """Admin view of AI listing-assistant usage statistics."""
+    if not (current_user.is_authenticated and current_user.is_admin):
+        abort(403)
+    from models import AIUsageLog
+    from datetime import datetime as _dt, timedelta as _td
+    logs        = AIUsageLog.query.order_by(AIUsageLog.created_at.desc()).limit(200).all()
+    total       = AIUsageLog.query.count()
+    success_cnt = AIUsageLog.query.filter_by(success=True).count()
+    failed_cnt  = total - success_cnt
+    recent_24h  = AIUsageLog.query.filter(
+        AIUsageLog.created_at >= _dt.now() - _td(hours=24)
+    ).count()
+    return render_template(
+        "admin_ai_usage.html",
+        logs=logs, total=total,
+        success=success_cnt, failed=failed_cnt,
+        recent_24h=recent_24h,
     )
 
 

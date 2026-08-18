@@ -669,6 +669,60 @@
         <label class="form-label">Description</label>
         <textarea class="form-control" name="description" placeholder="Describe the item, condition, features, and anything a buyer should know…">{{ listing.description or '' }}</textarea>
       </div>
+
+      {# ── ✨ AI Listing Assistant (Phase D) ─────────────────────────────── #}
+      {% if listing and listing.id %}
+      <div class="jhe-ai-panel" id="aiPanel">
+        <button type="button" class="jhe-ai-toggle" onclick="toggleAiPanel()">
+          <span class="jhe-ai-toggle-icon">✨</span>
+          <span class="jhe-ai-toggle-label">AI Listing Assistant</span>
+          <span class="jhe-ai-toggle-arrow" id="aiArrow">▼</span>
+        </button>
+        <div class="jhe-ai-body" id="aiBody" style="display:none">
+          <p class="jhe-ai-hint">Get AI-powered suggestions based on what you've entered. Nothing is applied automatically — you review and choose what to use.</p>
+          <button type="button" class="jhe-ai-btn" id="aiSuggestBtn" onclick="runAiSuggest()">✨ Get Suggestions</button>
+          <div id="aiLoading" style="display:none" class="jhe-ai-loading">
+            <span class="jhe-ai-spinner"></span> Generating suggestions…
+          </div>
+          <div id="aiError" style="display:none" class="jhe-ai-error">
+            AI assistance is temporarily unavailable. You can continue creating your listing manually.
+          </div>
+          <div id="aiResult" style="display:none">
+            <div class="jhe-ai-section" id="aiTitleSection" style="display:none">
+              <div class="jhe-ai-section-head">Suggested Title</div>
+              <div class="jhe-ai-value" id="aiTitleVal"></div>
+              <div class="jhe-ai-actions">
+                <button type="button" class="jhe-ai-use" onclick="useAiTitle()">Use This</button>
+                <button type="button" class="jhe-ai-dismiss" onclick="dismissAiSection('aiTitleSection')">Dismiss</button>
+              </div>
+            </div>
+            <div class="jhe-ai-section" id="aiDescSection" style="display:none">
+              <div class="jhe-ai-section-head">Suggested Description</div>
+              <div class="jhe-ai-value" id="aiDescVal"></div>
+              <div class="jhe-ai-actions">
+                <button type="button" class="jhe-ai-use" onclick="useAiDesc()">Use This</button>
+                <button type="button" class="jhe-ai-dismiss" onclick="dismissAiSection('aiDescSection')">Dismiss</button>
+              </div>
+            </div>
+            <div class="jhe-ai-section" id="aiCatSection" style="display:none">
+              <div class="jhe-ai-section-head">Suggested Category</div>
+              <div class="jhe-ai-value" id="aiCatVal"></div>
+              <div class="jhe-ai-actions">
+                <button type="button" class="jhe-ai-use" onclick="useAiCat()">Apply Category</button>
+                <button type="button" class="jhe-ai-dismiss" onclick="dismissAiSection('aiCatSection')">Dismiss</button>
+              </div>
+            </div>
+            <div class="jhe-ai-section" id="aiTipsSection" style="display:none">
+              <div class="jhe-ai-section-head">Listing Quality</div>
+              <div class="jhe-ai-score" id="aiScore"></div>
+              <ul class="jhe-ai-tips" id="aiTipsList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {# ── End AI Listing Assistant ──────────────────────────────────────── #}
+
       <div class="form-group">
         <label class="form-label">Category</label>
         <select class="form-control" name="category_id" id="catSelect">
@@ -996,6 +1050,137 @@
   ['vehicleYear','vehicleMakeOther','vehicleModelOther','vehicleTrim'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateAutoTitle);
   });
+
+  // ── ✨ AI Listing Assistant ──────────────────────────────────────────────
+  var _aiData = null;
+
+  function toggleAiPanel() {
+    var body  = document.getElementById('aiBody');
+    var arrow = document.getElementById('aiArrow');
+    if (!body) return;
+    var open = body.style.display !== 'none';
+    body.style.display  = open ? 'none' : 'block';
+    arrow.textContent   = open ? '▼' : '▲';
+  }
+
+  function runAiSuggest() {
+    var btn     = document.getElementById('aiSuggestBtn');
+    var loading = document.getElementById('aiLoading');
+    var result  = document.getElementById('aiResult');
+    var errDiv  = document.getElementById('aiError');
+    if (!btn) return;
+
+    btn.disabled      = true;
+    btn.textContent   = 'Getting suggestions…';
+    loading.style.display = 'block';
+    result.style.display  = 'none';
+    errDiv.style.display  = 'none';
+
+    var listingId = {{ listing.id | tojson }};
+    var payload = {
+      listing_id:  listingId,
+      title:       (document.querySelector('[name=title]')       || {}).value || '',
+      description: (document.querySelector('[name=description]') || {}).value || '',
+      condition:   (document.querySelector('[name=condition]')   || {}).value || '',
+    };
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+    fetch('/api/ai/listing-assist', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body:    JSON.stringify(payload),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.style.display = 'none';
+      btn.disabled    = false;
+      btn.textContent = '✨ Get Suggestions';
+      if (!data.ok) {
+        errDiv.textContent = data.error === 'rate_limited'
+          ? 'You've used AI suggestions frequently. Please try again in an hour.'
+          : 'AI assistance is temporarily unavailable. You can continue creating your listing manually.';
+        errDiv.style.display = 'block';
+        return;
+      }
+      _aiData = data;
+      result.style.display = 'block';
+
+      if (data.title) {
+        document.getElementById('aiTitleVal').textContent = data.title;
+        document.getElementById('aiTitleSection').style.display = 'block';
+      }
+      if (data.description) {
+        document.getElementById('aiDescVal').textContent = data.description;
+        document.getElementById('aiDescSection').style.display = 'block';
+      }
+      if (data.category) {
+        document.getElementById('aiCatVal').textContent = data.category;
+        document.getElementById('aiCatSection').style.display = 'block';
+      }
+
+      var tipsSection = document.getElementById('aiTipsSection');
+      var tipsList    = document.getElementById('aiTipsList');
+      var scoreEl     = document.getElementById('aiScore');
+      tipsList.innerHTML = '';
+      if (data.score) {
+        var scoreLabel = data.score >= 8 ? 'Excellent' : data.score >= 6 ? 'Good' : data.score >= 4 ? 'Fair' : 'Needs work';
+        var scoreColor = data.score >= 8 ? '#16a34a'  : data.score >= 6 ? '#2563eb' : data.score >= 4 ? '#d97706' : '#dc2626';
+        scoreEl.innerHTML = '<span style="color:' + scoreColor + ';font-weight:700;">' + scoreLabel
+          + '</span> (' + data.score + '/10)';
+      }
+      if (data.tips && data.tips.length) {
+        data.tips.forEach(function(tip) {
+          var li = document.createElement('li');
+          li.textContent = tip;
+          tipsList.appendChild(li);
+        });
+        tipsSection.style.display = 'block';
+      } else if (data.score) {
+        tipsSection.style.display = 'block';
+      }
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      btn.disabled    = false;
+      btn.textContent = '✨ Get Suggestions';
+      errDiv.textContent   = 'AI assistance is temporarily unavailable. You can continue creating your listing manually.';
+      errDiv.style.display = 'block';
+    });
+  }
+
+  function useAiTitle() {
+    if (!_aiData || !_aiData.title) return;
+    var el = document.querySelector('[name=title]');
+    if (el) { el.value = _aiData.title; titleManuallyEdited = true; }
+    dismissAiSection('aiTitleSection');
+  }
+  function useAiDesc() {
+    if (!_aiData || !_aiData.description) return;
+    var el = document.querySelector('[name=description]');
+    if (el) el.value = _aiData.description;
+    dismissAiSection('aiDescSection');
+  }
+  function useAiCat() {
+    if (!_aiData || !_aiData.category) return;
+    var sel = document.getElementById('catSelect');
+    if (!sel) return;
+    var target = (_aiData.category || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (var i = 0; i < sel.options.length; i++) {
+      var optText = sel.options[i].text.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (optText.indexOf(target) > -1 || target.indexOf(optText) > -1) {
+        sel.value = sel.options[i].value;
+        sel.dispatchEvent(new Event('change'));
+        break;
+      }
+    }
+    dismissAiSection('aiCatSection');
+  }
+  function dismissAiSection(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
+  // ── End AI Listing Assistant ─────────────────────────────────────────────
   </script>
 
   {# ─── STEP 3: PRICE ─── #}

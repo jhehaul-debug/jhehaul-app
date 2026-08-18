@@ -704,6 +704,23 @@ class Notification(db.Model):
                                              cascade='all, delete-orphan'))
 
 
+class AIUsageLog(db.Model):
+    """Lightweight log of AI listing-assistant requests.
+    Stores no sensitive data — only success/fail, tool name, and response time.
+    Used for admin usage visibility and per-user rate limiting.
+    """
+    __tablename__ = 'ai_usage_logs'
+    id           = db.Column(db.Integer, primary_key=True)
+    user_id      = db.Column(db.String, db.ForeignKey('users.id'), nullable=True, index=True)
+    tool_name    = db.Column(db.String(50), default='listing_assist')
+    success      = db.Column(db.Boolean, default=False)
+    response_ms  = db.Column(db.Integer, nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.now, index=True)
+
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('ai_usage_logs', lazy='dynamic'))
+
+
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def expire_pending_offers(listing_id):

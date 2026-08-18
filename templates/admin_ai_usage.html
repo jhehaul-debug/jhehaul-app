@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}AI Usage — Admin | JHE Haul{% endblock %}
+{% block content %}
+<div class="container" style="max-width:900px;padding:28px 16px 80px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="/admin" style="color:#2563eb;font-size:0.9rem;text-decoration:none;">← Admin</a>
+    <h1 style="margin:0;font-size:1.4rem;font-weight:800;color:#1a1a2e;">✨ AI Listing Assistant Usage</h1>
+  </div>
+
+  <!-- Summary cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:#16a34a;">{{ success }}</div>
+      <div style="font-size:0.8rem;color:#15803d;font-weight:600;">Successful</div>
+    </div>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:#dc2626;">{{ failed }}</div>
+      <div style="font-size:0.8rem;color:#b91c1c;font-weight:600;">Failed / Unavailable</div>
+    </div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:#2563eb;">{{ total }}</div>
+      <div style="font-size:0.8rem;color:#1d4ed8;font-weight:600;">Total All-Time</div>
+    </div>
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:1.8rem;font-weight:800;color:#7c3aed;">{{ recent_24h }}</div>
+      <div style="font-size:0.8rem;color:#6d28d9;font-weight:600;">Last 24 Hours</div>
+    </div>
+  </div>
+
+  <!-- Logs table -->
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+    <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;font-weight:700;font-size:0.95rem;color:#1a1a2e;">
+      Recent Requests (last 200)
+    </div>
+    {% if logs %}
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+        <thead>
+          <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+            <th style="padding:10px 14px;text-align:left;color:#6b7280;font-weight:600;">Time</th>
+            <th style="padding:10px 14px;text-align:left;color:#6b7280;font-weight:600;">User</th>
+            <th style="padding:10px 14px;text-align:left;color:#6b7280;font-weight:600;">Tool</th>
+            <th style="padding:10px 14px;text-align:left;color:#6b7280;font-weight:600;">Status</th>
+            <th style="padding:10px 14px;text-align:right;color:#6b7280;font-weight:600;">Response</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:9px 14px;color:#374151;white-space:nowrap;">
+              {{ log.created_at.strftime('%b %d %H:%M') if log.created_at else '—' }}
+            </td>
+            <td style="padding:9px 14px;color:#374151;">
+              {% if log.user %}
+                {{ log.user.first_name or '' }} {{ log.user.last_name or '' }}
+              {% else %}—{% endif %}
+            </td>
+            <td style="padding:9px 14px;color:#374151;">{{ log.tool_name or '—' }}</td>
+            <td style="padding:9px 14px;">
+              {% if log.success %}
+              <span style="color:#16a34a;font-weight:600;">✓ OK</span>
+              {% else %}
+              <span style="color:#dc2626;font-weight:600;">✗ Failed</span>
+              {% endif %}
+            </td>
+            <td style="padding:9px 14px;text-align:right;color:#6b7280;">
+              {{ log.response_ms ~ 'ms' if log.response_ms else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:40px;text-align:center;color:#9ca3af;font-size:0.95rem;">
+      No AI usage logs yet. Sellers will appear here once they use the AI Listing Assistant.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
