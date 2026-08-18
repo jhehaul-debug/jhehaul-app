@@ -114,17 +114,20 @@
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="mark_reviewing">
         <button type="submit" class="btn btn-sm btn-outline-primary">🔍 Mark Reviewing</button>
       </form>
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="false_positive">
         <button type="submit" class="btn btn-sm btn-outline-success"
                 onclick="return confirm('Mark as false positive and dismiss?')">👍 False Positive</button>
       </form>
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="dismiss">
         <button type="submit" class="btn btn-sm btn-outline-secondary"
                 onclick="return confirm('Dismiss this flag?')">✓ Dismiss</button>
@@ -132,18 +135,21 @@
 
       {% if flag.flagged_user %}
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="warn_user">
         <button type="submit" class="btn btn-sm btn-outline-warning"
                 onclick="return confirm('Send a marketplace warning to this user?')">⚠️ Warn User</button>
       </form>
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="suspend_account">
         <button type="submit" class="btn btn-sm btn-warning"
                 onclick="return confirm('Suspend this account? The user will not be able to log in.')">🔒 Suspend Account</button>
       </form>
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="ban_account">
         <button type="submit" class="btn btn-sm btn-danger"
                 onclick="return confirm('PERMANENTLY BAN this account? This cannot be undone without admin access.')">🚫 Ban Account</button>
@@ -152,12 +158,14 @@
 
       {% if flag.listing and flag.listing.status not in ('removed','sold') %}
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="suspend_listing">
         <button type="submit" class="btn btn-sm btn-outline-danger"
                 onclick="return confirm('Hide this listing from the marketplace?')">👁 Suspend Listing</button>
       </form>
 
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="remove_listing">
         <button type="submit" class="btn btn-sm btn-danger"
                 onclick="return confirm('Remove this listing permanently?')">🗑 Remove Listing</button>
@@ -166,6 +174,7 @@
 
       {% if flag.listing and flag.listing.status == 'removed' %}
       <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="restore_listing">
         <button type="submit" class="btn btn-sm btn-outline-success"
                 onclick="return confirm('Restore this listing to active?')">↩ Restore Listing</button>
@@ -175,6 +184,7 @@
 
     <!-- Add note -->
     <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" value="add_note">
       <div style="display:flex;gap:8px;align-items:flex-start;">
         <textarea name="note" rows="2" placeholder="Add internal note…"
@@ -188,6 +198,7 @@
     This flag has been <strong>{{flag.status.replace('_',' ')}}</strong> and is closed.
     {% if flag.status == 'false_positive' or flag.status == 'dismissed' %}
     <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" value="reopen">
       <button type="submit" class="btn btn-sm btn-outline-secondary" style="margin-left:8px;font-size:.8rem;">↩ Reopen</button>
     </form>

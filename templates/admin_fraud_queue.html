@@ -105,11 +105,13 @@
           <a href="/admin/fraud-queue/{{ flag.id }}" class="btn btn-sm btn-outline-primary">🔍 Review</a>
           {% if flag.status in ('pending', 'reviewing') %}
           <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="dismiss">
             <button type="submit" class="btn btn-sm btn-outline-secondary w-100"
                     onclick="return confirm('Dismiss this flag?')">✓ Dismiss</button>
           </form>
           <form method="POST" action="/admin/fraud-queue/{{ flag.id }}/action">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="false_positive">
             <button type="submit" class="btn btn-sm btn-outline-success w-100"
                     onclick="return confirm('Mark as false positive?')">👍 False Positive</button>
@@ -150,10 +152,12 @@
     <div style="font-weight:600;margin-bottom:8px;font-size:.95rem;">🔎 Manual Scan</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <form method="POST" action="/admin/fraud-queue/scan" style="display:flex;gap:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="number" name="listing_id" placeholder="Listing ID" class="form-control form-control-sm" style="width:130px;">
         <button type="submit" class="btn btn-sm btn-warning">Scan Listing</button>
       </form>
       <form method="POST" action="/admin/fraud-queue/scan" style="display:flex;gap:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="text" name="user_id" placeholder="User ID" class="form-control form-control-sm" style="width:260px;">
         <button type="submit" class="btn btn-sm btn-warning">Scan Account</button>
       </form>

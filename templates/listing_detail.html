@@ -1855,10 +1855,12 @@
 // GALLERY — swipe carousel
 // ══════════════════════════════════════════
 (function() {
-  const totalMedia = {{ total_media }};
-  const hasVideo   = {{ 'true' if listing.videos else 'false' }};
-  let   currentIdx = 0;
-  let   isVideoSlide = false;
+  const totalMedia  = {{ total_media }};
+  const hasVideo    = {{ 'true' if listing.videos else 'false' }};
+  const photoCount  = {{ photos | length }};
+  let   currentIdx  = 0;
+  // When there are no photos the video occupies slide 0, so initialise correctly.
+  let   isVideoSlide = hasVideo && photoCount === 0;
 
   const track    = document.getElementById('ld-track');
   const dots     = document.querySelectorAll('.ld-dot');
@@ -1877,7 +1879,7 @@
     // badge
     if (badge) badge.textContent = (idx + 1) + ' / ' + totalMedia;
     // if moving away from video, pause it
-    isVideoSlide = hasVideo && (idx === {{ photos | length }});
+    isVideoSlide = hasVideo && (idx === photoCount);
     if (!isVideoSlide && vidPlayer) {
       vidPlayer.pause();
       if (vidOverlay) vidOverlay.style.display = 'flex';
@@ -1895,8 +1897,20 @@
   };
 
   window.ldPlayVideo = function() {
-    if (vidPlayer) {
-      vidPlayer.play();
+    if (!vidPlayer) return;
+    // Use the Promise returned by play() so we only hide the overlay once
+    // playback actually starts.  If play() is rejected (no source URL, media
+    // load error, browser policy block) the overlay stays visible and the
+    // gallery never appears blank — critical for video-only listings.
+    var playPromise = vidPlayer.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(function() {
+        // Play was prevented — keep overlay so the user can try again and so
+        // the gallery does not show as blank.
+        if (vidOverlay) vidOverlay.style.display = 'flex';
+      });
+    } else {
+      // Older browser with no Promise API — hide overlay optimistically.
       if (vidOverlay) vidOverlay.style.display = 'none';
     }
   };
@@ -1908,6 +1922,12 @@
     });
     vidPlayer.addEventListener('pause', function() {
       if (vidOverlay && vidPlayer.currentTime === 0) vidOverlay.style.display = 'flex';
+    });
+    // Restore the overlay if the media source fails to load (broken URL,
+    // network error, missing storage_url).  Without this the gallery stays
+    // blank after the user taps play on a video that cannot load.
+    vidPlayer.addEventListener('error', function() {
+      if (vidOverlay) vidOverlay.style.display = 'flex';
     });
   }
 
@@ -1974,6 +1994,7 @@
     if (e.key === 'ArrowRight') ldNav(1);
     if (e.key === 'ArrowLeft')  ldNav(-1);
   });
+
 
 })();
 
