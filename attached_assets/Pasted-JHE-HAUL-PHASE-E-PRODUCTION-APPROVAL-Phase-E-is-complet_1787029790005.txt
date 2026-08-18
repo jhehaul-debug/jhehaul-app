@@ -1,0 +1,268 @@
+JHE HAUL — PHASE E PRODUCTION APPROVAL
+
+Phase E is complete and approved.
+
+Now move the completed AI Search Intelligence work through:
+
+LOCAL
+→ GITHUB MAIN
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+Do NOT begin Phase F yet.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+========================================
+
+1. FINAL PHASE E VERIFICATION
+    ========================================
+
+Before committing, confirm:
+
+* Normal marketplace search still works
+* Ask JHE Haul search works
+* Natural-language parsing works
+* Structured filter validation works
+* Vehicle search works
+* Location/radius search works where supported
+* Delivery filtering works
+* Recency search works
+* No fabricated listings are returned
+* AI failure falls back safely to normal search
+* Seller dashboard still works
+* Phase D AI Listing Assistant still works
+* Messages still work
+* Offers still work
+* Delivery still works
+* Admin still works
+* Authentication still works
+* Phase C SEO still works
+
+========================================
+2. AI CONFIGURATION CHECK
+
+Report:
+
+AI PROVIDER:
+AI ENVIRONMENT VARIABLE NAME:
+PRESENT IN REPLIT: YES/NO
+PRESENT IN DIGITALOCEAN: YES/NO
+ENCRYPTED/SECRET: YES/NO
+
+Do NOT display the actual key.
+
+If the required AI environment variable is missing in DigitalOcean:
+STOP and tell me exactly what needs to be added.
+
+========================================
+3. RUN TESTS
+
+Test at minimum:
+
+“Toyota Camry under $15,000”
+
+“Vehicles under 100,000 miles”
+
+“Furniture under $500”
+
+“Items with JHE Haul delivery”
+
+“Recently listed items”
+
+Impossible/nonexistent item
+→ no fabricated results
+
+Malicious prompt attempts:
+→ rejected safely
+
+Normal keyword search:
+→ still works
+
+========================================
+4. CHECK GIT
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do not include:
+
+* secrets
+* .env files
+* screenshots
+* logs
+* local databases
+* temporary files
+
+========================================
+5. COMMIT PHASE E
+
+Commit the approved Phase E implementation.
+
+Suggested commit message:
+
+Phase E: add AI marketplace search intelligence
+
+========================================
+6. PUSH TO GITHUB
+
+Push to the EXISTING repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT create a new repository.
+Do NOT create a new production branch.
+Do NOT force push.
+
+========================================
+7. VERIFY GITHUB
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+
+Confirm:
+
+LOCAL = GITHUB: YES/NO
+AHEAD: 0
+BEHIND: 0
+
+If they do not match:
+STOP and fix the Git issue.
+
+========================================
+8. DIGITALOCEAN DEPLOYMENT
+
+Verify DigitalOcean production is connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Verify a NEW deployment starts using the Phase E commit.
+
+If auto-deploy does not start:
+trigger a new deployment of the latest GitHub main commit.
+
+Do not deploy an older SHA.
+
+========================================
+9. VERIFY DEPLOYED SHA
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+========================================
+10. LIVE PRODUCTION TEST
+
+Open the actual:
+
+jhehaul.com
+
+Do NOT test only Replit preview.
+
+Test the live Marketplace search.
+
+Verify:
+
+ASK JHE HAUL VISIBLE: YES/NO
+
+NORMAL SEARCH WORKING: YES/NO
+
+AI SEARCH WORKING: YES/NO
+
+STRUCTURED FILTERS WORKING: YES/NO
+
+VEHICLE SEARCH WORKING: YES/NO
+
+DELIVERY FILTER WORKING: YES/NO
+
+NO-RESULT SEARCH DOES NOT FABRICATE LISTINGS: YES/NO
+
+========================================
+11. MOBILE TEST
+
+Verify Ask JHE Haul on an iPhone-sized screen.
+
+Check:
+
+* search input
+* interpreted filters
+* touch controls
+* no horizontal overflow
+* loading state
+* error state
+* search results
+
+========================================
+12. FINAL REPORT
+
+PHASE E DEPLOYED: YES/NO
+
+ASK JHE HAUL LIVE: YES/NO
+
+NORMAL SEARCH PRESERVED: YES/NO
+
+AI SEARCH LIVE: YES/NO
+
+VEHICLE SEARCH LIVE: YES/NO
+
+LOCATION SEARCH LIVE: YES/NO
+
+DELIVERY SEARCH LIVE: YES/NO
+
+RECENCY SEARCH LIVE: YES/NO
+
+AI FAILURE FALLBACK LIVE: YES/NO
+
+PROMPT-INJECTION PROTECTION VERIFIED: YES/NO
+
+SELLER PRIVACY PRESERVED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+========================================
+13. STOP
+
+After Phase E is live and verified:
+
+STOP.
+
+Do NOT begin Phase F.
+
+Wait for approval.
+
+CRITICAL:
+
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
