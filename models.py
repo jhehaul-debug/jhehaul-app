@@ -365,7 +365,9 @@ class Listing(db.Model):
     favorite_count = db.Column(db.Integer, default=0)
     featured = db.Column(db.Boolean, default=False)
     moderation_status = db.Column(db.String(20), default='approved')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    # Use utcnow so the 'Just Listed' badge comparison in templates (which also uses utcnow)
+    # is consistent regardless of server timezone.
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     sold_at = db.Column(db.DateTime, nullable=True)
     expired_at = db.Column(db.DateTime, nullable=True)
