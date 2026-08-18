@@ -19,6 +19,10 @@
 <link rel="canonical" href="https://jhehaul.com{{ seo_canonical_path if seo_canonical_path else '/marketplace' }}">
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/recommendations.css">
+{% endblock %}
+
 {% block content %}
 <style>
 /* ── Marketplace Hero ── */
@@ -1349,6 +1353,23 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 {% endif %}
 
+{# ── Recommended for You (AJAX — authenticated users with enough activity) ── #}
+{% if current_user.is_authenticated and not is_search %}
+<div id="rfy-section" style="display:none">
+  <div class="rec-section">
+    <div class="rec-section-head">
+      <h2>✨ Recommended for You</h2>
+      <a href="/marketplace" id="rfy-browse-link">Browse all →</a>
+    </div>
+    <div id="rfy-shimmer" class="rec-shimmer">
+      {% for _ in range(6) %}<div class="rec-shimmer-card"></div>{% endfor %}
+    </div>
+    <div id="rfy-grid" class="mp-grid" style="display:none;position:relative"></div>
+    <div id="rfy-empty" style="display:none"></div>
+  </div>
+</div>
+{% endif %}
+
 {# ── Recently Listed (items) ── #}
 {% if recent_listings %}
 <div class="mp-section">
@@ -1684,5 +1705,80 @@ document.addEventListener('click', function(e) {
     initSearch('mp-q-mobile', 'mp-suggestions-mobile', 'mp-search-form-mobile');
 })();
 </script>
+
+{# ── Phase K: Recommended for You — AJAX loader (authenticated only) ── #}
+{% if current_user.is_authenticated and not is_search %}
+<script>
+(function() {
+  var section  = document.getElementById('rfy-section');
+  var shimmer  = document.getElementById('rfy-shimmer');
+  var grid     = document.getElementById('rfy-grid');
+  var empty    = document.getElementById('rfy-empty');
+  if (!section) return;
+
+  function buildCard(l) {
+    var imgHtml = l.photo_url
+      ? '<img class="rv-card-img" src="' + l.photo_url + '" alt="' + l.title.replace(/"/g,'') + '" loading="lazy">'
+      : '<div class="rv-card-img placeholder">' + (l.is_property ? '🏠' : '📦') + '</div>';
+    var priceHtml = l.price_display
+      ? '<div class="rv-card-price">' + (l.price_type === 'free' ? '<span class="free">Free</span>' : l.price_display) + '</div>'
+      : '';
+    var cityHtml = l.city
+      ? '<div class="rv-card-location">' + l.city + (l.state ? ', ' + l.state : '') + '</div>'
+      : '';
+    var reasonHtml = l.reason
+      ? '<div class="rec-reason">↑ ' + l.reason + '</div>'
+      : '';
+    return '<a href="' + l.url + '" class="rv-card" data-listing-id="' + l.id + '">' +
+      imgHtml +
+      '<div class="rv-card-body">' +
+        '<div class="rv-card-title">' + l.title + '</div>' +
+        priceHtml + cityHtml + reasonHtml +
+      '</div></a>';
+  }
+
+  fetch('/api/recommendations?source=recommended_for_you&limit=12')
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(data) {
+      shimmer.style.display = 'none';
+      if (!data.listings || data.listings.length < 3) {
+        // Not enough data — hide section entirely (fall through to standard sections)
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      var html = '<div class="rv-scroll-wrap"><div class="rv-row">';
+      data.listings.forEach(function(l) { html += buildCard(l); });
+      html += '</div></div>';
+      grid.innerHTML = html;
+      grid.style.display = 'block';
+
+      // Track impressions
+      var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+      data.listings.forEach(function(l) {
+        fetch('/api/recommendations/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify({ listing_id: l.id, event_type: 'impression', source: 'recommended_for_you' }),
+        }).catch(function(){});
+      });
+
+      // Track clicks
+      grid.addEventListener('click', function(e) {
+        var card = e.target.closest('.rv-card');
+        if (!card) return;
+        fetch('/api/recommendations/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify({ listing_id: card.dataset.listingId, event_type: 'click', source: 'recommended_for_you' }),
+        }).catch(function(){});
+      });
+    })
+    .catch(function() {
+      section.style.display = 'none';
+    });
+})();
+</script>
+{% endif %}
 
 {% endblock %}

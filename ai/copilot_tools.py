@@ -537,6 +537,78 @@ def get_listing_intelligence(listing_id: int, current_user) -> dict:
 # Phase J — Admin Fraud & Safety tools (admin-only, never exposed to regular users)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Phase K — Recommendation tools (auth required)
+# ---------------------------------------------------------------------------
+
+def get_recommendations(limit: int = 8, current_user=None) -> dict:
+    """Return personalised listing recommendations for the current buyer.
+    Answers: 'Show me more like this', 'What else would I like?', 'Recommendations for me'.
+    """
+    try:
+        from ai.recommendations import get_recommended_for_you
+        limit = max(1, min(int(limit), 12))
+        result = get_recommended_for_you(current_user, limit=limit)
+        listings = result.get('listings', [])
+        reasons  = result.get('reasons', {})
+        if not listings:
+            return {
+                'is_personalised': False,
+                'message': 'Not enough activity yet to personalise recommendations. Browse the marketplace to build up your history.',
+                'listings': [],
+            }
+        return {
+            'is_personalised': result.get('is_personalised', False),
+            'count': len(listings),
+            'listings': [
+                {
+                    'id':    l.id,
+                    'title': l.title,
+                    'price': f'${l.price:,.0f}' if l.price else ('Free' if l.price_type == 'free' else 'Contact'),
+                    'city':  l.city or '',
+                    'state': l.state or '',
+                    'url':   f'/listing/{l.id}',
+                    'reason': reasons.get(l.id, ''),
+                }
+                for l in listings
+            ],
+        }
+    except Exception as exc:
+        log.error("get_recommendations error: %s", exc)
+        return {"error": "Could not retrieve recommendations.", "listings": []}
+
+
+def get_recently_viewed(limit: int = 8, current_user=None) -> dict:
+    """Return listings the current user recently viewed.
+    Answers: 'What did I recently look at?', 'Show me my viewing history'.
+    """
+    try:
+        from ai.recommendations import get_recently_viewed as _get_rv
+        limit = max(1, min(int(limit), 15))
+        user_id = str(current_user.id) if current_user else None
+        listings = _get_rv(user_id=user_id, limit=limit)
+        if not listings:
+            return {'message': 'No recently viewed listings found. Visit some listings to build up your history.',
+                    'listings': []}
+        return {
+            'count': len(listings),
+            'listings': [
+                {
+                    'id':    l.id,
+                    'title': l.title,
+                    'price': f'${l.price:,.0f}' if l.price else ('Free' if l.price_type == 'free' else 'Contact'),
+                    'city':  l.city or '',
+                    'state': l.state or '',
+                    'url':   f'/listing/{l.id}',
+                }
+                for l in listings
+            ],
+        }
+    except Exception as exc:
+        log.error("get_recently_viewed error: %s", exc)
+        return {"error": "Could not retrieve recently viewed listings.", "listings": []}
+
+
 def get_fraud_queue_summary(current_user) -> dict:
     """Return aggregate fraud queue stats for admin Copilot.
     Answers: 'Show me high-risk listings', 'Summarize today's reports', 'Any critical flags?'
@@ -566,6 +638,9 @@ _TOOL_REGISTRY = {
     "get_delivery_status":          get_delivery_status,
     "get_seller_performance":       get_seller_performance,
     "get_account_navigation_help":  get_account_navigation_help,
+    # Phase K — recommendations (auth required)
+    "get_recommendations":              get_recommendations,
+    "get_recently_viewed":              get_recently_viewed,
     # Phase J — admin fraud & safety (admin-only)
     "get_fraud_queue_summary":          get_fraud_queue_summary,
     "get_account_risk_profile":         get_account_risk_profile,
@@ -595,6 +670,9 @@ _AUTH_REQUIRED_TOOLS = {
     "get_user_messages_summary",
     "get_delivery_status",
     "get_seller_performance",
+    # Phase K
+    "get_recommendations",
+    "get_recently_viewed",
     # Phase J (admin tools also need auth)
     "get_fraud_queue_summary",
     "get_account_risk_profile",

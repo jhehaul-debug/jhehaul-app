@@ -1015,6 +1015,22 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (listings vehicle fields) skipped: %s", _e)
 
+    # ── Phase K: personalization + price-drop columns ─────────────────────────
+    try:
+        _pk_cols = [
+            ("users",    "personalization_enabled", "BOOLEAN DEFAULT TRUE"),
+            ("listings", "original_price",          "NUMERIC(12,2)"),
+        ]
+        for _tbl, _col, _defn in _pk_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: Phase K personalization + original_price ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (Phase K) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

@@ -12,7 +12,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, expire_pending_offers, expire_stale_timed_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -2226,26 +2226,32 @@ def listing_detail(listing_id, slug=None):
                          .order_by(ListingOffer.created_at.desc())
                          .all())
 
-    # Similar active listings (sold/reserved pages only, shown to non-owners)
+    # Similar listings — shown to non-owners for all non-draft/removed statuses
     similar_listings = []
     similar_fallback = False
-    if listing.status in ('sold', 'reserved'):
-        from models import Listing as _SL
-        sim_q = _SL.query.filter(
-            _SL.id != listing_id,
-            _SL.status == 'active',
-            _SL.moderation_status == 'approved',
-        )
-        similar_fallback = False
-        if listing.category_id:
-            sim_q = sim_q.filter(_SL.category_id == listing.category_id)
-        elif listing.is_property:
-            sim_q = sim_q.filter(_SL.listing_type == listing.listing_type)
-        else:
-            # No category set and not a property — fall back to recent sitewide items
-            similar_fallback = True
-        from sqlalchemy import func as _sim_func
-        similar_listings = sim_q.order_by(_sim_func.random()).limit(6).all()
+    if listing.status not in ('draft', 'removed') and not is_owner:
+        try:
+            from ai.recommendations import get_similar_listings as _get_sim
+            similar_listings, similar_fallback = _get_sim(
+                listing,
+                user=current_user if current_user.is_authenticated else None,
+                limit=6,
+            )
+        except Exception as _sim_err:
+            app.logger.debug("similar_listings fallback: %s", _sim_err)
+            # Hard fallback: same category, random order
+            from models import Listing as _SL
+            from sqlalchemy import func as _sim_func
+            sim_q = _SL.query.filter(
+                _SL.id != listing_id,
+                _SL.status == 'active',
+                _SL.moderation_status == 'approved',
+            )
+            if listing.category_id:
+                sim_q = sim_q.filter(_SL.category_id == listing.category_id)
+            else:
+                similar_fallback = True
+            similar_listings = sim_q.order_by(_sim_func.random()).limit(6).all()
 
     # ── SEO context ────────────────────────────────────────────────────────────
     _seo_base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
@@ -6669,10 +6675,22 @@ def admin_listing_approve(listing_id):
             app.logger.warning("admin_listing_approve: gallery pin reactivation failed: %s", _gp_err)
     # Phase J: enqueue background fraud scan for newly approved listing
     try:
-        from worker.queue import enqueue, NORMAL
+        from worker.queue import enqueue, NORMAL, LOW
         enqueue('FRAUD_SCAN', {'listing_id': listing.id, 'trigger': 'listing_approved'}, priority=NORMAL)
     except Exception as _fe:
         app.logger.warning("admin_listing_approve: could not enqueue fraud scan: %s", _fe)
+    # Phase K: enqueue saved-search in-app notification + cache bust
+    try:
+        from worker.queue import enqueue as _enqueue_k, LOW as _LOW_K
+        import time as _time_k
+        _enqueue_k(
+            'RECOMMENDATION_REFRESH',
+            {'listing_id': listing.id},
+            priority=_LOW_K,
+            idempotency_key=f"rec-{listing.id}-{int(_time_k.time()//300)}",
+        )
+    except Exception as _re:
+        app.logger.debug("admin_listing_approve: rec refresh enqueue skipped: %s", _re)
     flash(f'Listing "{listing.title}" approved.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -8909,6 +8927,161 @@ def admin_gallery_delete(photo_id):
             app.logger.warning("admin_gallery_delete: storage cleanup failed: %s", exc)
     flash("Photo removed from the gallery.", "success")
     return redirect(url_for('admin_gallery'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE K — RECOMMENDATION & PERSONALIZATION INTELLIGENCE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/listing/<int:listing_id>/view", methods=["POST"])
+def api_record_listing_view(listing_id):
+    """Record a listing view for recommendation personalisation.
+
+    Called by listing_detail.html JS on page load.
+    No auth required — anonymous sessions are tracked via session_key.
+    Never exposes user data; safe to call without CSRF (no state mutation visible
+    to other users; worst-case an extra ListingView row is written).
+    """
+    from ai.recommendations import record_view
+    user_id = None
+    if current_user.is_authenticated:
+        user_id = current_user.id
+    session_key = session.get('rec_session_key')
+    record_view(user_id, listing_id, session_key)
+    return jsonify({'ok': True})
+
+
+@app.route("/api/recommendations", methods=["GET"])
+@require_login
+def api_recommendations():
+    """Return personalised listing recommendations for the authenticated user.
+
+    Query params:
+      ?source=recommended_for_you  (default) | new_near_you
+      ?limit=12
+    """
+    from ai.recommendations import get_recommended_for_you, get_new_near_user
+    source = request.args.get('source', 'recommended_for_you')
+    limit  = min(int(request.args.get('limit', 12)), 24)
+
+    if source == 'new_near_you':
+        zip_code = getattr(current_user, 'home_zip', None)
+        city     = getattr(current_user, 'city', None)
+        listings = get_new_near_user(zip_code, city, limit=limit,
+                                     exclude_seller_id=current_user.id)
+        return jsonify({
+            'source': 'new_near_you',
+            'is_personalised': bool(zip_code or city),
+            'listings': [_listing_card_json(l) for l in listings],
+        })
+
+    result = get_recommended_for_you(current_user, limit=limit)
+    return jsonify({
+        'source': 'recommended_for_you',
+        'is_personalised': result['is_personalised'],
+        'fallback_label':  result.get('fallback_label'),
+        'listings': [
+            {**_listing_card_json(l),
+             'reason': result['reasons'].get(l.id)}
+            for l in result['listings']
+        ],
+    })
+
+
+def _listing_card_json(listing) -> dict:
+    """Minimal safe JSON representation of a Listing for the frontend."""
+    primary_photo = listing.primary_photo
+    photo_url = None
+    if primary_photo:
+        photo_url = (primary_photo.storage_url
+                     or url_for('serve_listing_photo', photo_id=primary_photo.id))
+    price_display = None
+    if listing.price_type == 'free':
+        price_display = 'Free'
+    elif listing.price:
+        price_display = f'${listing.price:,.0f}'
+    return {
+        'id':            listing.id,
+        'title':         listing.title,
+        'price_display': price_display,
+        'price_type':    listing.price_type,
+        'city':          listing.city,
+        'state':         listing.state,
+        'photo_url':     photo_url,
+        'url':           url_for('listing_detail', listing_id=listing.id),
+        'is_property':   listing.is_property,
+        'listing_type':  listing.listing_type,
+    }
+
+
+@app.route("/api/listing/<int:listing_id>/similar", methods=["GET"])
+def api_listing_similar(listing_id):
+    """Return similar listings for a given listing (JSON, public)."""
+    from models import Listing as _LSim
+    from ai.recommendations import get_similar_listings as _get_sim
+    listing = _LSim.query.get_or_404(listing_id)
+    user = current_user if current_user.is_authenticated else None
+    limit = min(int(request.args.get('limit', 6)), 12)
+    similar, is_fallback = _get_sim(listing, user=user, limit=limit)
+    return jsonify({
+        'listing_id': listing_id,
+        'is_fallback': is_fallback,
+        'listings': [_listing_card_json(l) for l in similar],
+    })
+
+
+@app.route("/api/recently-viewed", methods=["GET"])
+def api_recently_viewed():
+    """Return recently viewed active listings for the current user or session."""
+    from ai.recommendations import get_recently_viewed as _get_rv
+    user_id     = current_user.id if current_user.is_authenticated else None
+    session_key = session.get('rec_session_key')
+    limit = min(int(request.args.get('limit', 10)), 20)
+    listings = _get_rv(user_id=user_id, session_key=session_key, limit=limit)
+    return jsonify({'listings': [_listing_card_json(l) for l in listings]})
+
+
+@app.route("/api/recommendations/event", methods=["POST"])
+def api_recommendations_event():
+    """Track a recommendation interaction event (click, save, etc.)."""
+    from ai.recommendations import record_event as _rec_event
+    data = request.get_json(silent=True) or {}
+    listing_id = data.get('listing_id')
+    event_type = data.get('event_type', 'click')
+    source     = data.get('source', 'recommended_for_you')
+    if not listing_id:
+        return jsonify({'ok': False, 'error': 'listing_id required'}), 400
+    user_id = current_user.id if current_user.is_authenticated else None
+    session_key = session.get('rec_session_key')
+    _rec_event(user_id, int(listing_id), event_type, source, session_key)
+    return jsonify({'ok': True})
+
+
+@app.route("/api/settings/personalization", methods=["POST"])
+@require_login
+def api_settings_personalization():
+    """Toggle personalisation settings for the authenticated user."""
+    from models import db
+    data = request.get_json(silent=True) or {}
+    if 'personalization_enabled' in data:
+        val = bool(data['personalization_enabled'])
+        try:
+            current_user.personalization_enabled = val
+            db.session.commit()
+            from ai.recommendations import _cache_invalidate
+            _cache_invalidate(current_user.id)
+        except Exception:
+            db.session.rollback()
+    return jsonify({'ok': True,
+                    'personalization_enabled': getattr(current_user, 'personalization_enabled', True)})
+
+
+# Ensure anonymous sessions have a stable rec_session_key
+@app.before_request
+def _ensure_rec_session_key():
+    import uuid as _uuid
+    if 'rec_session_key' not in session:
+        session['rec_session_key'] = _uuid.uuid4().hex
 
 
 # ══════════════════════════════════════════════════════════════════════════════

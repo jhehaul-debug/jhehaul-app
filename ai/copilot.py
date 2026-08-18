@@ -189,6 +189,44 @@ COPILOT_TOOLS = [
         },
     },
 
+    # ── Phase K recommendation tools (auth required) ─────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recommendations",
+            "description": (
+                "Return personalised listing recommendations for the current buyer based on their "
+                "saved items, search history, and recently viewed listings. "
+                "Use when buyer asks: 'Show me more like this', 'What else would I like?', "
+                "'Find listings based on my activity', 'What do you recommend for me?', "
+                "'Show me recommendations', 'What\\'s new that I might like?'"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Max listings to return (default 8, max 12)"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recently_viewed",
+            "description": (
+                "Return listings the current user recently viewed. "
+                "Use when buyer asks: 'What did I recently look at?', 'Show me my viewing history', "
+                "'What listings did I view?', 'I was looking at something earlier', 'Recently viewed'."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Max listings to return (default 8, max 15)"},
+                },
+            },
+        },
+    },
+
     # ── Phase J admin fraud & safety tools (admin-only — never shown to regular users) ─
     {
         "type": "function",

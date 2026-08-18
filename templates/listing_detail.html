@@ -1736,10 +1736,10 @@
   </div><!-- /ld-grid -->
 
   <!-- ── Similar Listings ── -->
-  {% if similar_listings and not is_owner %}
+  {% if similar_listings %}
   <div class="sim-section">
     <div class="sim-head">
-      <h2>{% if similar_fallback %}Other active listings{% else %}Similar listings you might like{% endif %}</h2>
+      <h2>{% if similar_fallback %}Other active listings{% else %}{% if is_owner %}Similar listings in this category{% else %}Similar listings you might like{% endif %}{% endif %}</h2>
       {% if listing.category %}
         <a href="/marketplace?category={{ listing.category.slug }}">Browse more →</a>
       {% elif listing.is_property %}
@@ -1770,6 +1770,20 @@
         </div>
       </a>
       {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Recently Viewed (logged-in users) ── -->
+  {% if current_user.is_authenticated %}
+  <div id="rv-section" style="display:none;margin-top:8px;">
+    <div class="rv-section" style="margin-bottom:0">
+      <div class="rv-section-head">
+        <h2>🕐 Recently Viewed</h2>
+      </div>
+      <div id="rv-scroll" class="rv-scroll-wrap">
+        <div id="rv-row" class="rv-row"></div>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -2276,6 +2290,49 @@ function closeReportModal(e) {
       box.classList.remove('open');
     }
   }, { passive: true });
+})();
+</script>
+
+{# ── Phase K: view tracking + recently viewed ── #}
+<link rel="stylesheet" href="/static/css/recommendations.css">
+<script>
+(function() {
+  var LISTING_ID = {{ listing.id }};
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+  // 1. Record this view
+  fetch('/api/listing/' + LISTING_ID + '/view', {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+  }).catch(function(){});
+
+  // 2. Load recently viewed (excluding current listing)
+  {% if current_user.is_authenticated %}
+  fetch('/api/recently-viewed?limit=10')
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(data) {
+      var others = (data.listings || []).filter(function(l) { return l.id !== LISTING_ID; });
+      if (others.length < 2) return;
+      var row = document.getElementById('rv-row');
+      if (!row) return;
+      others.forEach(function(l) {
+        var imgHtml = l.photo_url
+          ? '<img class="rv-card-img" src="' + l.photo_url + '" alt="' + l.title.replace(/"/g,'') + '" loading="lazy">'
+          : '<div class="rv-card-img placeholder">' + (l.is_property ? '🏠' : '📦') + '</div>';
+        var priceHtml = l.price_display
+          ? '<div class="rv-card-price">' + (l.price_type === 'free' ? '<span class="free">Free</span>' : l.price_display) + '</div>'
+          : '';
+        var cityHtml = l.city
+          ? '<div class="rv-card-location">' + l.city + (l.state ? ', ' + l.state : '') + '</div>'
+          : '';
+        row.innerHTML += '<a href="' + l.url + '" class="rv-card">' +
+          imgHtml + '<div class="rv-card-body"><div class="rv-card-title">' + l.title + '</div>' +
+          priceHtml + cityHtml + '</div></a>';
+      });
+      document.getElementById('rv-section').style.display = 'block';
+    })
+    .catch(function(){});
+  {% endif %}
 })();
 </script>
 {% endblock %}

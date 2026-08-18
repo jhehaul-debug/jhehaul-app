@@ -8,10 +8,11 @@ To add a new job type:
   2. Import it here and add an entry to _REGISTRY.
 """
 
-from worker.handlers.email_notification import handle as _email_handle
-from worker.handlers.saved_search_match import handle as _ssm_handle
-from worker.handlers.fraud_scan         import handle as _fraud_handle
-from worker.handlers.analytics_event    import handle as _analytics_handle
+from worker.handlers.email_notification      import handle as _email_handle
+from worker.handlers.saved_search_match      import handle as _ssm_handle
+from worker.handlers.fraud_scan              import handle as _fraud_handle
+from worker.handlers.analytics_event         import handle as _analytics_handle
+from worker.handlers.recommendation_refresh  import handle as _rec_handle
 
 # ── Job type → handler function ───────────────────────────────────────────────
 # None = job type is registered but not yet implemented (will raise ValueError)
@@ -34,6 +35,9 @@ _REGISTRY = {
 
     # ── Analytics / enrichment ───────────────────────────────────────────────
     'ANALYTICS_EVENT':       _analytics_handle,
+
+    # ── Recommendations / personalisation (Phase K) ──────────────────────────
+    'RECOMMENDATION_REFRESH': _rec_handle,
 
     # ── Future ──────────────────────────────────────────────────────────────
     'FUTURE_IMAGE_ANALYSIS': None,

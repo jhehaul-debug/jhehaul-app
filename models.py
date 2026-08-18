@@ -768,6 +768,43 @@ class SavedSearch(db.Model):
                            backref=db.backref('saved_searches', lazy='dynamic'))
 
 
+class ListingView(db.Model):
+    """Track which listings a user (or anonymous session) has viewed.
+
+    Used as a personalisation signal for Phase K recommendations.
+    Retention: 90 days (pruned by ai.recommendations.prune_old_events).
+    Privacy: user_id is never exposed across accounts; session_key is
+    an opaque client-generated token — no PII is stored here.
+    """
+    __tablename__ = 'listing_views'
+    id          = db.Column(db.Integer, primary_key=True)
+    user_id     = db.Column(db.String,  db.ForeignKey('users.id', ondelete='CASCADE'),
+                            nullable=True, index=True)
+    listing_id  = db.Column(db.Integer, db.ForeignKey('listings.id', ondelete='CASCADE'),
+                            nullable=False, index=True)
+    session_key = db.Column(db.String(64), nullable=True, index=True)
+    viewed_at   = db.Column(db.DateTime, default=datetime.now, index=True)
+
+
+class RecommendationEvent(db.Model):
+    """Track recommendation impressions and buyer interactions.
+
+    event_type: impression | click | save | message | offer
+    source:     recommended_for_you | similar_listings | new_near_you |
+                recently_viewed | saved_search_match
+    Retention: 90 days (pruned by ai.recommendations.prune_old_events).
+    """
+    __tablename__ = 'recommendation_events'
+    id          = db.Column(db.Integer, primary_key=True)
+    user_id     = db.Column(db.String,  db.ForeignKey('users.id', ondelete='SET NULL'),
+                            nullable=True, index=True)
+    listing_id  = db.Column(db.Integer, nullable=True, index=True)   # no FK — listing may be deleted
+    event_type  = db.Column(db.String(30), nullable=False)            # impression/click/save/message/offer
+    source      = db.Column(db.String(50), nullable=False)            # recommended_for_you/similar_listings/…
+    session_key = db.Column(db.String(64), nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.now, index=True)
+
+
 class BackgroundJob(db.Model):
     """Database-backed job queue for Phase F background worker infrastructure.
 
