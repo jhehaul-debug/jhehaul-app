@@ -1,0 +1,127 @@
+Fix the Automotive Model dropdown.
+
+The Year, Make, Vehicle Type, and other fields are now displaying correctly, but the Model dropdown has no vehicle models inside it.
+
+Right now it only shows:
+
+— Select model —
+
+REQUIRED FIX
+
+The Model dropdown must populate based on the selected Make.
+
+Example:
+
+If the user selects:
+
+Make: Chevrolet
+
+Then Model should contain options such as:
+
+* Blazer
+* Camaro
+* Colorado
+* Corvette
+* Equinox
+* Express
+* Impala
+* Malibu
+* Silverado 1500
+* Silverado 2500HD
+* Silverado 3500HD
+* Suburban
+* Tahoe
+* Trailblazer
+* Traverse
+
+If the user selects:
+
+Make: Ford
+
+Then show:
+
+* Bronco
+* Edge
+* Escape
+* Expedition
+* Explorer
+* F-150
+* F-250
+* F-350
+* Maverick
+* Mustang
+* Ranger
+* Transit
+
+Do this for all vehicle makes currently available in the Make dropdown, not just Chevrolet and Ford.
+
+IMPORTANT BEHAVIOR
+
+The flow must be:
+
+Year → Make → Model
+
+When Make changes:
+
+1. Clear the previous Model selection.
+2. Load the models that belong to the newly selected Make.
+3. Set the Model placeholder back to:
+
+— Select model —
+
+4. Populate the dropdown with that manufacturer’s models.
+5. Include Other / Not Listed as the last option.
+
+If Other / Not Listed is selected, then and only then show the manual model-entry field.
+
+DEBUG THE ACTUAL DATA CONNECTION
+
+Do not only change the UI.
+
+Check the actual code/data source and confirm:
+
+* The vehicle model dataset is loaded.
+* Make names exactly match the keys used in the model dataset.
+* Case differences do not prevent matching.
+* Names such as Mercedes-Benz, Alfa Romeo, Land Rover, GMC, Ram, etc. map correctly.
+* Selecting a Make actually triggers the Model list update.
+* Models are not being filtered out incorrectly by Year.
+* The dropdown receives a non-empty array of options after a Make is selected.
+
+If Year-based model filtering is causing the dropdown to return zero results, do not leave the Model dropdown empty. Fall back to showing all known models for that Make until year-specific model data is available.
+
+TEST BEFORE PUSHING
+
+Specifically test at least:
+
+* Chevrolet
+* Ford
+* Toyota
+* Honda
+* Nissan
+* GMC
+* Dodge
+* Ram
+* BMW
+* Mercedes-Benz
+* Hyundai
+* Kia
+* Tesla
+
+For every test Make, confirm the Model dropdown contains actual models.
+
+Also test changing from one Make to another and confirm the Model list updates correctly.
+
+Apply the fix anywhere this shared Automotive Year/Make/Model selector is used, including:
+
+* Automotive listing form
+* Automotive Delivery quote form
+* Admin Automotive Delivery Test Quote
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+Do not undo the mobile UI fixes that are already working.
+
+After testing successfully, commit and push the changes to the existing GitHub production branch so DigitalOcean can deploy the update.
