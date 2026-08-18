@@ -1841,6 +1841,12 @@ def listing_set_status(listing_id):
         ]
         expire_pending_offers(listing_id)
     db.session.commit()
+    # Deactivate any gallery pins for this listing if it's no longer active
+    if new_status != 'active':
+        try:
+            _deactivate_stale_gallery_pins()
+        except Exception as _gp_err:
+            app.logger.warning("listing_set_status: gallery pin cleanup failed: %s", _gp_err)
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.', 'pending': 'Listing marked as pending sale.'}
     flash(labels[new_status], "success")
     # Notify buyers watching this listing when it transitions to reserved
@@ -6262,6 +6268,10 @@ def admin_listing_hide(listing_id):
     listing.status = 'removed'
     _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
+    try:
+        _deactivate_stale_gallery_pins()
+    except Exception as _gp_err:
+        app.logger.warning("admin_listing_hide: gallery pin cleanup failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" hidden.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -6275,6 +6285,10 @@ def admin_listing_remove(listing_id):
     listing.status = 'removed'
     _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
+    try:
+        _deactivate_stale_gallery_pins()
+    except Exception as _gp_err:
+        app.logger.warning("admin_listing_remove: gallery pin cleanup failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" removed.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -6288,6 +6302,10 @@ def admin_listing_mark_sold(listing_id):
     listing.sold_at = datetime.now()
     _expire_offers_and_notify(listing.id, listing.title)
     db.session.commit()
+    try:
+        _deactivate_stale_gallery_pins()
+    except Exception as _gp_err:
+        app.logger.warning("admin_listing_mark_sold: gallery pin cleanup failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" marked as sold.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -6764,6 +6782,10 @@ def admin_listing_moderate(listing_id):
         _log_mod_action('remove_listing', 'listing', listing_id,
                         notes=f'Removed by {current_user.email}')
         db.session.commit()
+        try:
+            _deactivate_stale_gallery_pins()
+        except Exception as _gp_err:
+            app.logger.warning("admin_listing_moderate: gallery pin cleanup failed: %s", _gp_err)
         flash(f'Listing "{listing.title}" removed.', 'success')
     elif action == 'restore':
         listing.status = 'active'
@@ -6847,6 +6869,11 @@ def admin_report_remove_listing(report_id):
         _expire_offers_and_notify(listing.id, listing.title)
     report.status = 'resolved'
     db.session.commit()
+    if listing:
+        try:
+            _deactivate_stale_gallery_pins()
+        except Exception as _gp_err:
+            app.logger.warning("admin_report_remove_listing: gallery pin cleanup failed: %s", _gp_err)
     flash("Listing removed and report resolved.", "success")
     return redirect(url_for('admin_reports'))
 

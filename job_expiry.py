@@ -112,6 +112,12 @@ def _run_checks(app):
                 db.session.commit()
                 listing_expired_count += 1
                 log.info("Listing #%s auto-expired (expires_at: %s)", lst.id, lst.expires_at)
+                # Deactivate any gallery pin pointing at this now-expired listing
+                try:
+                    from routes import _deactivate_stale_gallery_pins
+                    _deactivate_stale_gallery_pins()
+                except Exception as _gp_err:
+                    log.warning("Listing #%s expiry: gallery pin cleanup failed: %s", lst.id, _gp_err)
 
                 # Notify the seller by email (and SMS if opted-in)
                 seller = User.query.get(lst.seller_id) if lst.seller_id else None
