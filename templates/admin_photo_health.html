@@ -8,9 +8,21 @@
         <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
         <h2 class="page-title" style="margin:0;">🖼 Photo URL Health Check</h2>
     </div>
-    <span style="font-size:0.85rem;color:#6b7280;">
-        Checked {{ total_checked }} URL{{ 's' if total_checked != 1 else '' }} across 4 tables
-    </span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span style="font-size:0.85rem;color:#6b7280;">
+            Checked {{ total_checked }} URL{{ 's' if total_checked != 1 else '' }} across 4 tables
+        </span>
+        <span style="font-size:0.82rem;color:#9ca3af;" id="checked-at-label">
+            Last checked at <strong style="color:#374151;">{{ checked_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</strong>
+        </span>
+        <a href="{{ url_for('admin_photo_health') }}"
+           id="recheck-btn"
+           style="display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;font-size:0.83rem;font-weight:600;padding:6px 14px;border-radius:6px;text-decoration:none;white-space:nowrap;transition:background 0.15s;"
+           onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'"
+           onclick="this.textContent='⏳ Running…';this.style.pointerEvents='none';">
+            🔄 Re-check now
+        </a>
+    </div>
 </div>
 
 <!-- Summary Cards -->

@@ -7110,6 +7110,8 @@ def admin_photo_health():
 
     broken_rows.sort(key=lambda r: (r["table"], r["id"]))
 
+    checked_at = datetime.utcnow()
+
     return render_template(
         "admin_photo_health.html",
         table_stats=table_stats,
@@ -7117,6 +7119,7 @@ def admin_photo_health():
         broken_rows=broken_rows,
         no_url_rows=no_url_rows,
         total_checked=len(jobs),
+        checked_at=checked_at,
     )
 
 
