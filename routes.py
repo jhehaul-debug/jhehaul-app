@@ -6390,7 +6390,7 @@ def admin_delete_user(user_id):
             return redirect(url_for('admin_user_detail', user_id=user_id))
         flash("Admin accounts cannot be deleted.", "error")
         return redirect(url_for('admin_dashboard'))
-    from models import OAuth, JobPhoto, CompletionPhoto
+    from models import OAuth, JobPhoto, CompletionPhoto, GalleryPhoto
     user_name = (((user.first_name or '') + ' ' + (user.last_name or '')).strip()
                  or user.email or 'User')
     user_type = user.user_type or 'customer'
@@ -6413,6 +6413,12 @@ def admin_delete_user(user_id):
     Bid.query.filter_by(hauler_id=user_id).delete()
     Review.query.filter_by(hauler_id=user_id).delete()
     Review.query.filter_by(customer_id=user_id).delete()
+    # Clean up seller listings — remove gallery pins first, then the listings themselves
+    # (prevents both FK constraint violations and orphaned GalleryPhoto rows)
+    for listing in Listing.query.filter_by(seller_id=user_id).all():
+        GalleryPhoto.query.filter_by(item_type='listing', listing_id=listing.id).delete(synchronize_session=False)
+        db.session.delete(listing)
+    db.session.flush()  # run listing cascades before removing the user row
     OAuth.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
