@@ -327,7 +327,7 @@
 
 <script>
 /* ── Vehicle make / model searchable selects ─────────────────── */
-const TVQ_MODELS = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+const TVQ_MODELS = {{ VEHICLE_MAKES_MODELS | tojson }};
 
 const tvqMakeSelect  = document.getElementById('tvq_make');
 const tvqModelSelect = document.getElementById('tvq_model');

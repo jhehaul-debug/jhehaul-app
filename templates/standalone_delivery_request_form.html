@@ -316,7 +316,7 @@ form[action*="request-delivery"],
 
 <script>
 /* ── Vehicle transport toggle ─────────────────────────────────── */
-const SDR_MODELS = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+const SDR_MODELS = {{ VEHICLE_MAKES_MODELS | tojson }};
 (function(){
   var toggle = document.getElementById('is-vehicle-toggle');
   var section = document.getElementById('vehicle-info-section');

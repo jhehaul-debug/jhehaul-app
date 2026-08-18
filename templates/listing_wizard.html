@@ -933,7 +933,7 @@
   }
 
   // ── Vehicle make/model dependent selects ─────────────────────────────────
-  const VEHICLE_MODELS_DATA = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+  const VEHICLE_MODELS_DATA = {{ VEHICLE_MAKES_MODELS | tojson }};
 
   const makeSelect  = document.getElementById('vehicleMake');
   const modelSelect = document.getElementById('vehicleModel');

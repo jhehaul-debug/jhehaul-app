@@ -1,0 +1,78 @@
+The Automotive Model dropdown fix is still not showing on the live JHE Haul website.
+
+Do not make another unrelated UI change.
+
+I need you to verify whether the previous Model dropdown fix was actually:
+
+1. Saved
+2. Committed
+3. Pushed to the correct GitHub branch
+4. Picked up by DigitalOcean
+5. Successfully deployed to production
+
+FIRST — CHECK THE CURRENT CODE
+
+Confirm the Automotive Make → Model dropdown logic exists in the current codebase.
+
+Verify that selecting a Make actually creates a non-empty Model list.
+
+Test with:
+
+* Chevrolet
+* Ford
+* Toyota
+* Honda
+
+If the Model array is empty, fix the actual data/logic problem before pushing.
+
+SECOND — COMMIT AND PUSH
+
+Commit all current Automotive Year / Make / Model fixes.
+
+Push them to the same GitHub production branch DigitalOcean is currently connected to.
+
+Do not only save changes locally in Replit.
+
+Report back with:
+
+* Git branch name
+* Commit hash
+* Confirmation that push succeeded
+
+THIRD — VERIFY DIGITALOCEAN DEPLOYMENT
+
+Check that DigitalOcean receives the new commit.
+
+Confirm:
+
+* Deployment started
+* Deployment completed successfully
+* The deployed commit matches the commit that contains the Model dropdown fix
+
+If DigitalOcean is still serving an older commit, fix the deployment/source branch issue.
+
+FOURTH — VERIFY THE LIVE WEBSITE
+
+Open the actual production JHE Haul site after deployment.
+
+Go to the Automotive form and test:
+
+Year → Make → Model
+
+Select Chevrolet.
+
+The Model dropdown must show actual Chevrolet models, not just:
+
+— Select model —
+
+Then test Ford and Toyota.
+
+Do not mark this task completed until the live production website shows actual Model choices.
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+Do not undo the Year/Make/Model mobile layout fixes that are already working.
+
+This task is not complete merely because the code works in Replit. It must be pushed and verified on the live DigitalOcean production deployment.

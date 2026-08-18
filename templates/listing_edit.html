@@ -853,7 +853,7 @@ function toggleVehicleFieldsEdit(catId) {
 if (catSelect?.value) toggleVehicleFieldsEdit(catSelect.value);
 
 /* ─── Vehicle make/model dependent selects (edit page) ─── */
-const VMD_E = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
+const VMD_E = {{ VEHICLE_MAKES_MODELS | tojson }};
 
 const makeSelectEdit  = document.getElementById('vehicleMakeEdit');
 const modelSelectEdit = document.getElementById('vehicleModelEdit');

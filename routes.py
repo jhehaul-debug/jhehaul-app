@@ -208,7 +208,8 @@ _VEHICLE_YEARS = list(range(_dt.datetime.now().year, 1979, -1))  # current year 
 def _inject_vehicle_data():
     return dict(
         VEHICLE_MAKES=_VMAKES,
-        VEHICLE_MAKES_MODELS_JSON=_VEHICLE_MAKES_MODELS_JSON,
+        VEHICLE_MAKES_MODELS=_VMM,           # raw dict — use | tojson in templates
+        VEHICLE_MAKES_MODELS_JSON=_VEHICLE_MAKES_MODELS_JSON,  # kept for compat
         VEHICLE_YEARS=_VEHICLE_YEARS,
     )
 
