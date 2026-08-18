@@ -1,0 +1,483 @@
+JHE HAUL — PHASE F PRODUCTION APPROVAL
+BACKGROUND WORKERS + JOB QUEUE
+
+Phase F implementation is complete and approved.
+
+Now safely move the completed Phase F background-worker and job-queue architecture through:
+
+LOCAL
+→ GITHUB MAIN
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+Do NOT begin Phase G yet.
+
+Do NOT implement the AI Copilot yet.
+
+IMPORTANT:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+
+1. FINAL PHASE F REVIEW
+    ==================================================
+
+Before deployment, verify the Phase F implementation includes the approved architecture for:
+
+* Background job queue
+* Worker processing
+* Job status tracking
+* Retry behavior
+* Failure handling
+* Idempotency protection where required
+* Worker/job logging
+* Admin job monitoring if implemented
+* AI/background task support
+* Queue failure fallback
+* Future multi-agent readiness
+
+Report:
+
+QUEUE TECHNOLOGY:
+WORKER TECHNOLOGY:
+REDIS REQUIRED: YES/NO
+DATABASE-BACKED QUEUE: YES/NO
+DIGITALOCEAN WORKER REQUIRED: YES/NO
+
+==================================================
+2. VERIFY CORE MARKETPLACE STILL WORKS
+
+Before deployment test:
+
+Marketplace Home
+→ working
+
+Seller Dashboard
+→ working
+
+Create Listing
+→ working
+
+Phase D AI Listing Assistant
+→ working
+
+Phase E AI Search
+→ working
+
+Messages
+→ working
+
+Offers
+→ working
+
+Favorites
+→ working
+
+Notifications
+→ working
+
+Email
+→ working where currently configured
+
+JHE Haul Delivery
+→ working
+
+Admin
+→ working
+
+Authentication
+→ working
+
+Photos
+→ working
+
+Videos
+→ working
+
+SEO
+→ working
+
+Do not proceed if Phase F broke core marketplace functionality.
+
+==================================================
+3. QUEUE / WORKER TESTS
+
+Test:
+
+JOB SUBMISSION
+→ Job successfully enters queue
+
+WORKER
+→ Worker receives job
+
+PROCESSING
+→ Job status updates
+
+SUCCESS
+→ Job becomes Completed
+
+TEMPORARY FAILURE
+→ Job retries according to configured policy
+
+PERMANENT FAILURE
+→ Job stops after retry limit
+
+DUPLICATE JOB
+→ Does not create harmful duplicate actions
+
+QUEUE UNAVAILABLE
+→ Core marketplace remains usable
+
+WORKER UNAVAILABLE
+→ Core marketplace remains usable
+
+==================================================
+4. EMAIL / NOTIFICATION DUPLICATE PROTECTION
+
+If email or notification jobs use the queue:
+
+Verify duplicate processing does NOT accidentally send the same notification repeatedly.
+
+Use idempotency protection where appropriate.
+
+Do NOT re-enable SMS.
+
+==================================================
+5. AI JOB SAFETY
+
+Verify AI background jobs:
+
+* use backend credentials only
+* do not expose API keys
+* do not expose private seller information
+* do not give workers unrestricted user-facing permissions
+* fail safely
+
+Interactive AI features should continue to provide appropriate loading/fallback behavior.
+
+==================================================
+6. SECURITY CHECK
+
+Verify job payloads do NOT contain:
+
+* passwords
+* API keys
+* authentication tokens
+* Stripe secrets
+* SendGrid secrets
+* private credentials
+* unnecessary personal information
+
+Prefer IDs and controlled backend lookups.
+
+==================================================
+7. DIGITALOCEAN REQUIREMENTS
+
+Determine exactly what DigitalOcean production needs.
+
+Report:
+
+NEW WORKER COMPONENT REQUIRED: YES/NO
+
+REDIS / CACHE REQUIRED: YES/NO
+
+NEW DATABASE REQUIRED: YES/NO
+
+NEW ENVIRONMENT VARIABLES REQUIRED:
+
+EXPECTED ADDITIONAL MONTHLY COST:
+
+Do not expose environment-variable values.
+
+==================================================
+8. IMPORTANT — INFRASTRUCTURE BLOCKER
+
+If Phase F requires a NEW DigitalOcean:
+
+* Worker
+* Redis/database
+* Environment variable
+* service binding
+
+that does not currently exist:
+
+STOP BEFORE PUSHING.
+
+Tell me exactly what needs to be created/configured in DigitalOcean.
+
+Do NOT deploy Phase F into production in a partially configured state.
+
+==================================================
+9. GIT STATUS
+
+If all production requirements are satisfied, report:
+
+CURRENT BRANCH:
+LOCAL HEAD:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do not include:
+
+* secrets
+* .env files
+* logs
+* temporary files
+* screenshots
+* local databases
+
+==================================================
+10. COMMIT PHASE F
+
+Commit the approved Phase F implementation.
+
+Suggested commit message:
+
+Phase F: add background worker and job queue architecture
+
+==================================================
+11. PUSH TO EXISTING GITHUB
+
+Push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT:
+
+* create another repository
+* create another production branch
+* force push
+* replace Git history
+
+==================================================
+12. VERIFY GITHUB
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+
+Confirm:
+
+LOCAL = GITHUB: YES/NO
+
+COMMITS AHEAD: 0
+COMMITS BEHIND: 0
+
+If they do not match:
+
+STOP and fix the Git problem.
+
+==================================================
+13. DIGITALOCEAN DEPLOYMENT
+
+Verify DigitalOcean production remains connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Verify a NEW deployment starts using the Phase F commit.
+
+If auto-deploy does not start:
+
+Trigger a NEW deployment using the newest GitHub main commit.
+
+Do not deploy an older SHA.
+
+==================================================
+14. DIGITALOCEAN WORKER
+
+If a separate Worker component is required:
+
+Verify the EXISTING DigitalOcean application contains/configures the Worker correctly.
+
+Do NOT create a second JHE Haul production application.
+
+The architecture should conceptually be:
+
+JHE Haul DigitalOcean App
+
+Web Service
++
+Worker
++
+Database
++
+Queue/Redis if required
+
+All components remain part of the same production architecture.
+
+==================================================
+15. VERIFY WORKER STARTUP
+
+Verify:
+
+WORKER STARTED: YES/NO
+
+WORKER CONNECTED TO QUEUE: YES/NO
+
+WORKER CONNECTED TO DATABASE: YES/NO
+
+WORKER ENVIRONMENT VARIABLES AVAILABLE: YES/NO
+
+WORKER HEALTH / PROCESS STATUS: HEALTHY/FAILED
+
+Do not display secret values.
+
+==================================================
+16. PRODUCTION JOB TEST
+
+Run ONE safe production background-job test.
+
+Use a harmless test job or approved existing background operation.
+
+Verify:
+
+Job created
+→ queued
+
+Worker receives
+→ processing
+
+Worker finishes
+→ completed
+
+Do NOT generate spam, duplicate emails, fake marketplace data, fake notifications, or fake listings.
+
+==================================================
+17. LIVE MARKETPLACE REGRESSION TEST
+
+Test LIVE:
+
+jhehaul.com
+
+Verify:
+
+Marketplace loads
+Seller dashboard loads
+AI Listing Assistant works
+AI Search works
+Messages work
+Offers work
+Delivery works
+Admin works
+Authentication works
+
+Phase F must NOT visibly degrade normal marketplace performance.
+
+==================================================
+18. VERIFY ALL COMMIT SHAs
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+
+If Worker is deployed from the same source:
+
+DIGITALOCEAN WORKER SHA:
+
+All appropriate production components must use the approved Phase F source.
+
+==================================================
+19. ADMIN JOB MONITORING
+
+If implemented, verify Admin can see safe operational information such as:
+
+Queued
+Processing
+Completed
+Failed
+Retrying
+
+Do not expose:
+
+* job secrets
+* AI API keys
+* private payload contents
+* authentication credentials
+
+==================================================
+20. FINAL PRODUCTION REPORT
+
+Report exactly:
+
+PHASE F DEPLOYED: YES/NO
+
+QUEUE TECHNOLOGY:
+
+WORKER TECHNOLOGY:
+
+DIGITALOCEAN WORKER LIVE: YES/NO
+
+REDIS LIVE: YES/NO/NOT REQUIRED
+
+QUEUE CONNECTION WORKING: YES/NO
+
+PRODUCTION TEST JOB COMPLETED: YES/NO
+
+RETRY SYSTEM WORKING: YES/NO
+
+IDEMPOTENCY PROTECTION VERIFIED: YES/NO
+
+QUEUE FAILURE FALLBACK VERIFIED: YES/NO
+
+ADMIN JOB MONITORING LIVE: YES/NO
+
+EXPECTED MONTHLY INFRASTRUCTURE COST:
+
+MARKETPLACE REGRESSION TEST PASSED: YES/NO
+
+PHASE D AI LISTING ASSISTANT WORKING: YES/NO
+
+PHASE E AI SEARCH WORKING: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA:
+
+PRODUCTION VERIFIED: YES/NO
+
+==================================================
+21. STOP
+
+After Phase F is fully deployed and verified:
+
+STOP.
+
+Do NOT begin Phase G.
+
+Do NOT build the Copilot yet.
+
+Wait for approval.
+
+==================================================
+CRITICAL RULES
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not move production away from DigitalOcean.
+
+Do not create a second production application.
+
+Do not deploy incomplete infrastructure.
+
+Do not begin Phase G until Phase F is verified.
