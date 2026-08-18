@@ -915,6 +915,7 @@ with app.app_context():
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS button_text VARCHAR(100)"))
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS button_link VARCHAR(500)"))
         db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
+        db.session.execute(_text("ALTER TABLE gallery_photos ADD COLUMN IF NOT EXISTS auto_deactivated BOOLEAN DEFAULT FALSE"))
         db.session.execute(_text("UPDATE gallery_photos SET item_type='custom', is_active=TRUE WHERE item_type IS NULL"))
         db.session.commit()
         logging.info("Column migration: gallery_photos featured content fields ensured")

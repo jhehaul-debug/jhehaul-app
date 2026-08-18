@@ -150,6 +150,7 @@ class GalleryPhoto(db.Model):
     button_text = db.Column(db.String(100), nullable=True)
     button_link = db.Column(db.String(500), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    auto_deactivated = db.Column(db.Boolean, default=False)  # True when deactivated by stale-cleanup (not by admin toggle)
     filename = db.Column(db.String, nullable=False, default='')
     storage_url = db.Column(db.String, nullable=True)       # DO Spaces URL
     data = db.Column(db.LargeBinary, nullable=True)         # DB fallback

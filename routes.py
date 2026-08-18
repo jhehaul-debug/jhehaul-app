@@ -1842,12 +1842,18 @@ def listing_set_status(listing_id):
         ]
         expire_pending_offers(listing_id)
     db.session.commit()
-    # Deactivate any gallery pins for this listing if it's no longer active
+    # Deactivate any gallery pins for this listing if it's no longer active;
+    # re-activate auto-deactivated pins if the listing is back to active+approved.
     if new_status != 'active':
         try:
             _deactivate_stale_gallery_pins()
         except Exception as _gp_err:
             app.logger.warning("listing_set_status: gallery pin cleanup failed: %s", _gp_err)
+    elif listing.moderation_status == 'approved':
+        try:
+            _reactivate_gallery_pins(listing.id)
+        except Exception as _gp_err:
+            app.logger.warning("listing_set_status: gallery pin reactivation failed: %s", _gp_err)
     labels = {'sold': 'Listing marked as sold.', 'reserved': 'Listing marked as reserved.', 'active': 'Listing reactivated.', 'pending': 'Listing marked as pending sale.'}
     flash(labels[new_status], "success")
     # Notify buyers watching this listing when it transitions to reserved
@@ -1920,6 +1926,11 @@ def listing_renew(listing_id):
     listing.expired_at = None
     listing.expiry_reminder_sent = False  # start a fresh expiry cycle
     db.session.commit()
+    if listing.moderation_status == 'approved':
+        try:
+            _reactivate_gallery_pins(listing.id)
+        except Exception as _gp_err:
+            app.logger.warning("listing_renew: gallery pin reactivation failed: %s", _gp_err)
     flash("Your listing has been renewed and is active for 30 more days.", "success")
     return redirect(url_for('selling'))
 
@@ -6355,6 +6366,12 @@ def admin_listing_approve(listing_id):
     if listing.status == 'pending' and was_moderation_pending:
         listing.status = 'active'
     db.session.commit()
+    # Re-activate any gallery pins if the listing is now fully live
+    if listing.status == 'active' and listing.moderation_status == 'approved':
+        try:
+            _reactivate_gallery_pins(listing.id)
+        except Exception as _gp_err:
+            app.logger.warning("admin_listing_approve: gallery pin reactivation failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" approved.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -6421,6 +6438,10 @@ def admin_listing_restore(listing_id):
     listing.moderation_status = 'approved'
     listing.status = 'active'
     db.session.commit()
+    try:
+        _reactivate_gallery_pins(listing.id)
+    except Exception as _gp_err:
+        app.logger.warning("admin_listing_restore: gallery pin reactivation failed: %s", _gp_err)
     flash(f'Listing "{listing.title}" restored to active.', 'success')
     return redirect(request.referrer or url_for('admin_listings'))
 
@@ -6893,6 +6914,10 @@ def admin_listing_moderate(listing_id):
         _log_mod_action('restore_listing', 'listing', listing_id,
                         notes=f'Restored by {current_user.email}')
         db.session.commit()
+        try:
+            _reactivate_gallery_pins(listing.id)
+        except Exception as _gp_err:
+            app.logger.warning("admin_listing_moderate restore: gallery pin reactivation failed: %s", _gp_err)
         flash(f'Listing "{listing.title}" restored.', 'success')
     else:
         flash('Unknown action.', 'error')
@@ -6988,6 +7013,11 @@ def admin_report_restore_listing(report_id):
         listing.moderation_status = 'approved'
     report.status = 'resolved'
     db.session.commit()
+    if listing:
+        try:
+            _reactivate_gallery_pins(listing.id)
+        except Exception as _gp_err:
+            app.logger.warning("admin_report_restore_listing: gallery pin reactivation failed: %s", _gp_err)
     flash("Listing restored and report resolved.", "success")
     return redirect(url_for('admin_reports'))
 
@@ -8219,6 +8249,7 @@ def _deactivate_stale_gallery_pins():
                 or listing.status != 'active'
                 or listing.moderation_status != 'approved'):
             pin.is_active = False
+            pin.auto_deactivated = True   # provenance: deactivated by stale-cleanup, not admin
             deactivated += 1
     if deactivated:
         try:
@@ -8228,6 +8259,43 @@ def _deactivate_stale_gallery_pins():
             db.session.rollback()
             app.logger.warning("gallery cleanup: commit failed: %s", _e)
     return deactivated
+
+
+def _reactivate_gallery_pins(listing_id):
+    """Re-activate gallery pins for a listing that has returned to active+approved.
+
+    ONLY reactivates pins whose is_active was set to False by
+    _deactivate_stale_gallery_pins() (identified by auto_deactivated=True).
+    Pins an admin intentionally disabled via the Featured Content toggle have
+    auto_deactivated=False and are left untouched.
+
+    Call this *after* db.session.commit() when a listing transitions back to
+    status='active' and moderation_status='approved'.
+    Returns the count of rows re-activated.
+    """
+    from models import GalleryPhoto
+    inactive_pins = (GalleryPhoto.query
+                     .filter_by(item_type='listing', listing_id=listing_id,
+                                is_active=False, auto_deactivated=True)
+                     .all())
+    reactivated = 0
+    for pin in inactive_pins:
+        pin.is_active = True
+        pin.auto_deactivated = False   # clear provenance flag now that pin is live again
+        reactivated += 1
+    if reactivated:
+        try:
+            db.session.commit()
+            app.logger.info(
+                "gallery pins: re-activated %d pin(s) for listing %s",
+                reactivated, listing_id,
+            )
+        except Exception as _e:
+            db.session.rollback()
+            app.logger.warning("gallery pins: re-activation commit failed: %s", _e)
+    return reactivated
+
+
 def _compress_gallery_image(raw_bytes: bytes, ext: str):
     """
     Resize and compress an uploaded gallery image with Pillow.
@@ -8488,6 +8556,7 @@ def admin_gallery_toggle(photo_id):
     from models import GalleryPhoto
     photo = GalleryPhoto.query.get_or_404(photo_id)
     photo.is_active = not photo.is_active
+    photo.auto_deactivated = False   # manual toggle always takes ownership; auto-reactivation must not override this
     db.session.commit()
     flash(f"Item {'activated' if photo.is_active else 'deactivated'}.", "success")
     return redirect(url_for('admin_gallery'))
