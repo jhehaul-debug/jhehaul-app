@@ -1,0 +1,789 @@
+JHE HAUL — PHASE K
+RECOMMENDATION + PERSONALIZATION INTELLIGENCE
+
+Phase J is complete and verified.
+
+Now begin Phase K.
+
+This phase adds marketplace recommendation and personalization intelligence.
+
+IMPORTANT:
+
+Do NOT begin Phase L yet.
+
+Do NOT use invasive tracking.
+
+Do NOT expose one user's behavior to another user.
+
+Do NOT make AI recommendations the only way users can browse the marketplace.
+
+Normal marketplace browsing, search, filters, categories, Recently Listed, and saved items must continue working.
+
+==================================================
+PHASE K OBJECTIVE
+==================================================
+
+Create a recommendation layer that helps buyers discover relevant marketplace listings.
+
+Potential experiences:
+
+Recommended for You
+
+Similar Listings
+
+Based on Your Searches
+
+New Near You
+
+Because You Saved...
+
+More Like This
+
+Recently Viewed
+
+Saved Search Matches
+
+The system should use actual marketplace activity and listing data.
+
+Do NOT invent user interests.
+
+==================================================
+1. START WITH SIMPLE RECOMMENDATIONS
+==================================================
+
+Do not immediately build an expensive machine-learning recommendation system.
+
+Start with explainable ranking using real marketplace signals.
+
+Potential signals:
+
+- category viewed
+- listing viewed
+- saved listings
+- search queries
+- price ranges
+- vehicle make/model interest
+- general location
+- delivery preference
+- recency
+- listing popularity
+- active status
+
+Use deterministic logic first where practical.
+
+==================================================
+2. RECOMMENDED FOR YOU
+==================================================
+
+Add an optional section:
+
+Recommended for You
+
+Only show it when there is enough real user activity to make useful recommendations.
+
+If there is not enough data:
+
+Do not show fake personalization.
+
+Instead continue showing general marketplace discovery such as:
+
+Recently Listed
+Popular Near You
+Categories
+
+==================================================
+3. SIMILAR LISTINGS
+==================================================
+
+On a listing detail page, add:
+
+Similar Listings
+
+Initial similarity may use:
+
+- same category
+- similar price range
+- nearby location
+- same make/model for vehicles
+- similar condition
+- delivery availability
+
+Do not require AI embeddings if structured marketplace fields are enough.
+
+==================================================
+4. VEHICLE RECOMMENDATIONS
+==================================================
+
+For vehicle listings, use real structured fields such as:
+
+- make
+- model
+- year
+- mileage
+- price
+- condition
+- location
+
+Example:
+
+User views a Chevrolet Volt.
+
+Similar listings may prioritize:
+
+Chevrolet Volt
+Other comparable electric/hybrid vehicles
+Similar price range
+Similar year range
+Nearby listings
+
+Do not invent vehicle attributes.
+
+==================================================
+5. RECENTLY VIEWED
+==================================================
+
+Add or prepare:
+
+Recently Viewed
+
+Store only the minimum data required.
+
+Possible fields:
+
+user_id
+listing_id
+viewed_at
+
+Do not expose viewing history publicly.
+
+Allow the user to clear Recently Viewed if appropriate.
+
+==================================================
+6. SAVED LISTING SIGNALS
+==================================================
+
+Use Saved Items as a strong personalization signal.
+
+Example:
+
+User saves multiple furniture listings
+→ furniture may rank higher in recommendations
+
+Do not assume identity or sensitive traits from marketplace activity.
+
+==================================================
+7. SEARCH SIGNALS
+==================================================
+
+Use Phase E AI Search and normal search data where appropriate.
+
+Example:
+
+Repeated search:
+Toyota Camry under $20,000
+
+Recommendations may favor matching active Toyota Camry listings.
+
+Do not persist private search history indefinitely without a defined retention policy.
+
+==================================================
+8. LOCATION
+==================================================
+
+Use general location information already available to the marketplace.
+
+Potential ranking:
+
+Nearby listings
+→ higher relevance
+
+Do not expose exact private home location.
+
+Do not send unnecessary precise location information to AI providers.
+
+==================================================
+9. DELIVERY PREFERENCE
+==================================================
+
+If a buyer frequently selects or searches for:
+
+JHE Haul Delivery Available
+
+recommendations may favor listings offering JHE Haul delivery.
+
+Use actual listing delivery configuration.
+
+==================================================
+10. NEW NEAR YOU
+==================================================
+
+Create or prepare:
+
+New Near You
+
+Use:
+
+- active listings
+- public city/ZIP/location logic
+- listing publish time
+
+Do not include drafts, removed listings, or private listings.
+
+==================================================
+11. SAVED SEARCH MATCHES
+==================================================
+
+If Saved Search foundation exists from Phase E:
+
+New listing published
+→ background matching
+→ matching buyer identified
+→ optional in-app notification
+
+Use Phase F worker architecture.
+
+Respect user notification preferences.
+
+Do not send SMS.
+
+==================================================
+12. PRICE DROP FOUNDATION
+==================================================
+
+Prepare for future:
+
+Price Drop
+
+If a saved listing's price decreases:
+
+User may receive an in-app notification.
+
+Do not send a notification if no actual price change occurred.
+
+Email may be optional later.
+
+==================================================
+13. RECOMMENDATION EXPLANATIONS
+==================================================
+
+Where useful, explain WHY a recommendation is shown.
+
+Examples:
+
+“Because you viewed similar vehicles.”
+
+“Based on your saved furniture listings.”
+
+“New listing near Maplewood.”
+
+“Similar to the Chevrolet Volt you viewed.”
+
+Keep explanations short.
+
+==================================================
+14. DO NOT USE SENSITIVE PERSONALIZATION
+==================================================
+
+Do not infer or personalize based on:
+
+- race
+- religion
+- health
+- political beliefs
+- sexual orientation
+- criminal history
+- other sensitive personal traits
+
+Marketplace personalization should be based on marketplace behavior and item preferences only.
+
+==================================================
+15. PERSONALIZATION CONTROL
+==================================================
+
+Prepare user settings such as:
+
+Personalized Recommendations:
+ON/OFF
+
+Recently Viewed:
+ON/OFF where appropriate
+
+Saved Search Alerts:
+ON/OFF
+
+Do not make core marketplace functionality dependent on personalization.
+
+==================================================
+16. RECOMMENDATION SERVICE
+==================================================
+
+Create a clean backend service such as:
+
+RecommendationService
+
+Potential methods:
+
+get_recommended_listings()
+
+get_similar_listings()
+
+get_recently_viewed()
+
+get_new_near_user()
+
+get_saved_search_matches()
+
+Keep business logic out of templates.
+
+==================================================
+17. AI USE
+==================================================
+
+Do NOT call AI unnecessarily.
+
+Use normal database ranking for:
+
+- category matching
+- price range
+- location
+- recency
+- make/model
+- saved-item overlap
+
+AI/embeddings may later improve semantic similarity.
+
+If embeddings are already available from prior architecture, evaluate them carefully.
+
+Do not add expensive embedding infrastructure solely for this phase unless needed.
+
+==================================================
+18. FUTURE EMBEDDINGS
+==================================================
+
+Prepare architecture for future semantic recommendations.
+
+Potential representation:
+
+Listing
+→ structured attributes
+→ text representation
+→ embedding
+→ similarity search
+
+Do not make embeddings mandatory for Phase K.
+
+==================================================
+19. RECOMMENDATION RANKING
+==================================================
+
+Create transparent initial ranking.
+
+Example factors may include:
+
+category match
+saved-item similarity
+search match
+location distance
+price-range similarity
+recency
+listing quality
+delivery compatibility
+
+Do not create an opaque score without documentation.
+
+==================================================
+20. DIVERSITY
+==================================================
+
+Avoid showing the exact same types of listings repeatedly.
+
+Where practical, introduce reasonable diversity so recommendations are useful.
+
+Example:
+
+Do not show 20 nearly identical listings from the same seller when better alternatives exist.
+
+==================================================
+21. SELLER FAIRNESS
+==================================================
+
+Do not permanently favor only large/high-volume sellers.
+
+Recommendation logic should not unfairly suppress new sellers.
+
+Recency, relevance, quality, and buyer intent should matter.
+
+Do not create paid ranking in this phase.
+
+==================================================
+22. NO PAID BOOSTING YET
+==================================================
+
+Do NOT mix future paid promoted listings into organic recommendations yet.
+
+Paid promotion comes later under monetization.
+
+Keep Phase K recommendations organic.
+
+==================================================
+23. FRAUD / SAFETY FILTER
+==================================================
+
+Use Phase J safety intelligence appropriately.
+
+Listings that are:
+
+removed
+suspended
+not public
+under serious restriction
+
+should not appear in recommendations.
+
+Do not expose internal fraud flags to buyers.
+
+==================================================
+24. ADMIN ANALYTICS
+==================================================
+
+Prepare aggregate recommendation metrics such as:
+
+Recommendation impressions
+
+Recommendation clicks
+
+Saved from recommendation
+
+Message initiated from recommendation
+
+Search-to-recommendation engagement
+
+Do not expose individual private behavior unnecessarily.
+
+==================================================
+25. CONVERSION TRACKING
+==================================================
+
+Where technically appropriate, track:
+
+Recommendation shown
+→ listing clicked
+→ item saved
+→ seller messaged
+→ offer made
+
+Use this to evaluate whether recommendations are useful.
+
+Do not claim a completed sale unless the system actually tracks that status.
+
+==================================================
+26. COPILOT INTEGRATION
+==================================================
+
+Integrate with Ask JHE Haul.
+
+Examples:
+
+“Show me more like this.”
+
+“What else would I like?”
+
+“Find similar cars near me.”
+
+“Show me new listings based on my saved searches.”
+
+Copilot should call RecommendationService through controlled tools.
+
+==================================================
+27. RECOMMENDATION TOOLS
+==================================================
+
+Potential controlled tools:
+
+get_recommendations()
+
+get_similar_listings()
+
+get_new_near_user()
+
+get_recently_viewed()
+
+get_saved_search_matches()
+
+All tools must enforce authorization and privacy.
+
+==================================================
+28. BACKGROUND PROCESSING
+==================================================
+
+Reuse Phase F workers for:
+
+Saved-search matching
+
+Recommendation refresh
+
+Optional embedding generation
+
+Analytics aggregation
+
+Do not calculate expensive recommendations synchronously on every page load if caching/background processing is better.
+
+==================================================
+29. CACHE
+==================================================
+
+Use short-lived recommendation caching where appropriate.
+
+Invalidate or refresh when:
+
+listing becomes sold
+listing removed
+listing expires
+important user preference changes
+
+Do not recommend unavailable listings because of stale cache.
+
+==================================================
+30. NO-RESULT / LOW-DATA BEHAVIOR
+==================================================
+
+If not enough user activity exists:
+
+Do not pretend personalization is available.
+
+Fallback to:
+
+Recently Listed
+
+Popular Near You
+
+Featured Categories
+
+New Near You
+
+==================================================
+31. MOBILE UX
+==================================================
+
+Optimize recommendation sections for mobile.
+
+Potential patterns:
+
+Horizontal swipe cards
+
+Compact listing grids
+
+“See All”
+
+Do not make the homepage excessively long.
+
+==================================================
+32. PERFORMANCE
+==================================================
+
+Recommendation logic should not slow Marketplace Home.
+
+Measure query count and response time.
+
+Use database indexes where appropriate.
+
+Avoid N+1 queries.
+
+==================================================
+33. PRIVACY RETENTION
+==================================================
+
+Define reasonable retention for behavioral records.
+
+Do not keep unnecessary activity indefinitely.
+
+Report proposed retention rules for:
+
+Recently Viewed
+
+Search history used for recommendations
+
+Recommendation events
+
+==================================================
+34. SECURITY TESTING
+==================================================
+
+Test:
+
+User A requests User B recommendation profile
+→ DENIED
+
+User requests another person's recently viewed
+→ DENIED
+
+Normal user attempts to manipulate recommendation tool parameters
+→ validated
+
+Removed listing
+→ excluded
+
+Suspended listing
+→ excluded
+
+Private listing
+→ excluded
+
+==================================================
+35. FUNCTIONAL TESTING
+==================================================
+
+Test:
+
+User views vehicle listings
+→ relevant vehicle recommendations
+
+User saves furniture listings
+→ furniture relevance increases
+
+No activity
+→ general marketplace fallback
+
+Similar Listings
+→ actual related listings only
+
+New Near You
+→ real active nearby listings
+
+Sold listing
+→ removed from recommendation results
+
+Saved Search
+→ matching active listing identified
+
+==================================================
+36. PRESERVE EXISTING SYSTEM
+==================================================
+
+Do not break:
+
+Marketplace Home
+
+Seller Dashboard
+
+Phase D AI Listing Assistant
+
+Phase E AI Search
+
+Phase F Workers/Queue
+
+Phase G Copilot
+
+Phase H Controlled Actions
+
+Phase I Seller Intelligence
+
+Phase J Fraud/Safety
+
+Messages
+
+Offers
+
+Saved Items
+
+Delivery
+
+Notifications
+
+Email
+
+Admin
+
+Photos
+
+Videos
+
+Vehicle fields
+
+SEO
+
+Authentication
+
+Stripe
+
+==================================================
+37. IMPLEMENT LOCALLY / STAGING FIRST
+==================================================
+
+Implement Phase K locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation report:
+
+RECOMMENDATION SERVICE: YES/NO
+
+RECOMMENDED FOR YOU: YES/NO
+
+SIMILAR LISTINGS: YES/NO
+
+RECENTLY VIEWED: YES/NO
+
+NEW NEAR YOU: YES/NO
+
+SAVED SEARCH MATCHING: YES/NO
+
+PRICE DROP FOUNDATION: YES/NO
+
+PERSONALIZATION SETTINGS: YES/NO
+
+COPILOT RECOMMENDATION TOOLS: YES/NO
+
+BACKGROUND PROCESSING: YES/NO
+
+CACHE USED: YES/NO
+
+REAL DATA ONLY VERIFIED: YES/NO
+
+PRIVACY TESTED: YES/NO
+
+MOBILE TESTED: YES/NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+NEW ENVIRONMENT VARIABLES:
+
+RETENTION POLICY:
+
+EXPECTED INFRASTRUCTURE COST:
+
+EXPECTED AI COST:
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+38. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not begin Phase L yet.
+
+Do not use sensitive personal information for recommendations.
+
+Do not add paid ranking yet.
+
+BEGIN PHASE K IMPLEMENTATION.
