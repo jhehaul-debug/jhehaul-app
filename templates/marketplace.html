@@ -627,7 +627,11 @@
 <script>
 function dismissProfileNudge() {
     document.getElementById('profile-nudge-banner').style.display = 'none';
-    fetch('/profile/nudge/dismiss', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    fetch('/profile/nudge/dismiss', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+    });
 }
 </script>
 {% endif %}

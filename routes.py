@@ -418,6 +418,7 @@ def serve_profile_photo(user_id):
 @require_login
 def dismiss_profile_nudge():
     """Permanently dismiss the profile-completion nudge banner for this user."""
+    _check_listing_csrf()
     current_user.profile_nudge_dismissed = True
     db.session.commit()
     return ('', 204)
