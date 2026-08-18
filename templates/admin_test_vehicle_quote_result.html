@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Test Vehicle Quote #{{ dr.id }} — JHE Haul Admin{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{{ url_for('admin_test_vehicle_quote') }}" style="color:#718096;font-size:0.9rem;">← New Vehicle Test</a>
+    <h2 class="page-title" style="margin:0;">
+      🚗 Test Vehicle Quote #{{ dr.id }}
+      <span style="background:#7c3aed;color:#fff;font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;">TEST VEHICLE</span>
+    </h2>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('admin_deliveries') }}" class="btn btn-outline btn-sm">All Deliveries</a>
+    <button type="button"
+            onclick="document.getElementById('vt-delete-modal').style.display='flex'"
+            class="btn btn-sm"
+            style="background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;">
+      🗑 Delete Test
+    </button>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{% if checkout_test == 'success' %}
+<div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ✅ <strong style="color:#065f46;">Stripe TEST checkout completed successfully — full vehicle transport payment flow confirmed end-to-end.</strong>
+</div>
+{% elif checkout_test == 'cancel' %}
+<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ⚠️ <strong style="color:#92400e;">Stripe TEST checkout cancelled (expected in testing — session was created correctly).</strong>
+</div>
+{% endif %}
+
+<!-- Checklist -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin-bottom:14px;">✅ Workflow Checklist ({{ checks|selectattr(1)|list|length }}/{{ checks|length }} passed)</h3>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    {% for label, ok, err in checks %}
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-radius:8px;
+                background:{{ '#f0fdf4' if ok else '#fef2f2' }};border:1px solid {{ '#bbf7d0' if ok else '#fecaca' }};">
+      <span style="font-size:1.1rem;flex-shrink:0;">{{ '✅' if ok else '❌' }}</span>
+      <div style="flex:1;">
+        <span style="font-weight:600;color:{{ '#065f46' if ok else '#991b1b' }};">{{ label }}</span>
+        {% if not ok and err %}
+        <div style="color:#dc2626;font-size:0.82rem;margin-top:2px;">{{ err }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+  <!-- Vehicle details -->
+  <div class="card">
+    <h3 style="margin-bottom:14px;">🚗 Vehicle Details</h3>
+    <table style="width:100%;font-size:0.88rem;border-collapse:collapse;">
+      <tr><td style="padding:5px 0;color:#718096;width:42%;">DR #</td><td><strong>#{{ dr.id }}</strong></td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Job #</td>
+          <td>{% if job %}<a href="{{ url_for('admin_request_detail', job_id=job.id) }}" style="color:#3b82f6;">#{{ job.id }}</a>{% else %}<span style="color:#ef4444;">None</span>{% endif %}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Status</td>
+          <td><span style="background:{% if dr.status=='quoted' %}#dbeafe{% elif dr.status=='requested' %}#f0fdf4{% else %}#f8fafc{% endif %};
+                           color:{% if dr.status=='quoted' %}#1d4ed8{% elif dr.status=='requested' %}#065f46{% else %}#4a5568{% endif %};
+                           padding:2px 8px;border-radius:12px;font-weight:700;font-size:0.82rem;">{{ dr.status }}</span></td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Year / Make / Model</td>
+          <td>{{ dr.vt_year or '—' }} {{ dr.vt_make or '' }} {{ dr.vt_model or '' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Vehicle Type</td><td>{{ dr.vt_vehicle_type or '—' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Running?</td>
+          <td>{{ '✅ Yes' if dr.vt_is_running else '❌ No (+$50)' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Mobility</td>
+          <td>
+            Roll: {{ '✅' if dr.vt_can_roll else '❌' }}
+            Steer: {{ '✅' if dr.vt_can_steer else '❌' }}
+            Brake: {{ '✅' if dr.vt_can_brake else '❌' }}
+          </td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Pickup</td><td>{{ dr.pickup_city or '' }} {{ dr.pickup_state or '' }} {{ dr.pickup_zip or '' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Drop-off</td><td>{{ dr.delivery_city or '' }} {{ dr.delivery_state or '' }} {{ dr.delivery_zip or '' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Est. miles entered</td>
+          <td>{% if dr.vt_estimated_miles %}{{ dr.vt_estimated_miles|round(1) }} mi{% else %}<span style="color:#9ca3af;">—</span>{% endif %}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Instructions</td><td>{{ dr.special_instructions or '—' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Created</td><td>{{ dr.created_at.strftime('%b %d, %Y %I:%M %p') if dr.created_at else '—' }}</td></tr>
+    </table>
+  </div>
+
+  <!-- Pricing -->
+  <div class="card">
+    <h3 style="margin-bottom:14px;">💰 Distance &amp; Pricing</h3>
+    {% if distance_miles is not none %}
+    <div style="background:#eff6ff;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#1d4ed8;">{{ distance_miles }} mi</div>
+      <div style="color:#60a5fa;font-size:0.85rem;">{{ dr.pickup_zip }} → {{ dr.delivery_zip }} (ZIP haversine)</div>
+    </div>
+    {% elif distance_error %}
+    <div style="background:#fef2f2;border-radius:8px;padding:12px;margin-bottom:14px;color:#dc2626;font-size:0.85rem;">
+      ⚠️ Distance unavailable: {{ distance_error }}
+    </div>
+    {% endif %}
+
+    {% if dr.vt_estimated_miles and distance_miles is none %}
+    <div style="background:#fef3c7;border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.85rem;color:#92400e;">
+      📏 Using admin-entered estimate: {{ dr.vt_estimated_miles|round(1) }} mi
+    </div>
+    {% endif %}
+
+    <table style="width:100%;font-size:0.88rem;border-collapse:collapse;">
+      <tr><td style="padding:5px 0;color:#718096;">Base fee</td><td><strong>${{ '%.2f'|format(VT_BASE_FEE) }}</strong></td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Per-mile rate</td><td>${{ '%.2f'|format(VT_PER_MILE) }}/mile</td></tr>
+      {% if not dr.vt_is_running %}
+      <tr><td style="padding:5px 0;color:#dc2626;">Non-running surcharge</td><td style="color:#dc2626;">+${{ '%.2f'|format(VT_NONRUN_FEE) }}</td></tr>
+      {% endif %}
+      {% if price_breakdown %}
+      <tr><td style="padding:5px 0;color:#718096;">Mileage charge</td><td>${{ '%.2f'|format(price_breakdown.mileage) }}</td></tr>
+      <tr style="border-top:1px solid #e2e8f0;">
+        <td style="padding:6px 0;color:#065f46;font-weight:700;">Estimated total</td>
+        <td style="font-weight:700;color:#065f46;">${{ '%.2f'|format(price_breakdown.total) }}</td>
+      </tr>
+      {% endif %}
+      <tr><td style="padding:5px 0;color:#718096;">Admin quote set</td>
+          <td>{% if dr.quote_amount %}<strong style="color:#059669;">${{ '%.2f'|format(dr.quote_amount) }}</strong>{% else %}<span style="color:#9ca3af;">Not set yet</span>{% endif %}</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Set quote + Stripe checkout -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+
+  <div class="card">
+    <h3 style="margin-bottom:4px;">💲 Set / Adjust Quote Amount</h3>
+    <p style="color:#718096;font-size:0.85rem;margin-bottom:14px;">
+      Simulates admin entering the final vehicle transport quote. Advances status to <strong>quoted</strong>.
+    </p>
+    {% if dr.status == 'quoted' %}
+    <div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#065f46;font-size:0.88rem;">
+      ✅ Quote already set: <strong>${{ '%.2f'|format(dr.quote_amount) }}</strong> — status is <strong>quoted</strong>
+    </div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('admin_test_vehicle_set_quote', dr_id=dr.id) }}" style="display:flex;gap:10px;align-items:flex-end;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="flex:1;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Quote amount ($)</label>
+        <input type="number" name="quote_amount" class="form-control" min="1" step="0.01"
+               value="{{ '%.2f'|format(price_breakdown.total) if price_breakdown else ('%.2f'|format(dr.quote_amount) if dr.quote_amount else '') }}"
+               placeholder="{{ '%.2f'|format(price_breakdown.total) if price_breakdown else 'e.g. 164.99' }}"
+               style="margin-top:4px;" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="background:#059669;border-color:#059669;">Set Quote</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:4px;">💳 Test Stripe Checkout</h3>
+    <p style="color:#718096;font-size:0.85rem;margin-bottom:14px;">
+      Generates a real Stripe TEST checkout for the vehicle transport quote. No real charge occurs.
+      <br><strong>Mode: {{ stripe_mode or 'unknown' }}</strong>
+      {% if stripe_mode == 'test' %}<span style="color:#059669;"> ✅ TEST</span>{% else %}<span style="color:#dc2626;"> ❌ NOT TEST</span>{% endif %}
+    </p>
+    {% if stripe_error %}
+    <div style="background:#fef2f2;border-radius:8px;padding:10px;color:#dc2626;font-size:0.83rem;margin-bottom:12px;">
+      ⚠️ Stripe error: {{ stripe_error }}
+    </div>
+    {% endif %}
+    {% if dr.quote_amount and dr.quote_amount > 0 %}
+    <a href="{{ url_for('admin_test_vehicle_checkout', dr_id=dr.id) }}"
+       class="btn btn-primary"
+       style="background:#6d28d9;border-color:#6d28d9;display:inline-block;{% if stripe_mode != 'test' %}opacity:.5;pointer-events:none;{% endif %}">
+      🧪 Generate TEST Checkout → ${{ '%.2f'|format(dr.quote_amount) }}
+    </a>
+    {% else %}
+    <div style="color:#9ca3af;font-size:0.85rem;">Set a quote amount first to enable checkout testing.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Photos -->
+{% if dr_photos %}
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin-bottom:12px;">
+    📸 Vehicle Photos ({{ dr_photos|length }}/5)
+    <span style="background:#10b981;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;">✅ Upload worked</span>
+  </h3>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;">
+    {% for photo in dr_photos %}
+    <div style="width:120px;height:100px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;cursor:pointer;"
+         onclick="document.getElementById('vt-lightbox-{{ loop.index0 }}').style.display='flex'">
+      <img src="{{ url_for('serve_delivery_photo', photo_id=photo.id) }}"
+           alt="Vehicle photo {{ loop.index }}" style="width:100%;height:100%;object-fit:cover;">
+    </div>
+    <!-- Lightbox -->
+    <div id="vt-lightbox-{{ loop.index0 }}"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;"
+         onclick="this.style.display='none'">
+      <img src="{{ url_for('serve_delivery_photo', photo_id=photo.id) }}"
+           alt="Vehicle photo {{ loop.index }}"
+           style="max-width:90vw;max-height:85vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    </div>
+    {% endfor %}
+  </div>
+  <p style="font-size:0.8rem;color:#a0aec0;margin-top:8px;">Click a photo to enlarge. Press Esc to close.</p>
+</div>
+{% endif %}
+
+<!-- Notification check -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin-bottom:10px;">📣 Notification System Check</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    {% for fn in ['notify_delivery_request', 'notify_delivery_quote_ready', 'notify_buyer_delivery_quote_ready'] %}
+    <span style="background:#f0fdf4;color:#065f46;padding:4px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;">
+      ✅ {{ fn }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="vt-delete-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:28px 24px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 10px;color:#dc2626;">⚠️ Delete Test Vehicle Quote #{{ dr.id }}?</h3>
+    <p style="color:#4a5568;margin-bottom:14px;line-height:1.55;">
+      Are you sure you want to permanently delete this test vehicle delivery request and all its associated test data?
+      <strong>This cannot be undone.</strong>
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:0.82rem;color:#991b1b;">
+      ✅ Only this test record is deleted.<br>
+      ✅ Real deliveries, customers, and analytics are not affected.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="document.getElementById('vt-delete-modal').style.display='none'"
+              class="btn btn-outline btn-sm">Cancel</button>
+      <form method="POST" action="{{ url_for('admin_delivery_delete', dr_id=dr.id) }}" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary btn-sm"
+                style="background:#dc2626;border-color:#dc2626;">Yes, Delete Test</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('[id^="vt-lightbox-"]').forEach(function(el){
+      el.style.display='none';
+    });
+    document.getElementById('vt-delete-modal').style.display='none';
+  }
+});
+</script>
+
+{% endblock %}

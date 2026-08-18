@@ -7,9 +7,11 @@
     <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
     <h2 class="page-title" style="margin:0;">🚚 Haul &amp; Delivery</h2>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <a href="{{ url_for('admin_test_delivery_quote') }}"
        class="btn btn-outline btn-sm" style="border-color:#7c3aed;color:#7c3aed;">🧪 Test Delivery Quote</a>
+    <a href="{{ url_for('admin_test_vehicle_quote') }}"
+       class="btn btn-sm" style="background:#7c3aed;color:#fff;border:1px solid #6d28d9;">🚗 Test Vehicle Quote</a>
     {% if stats.test_count %}
     <a href="{{ url_for('admin_deliveries', show_tests='1') }}"
        class="btn btn-sm" style="background:#f3e8ff;color:#7c3aed;border:1px solid #d8b4fe;{% if show_tests %}font-weight:700;{% endif %}">
@@ -94,7 +96,11 @@
       <td style="padding:10px 12px;font-weight:700;color:#4a5568;">
         #{{ dr.id }}
         {% if dr.is_test %}
-        <span style="display:block;background:#7c3aed;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:2px;letter-spacing:.03em;">TEST</span>
+          {% if dr.delivery_type == 'vehicle_transport' %}
+          <span style="display:block;background:#0369a1;color:#fff;font-size:0.62rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:2px;letter-spacing:.03em;">TEST VEHICLE</span>
+          {% else %}
+          <span style="display:block;background:#7c3aed;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:2px;letter-spacing:.03em;">TEST</span>
+          {% endif %}
         {% endif %}
       </td>
       <td style="padding:10px 12px;max-width:180px;">
@@ -120,7 +126,11 @@
       </td>
       <td style="padding:10px 12px;text-align:right;white-space:nowrap;">
         {% if dr.is_test %}
-        <a href="{{ url_for('admin_test_delivery_quote_result', dr_id=dr.id) }}" class="btn btn-sm" style="background:#f3e8ff;color:#7c3aed;border:1px solid #d8b4fe;">Results</a>
+          {% if dr.delivery_type == 'vehicle_transport' %}
+          <a href="{{ url_for('admin_test_vehicle_quote_result', dr_id=dr.id) }}" class="btn btn-sm" style="background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;">🚗 Results</a>
+          {% else %}
+          <a href="{{ url_for('admin_test_delivery_quote_result', dr_id=dr.id) }}" class="btn btn-sm" style="background:#f3e8ff;color:#7c3aed;border:1px solid #d8b4fe;">Results</a>
+          {% endif %}
         {% else %}
         <a href="{{ url_for('delivery_detail', dr_id=dr.id) }}" class="btn btn-outline btn-sm">View</a>
         {% endif %}

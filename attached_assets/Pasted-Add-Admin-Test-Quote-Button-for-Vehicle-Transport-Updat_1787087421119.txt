@@ -1,0 +1,172 @@
+Add Admin Test Quote Button for Vehicle Transport
+
+Update the JHE Haul Admin Delivery system to include a dedicated test quote feature for the new Automobile / Vehicle Transport delivery option.
+
+This is for testing the complete vehicle transport quote and payment flow before real customers use it.
+
+Add “Test Vehicle Quote” Button
+
+In the Admin Delivery section, add a clearly visible button:
+
+Test Vehicle Quote
+
+This should be separate from any existing regular delivery test button, but it should reuse the existing delivery/quote architecture whenever possible.
+
+Do not rebuild or replace the existing delivery system.
+
+Test Vehicle Request
+
+When Admin clicks Test Vehicle Quote, allow Admin to create a test vehicle delivery using fields such as:
+
+* Vehicle Year
+* Make
+* Model
+* Vehicle Type
+* Running / Non-running
+* Can Roll
+* Can Steer
+* Can Brake
+* Pickup Address
+* Drop-off Address
+* Estimated Mileage
+* 3–5 test photos if desired
+* Special Instructions
+
+The test request should use the same calculations as a real vehicle transport request.
+
+Current vehicle pricing:
+
+Base Vehicle Transport Fee: $119.99
+
+Mileage Rate: $2.25 per mile
+
+Non-Running Vehicle Fee: +$50.00
+
+Example:
+
+20 miles × $2.25 = $45.00
+
+$119.99 + $45.00 = $164.99
+
+Generate Test Quote
+
+After entering the test information, Admin should be able to click:
+
+Generate Test Quote
+
+Show the calculated estimate and allow Admin to change the final quote amount exactly like a real customer quote.
+
+Then provide:
+
+Send Test Quote
+
+The test quote should allow me to verify the same workflow a customer will experience.
+
+Test the Full Customer Flow
+
+The test feature should allow Admin to verify:
+
+Test vehicle request
+→ mileage calculated
+→ price calculated
+→ Admin receives vehicle request
+→ Admin changes or approves final price
+→ test quote sent
+→ quote can be accepted
+→ Stripe TEST checkout opens
+→ exact approved quote amount appears in Stripe
+→ Stripe test payment completes
+→ webhook verifies payment
+→ delivery changes to Paid / Ready to Schedule
+
+This must use Stripe TEST mode only for test vehicle quotes.
+
+Never create a real charge from the Admin test quote feature.
+
+Clearly Mark Test Records
+
+Every vehicle request created through this button must visibly display:
+
+TEST VEHICLE QUOTE
+
+or
+
+TEST DELIVERY
+
+in Admin.
+
+Test requests must not be confused with real customer deliveries.
+
+Test records must NOT count toward:
+
+* Revenue
+* Sales totals
+* Delivery revenue
+* Customer delivery totals
+* Analytics
+* Paid-order statistics
+* Business performance reports
+
+Delete Test Vehicle Quote
+
+Admin must have a visible:
+
+Delete Test
+
+button on test vehicle requests.
+
+Deleting it should permanently remove the test request and its associated test data after confirmation.
+
+Show:
+
+Are you sure you want to delete this test vehicle delivery?
+
+Deleting a test request must not delete or affect real customer deliveries.
+
+Preserve Existing Test Delivery Feature
+
+If there is already a Test Delivery Quote feature for regular delivery:
+
+DO NOT REMOVE IT.
+
+Admin should ultimately be able to test:
+
+Regular Delivery
+
+and
+
+Vehicle Transport
+
+without one feature replacing the other.
+
+PUSH THIS UPDATE
+
+After completing this:
+
+1. Test both the existing regular delivery quote system and the new vehicle test quote.
+2. Confirm nothing existing was broken.
+3. Check git status.
+4. Commit the completed changes.
+5. Push them to the exact GitHub branch connected to DigitalOcean production.
+6. Verify the commit exists on GitHub.
+7. Verify DigitalOcean deploys that exact commit.
+8. Verify production is running the new commit.
+9. Give me the:
+    * Branch name
+    * Commit hash
+    * Push confirmation
+    * DigitalOcean deployment status
+
+Do not tell me this is complete if it is only running locally in Replit. I need the update pushed and deployed so I can test it on the live JHE Haul admin.
+
+CRITICAL — PROTECT THE EXISTING APP
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not remove, replace, redesign, rename, or modify any existing marketplace, delivery, Stripe, admin, authentication, listing, messaging, analytics, notification, or payment functionality unless it is specifically required for this vehicle test quote feature.
+
+Reuse the existing working code and architecture wherever possible instead of rebuilding working components.

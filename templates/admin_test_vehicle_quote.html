@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}Test Vehicle Transport Quote — JHE Haul Admin{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{{ url_for('admin_deliveries') }}" style="color:#718096;font-size:0.9rem;">← Deliveries</a>
+    <h2 class="page-title" style="margin:0;">🚗 Test Vehicle Transport Quote</h2>
+  </div>
+</div>
+
+<!-- Warning banner -->
+<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;">
+  <span style="font-size:1.6rem;line-height:1;">⚠️</span>
+  <div>
+    <strong style="color:#92400e;font-size:1rem;">TEST MODE — No real orders created</strong>
+    <p style="color:#78350f;margin:4px 0 0;font-size:0.88rem;">
+      This form runs through the <strong>real vehicle transport quote backend</strong> but marks every record as
+      <strong>TEST VEHICLE QUOTE</strong>. Test records are excluded from revenue, analytics, and real delivery counts.
+      Stripe is in TEST mode — no real charges occur.
+    </p>
+  </div>
+</div>
+
+<!-- Pricing reference -->
+<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:#1d4ed8;">
+  💰 <strong>Vehicle Transport Pricing:</strong>
+  $119.99 base fee + $2.25 / mile
+  + $50.00 non-running surcharge (if applicable)
+</div>
+
+{% if checkout_test == 'success' %}
+<div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ✅ <strong style="color:#065f46;">Stripe TEST checkout completed successfully</strong> — the full vehicle transport payment flow works end-to-end.
+</div>
+{% elif checkout_test == 'cancel' %}
+<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ⚠️ <strong style="color:#92400e;">Stripe TEST checkout was cancelled</strong> — session was created correctly (cancel is expected in testing).
+</div>
+{% endif %}
+
+<div class="card" style="max-width:800px;">
+  <h3 style="margin-bottom:6px;">📋 Test Vehicle Transport Request Form</h3>
+  <p style="color:#718096;font-size:0.88rem;margin-bottom:20px;">
+    Uses the same fields and validation as a real customer vehicle transport request.
+  </p>
+
+  <form method="POST" action="{{ url_for('admin_test_vehicle_quote') }}"
+        enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Contact info -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">Contact (optional)</h4>
+      <div class="tvq-grid-3">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Name</label>
+          <input type="text" name="contact_name" class="form-control" placeholder="Test Customer"
+                 value="{{ form.get('contact_name','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Phone</label>
+          <input type="tel" name="contact_phone" class="form-control" placeholder="(612) 555-0000"
+                 value="{{ form.get('contact_phone','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Email</label>
+          <input type="email" name="contact_email" class="form-control" placeholder="test@example.com"
+                 value="{{ form.get('contact_email','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehicle info -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">🚗 Vehicle Information</h4>
+      <div class="tvq-grid-3" style="margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Year</label>
+          <input type="number" name="vt_year" class="form-control" placeholder="2018" min="1900" max="2030"
+                 value="{{ form.get('vt_year','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Make</label>
+          <input type="text" name="vt_make" class="form-control" placeholder="Toyota"
+                 value="{{ form.get('vt_make','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Model</label>
+          <input type="text" name="vt_model" class="form-control" placeholder="Camry"
+                 value="{{ form.get('vt_model','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Vehicle Type</label>
+        <select name="vt_vehicle_type" class="form-control" style="margin-top:4px;">
+          <option value="">— Select type —</option>
+          {% for t in vehicle_types %}
+          <option value="{{ t }}" {{ 'selected' if form and form.get('vt_vehicle_type') == t else '' }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Condition -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">🔧 Vehicle Condition</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#4a5568;display:block;margin-bottom:8px;">Engine / Running Status</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+            <input type="radio" name="vt_is_running" value="1" {{ 'checked' if not form or form.get('vt_is_running','1') != '0' else '' }}>
+            <span>✅ Running (starts and drives)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="radio" name="vt_is_running" value="0" {{ 'checked' if form and form.get('vt_is_running') == '0' else '' }}>
+            <span>❌ Non-running <span style="color:#dc2626;font-size:0.82rem;">(+$50.00)</span></span>
+          </label>
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#4a5568;display:block;margin-bottom:8px;">Mobility</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" name="vt_can_roll" value="1" {{ 'checked' if not form or form.get('vt_can_roll') != '0' else '' }}>
+            Can roll / wheels turn freely
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" name="vt_can_steer" value="1" {{ 'checked' if not form or form.get('vt_can_steer') != '0' else '' }}>
+            Can steer
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" name="vt_can_brake" value="1" {{ 'checked' if not form or form.get('vt_can_brake') != '0' else '' }}>
+            Brakes work
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pickup -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📍 Pickup Location</h4>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Street Address</label>
+        <input type="text" name="pickup_address" class="form-control" placeholder="123 Main St"
+               autocomplete="street-address"
+               value="{{ form.get('pickup_address','') if form else '' }}" style="margin-top:4px;">
+      </div>
+      <div class="tvq-grid-city">
+        <div style="position:relative;">
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
+          <input type="text" id="pickup_city" name="pickup_city" class="form-control" placeholder="Minneapolis"
+                 value="{{ form.get('pickup_city','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drCitySuggest('pickup',this.value)">
+          <div id="pickup-city-drop" class="dr-drop" style="display:none;"></div>
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
+          <input type="text" id="pickup_state" name="pickup_state" class="form-control" maxlength="2"
+                 value="{{ form.get('pickup_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+        </div>
+        <div style="position:relative;">
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="pickup_zip" name="pickup_zip" class="form-control" placeholder="55401" required
+                 value="{{ form.get('pickup_zip','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drZipInput('pickup',this.value)">
+          <div id="pickup-zip-drop" class="dr-drop" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop-off -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">🏁 Drop-off Location</h4>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Street Address</label>
+        <input type="text" name="delivery_address" class="form-control" placeholder="456 Oak Ave"
+               autocomplete="street-address"
+               value="{{ form.get('delivery_address','') if form else '' }}" style="margin-top:4px;">
+      </div>
+      <div class="tvq-grid-city">
+        <div style="position:relative;">
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
+          <input type="text" id="delivery_city" name="delivery_city" class="form-control" placeholder="St. Paul"
+                 value="{{ form.get('delivery_city','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drCitySuggest('delivery',this.value)">
+          <div id="delivery-city-drop" class="dr-drop" style="display:none;"></div>
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
+          <input type="text" id="delivery_state" name="delivery_state" class="form-control" maxlength="2"
+                 value="{{ form.get('delivery_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+        </div>
+        <div style="position:relative;">
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="delivery_zip" name="delivery_zip" class="form-control" placeholder="55102" required
+                 value="{{ form.get('delivery_zip','') if form else '' }}" style="margin-top:4px;"
+                 autocomplete="off" oninput="drZipInput('delivery',this.value)">
+          <div id="delivery-zip-drop" class="dr-drop" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mileage & Schedule -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">🛣️ Mileage &amp; Schedule</h4>
+      <div class="tvq-grid-2" style="margin-bottom:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">
+            Estimated Mileage (one way)
+            <span style="font-weight:400;color:#a0aec0;"> — used for quote calculation</span>
+          </label>
+          <input type="number" name="vt_estimated_miles" class="form-control" placeholder="25" min="1" step="0.5"
+                 value="{{ form.get('vt_estimated_miles','') if form else '' }}"
+                 style="margin-top:4px;" oninput="updatePricePreview()">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Preferred Date</label>
+          <input type="date" name="preferred_date" class="form-control"
+                 value="{{ form.get('preferred_date','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+      <!-- Live price preview -->
+      <div id="price-preview" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;font-size:0.88rem;">
+        <strong style="color:#065f46;">Estimated Quote:</strong>
+        <span id="preview-breakdown" style="color:#1a202c;margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <!-- Special instructions -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📝 Special Instructions</h4>
+      <textarea name="special_instructions" class="form-control" rows="3"
+                placeholder="Enclosed transport needed, gate code at pickup, specific delivery window, etc.">{{ form.get('special_instructions','') if form else '' }}</textarea>
+    </div>
+
+    <!-- Photos -->
+    <div style="background:#f3e8ff;border-radius:10px;padding:16px;margin-bottom:20px;">
+      <h4 style="margin:0 0 8px;color:#6d28d9;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📸 Vehicle Photos (optional, up to 5)</h4>
+      <label id="tq-photo-zone"
+             style="display:flex;flex-direction:column;align-items:center;gap:8px;border:2px dashed #c4b5fd;
+                    border-radius:8px;padding:20px;cursor:pointer;background:#faf5ff;">
+        <span style="font-size:1.8rem;">🖼️</span>
+        <span style="font-weight:600;color:#7c3aed;">Choose photos</span>
+        <span style="font-size:0.78rem;color:#a0aec0;">JPG, PNG, WEBP, HEIC — up to 15 MB each</span>
+        <input id="tq-photo-input" type="file" name="delivery_photos" multiple
+               accept="image/*,.heic,.heif" style="display:none;"
+               onchange="tqAddPhotos(this)">
+      </label>
+      <div id="tq-photo-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;"></div>
+      <div id="tq-photo-note" style="font-size:0.78rem;color:#718096;margin-top:6px;"></div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;padding-bottom:100px;">
+      <button type="submit" class="btn btn-primary"
+              style="background:#7c3aed;border-color:#7c3aed;padding:10px 28px;">
+        🚗 Create Test Vehicle Quote
+      </button>
+      <a href="{{ url_for('admin_deliveries') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<style>
+.tvq-grid-2    { display:grid; grid-template-columns:1fr 1fr;     gap:12px; }
+.tvq-grid-3    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.tvq-grid-city { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
+
+@media (max-width:520px) {
+  .tvq-grid-2, .tvq-grid-3, .tvq-grid-city { grid-template-columns:1fr !important; }
+}
+
+.form-control { width:100%; box-sizing:border-box; }
+
+/* Address autocomplete dropdown */
+.dr-drop {
+  position:absolute; top:100%; left:0; right:0; z-index:1000;
+  background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12); max-height:220px; overflow-y:auto; margin-top:2px;
+}
+.dr-drop-item {
+  padding:9px 12px; cursor:pointer; font-size:0.88rem; color:#1a202c;
+  border-bottom:1px solid #f1f5f9;
+}
+.dr-drop-item:last-child { border-bottom:none; }
+.dr-drop-item:hover { background:#eff6ff; }
+
+#tq-photo-zone:hover, #tq-photo-zone:focus-within { border-color:#7c3aed; }
+.tq-thumb { position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #d8b4fe;flex-shrink:0; }
+.tq-thumb img { width:100%;height:100%;object-fit:cover; }
+.tq-thumb-rm { position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;
+               width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0; }
+</style>
+
+<script>
+/* ── Live price preview ───────────────────────────────────────── */
+var VT_BASE=119.99, VT_MILE=2.25, VT_NONRUN=50.00;
+function updatePricePreview(){
+  var miles=parseFloat(document.querySelector('[name=vt_estimated_miles]').value)||0;
+  var isRunning=document.querySelector('[name=vt_is_running]:checked');
+  var nonRun=isRunning&&isRunning.value==='0';
+  var el=document.getElementById('price-preview');
+  if(miles<=0){el.style.display='none';return;}
+  var mileCharge=Math.round(miles*VT_MILE*100)/100;
+  var surcharge=nonRun?VT_NONRUN:0;
+  var total=Math.round((VT_BASE+mileCharge+surcharge)*100)/100;
+  document.getElementById('preview-breakdown').textContent=
+    '$'+VT_BASE.toFixed(2)+' base + $'+mileCharge.toFixed(2)+' mileage'+(nonRun?' + $'+VT_NONRUN.toFixed(2)+' non-running':'')+' = $'+total.toFixed(2);
+  el.style.display='block';
+}
+document.querySelectorAll('[name=vt_is_running]').forEach(function(r){
+  r.addEventListener('change',updatePricePreview);
+});
+
+/* ── Address autocomplete ─────────────────────────────────────── */
+var _drTimers={},_drXhr={};
+function drZipInput(prefix,val){
+  var c=val.replace(/\D/g,'');
+  if(c.length===5){
+    fetch('/api/zip_lookup?zip='+c).then(function(r){return r.json();}).then(function(d){
+      if(d.found){drHide(prefix+'-zip-drop');
+        document.getElementById(prefix+'_city').value=d.city||'';
+        document.getElementById(prefix+'_state').value=d.state||'';}
+    });return;
+  }
+  if(c.length>=2){drFetch(prefix+'-zip','/api/zip-suggest?q='+encodeURIComponent(c),function(res){
+    drShowDrop(prefix+'-zip-drop',res,function(r){
+      document.getElementById(prefix+'_zip').value=r.zip;
+      document.getElementById(prefix+'_city').value=r.city;
+      document.getElementById(prefix+'_state').value=r.state;
+      drHide(prefix+'-zip-drop');
+    });
+  });}else{drHide(prefix+'-zip-drop');}
+}
+function drCitySuggest(prefix,val){
+  if(val.length<2){drHide(prefix+'-city-drop');return;}
+  drFetch(prefix+'-city','/api/zip-suggest?q='+encodeURIComponent(val),function(res){
+    drShowDrop(prefix+'-city-drop',res,function(r){
+      document.getElementById(prefix+'_city').value=r.city;
+      document.getElementById(prefix+'_state').value=r.state;
+      document.getElementById(prefix+'_zip').value=r.zip;
+      drHide(prefix+'-city-drop');
+    });
+  });
+}
+function drFetch(key,url,cb){
+  clearTimeout(_drTimers[key]);
+  _drTimers[key]=setTimeout(function(){
+    fetch(url).then(function(r){return r.json();}).then(function(d){cb(d.results||[]);});
+  },220);
+}
+function drShowDrop(id,results,onSelect){
+  var el=document.getElementById(id);
+  if(!el||!results.length){if(el)el.style.display='none';return;}
+  el.innerHTML='';
+  results.forEach(function(r){
+    var item=document.createElement('div');item.className='dr-drop-item';
+    item.textContent=r.city+', '+r.state+' '+r.zip;
+    item.addEventListener('mousedown',function(e){e.preventDefault();onSelect(r);});
+    el.appendChild(item);
+  });
+  el.style.display='block';
+}
+function drHide(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+document.addEventListener('click',function(e){
+  ['pickup-city-drop','pickup-zip-drop','delivery-city-drop','delivery-zip-drop'].forEach(function(id){
+    var el=document.getElementById(id);if(el&&!el.contains(e.target))el.style.display='none';
+  });
+});
+
+/* ── Photo upload ─────────────────────────────────────────────── */
+(function(){
+  var MAX=5,sel=[];
+  function refresh(){
+    var dt=new DataTransfer();sel.forEach(function(f){dt.items.add(f);});
+    document.getElementById('tq-photo-input').files=dt.files;
+    var n=sel.length;
+    document.getElementById('tq-photo-note').textContent=n?n+' photo'+(n!==1?'s':'')+' selected'+(n===MAX?' (max)':''):'';
+    var grid=document.getElementById('tq-photo-preview');grid.innerHTML='';
+    sel.forEach(function(f,i){
+      var w=document.createElement('div');w.className='tq-thumb';
+      var img=document.createElement('img');img.alt=f.name;
+      var r=new FileReader();r.onload=function(e){img.src=e.target.result;};r.readAsDataURL(f);
+      var b=document.createElement('button');b.type='button';b.className='tq-thumb-rm';b.textContent='×';
+      (function(idx){b.addEventListener('click',function(){sel.splice(idx,1);refresh();});})(i);
+      w.appendChild(img);w.appendChild(b);grid.appendChild(w);
+    });
+  }
+  window.tqAddPhotos=function(inp){
+    Array.from(inp.files).forEach(function(f){if(sel.length<MAX)sel.push(f);});
+    inp.value='';refresh();
+  };
+})();
+</script>
+{% endblock %}

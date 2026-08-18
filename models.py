@@ -630,6 +630,18 @@ class DeliveryRequest(db.Model):
     status = db.Column(db.String(20), default='pending')
     # Test flag — test quotes never counted as real revenue, orders, or analytics
     is_test = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
+    # Delivery type: 'standard' (default) or 'vehicle_transport'
+    delivery_type = db.Column(db.String(30), default='standard', nullable=False, server_default='standard')
+    # Vehicle transport fields (only populated when delivery_type == 'vehicle_transport')
+    vt_year          = db.Column(db.Integer,    nullable=True)
+    vt_make          = db.Column(db.String(50), nullable=True)
+    vt_model         = db.Column(db.String(100), nullable=True)
+    vt_vehicle_type  = db.Column(db.String(50), nullable=True)   # sedan, SUV, truck, motorcycle, etc.
+    vt_is_running    = db.Column(db.Boolean, default=True, nullable=True)
+    vt_can_roll      = db.Column(db.Boolean, default=True, nullable=True)
+    vt_can_steer     = db.Column(db.Boolean, default=True, nullable=True)
+    vt_can_brake     = db.Column(db.Boolean, default=True, nullable=True)
+    vt_estimated_miles = db.Column(db.Float, nullable=True)     # admin-entered estimate
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

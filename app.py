@@ -1088,6 +1088,28 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (is_test) skipped: %s", _e)
 
+    # ── Vehicle transport columns on delivery_requests ────────────────────────
+    try:
+        _vt_cols = [
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS delivery_type VARCHAR(30) NOT NULL DEFAULT 'standard'",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_year INTEGER",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_make VARCHAR(50)",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_model VARCHAR(100)",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_vehicle_type VARCHAR(50)",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_is_running BOOLEAN DEFAULT true",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_can_roll BOOLEAN DEFAULT true",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_can_steer BOOLEAN DEFAULT true",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_can_brake BOOLEAN DEFAULT true",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_estimated_miles FLOAT",
+        ]
+        for _sql in _vt_cols:
+            db.session.execute(_text(_sql))
+        db.session.commit()
+        logging.info("Column migration: vehicle transport columns ensured on delivery_requests")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (vehicle transport) skipped: %s", _e)
+
     # ── Delivery request photos table ────────────────────────────────────────
     try:
         db.create_all()   # creates delivery_request_photos if it doesn't exist

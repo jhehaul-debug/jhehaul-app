@@ -6228,6 +6228,355 @@ def admin_test_delivery_delete(dr_id):
 
 # ── end ADMIN TEST DELIVERY QUOTE ─────────────────────────────────────────────
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMIN TEST VEHICLE TRANSPORT QUOTE
+# Mirrors the regular test delivery quote but uses vehicle-specific fields and
+# the vehicle transport pricing model.
+# Pricing: $119.99 base + $2.25/mile + $50 non-running surcharge.
+# All records are is_test=True and delivery_type='vehicle_transport'.
+# ══════════════════════════════════════════════════════════════════════════════
+
+_VT_BASE_FEE    = 119.99   # base vehicle transport fee
+_VT_PER_MILE    = 2.25     # per-mile charge
+_VT_NONRUN_FEE  = 50.00    # non-running vehicle surcharge
+
+_VT_VEHICLE_TYPES = [
+    'Sedan', 'Coupe', 'Hatchback', 'SUV / Crossover', 'Minivan', 'Pickup Truck',
+    'Box Truck / Cargo Van', 'Motorcycle / Moped', 'ATV / UTV', 'RV / Motorhome',
+    'Boat (on trailer)', 'Heavy Equipment', 'Other',
+]
+
+
+def _vt_price_estimate(miles, is_running=True):
+    """Return vehicle transport price breakdown dict."""
+    base      = _VT_BASE_FEE
+    mileage   = round(miles * _VT_PER_MILE, 2)
+    surcharge = _VT_NONRUN_FEE if not is_running else 0.0
+    total     = round(base + mileage + surcharge, 2)
+    return {'base': base, 'mileage': mileage, 'surcharge': surcharge, 'total': total}
+
+
+@app.route("/admin/test-vehicle-quote", methods=["GET", "POST"])
+@require_admin
+def admin_test_vehicle_quote():
+    """Admin-only: create a test vehicle transport delivery request."""
+    if request.method == 'GET':
+        checkout_test = request.args.get('checkout_test', '')
+        return render_template('admin_test_vehicle_quote.html',
+                               vehicle_types=_VT_VEHICLE_TYPES,
+                               checkout_test=checkout_test)
+
+    # ── POST: validate → create Job + DeliveryRequest marked is_test/vehicle_transport ──
+    contact_name   = request.form.get('contact_name', '').strip() or 'Admin Test'
+    contact_phone  = request.form.get('contact_phone', '').strip() or ''
+    contact_email  = request.form.get('contact_email', '').strip() or ''
+
+    vt_year         = request.form.get('vt_year', '').strip() or None
+    vt_make         = request.form.get('vt_make', '').strip() or None
+    vt_model        = request.form.get('vt_model', '').strip() or None
+    vt_vehicle_type = request.form.get('vt_vehicle_type', '').strip() or None
+    vt_is_running   = request.form.get('vt_is_running') != '0'    # default True
+    vt_can_roll     = request.form.get('vt_can_roll')  != '0'
+    vt_can_steer    = request.form.get('vt_can_steer') != '0'
+    vt_can_brake    = request.form.get('vt_can_brake') != '0'
+    try:
+        vt_estimated_miles = float(request.form.get('vt_estimated_miles', 0) or 0)
+    except (ValueError, TypeError):
+        vt_estimated_miles = 0.0
+
+    pickup_address   = request.form.get('pickup_address', '').strip()
+    pickup_city      = request.form.get('pickup_city', '').strip()
+    pickup_state     = request.form.get('pickup_state', 'MN').strip()
+    pickup_zip       = request.form.get('pickup_zip', '').strip()
+    delivery_address = request.form.get('delivery_address', '').strip()
+    delivery_city    = request.form.get('delivery_city', '').strip()
+    delivery_state   = request.form.get('delivery_state', 'MN').strip()
+    delivery_zip     = request.form.get('delivery_zip', '').strip()
+    special_instructions = request.form.get('special_instructions', '').strip() or None
+    preferred_date   = request.form.get('preferred_date', '').strip() or None
+    preferred_time   = request.form.get('preferred_time', '').strip() or None
+
+    # Photo validation (reuse existing helper)
+    vt_photo_files = request.files.getlist('delivery_photos')
+    photo_err, processed_photos = _validate_and_read_delivery_photos(vt_photo_files)
+
+    errors = []
+    if photo_err:
+        errors.append(photo_err)
+    if not pickup_zip:
+        errors.append("Pickup ZIP code is required.")
+    if not delivery_zip:
+        errors.append("Drop-off ZIP code is required.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return render_template('admin_test_vehicle_quote.html',
+                               vehicle_types=_VT_VEHICLE_TYPES,
+                               form=request.form)
+
+    # Build vehicle label for description
+    vehicle_label_parts = [str(vt_year) if vt_year else None, vt_make, vt_model]
+    vehicle_label = ' '.join(p for p in vehicle_label_parts if p) or 'Vehicle'
+    if vt_vehicle_type:
+        vehicle_label += f' ({vt_vehicle_type})'
+
+    condition_notes = []
+    if not vt_is_running: condition_notes.append('NON-RUNNING')
+    if not vt_can_roll:   condition_notes.append('cannot roll')
+    if not vt_can_steer:  condition_notes.append('cannot steer')
+    if not vt_can_brake:  condition_notes.append('cannot brake')
+    condition_str = ' / '.join(condition_notes) if condition_notes else 'Runs & drives'
+
+    estimated_total = None
+    if vt_estimated_miles > 0:
+        estimated_total = _vt_price_estimate(vt_estimated_miles, vt_is_running)['total']
+
+    job_desc = (
+        f"[TEST VEHICLE QUOTE] {vehicle_label} — {condition_str}"
+        f" | Route: {pickup_city or pickup_zip} → {delivery_city or delivery_zip}"
+    )
+    if vt_estimated_miles > 0:
+        job_desc += f" | ~{vt_estimated_miles:.0f} mi"
+    if special_instructions:
+        job_desc += f"\nNotes: {special_instructions}"
+
+    job = Job(
+        customer_id=current_user.id,
+        customer_name=contact_name,
+        customer_phone=contact_phone,
+        pickup_address=f"{pickup_city}, {pickup_state} {pickup_zip}".strip(', '),
+        pickup_zip=pickup_zip,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        job_description=job_desc,
+        service_type='standalone_delivery',
+        status='open',
+    )
+    db.session.add(job)
+    db.session.flush()
+
+    dr = DeliveryRequest(
+        listing_id=None,
+        buyer_id=current_user.id,
+        seller_id=None,
+        delivery_type='vehicle_transport',
+        pickup_address=pickup_address,
+        pickup_city=pickup_city,
+        pickup_state=pickup_state,
+        pickup_zip=pickup_zip,
+        pickup_stairs=False,
+        delivery_address=delivery_address,
+        delivery_city=delivery_city,
+        delivery_state=delivery_state,
+        delivery_zip=delivery_zip,
+        delivery_stairs=False,
+        item_description=vehicle_label,
+        item_count=1,
+        need_loading=False,
+        need_unloading=False,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        special_instructions=special_instructions,
+        job_id=job.id,
+        status='requested',
+        is_test=True,
+        vt_year=int(vt_year) if vt_year and str(vt_year).isdigit() else None,
+        vt_make=vt_make,
+        vt_model=vt_model,
+        vt_vehicle_type=vt_vehicle_type,
+        vt_is_running=vt_is_running,
+        vt_can_roll=vt_can_roll,
+        vt_can_steer=vt_can_steer,
+        vt_can_brake=vt_can_brake,
+        vt_estimated_miles=vt_estimated_miles if vt_estimated_miles > 0 else None,
+        quote_amount=estimated_total,   # pre-fill with estimate; admin can override
+        admin_notes=(
+            f"[TEST VEHICLE QUOTE] Created by admin {current_user.email or current_user.id}. "
+            f"Vehicle: {vehicle_label}. Condition: {condition_str}. "
+            f"Contact: {contact_name} / {contact_phone} / {contact_email}"
+        ),
+    )
+    db.session.add(dr)
+    db.session.commit()
+    app.logger.info("TEST VEHICLE QUOTE created: dr_id=%s job_id=%s by admin=%s vehicle=%s",
+                    dr.id, job.id, current_user.id, vehicle_label)
+
+    if processed_photos:
+        saved = _store_delivery_photos(dr.id, processed_photos)
+        app.logger.info("Saved %d vehicle test photo(s) for DR #%s", saved, dr.id)
+
+    flash(f"✅ Test vehicle quote #{dr.id} created — review the estimate below.", "success")
+    return redirect(url_for('admin_test_vehicle_quote_result', dr_id=dr.id))
+
+
+@app.route("/admin/test-vehicle-quote/<int:dr_id>")
+@require_admin
+def admin_test_vehicle_quote_result(dr_id):
+    """Admin: view results and workflow checklist for a test vehicle quote."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    checkout_test = request.args.get('checkout_test', '')
+
+    job = Job.query.get(dr.job_id) if dr.job_id else None
+
+    # ── Distance calculation ──────────────────────────────────────────────────
+    distance_miles = None
+    distance_error = None
+    try:
+        from distance import haversine_miles as _hav
+        pz = ZipCode.query.get(dr.pickup_zip)
+        dz = ZipCode.query.get(dr.delivery_zip)
+        if pz and dz:
+            distance_miles = round(_hav(pz.lat, pz.lon, dz.lat, dz.lon), 1)
+        else:
+            missing = []
+            if not pz: missing.append(f"pickup ZIP {dr.pickup_zip!r}")
+            if not dz: missing.append(f"delivery ZIP {dr.delivery_zip!r}")
+            distance_error = "ZIP not in database: " + ", ".join(missing)
+    except Exception as _de:
+        distance_error = str(_de)
+
+    # ── Pricing estimate ──────────────────────────────────────────────────────
+    miles_for_price = distance_miles or (dr.vt_estimated_miles or 0)
+    price_breakdown = None
+    if miles_for_price > 0:
+        price_breakdown = _vt_price_estimate(miles_for_price, bool(dr.vt_is_running))
+
+    # ── Stripe mode ───────────────────────────────────────────────────────────
+    stripe_mode  = None
+    stripe_error = None
+    try:
+        from stripe_service import get_stripe_mode as _gsm, _assert_test_mode as _atm
+        stripe_mode = _gsm()
+        _atm()
+    except Exception as _se:
+        stripe_error = str(_se)
+
+    # ── Notification check ────────────────────────────────────────────────────
+    notif_ok = True
+    notif_error = None
+    try:
+        from notification_service import notify_delivery_request as _ndr_chk
+        from email_service import notify_buyer_delivery_quote_ready as _nbdqr_chk
+    except Exception as _ne:
+        notif_ok = False
+        notif_error = str(_ne)
+
+    # ── Checklist ────────────────────────────────────────────────────────────
+    checks = [
+        ("Vehicle test request created",            dr.id is not None,                        None),
+        ("delivery_type = vehicle_transport",       dr.delivery_type == 'vehicle_transport',  None),
+        ("Linked Job created",                      job is not None,                           None),
+        ("Vehicle info stored correctly",           bool(dr.vt_make or dr.vt_model),           None),
+        ("Pickup info present",                     bool(dr.pickup_city or dr.pickup_zip),     None),
+        ("Drop-off info present",                   bool(dr.delivery_city or dr.delivery_zip), None),
+        ("Distance calculated",                     distance_miles is not None,                distance_error),
+        ("Vehicle pricing calculated",              price_breakdown is not None,
+            None if price_breakdown else "Enter estimated miles or ensure ZIPs are in database"),
+        ("Stripe in TEST mode",                     stripe_mode == 'test',                     stripe_error),
+        ("Status starts as 'requested'",            dr.status in ('requested','quoted'),       None),
+        ("Marked TEST (excluded from analytics)",   dr.is_test,                                None),
+        ("Notification functions importable",       notif_ok,                                  notif_error),
+    ]
+
+    dr_photos = DeliveryRequestPhoto.query.filter_by(
+        delivery_request_id=dr.id
+    ).order_by(DeliveryRequestPhoto.display_order).all()
+
+    return render_template('admin_test_vehicle_quote_result.html',
+        dr=dr, job=job,
+        checkout_test=checkout_test,
+        distance_miles=distance_miles,
+        distance_error=distance_error,
+        price_breakdown=price_breakdown,
+        VT_BASE_FEE=_VT_BASE_FEE,
+        VT_PER_MILE=_VT_PER_MILE,
+        VT_NONRUN_FEE=_VT_NONRUN_FEE,
+        stripe_mode=stripe_mode,
+        stripe_error=stripe_error,
+        checks=checks,
+        dr_photos=dr_photos,
+    )
+
+
+@app.route("/admin/test-vehicle-quote/<int:dr_id>/set-quote", methods=["POST"])
+@require_admin
+def admin_test_vehicle_set_quote(dr_id):
+    """Admin: override/confirm the vehicle transport quote amount."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if not dr.is_test or dr.delivery_type != 'vehicle_transport':
+        flash("This action is only for test vehicle quotes.", "error")
+        return redirect(url_for('admin_deliveries'))
+    try:
+        amount = float(request.form.get('quote_amount', 0) or 0)
+    except (ValueError, TypeError):
+        amount = 0.0
+    if amount <= 0:
+        flash("Please enter a valid positive quote amount.", "error")
+        return redirect(url_for('admin_test_vehicle_quote_result', dr_id=dr_id))
+    dr.quote_amount = amount
+    dr.status = 'quoted'
+    db.session.commit()
+    flash(f"✅ Vehicle test quote set to ${amount:.2f} — status advanced to 'quoted'.", "success")
+    return redirect(url_for('admin_test_vehicle_quote_result', dr_id=dr_id))
+
+
+@app.route("/admin/test-vehicle-quote/<int:dr_id>/checkout-test")
+@require_admin
+def admin_test_vehicle_checkout(dr_id):
+    """Admin: generate a real Stripe TEST checkout session for a test vehicle quote."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if not dr.is_test or dr.delivery_type != 'vehicle_transport':
+        flash("Only test vehicle quotes can use this checkout test.", "error")
+        return redirect(url_for('admin_deliveries'))
+    if not dr.quote_amount or dr.quote_amount <= 0:
+        flash("Set a quote amount before generating a checkout.", "error")
+        return redirect(url_for('admin_test_vehicle_quote_result', dr_id=dr_id))
+
+    try:
+        from stripe_service import _assert_test_mode as _atm
+        _atm()
+
+        vehicle_label = ' '.join(filter(None, [
+            str(dr.vt_year) if dr.vt_year else None,
+            dr.vt_make, dr.vt_model
+        ])) or 'Vehicle'
+
+        domain    = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+        fee_cents = int(round(dr.quote_amount * 100))
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': f'[TEST] JHE Haul Vehicle Transport Quote #{dr.id}',
+                        'description': (
+                            f'Test vehicle transport: {vehicle_label[:60]}'
+                            f' — ${dr.quote_amount:.2f}'
+                        ),
+                    },
+                    'unit_amount': fee_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=(f"{domain}/admin/test-vehicle-quote/{dr.id}"
+                         f"?checkout_test=success"),
+            cancel_url=(f"{domain}/admin/test-vehicle-quote/{dr.id}"
+                        f"?checkout_test=cancel"),
+        )
+        return redirect(session.url, code=303)
+
+    except Exception as _ce:
+        flash(f"Stripe TEST checkout error: {_ce}", "error")
+        app.logger.error("Test vehicle checkout error for DR #%s: %s", dr_id, _ce)
+        return redirect(url_for('admin_test_vehicle_quote_result', dr_id=dr_id))
+
+
+# ── end ADMIN TEST VEHICLE TRANSPORT QUOTE ────────────────────────────────────
+
 @app.route("/hauler/jobs")
 def hauler_jobs():
     return redirect(url_for('home'))
