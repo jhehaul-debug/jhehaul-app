@@ -95,14 +95,9 @@
                 {{ current_user.first_name or current_user.email or 'User' }}
                 {% if current_user.is_admin %} · Admin{% endif %}
             </div>
-            <a href="{{ url_for('home') }}">🏠 Home</a>
-            <a href="{{ url_for('marketplace') }}">🛍️ Marketplace</a>
-            <a href="/sell">💰 Sell Something</a>
-            <a href="{{ url_for('marketplace_messages') if current_user.is_authenticated else url_for('auth.login') }}">💬 Messages{% if customer_unread_count > 0 %} <span style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ customer_unread_count }}</span>{% endif %}</a>
-            <a href="{{ url_for('notifications_page') }}">🔔 Notifications{% if notif_unread_count > 0 %} <span id="notif-count-mobile" style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ notif_unread_count }}</span>{% else %}<span id="notif-count-mobile" style="display:none;background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;"></span>{% endif %}</a>
-            <a href="{{ url_for('profile') }}">👤 My Account</a>
-            <a href="{{ url_for('selling') }}">🏪 Selling</a>
+            <a href="{{ url_for('selling') }}">🏪 My Listings</a>
             <a href="{{ url_for('seller_offers') }}" style="position:relative;">📬 Incoming Offers</a>
+            <a href="{{ url_for('notifications_page') }}">🔔 Notifications{% if notif_unread_count > 0 %} <span id="notif-count-mobile" style="background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;">{{ notif_unread_count }}</span>{% else %}<span id="notif-count-mobile" style="display:none;background:#ef4444;color:#fff;font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:20px;"></span>{% endif %}</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
             {% if current_user.user_type == 'customer' %}
             <a href="{{ url_for('customer_request') }}">📦 Request Service</a>
@@ -115,11 +110,6 @@
             {% endif %}
             <a href="{{ url_for('auth.logout') }}" class="nav-signout">⬅ Sign Out</a>
         {% else %}
-            <a href="{{ url_for('home') }}">🏠 Home</a>
-            <a href="{{ url_for('marketplace') }}">🛍️ Marketplace</a>
-            <a href="/sell">💰 Sell Something</a>
-            <a href="{{ url_for('auth.login') }}">💬 Messages</a>
-            <a href="{{ url_for('auth.login') }}">👤 My Account</a>
             <a href="/services">🚛 Haul &amp; Delivery</a>
             <a href="{{ url_for('invite', role='customer') }}">📦 Request Service</a>
             <a href="{{ url_for('auth.login') }}">🔑 Sign In</a>
