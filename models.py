@@ -829,6 +829,26 @@ class CopilotSession(db.Model):
                            backref=db.backref('copilot_sessions', lazy='dynamic'))
 
 
+class CopilotActionLog(db.Model):
+    """Audit log for Copilot-initiated actions.
+    No secrets or private message content stored — only operational metadata.
+    """
+    __tablename__ = 'copilot_action_logs'
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.String, db.ForeignKey('users.id'), nullable=True, index=True)
+    action_type   = db.Column(db.String(50), nullable=False)
+    listing_id    = db.Column(db.Integer, nullable=True)
+    field_name    = db.Column(db.String(50), nullable=True)   # for edit actions
+    success       = db.Column(db.Boolean, default=False)
+    confirmed     = db.Column(db.Boolean, default=False)      # user pressed Confirm
+    cancelled     = db.Column(db.Boolean, default=False)      # user pressed Cancel
+    error_message = db.Column(db.String(200), nullable=True)
+    created_at    = db.Column(db.DateTime, default=datetime.now, index=True)
+
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('copilot_action_logs', lazy='dynamic'))
+
+
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def expire_pending_offers(listing_id):

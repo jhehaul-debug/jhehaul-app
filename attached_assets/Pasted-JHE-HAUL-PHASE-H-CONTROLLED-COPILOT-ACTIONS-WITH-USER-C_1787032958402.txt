@@ -1,0 +1,624 @@
+JHE HAUL — PHASE H
+CONTROLLED COPILOT ACTIONS WITH USER CONFIRMATION
+
+Phase G is complete and verified.
+
+Now begin Phase H.
+
+This phase allows the JHE Haul Copilot to perform a SMALL SET of controlled marketplace actions.
+
+IMPORTANT:
+
+Do NOT give the Copilot unrestricted write access.
+
+Do NOT allow autonomous destructive actions.
+
+Do NOT allow autonomous payment actions.
+
+Every meaningful action must go through:
+
+USER REQUEST
+→ COPILOT INTERPRETATION
+→ CONTROLLED BACKEND TOOL
+→ CONFIRMATION
+→ SERVER-SIDE AUTHORIZATION
+→ ACTION
+→ RESULT
+
+==================================================
+PHASE H OBJECTIVE
+
+Allow the Copilot to help users complete common marketplace actions more easily.
+
+Potential approved actions in this phase:
+
+* Save a listing
+* Remove a saved listing
+* Prepare a message
+* Start a delivery request
+* Start a listing edit flow
+* Prepare listing changes
+* Create listing assistance
+* Navigate directly to a marketplace action
+* Mark a seller listing as Sold only after explicit confirmation
+
+Do NOT add higher-risk actions yet.
+
+==================================================
+
+1. EXPLICIT CONFIRMATION
+    ==================================================
+
+For every state-changing action, require an explicit confirmation step.
+
+Example:
+
+User:
+“Save this car.”
+
+Copilot:
+“Save 2014 Chevrolet Volt to Saved Items?”
+
+Buttons:
+
+CONFIRM
+CANCEL
+
+Only after Confirm should the backend action execute.
+
+==================================================
+2. CONTROLLED ACTION TOOL LAYER
+
+Add approved write tools such as:
+
+save_listing()
+
+unsave_listing()
+
+prepare_message()
+
+start_delivery_request()
+
+prepare_listing_edit()
+
+mark_listing_sold()
+
+Each tool must:
+
+* have a fixed schema
+* validate inputs
+* verify authentication
+* verify authorization
+* verify ownership where required
+* sanitize data
+* log the action safely
+
+Do NOT let the AI choose arbitrary backend functions.
+
+==================================================
+3. SAVE LISTING
+
+Allow:
+
+“Save this item.”
+
+“Add this to my favorites.”
+
+Flow:
+
+Copilot identifies listing
+→ asks confirmation
+→ save_listing()
+→ confirms success
+
+Only save to the current authenticated user.
+
+==================================================
+4. UNSAVE LISTING
+
+Allow:
+
+“Remove this from my saved items.”
+
+Require confirmation before removal.
+
+Do not affect another user’s saved items.
+
+==================================================
+5. PREPARE MESSAGE
+
+Allow the Copilot to help draft a message to a seller.
+
+Example:
+
+“Ask the seller if the car is still available.”
+
+Copilot may prepare:
+
+“Hi, is the 2014 Chevrolet Volt still available?”
+
+Do NOT automatically send the message in Phase H.
+
+Instead provide:
+
+SEND MESSAGE
+EDIT
+CANCEL
+
+If actual sending is enabled later, require explicit confirmation.
+
+==================================================
+6. START DELIVERY REQUEST
+
+Allow:
+
+“Can JHE Haul deliver this?”
+
+If delivery is supported:
+
+Copilot can start the existing delivery request flow.
+
+It may prefill safe known data such as:
+
+* listing ID
+* item title
+* item photos
+* seller pickup city/general location
+
+Do NOT prefill or expose private exact addresses unless the user is already authorized to see them and the existing delivery workflow permits it.
+
+==================================================
+7. LISTING EDIT ASSISTANCE
+
+For sellers:
+
+“Help me change the price.”
+
+“Help me improve the description.”
+
+Copilot may prepare the proposed change.
+
+Example:
+
+Current price:
+$10,000
+
+Proposed:
+$9,500
+
+Then show:
+
+APPLY CHANGE
+EDIT
+CANCEL
+
+Do not apply without explicit confirmation.
+
+==================================================
+8. MARK SOLD
+
+Allow seller to say:
+
+“Mark my Volt sold.”
+
+Before action:
+
+Copilot must confirm:
+
+“Mark 2014 Chevrolet Volt as Sold?”
+
+Buttons:
+
+CONFIRM
+CANCEL
+
+Then backend must verify:
+
+* logged-in user owns listing
+* listing can be changed
+* listing is not already removed
+
+Do not allow a buyer to mark another seller’s listing sold.
+
+==================================================
+9. NO DELETE ACTIONS YET
+
+Do NOT allow the Copilot to:
+
+* delete listings
+* delete accounts
+* permanently remove messages
+* ban users
+* delete delivery records
+
+Those remain manual UI/admin actions.
+
+==================================================
+10. NO MONEY MOVEMENT
+
+Do NOT allow Copilot to:
+
+* charge cards
+* issue refunds
+* transfer seller funds
+* accept marketplace payments
+* modify Stripe settings
+* change payout accounts
+
+Payment actions come only after a separate security review.
+
+==================================================
+11. NO SECURITY SETTINGS
+
+Do NOT allow Copilot to:
+
+* change password
+* change recovery email
+* disable authentication
+* change Admin permissions
+* modify API keys
+* change environment variables
+
+==================================================
+12. ACTION PREVIEW
+
+Before executing an action, show a human-readable preview.
+
+Example:
+
+ACTION:
+Mark Listing Sold
+
+LISTING:
+2014 Chevrolet Volt
+
+PRICE:
+$10,000
+
+Then:
+
+CONFIRM
+CANCEL
+
+==================================================
+13. ACTION RECEIPT
+
+After successful action, provide clear result:
+
+“2014 Chevrolet Volt has been marked Sold.”
+
+Where useful provide:
+
+VIEW LISTING
+
+UNDO
+
+Only offer Undo when the backend action safely supports it.
+
+==================================================
+14. TOOL AUTHORIZATION
+
+Every action must verify server-side:
+
+Authentication
+
+Role
+
+Ownership
+
+Current record status
+
+Required fields
+
+CSRF/session protection where applicable
+
+Do not trust the AI to enforce authorization.
+
+==================================================
+15. ACTION AUDIT LOG
+
+Log controlled Copilot actions.
+
+Store safe information such as:
+
+* user ID
+* action type
+* related listing ID
+* timestamp
+* success/failure
+* confirmation received
+
+Do not store secrets or unnecessary conversation content.
+
+==================================================
+16. RATE LIMITING
+
+Prevent repeated action spam.
+
+Examples:
+
+Repeated Save action
+→ idempotent
+
+Repeated Mark Sold
+→ no duplicate state transition
+
+Repeated delivery request
+→ prevent accidental duplicates where appropriate
+
+==================================================
+17. ERROR HANDLING
+
+If action fails:
+
+Show clear explanation.
+
+Examples:
+
+“This listing is no longer available.”
+
+“You do not have permission to change this listing.”
+
+“Delivery is not available for this listing.”
+
+Do not expose stack traces.
+
+==================================================
+18. USER CANCELLATION
+
+If user selects Cancel:
+
+No state change should occur.
+
+Log cancellation only if appropriate.
+
+==================================================
+19. MESSAGE SAFETY
+
+If preparing a message, prevent AI from generating:
+
+* harassment
+* threats
+* scam instructions
+* requests for passwords
+* requests for verification codes
+* prohibited transaction instructions
+
+Use marketplace safety rules.
+
+==================================================
+20. NAVIGATION ACTIONS
+
+Allow safe navigation actions without confirmation where no data changes.
+
+Examples:
+
+Go to Selling
+
+Go to Messages
+
+Go to Saved Items
+
+Open this Listing
+
+Open Delivery Status
+
+Use only approved internal routes.
+
+==================================================
+21. SESSION CONTEXT
+
+Allow contextual actions.
+
+Example:
+
+User is viewing Volt listing.
+
+User:
+“Save this.”
+
+Copilot should know “this” refers to the current listing.
+
+Still require confirmation before state change.
+
+==================================================
+22. MOBILE UX
+
+Optimize action confirmations for mobile.
+
+Use clear action cards or bottom sheets.
+
+Buttons:
+
+CONFIRM
+CANCEL
+
+Avoid small or ambiguous controls.
+
+==================================================
+23. FAILURE FALLBACK
+
+If Copilot action service is unavailable:
+
+Normal marketplace UI must still work.
+
+Example:
+
+“Copilot actions are temporarily unavailable. You can still save this listing using the Save button.”
+
+==================================================
+24. SECURITY TESTS
+
+Test attempts:
+
+Buyer:
+“Mark this seller’s listing sold.”
+
+→ reject
+
+User:
+“Delete this listing.”
+
+→ unavailable in Phase H
+
+User:
+“Send money to the seller.”
+
+→ reject
+
+User:
+“Change my password.”
+
+→ direct user to Account settings, do not perform action
+
+User:
+“Ban this seller.”
+
+→ reject
+
+==================================================
+25. FUNCTIONAL TESTS
+
+Test:
+
+Save listing
+→ confirmation
+→ saved
+
+Unsave listing
+→ confirmation
+→ removed from saved
+
+Prepare seller message
+→ editable preview
+
+Start delivery request
+→ existing delivery flow opens
+
+Seller prepares price change
+→ preview
+
+Seller confirms price change if this specific tool is approved
+→ authorized update
+
+Mark seller’s own listing Sold
+→ confirmation
+→ success
+
+Cancel any action
+→ no change
+
+==================================================
+26. PRESERVE EXISTING SYSTEM
+
+Do not break:
+
+Marketplace Home
+
+Seller Dashboard
+
+Phase D AI Listing Assistant
+
+Phase E AI Search
+
+Phase F Workers/Queue
+
+Phase G Copilot read/search
+
+Messages
+
+Offers
+
+Saved Items
+
+Delivery
+
+Notifications
+
+Email
+
+Admin
+
+Photos
+
+Videos
+
+Vehicle fields
+
+SEO
+
+Authentication
+
+Stripe
+
+==================================================
+27. IMPLEMENT LOCALLY / STAGING FIRST
+
+Implement Phase H locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation report:
+
+CONTROLLED ACTION TOOL LAYER: YES/NO
+
+SAVE LISTING ACTION: YES/NO
+
+UNSAVE ACTION: YES/NO
+
+MESSAGE PREVIEW: YES/NO
+
+DELIVERY REQUEST START: YES/NO
+
+LISTING EDIT PREVIEW: YES/NO
+
+MARK SOLD ACTION: YES/NO
+
+CONFIRMATION REQUIRED: YES/NO
+
+DELETE ACTIONS BLOCKED: YES/NO
+
+PAYMENT ACTIONS BLOCKED: YES/NO
+
+SECURITY SETTINGS BLOCKED: YES/NO
+
+AUDIT LOGGING: YES/NO
+
+RATE LIMITING / IDEMPOTENCY: YES/NO
+
+MOBILE TESTED: YES/NO
+
+SECURITY TESTED: YES/NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+28. CRITICAL RULES
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not begin Phase I yet.
+
+Do not give Copilot destructive or financial permissions.
+
+BEGIN PHASE H IMPLEMENTATION.

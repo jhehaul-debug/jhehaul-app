@@ -347,3 +347,114 @@
 }
 #jhe-cop-empty .cop-empty-icon { font-size: 36px; margin-bottom: 8px; }
 #jhe-cop-empty p { font-size: 13px; margin: 0 0 14px; }
+
+/* ── Phase H: Action confirmation cards ─────────────────────────────────── */
+.cop-action-card {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  max-width: 320px;
+}
+.cop-action-card.completed {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.cop-action-card.cancelled-card {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  opacity: 0.7;
+}
+.cop-action-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+.cop-action-card.completed .cop-action-label { color: #166534; }
+.cop-action-preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.cop-action-preview-row {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+}
+.cop-action-preview-key {
+  color: #6b7280;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+.cop-action-preview-val {
+  color: #1f2937;
+  font-weight: 500;
+  word-break: break-word;
+}
+.cop-action-warning {
+  font-size: 11px;
+  color: #b45309;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.cop-action-confirm-text {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+/* Message draft preview */
+.cop-message-draft {
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cop-action-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cop-action-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  text-align: center;
+}
+.cop-action-btn.confirm {
+  background: #1a4a6b;
+  color: #fff;
+}
+.cop-action-btn.confirm:hover  { background: #15395a; }
+.cop-action-btn.cancel  {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.cop-action-btn.cancel:hover   { background: #e5e7eb; }
+.cop-action-btn.open-link {
+  background: #eff6ff;
+  color: #1a4a6b;
+  border: 1px solid #bfdbfe;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cop-action-btn.open-link:hover { background: #dbeafe; }
+.cop-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }

@@ -607,6 +607,170 @@
     return '<p>' + s + '</p>';
   }
 
+  /* ── Phase H: Action confirmation card ── */
+  function appendActionCard(action, parentRow) {
+    var isNavigateOnly = !!action._navigate_only;
+    var preview   = action.preview   || {};
+    var params    = action.params    || {};
+    var atype     = action.action_type || '';
+
+    var card = document.createElement('div');
+    card.className = 'cop-action-card';
+
+    /* Label */
+    var labelEl = document.createElement('div');
+    labelEl.className = 'cop-action-label';
+    labelEl.textContent = preview.action_label || atype;
+    card.appendChild(labelEl);
+
+    /* Preview rows */
+    var rows = document.createElement('div');
+    rows.className = 'cop-action-preview-rows';
+
+    function addRow(key, val) {
+      if (!val && val !== 0) return;
+      var r = document.createElement('div');
+      r.className = 'cop-action-preview-row';
+      var k = document.createElement('div');
+      k.className = 'cop-action-preview-key';
+      k.textContent = key;
+      var v = document.createElement('div');
+      v.className = 'cop-action-preview-val';
+      v.textContent = val;
+      r.appendChild(k); r.appendChild(v);
+      rows.appendChild(r);
+    }
+
+    if (preview.listing_title) addRow('Listing', preview.listing_title);
+    if (preview.listing_price != null) addRow('Price', '$' + Number(preview.listing_price).toLocaleString());
+    if (preview.field && preview.old_value != null) {
+      addRow('Current', preview.old_value);
+      addRow('Proposed', preview.new_value);
+    }
+    if (preview.pickup_city)  addRow('Pickup', preview.pickup_city);
+    if (preview.message_text) {
+      /* Show message draft in its own styled block */
+      var draftEl = document.createElement('div');
+      draftEl.className = 'cop-message-draft';
+      draftEl.textContent = preview.message_text;
+      rows.appendChild(draftEl);
+    }
+    card.appendChild(rows);
+
+    /* Warning */
+    if (preview.warning) {
+      var warn = document.createElement('div');
+      warn.className = 'cop-action-warning';
+      warn.textContent = '⚠️ ' + preview.warning;
+      card.appendChild(warn);
+    }
+
+    /* Confirm text */
+    if (action.confirmation_text) {
+      var ct = document.createElement('div');
+      ct.className = 'cop-action-confirm-text';
+      ct.textContent = action.confirmation_text;
+      card.appendChild(ct);
+    }
+
+    /* Buttons */
+    var btns = document.createElement('div');
+    btns.className = 'cop-action-btns';
+
+    if (isNavigateOnly) {
+      /* Navigate-only actions (message draft, delivery form) → open link button */
+      var navUrl = preview.message_url || preview.delivery_url || preview.listing_url || '#';
+      var openBtn = document.createElement('a');
+      openBtn.className = 'cop-action-btn open-link';
+      openBtn.href = navUrl;
+      openBtn.textContent = atype === 'prepare_message' ? 'Open Message Page' : 'Open Form';
+      btns.appendChild(openBtn);
+    } else {
+      /* Confirm / Cancel for write actions */
+      var confirmBtn = document.createElement('button');
+      confirmBtn.className = 'cop-action-btn confirm';
+      confirmBtn.textContent = 'Confirm';
+      confirmBtn.addEventListener('click', function() {
+        confirmBtn.disabled = true;
+        cancelBtn.disabled  = true;
+        confirmBtn.textContent = 'Working…';
+        postAction(atype, params, false, card, preview);
+      });
+
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'cop-action-btn cancel';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', function() {
+        confirmBtn.disabled = true;
+        cancelBtn.disabled  = true;
+        postAction(atype, params, true, card, preview);
+      });
+
+      btns.appendChild(confirmBtn);
+      btns.appendChild(cancelBtn);
+    }
+    card.appendChild(btns);
+    parentRow.appendChild(card);
+    msgArea.scrollTop = msgArea.scrollHeight;
+  }
+
+  /* ── Phase H: POST confirmed action to execute endpoint ── */
+  function postAction(actionType, params, cancelled, cardEl, preview) {
+    fetch('/api/copilot/action/execute', {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken':  getCsrf(),
+      },
+      body: JSON.stringify({ action_type: actionType, params: params, cancelled: cancelled }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      /* Replace card with receipt */
+      if (cancelled) {
+        cardEl.className = 'cop-action-card cancelled-card';
+        cardEl.innerHTML = '<div class="cop-action-label" style="color:#6b7280">Action cancelled.</div>';
+      } else if (data.success) {
+        cardEl.className = 'cop-action-card completed';
+        var msg = document.createElement('div');
+        msg.className = 'cop-action-label';
+        msg.textContent = '✅ ' + (data.message || 'Done.');
+        cardEl.innerHTML = '';
+        cardEl.appendChild(msg);
+        /* Nav links on receipt */
+        if (data.nav_links && data.nav_links.length) {
+          var wrap = document.createElement('div');
+          wrap.className = 'cop-nav-links';
+          wrap.style.marginTop = '8px';
+          data.nav_links.forEach(function(lk) {
+            var a = document.createElement('a');
+            a.className = 'cop-nav-link';
+            a.href = lk.url;
+            a.textContent = lk.label;
+            wrap.appendChild(a);
+          });
+          cardEl.appendChild(wrap);
+        }
+        /* Push receipt message into history */
+        history.push({ role: 'assistant', content: data.message || 'Done.' });
+      } else {
+        cardEl.className = 'cop-action-card cancelled-card';
+        var errMsg = document.createElement('div');
+        errMsg.className = 'cop-action-label';
+        errMsg.style.color = '#b91c1c';
+        errMsg.textContent = '⚠️ ' + (data.message || 'Something went wrong. Please try again.');
+        cardEl.innerHTML = '';
+        cardEl.appendChild(errMsg);
+      }
+      msgArea.scrollTop = msgArea.scrollHeight;
+    })
+    .catch(function() {
+      cardEl.className = 'cop-action-card cancelled-card';
+      cardEl.innerHTML = '<div class="cop-action-label" style="color:#b91c1c">⚠️ Copilot actions are temporarily unavailable. You can still use the marketplace UI directly.</div>';
+      msgArea.scrollTop = msgArea.scrollHeight;
+    });
+  }
+
   /* ── Main send function ── */
   function send() {
     var msg = input.value.trim();
@@ -642,12 +806,14 @@
     })
     .then(function(data) {
       hideTyping();
-      var reply  = data.reply  || 'Sorry, I could not get a response. Please try again.';
-      var cards  = data.cards  || [];
-      var links  = data.nav_links || [];
+      var reply   = data.reply   || 'Sorry, I could not get a response. Please try again.';
+      var cards   = data.cards   || [];
+      var links   = data.nav_links || [];
+      var pending = data.action_pending || null;
       var row = appendMsg('bot', reply);
       appendCards(cards, row);
       appendNavLinks(links, row);
+      if (pending) appendActionCard(pending, row);
       history.push({ role: 'assistant', content: reply });
     })
     .catch(function(err) {

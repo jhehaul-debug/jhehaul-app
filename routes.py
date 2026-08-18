@@ -8934,6 +8934,80 @@ def copilot_chat():
     })
 
 
+@app.route("/api/copilot/action/execute", methods=["POST"])
+@require_login
+def copilot_action_execute():
+    """Execute a Copilot action that the user has explicitly confirmed.
+
+    Request JSON:
+      { "action_type": str, "params": {...}, "cancelled": bool }
+
+    Response JSON:
+      { "success": bool, "message": str, "nav_links": [...], "error": str|null }
+    """
+    import time as _time
+    from models import CopilotActionLog
+
+    t0 = _time.time()
+    data = request.get_json(silent=True) or {}
+    action_type = (data.get("action_type") or "").strip()[:50]
+    params      = data.get("params") or {}
+    cancelled   = bool(data.get("cancelled", False))
+
+    # Whitelist action types
+    from ai.copilot_actions import execute_action, EXECUTE_ACTIONS
+    if action_type not in EXECUTE_ACTIONS:
+        return jsonify({
+            "success": False,
+            "message": f"Action '{action_type}' is not available.",
+            "nav_links": [],
+            "error": "unknown_action",
+        }), 400
+
+    log_entry = CopilotActionLog(
+        user_id=current_user.id,
+        action_type=action_type,
+        listing_id=int(params.get("listing_id")) if params.get("listing_id") else None,
+        field_name=params.get("field"),
+        confirmed=not cancelled,
+        cancelled=cancelled,
+    )
+
+    if cancelled:
+        # User pressed Cancel — log and return without executing
+        db.session.add(log_entry)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return jsonify({"success": True, "message": "Action cancelled.", "nav_links": [], "error": None})
+
+    try:
+        result = execute_action(action_type, params, current_user)
+    except Exception as e:
+        app.logger.error("copilot_action_execute error: %s", e)
+        result = {"success": False, "message": "Something went wrong. Please use the marketplace UI instead."}
+
+    log_entry.success = result.get("success", False)
+    log_entry.error_message = (str(result.get("message", "")) if not result.get("success") else None)
+    db.session.add(log_entry)
+    try:
+        db.session.commit()
+    except Exception as e:
+        app.logger.warning("copilot action log failed: %s", e)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+
+    return jsonify({
+        "success":   result.get("success", False),
+        "message":   result.get("message", ""),
+        "nav_links": result.get("nav_links", []),
+        "error":     None if result.get("success") else result.get("message", "Unknown error"),
+    })
+
+
 @app.route("/admin/copilot-analytics")
 @require_admin
 def admin_copilot_analytics():

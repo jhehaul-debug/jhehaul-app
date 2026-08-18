@@ -475,7 +475,48 @@ def get_account_navigation_help(topic: str = "default") -> dict:
 # Tool dispatcher  (called by copilot.py)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Phase H — Write action tools (return pending action, NO DB writes)
+# ---------------------------------------------------------------------------
+
+def save_listing(listing_id: int, current_user) -> dict:
+    """Prepare to save a listing to the user's saved items. Shows confirmation before saving."""
+    from ai.copilot_actions import prepare_save_listing
+    return prepare_save_listing(int(listing_id), current_user)
+
+
+def unsave_listing(listing_id: int, current_user) -> dict:
+    """Prepare to remove a listing from the user's saved items. Shows confirmation before removing."""
+    from ai.copilot_actions import prepare_unsave_listing
+    return prepare_unsave_listing(int(listing_id), current_user)
+
+
+def mark_listing_sold(listing_id: int, current_user) -> dict:
+    """Prepare to mark the seller's own listing as Sold. Shows confirmation before changing status."""
+    from ai.copilot_actions import prepare_mark_listing_sold
+    return prepare_mark_listing_sold(int(listing_id), current_user)
+
+
+def prepare_message(listing_id: int, message_text: str, current_user) -> dict:
+    """Draft a message to the seller. NOT sent automatically — user reviews and sends from the message page."""
+    from ai.copilot_actions import prepare_message_draft
+    return prepare_message_draft(int(listing_id), message_text, current_user)
+
+
+def start_delivery_request(listing_id: int, current_user) -> dict:
+    """Start the JHE Haul delivery request flow for a listing."""
+    from ai.copilot_actions import prepare_delivery_request_start
+    return prepare_delivery_request_start(int(listing_id), current_user)
+
+
+def prepare_listing_edit(listing_id: int, field: str, new_value: str, current_user) -> dict:
+    """Preview a proposed change to the seller's listing (price or description). Requires confirmation."""
+    from ai.copilot_actions import prepare_listing_edit as _prep
+    return _prep(int(listing_id), field, new_value, current_user)
+
+
 _TOOL_REGISTRY = {
+    # Phase G — read-only
     "search_listings":              search_listings,
     "get_listing":                  get_listing,
     "get_similar_listings":         get_similar_listings,
@@ -487,10 +528,16 @@ _TOOL_REGISTRY = {
     "get_delivery_status":          get_delivery_status,
     "get_seller_performance":       get_seller_performance,
     "get_account_navigation_help":  get_account_navigation_help,
+    # Phase H — controlled write actions (return pending, not executed)
+    "save_listing":                 save_listing,
+    "unsave_listing":               unsave_listing,
+    "mark_listing_sold":            mark_listing_sold,
+    "prepare_message":              prepare_message,
+    "start_delivery_request":       start_delivery_request,
+    "prepare_listing_edit":         prepare_listing_edit,
 }
 
-# Tools that require authentication — any call to these without a logged-in
-# user returns an error dict immediately (before calling the function).
+# Tools that require authentication
 _AUTH_REQUIRED_TOOLS = {
     "get_user_listings",
     "get_saved_items",
@@ -498,6 +545,12 @@ _AUTH_REQUIRED_TOOLS = {
     "get_user_messages_summary",
     "get_delivery_status",
     "get_seller_performance",
+    "save_listing",
+    "unsave_listing",
+    "mark_listing_sold",
+    "prepare_message",
+    "start_delivery_request",
+    "prepare_listing_edit",
 }
 
 def dispatch_tool(name: str, args: dict, current_user) -> dict:
@@ -505,5 +558,5 @@ def dispatch_tool(name: str, args: dict, current_user) -> dict:
     if name not in _TOOL_REGISTRY:
         return {"error": f"Unknown tool: {name}"}
     if name in _AUTH_REQUIRED_TOOLS:
-        return _TOOL_REGISTRY[name](current_user, **args)
+        return _TOOL_REGISTRY[name](current_user=current_user, **args)
     return _TOOL_REGISTRY[name](**args)
