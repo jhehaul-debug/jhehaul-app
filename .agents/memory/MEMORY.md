@@ -6,3 +6,4 @@
 - [Trust & transaction flow](trust-transaction-flow.md) — seller profile, offer respond, my offers, report user, admin user detail all added; User.id is String (UUID); offer statuses: pending/countered/accepted/declined/withdrawn.
 - [Admin gallery / featured content](gallery-featured-content.md) — gallery_photos repurposed from junk-removal to homepage featured content; two item_types: custom (banner) and listing (pinned listing); logged-in users bypass /landing entirely.
 - [SEO foundation — Phase C](seo-phase-c.md) — services/seo.py pure helpers; slug URL pattern; dynamic sitemap; category discovery routes; canonical/noindex/JSON-LD blocks in base.html.
+- [AI Listing Assistant — Phase D](ai-listing-assistant.md) — GPT-4o-mini; ai/ package; AIUsageLog FK must point to 'users.id' not 'user.id'; key absent → graceful fallback; seller text in user role only.

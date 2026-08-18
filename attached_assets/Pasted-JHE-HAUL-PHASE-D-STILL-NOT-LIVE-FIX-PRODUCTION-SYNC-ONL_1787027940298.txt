@@ -1,0 +1,199 @@
+JHE HAUL — PHASE D STILL NOT LIVE — FIX PRODUCTION SYNC ONLY
+
+The Phase D AI Listing Assistant is STILL not visible on live jhehaul.com.
+
+Do NOT add new features.
+Do NOT begin Phase E.
+Do NOT redesign anything.
+Do NOT make unrelated changes.
+
+Your only job now is to get the ALREADY APPROVED Phase D changes from the current codebase into LIVE production.
+
+========================================
+
+1. PROVE THE PHASE D CODE EXISTS
+    ========================================
+
+Search the current codebase and report the exact files/functions/routes/components that implement:
+
+* AI Listing Assistant
+* AI title suggestion
+* AI description suggestion
+* AI category suggestion
+* listing completeness check
+* manual fallback when AI is unavailable
+
+If these do NOT exist in code, say clearly:
+
+PHASE D WAS NEVER IMPLEMENTED
+
+Then implement ONLY the approved Phase D features.
+
+========================================
+2. CHECK LOCAL GIT STATE
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD OF GITHUB:
+COMMITS BEHIND GITHUB:
+
+If Phase D changes are uncommitted:
+commit them.
+
+========================================
+3. CHECK PRODUCTION REPOSITORY
+
+Production repository must remain:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Report:
+
+GITHUB MAIN SHA:
+
+Compare it to Local HEAD.
+
+If Local and GitHub do not match:
+push the Phase D commit to GitHub main.
+
+Do not create a new repository.
+Do not create a new branch.
+Do not force-push.
+
+========================================
+4. CHECK AI CONFIGURATION
+
+Report:
+
+AI PROVIDER:
+REQUIRED AI ENVIRONMENT VARIABLE NAME:
+PRESENT IN REPLIT: YES/NO
+PRESENT IN DIGITALOCEAN: YES/NO
+
+Do NOT display secret values.
+
+If the required production AI key is missing:
+STOP and tell me exactly what environment variable I need to add.
+
+Do not pretend the feature can work live without the required configuration.
+
+========================================
+5. CHECK DIGITALOCEAN
+
+Report:
+
+DIGITALOCEAN CONNECTED REPOSITORY:
+DIGITALOCEAN CONNECTED BRANCH:
+CURRENT DEPLOYED SHA:
+LATEST GITHUB MAIN SHA:
+
+If the deployed SHA does not match GitHub main:
+
+TRIGGER A NEW DIGITALOCEAN DEPLOYMENT.
+
+Do not redeploy an old commit.
+
+========================================
+6. IF DIGITALOCEAN DOES NOT DEPLOY
+
+Inspect the real deployment logs.
+
+Check for:
+
+* build errors
+* dependency errors
+* missing environment variables
+* AI package/import errors
+* migration errors
+* startup errors
+* wrong repository
+* wrong branch
+* stale deployment
+
+Fix ONLY the actual deployment blocker.
+
+Then:
+
+commit the fix
+push
+trigger another deployment
+
+========================================
+7. LIVE PRODUCTION VERIFICATION
+
+After successful deployment, test ACTUAL LIVE:
+
+jhehaul.com
+
+Do not test only Replit preview.
+
+Login as seller.
+
+Go to:
+
+Sell
+→ Details
+
+Verify:
+
+AI Listing Assistant visible: YES/NO
+AI Title button visible: YES/NO
+AI Description button visible: YES/NO
+AI Category suggestion visible: YES/NO
+Listing completeness check visible: YES/NO
+Manual listing flow still works: YES/NO
+
+========================================
+8. SHA PROOF
+
+Final report must show:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+========================================
+9. ROOT CAUSE
+
+Tell me exactly why Phase D was not updating.
+
+Choose the real cause, such as:
+
+* Phase D code was never implemented
+* changes were uncommitted
+* push failed
+* wrong GitHub branch
+* DigitalOcean was on an old SHA
+* missing AI environment variable
+* deployment failed
+* route/UI was not wired
+* other
+
+Do not give me a vague answer.
+
+========================================
+10. CRITICAL
+
+Do not begin Phase E.
+
+Do not add unrelated features.
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated working functionality exactly as it is.
+
+The task is not complete until Phase D is visible on LIVE jhehaul.com.
