@@ -171,6 +171,13 @@ def inject_globals():
 
 import json as _json
 from vehicle_data import VEHICLE_MAKES_MODELS as _VMM, VEHICLE_MAKES as _VMAKES
+from services.seo import (
+    listing_slug,
+    listing_canonical_path,
+    listing_seo_title,
+    listing_seo_description,
+    listing_jsonld as _listing_jsonld,
+)
 _VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
 
 @app.context_processor
@@ -1982,7 +1989,8 @@ def selling():
 
 
 @app.route("/listing/<int:listing_id>")
-def listing_detail(listing_id):
+@app.route("/listing/<int:listing_id>-<slug>")
+def listing_detail(listing_id, slug=None):
     """Individual listing detail page (Phase 5–6)."""
     from models import Listing, ListingFavorite
 
@@ -2113,6 +2121,18 @@ def listing_detail(listing_id):
         from sqlalchemy import func as _sim_func
         similar_listings = sim_q.order_by(_sim_func.random()).limit(6).all()
 
+    # ── SEO context ────────────────────────────────────────────────────────────
+    _seo_base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+    _seo_path = listing_canonical_path(listing)
+    _seo_url  = _seo_base + _seo_path
+    _primary_photo_url = None
+    if photos:
+        _pp = photos[0]
+        _primary_photo_url = (_pp.storage_url
+                              or url_for("serve_listing_photo", photo_id=_pp.id, _external=True))
+    _seo_ld_dict = _listing_jsonld(listing, _seo_url, _primary_photo_url)
+    _seo_ld_json = _json.dumps(_seo_ld_dict, ensure_ascii=False) if _seo_ld_dict else None
+
     return render_template(
         'listing_detail.html',
         listing=listing,
@@ -2126,6 +2146,12 @@ def listing_detail(listing_id):
         seller_offers=seller_offers,
         similar_listings=similar_listings,
         similar_fallback=similar_fallback,
+        seo_title=listing_seo_title(listing),
+        seo_description=listing_seo_description(listing),
+        seo_canonical_path=_seo_path,
+        seo_canonical_url=_seo_url,
+        seo_primary_photo_url=_primary_photo_url,
+        seo_jsonld_json=_seo_ld_json,
     )
 
 
@@ -7834,6 +7860,102 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Category discovery pages — stable, indexable URLs for SEO (Phase C)
+# ─────────────────────────────────────────────────────────────────────────────
+_CATEGORY_PAGE_CFG = {
+    "vehicles": {
+        "listing_type": "item",
+        "category_slug": "vehicles",
+        "page_title": "Vehicles for Sale | JHE Haul Marketplace",
+        "page_desc":  "Browse cars, trucks, motorcycles, and more for sale near you on JHE Haul.",
+    },
+    "items": {
+        "listing_type": "item",
+        "category_slug": None,
+        "page_title": "Items for Sale | JHE Haul Marketplace",
+        "page_desc":  "Browse furniture, electronics, tools, collectibles, and more for sale locally on JHE Haul.",
+    },
+    "homes-for-sale": {
+        "listing_type": "property_sale",
+        "category_slug": None,
+        "page_title": "Homes for Sale | JHE Haul Real Estate",
+        "page_desc":  "Browse homes, condos, and properties for sale near you on JHE Haul Marketplace.",
+    },
+    "rentals": {
+        "listing_type": "rental",
+        "category_slug": None,
+        "page_title": "Rentals | JHE Haul Marketplace",
+        "page_desc":  "Browse apartments, houses, and rooms for rent near you on JHE Haul.",
+    },
+}
+
+@app.route("/marketplace/<cat_page>")
+def marketplace_category(cat_page):
+    """Stable, indexable category discovery pages for SEO."""
+    cfg = _CATEGORY_PAGE_CFG.get(cat_page)
+    if not cfg:
+        abort(404)
+
+    lt       = cfg["listing_type"]
+    cat_slug = cfg["category_slug"]
+
+    categories = _marketplace_categories()
+
+    q = Listing.query.filter(
+        Listing.status == "active",
+        Listing.moderation_status == "approved",
+        Listing.listing_type == lt,
+    )
+    cat_obj = None
+    if cat_slug:
+        cat_obj = Category.query.filter_by(slug=cat_slug, is_active=True).first()
+        if cat_obj:
+            child_ids = [c.id for c in Category.query.filter_by(parent_id=cat_obj.id, is_active=True).all()]
+            id_set = [cat_obj.id] + child_ids
+            q = q.filter(Listing.category_id.in_(id_set))
+
+    _limit      = 48
+    all_results = q.order_by(Listing.created_at.desc()).limit(_limit + 1).all()
+    has_more    = len(all_results) > _limit
+    results     = all_results[:_limit]
+
+    return render_template(
+        "marketplace.html",
+        categories=categories,
+        is_search=True,
+        search_query="",
+        search_results=results,
+        active_category=cat_obj,
+        price_type_filter="",
+        featured_filter=False,
+        listing_type_filter=lt,
+        no_vehicles_filter=False,
+        area_filter="",
+        city_zip_filter="",
+        min_price=None,
+        max_price=None,
+        min_beds=None,
+        open_house_only=False,
+        hide_sold=False,
+        search_limit=_limit,
+        has_more=has_more,
+        saved_listing_ids=_saved_listing_ids(),
+        show_welcome=False,
+        show_profile_nudge=False,
+        zip_radius_fallback=False,
+        recent_listings=[],
+        free_listings=[],
+        featured_listings=[],
+        for_sale_listings=[],
+        rental_listings=[],
+        # SEO overrides consumed by marketplace.html blocks
+        seo_page_title=cfg["page_title"],
+        seo_page_desc=cfg["page_desc"],
+        seo_canonical_path=f"/marketplace/{cat_page}",
+    )
+
+
 @app.route("/robots.txt")
 def robots_txt():
     base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
@@ -7860,6 +7982,12 @@ def robots_txt():
         "Disallow: /set-role",
         "Disallow: /payment_success/",
         "Disallow: /account/",
+        "Disallow: /selling",
+        "Disallow: /my-listings",
+        "Disallow: /notifications",
+        "Disallow: /saved",
+        "Disallow: /my-offers",
+        "Disallow: /seller/",
         "",
         f"Sitemap: {base}/sitemap.xml",
     ])
@@ -7871,8 +7999,65 @@ def robots_txt():
 
 @app.route("/sitemap.xml")
 def sitemap_xml():
-    root = os.path.abspath(os.path.dirname(__file__))
-    return send_from_directory(root, "sitemap.xml", mimetype="application/xml")
+    """Dynamically generated XML sitemap — active listings + public pages."""
+    base = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+
+    # Static public pages
+    static_pages = [
+        ("",                        "1.0",  "daily"),
+        ("/marketplace",            "0.9",  "hourly"),
+        ("/marketplace/vehicles",   "0.8",  "daily"),
+        ("/marketplace/items",      "0.8",  "daily"),
+        ("/marketplace/homes-for-sale", "0.7", "daily"),
+        ("/marketplace/rentals",    "0.7",  "daily"),
+        ("/about",                  "0.5",  "monthly"),
+        ("/invite",                 "0.5",  "monthly"),
+    ]
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+
+    for path, priority, changefreq in static_pages:
+        lines += [
+            "  <url>",
+            f"    <loc>{base}{path}</loc>",
+            f"    <changefreq>{changefreq}</changefreq>",
+            f"    <priority>{priority}</priority>",
+            "  </url>",
+        ]
+
+    # Active, approved listings
+    try:
+        active_listings = (Listing.query
+                           .filter(Listing.status == "active",
+                                   Listing.moderation_status == "approved")
+                           .order_by(Listing.created_at.desc())
+                           .limit(45000)
+                           .all())
+        for lst in active_listings:
+            loc = base + listing_canonical_path(lst)
+            lastmod = (lst.updated_at or lst.created_at)
+            lastmod_str = lastmod.strftime("%Y-%m-%d") if lastmod else ""
+            lines += [
+                "  <url>",
+                f"    <loc>{loc}</loc>",
+            ]
+            if lastmod_str:
+                lines.append(f"    <lastmod>{lastmod_str}</lastmod>")
+            lines += [
+                "    <changefreq>weekly</changefreq>",
+                "    <priority>0.8</priority>",
+                "  </url>",
+            ]
+    except Exception as _e:
+        app.logger.warning("sitemap_xml: listing query failed: %s", _e)
+
+    lines.append("</urlset>")
+
+    from flask import Response
+    return Response("\n".join(lines), mimetype="application/xml")
 
 def _gallery_photos(active_only=False):
     from models import GalleryPhoto

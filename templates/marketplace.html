@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}JHE Marketplace | Buy & Sell Furniture, Appliances & More{% endblock %}
+{% block title %}{{ seo_page_title if seo_page_title else 'JHE Marketplace | Buy & Sell Locally' }}{% endblock %}
 
-{% block meta_description %}<meta name="description" content="JHE Marketplace — Buy and sell furniture, appliances, electronics, tools, and more in Minnesota and Wisconsin. Free listings, local pickup, and JHE delivery available.">{% endblock %}
+{% block meta_description %}<meta name="description" content="{{ seo_page_desc if seo_page_desc else 'JHE Marketplace — Buy and sell furniture, appliances, electronics, tools, and more in Minnesota and Wisconsin. Free listings, local pickup, and JHE delivery available.' }}">{% endblock %}
 
 {% block og_meta %}
-<meta property="og:title" content="JHE Haul | Local Marketplace">
-<meta property="og:description" content="Buy, sell, rent, and find homes locally in the Twin Cities. Connect with people throughout Minneapolis, St. Paul, and surrounding Minnesota communities.">
+<meta property="og:title" content="{{ seo_page_title if seo_page_title else 'JHE Haul | Local Marketplace' }}">
+<meta property="og:description" content="{{ seo_page_desc if seo_page_desc else 'Buy, sell, rent, and find homes locally in the Twin Cities. Connect with people throughout Minneapolis, St. Paul, and surrounding Minnesota communities.' }}">
 <meta property="og:image" content="https://jhehaul.com/static/jhehaul-share.png">
-<meta property="og:url" content="https://jhehaul.com/marketplace">
+<meta property="og:url" content="https://jhehaul.com{{ seo_canonical_path if seo_canonical_path else '/marketplace' }}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JHE Haul">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://jhehaul.com/marketplace">
+{% endblock %}
+
+{% block canonical %}
+<link rel="canonical" href="https://jhehaul.com{{ seo_canonical_path if seo_canonical_path else '/marketplace' }}">
 {% endblock %}
 
 {% block content %}

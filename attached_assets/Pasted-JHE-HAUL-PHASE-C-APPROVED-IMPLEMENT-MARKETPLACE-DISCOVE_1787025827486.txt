@@ -1,0 +1,407 @@
+JHE HAUL — PHASE C APPROVED
+IMPLEMENT MARKETPLACE DISCOVERY + SEO NOW
+
+Phase C has already been approved.
+
+Do NOT stop for another planning-only review.
+
+Implement Phase C now, test it, then report results before pushing.
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+PHASE C OBJECTIVE
+==================================================
+
+Improve JHE Haul marketplace discovery and SEO so public listings can be found and shared more effectively.
+
+Implement:
+
+- SEO-friendly public listing URLs
+- Proper page titles
+- Meta descriptions
+- Open Graph metadata
+- Canonical URLs
+- Structured data
+- XML sitemap
+- robots.txt review/fix
+- Search-engine-safe category discovery
+- Share URL improvements
+- Listing image SEO
+- Preserve seller privacy
+
+==================================================
+1. PUBLIC LISTING URLS
+==================================================
+
+Create stable, readable listing URLs.
+
+Preferred pattern:
+
+/listing/<id>-<slug>
+
+Example:
+
+/listing/123-2014-chevrolet-volt-maplewood-mn
+
+Requirements:
+
+- unique
+- stable
+- indexable
+- readable
+- preserves listing ID
+- old listing routes must continue working
+- use redirects where appropriate
+- never expose private seller data
+
+==================================================
+2. PAGE TITLES
+==================================================
+
+Each active public listing must have an SEO title generated from real listing data.
+
+Example:
+
+2014 Chevrolet Volt for Sale in Maplewood, MN | JHE Haul
+
+Use category-appropriate formatting where possible.
+
+==================================================
+3. META DESCRIPTIONS
+==================================================
+
+Generate concise meta descriptions from real listing data.
+
+Include useful public details such as:
+
+- title
+- category
+- price
+- city/state
+- vehicle year/make/model/mileage if applicable
+- delivery availability where appropriate
+
+Do NOT expose private address, phone, email, or private account information.
+
+==================================================
+4. OPEN GRAPH
+==================================================
+
+Add Open Graph metadata to public listing pages.
+
+Include:
+
+og:title
+og:description
+og:url
+og:image
+og:type
+og:site_name
+
+Use the primary listing image where available.
+
+==================================================
+5. CANONICAL URL
+==================================================
+
+Add canonical URLs to listing pages.
+
+All alternate listing URLs should resolve to or reference the canonical public URL.
+
+Prevent duplicate-content problems caused by alternate routes or query parameters.
+
+==================================================
+6. STRUCTURED DATA
+==================================================
+
+Add valid JSON-LD structured data.
+
+Use schema types appropriate to the content.
+
+Examples:
+
+Vehicle
+Product
+Offer
+
+For vehicle listings, use vehicle-specific fields where valid:
+
+- name
+- brand
+- model
+- vehicleModelDate/year
+- mileageFromOdometer
+- itemCondition
+- offers
+- image
+
+Use only actual database values.
+
+Do not invent data.
+
+==================================================
+7. SITEMAP.XML
+==================================================
+
+Implement or improve:
+
+/sitemap.xml
+
+Include:
+
+- Marketplace Home
+- Active public listings
+- Public category pages
+- other meaningful public marketplace pages
+
+Exclude:
+
+- drafts
+- removed listings
+- private listings
+- admin
+- account
+- messages
+- offers
+- private delivery pages
+- seller dashboard
+- authentication pages
+
+==================================================
+8. ROBOTS.TXT
+==================================================
+
+Review and correct:
+
+/robots.txt
+
+Allow public marketplace/listing crawling.
+
+Disallow private/admin/account areas where appropriate.
+
+Include the sitemap location.
+
+Do not accidentally block the entire site.
+
+==================================================
+9. CATEGORY DISCOVERY
+==================================================
+
+Create or improve stable public category URLs where the existing marketplace supports them.
+
+Examples:
+
+/marketplace/vehicles
+/marketplace/items
+/marketplace/homes-for-sale
+/marketplace/rentals
+
+Do not create empty thin pages.
+
+Reuse existing marketplace filters/data.
+
+==================================================
+10. LOCATION
+==================================================
+
+Do NOT generate thousands of empty city pages.
+
+Existing city/ZIP filtering should continue working.
+
+If clean indexable location URLs can be implemented safely using current inventory, do so only where meaningful.
+
+Otherwise preserve current filtering and document the future recommendation.
+
+==================================================
+11. INDEXABILITY RULES
+==================================================
+
+ACTIVE public listings:
+indexable
+
+DRAFT:
+noindex / not in sitemap
+
+REMOVED:
+noindex / not in sitemap
+
+PRIVATE:
+noindex
+
+EXPIRED:
+noindex unless there is a strong reason to preserve the public page
+
+SOLD:
+evaluate carefully.
+
+If sold listings remain useful publicly, keep the page available but mark it clearly Sold and remove it from active marketplace discovery.
+
+Use best-practice canonical/index behavior.
+
+==================================================
+12. LISTING IMAGES
+==================================================
+
+Improve image markup where safe.
+
+Use:
+
+- meaningful alt text
+- width/height where useful
+- lazy loading for non-primary images
+- responsive behavior
+
+Primary image should remain optimized for sharing/social preview.
+
+Do not expose sensitive metadata.
+
+==================================================
+13. SHARE BUTTON
+==================================================
+
+Ensure the existing Share action uses the canonical public listing URL.
+
+On supported mobile browsers:
+use native Web Share API.
+
+Fallback:
+copy canonical URL.
+
+Do not break the existing listing-detail page.
+
+==================================================
+14. PRIVACY
+==================================================
+
+Absolutely preserve seller privacy.
+
+Search engines and structured data must NOT expose:
+
+- seller email
+- phone number
+- exact private address
+- private delivery address
+- private messages
+- offers
+- payment data
+- admin information
+
+General city/state/ZIP-level marketplace location can remain public where already intended.
+
+==================================================
+15. PRESERVE VIEW ANALYTICS
+==================================================
+
+Do not break the existing listing views counter.
+
+If crawler traffic currently increments seller listing views, do not redesign analytics in this phase unless there is a simple safe fix.
+
+Document it for a future analytics phase if needed.
+
+==================================================
+16. FUTURE AI READINESS
+==================================================
+
+Do not implement AI yet.
+
+However, make sure public listing templates expose clean structured application data internally so future:
+
+- semantic search
+- recommendations
+- AI Copilot
+- seller AI
+- buyer AI
+
+can reuse the same canonical listing fields.
+
+Do not duplicate database data unnecessarily.
+
+==================================================
+17. TEST EVERYTHING
+==================================================
+
+Test at minimum:
+
+PUBLIC:
+- Marketplace Home
+- Vehicle listing
+- Item listing if available
+- Home listing if available
+- Rental listing if available
+- share action
+
+SEO:
+- title
+- description
+- canonical
+- Open Graph
+- JSON-LD
+- sitemap.xml
+- robots.txt
+
+STATUS:
+- active listing
+- draft
+- removed
+- sold where available
+
+USER FLOWS:
+- buyer browsing
+- seller dashboard
+- create listing
+- edit listing
+- messages
+- offers
+- delivery
+- admin
+
+No existing workflow should break.
+
+==================================================
+18. DO NOT PUSH YET
+==================================================
+
+Implement and test Phase C locally first.
+
+Then report:
+
+FILES CHANGED:
+ROUTES ADDED:
+SEO-FRIENDLY LISTING URL FORMAT:
+CANONICAL IMPLEMENTED: YES/NO
+OPEN GRAPH IMPLEMENTED: YES/NO
+STRUCTURED DATA IMPLEMENTED: YES/NO
+SITEMAP IMPLEMENTED: YES/NO
+ROBOTS.TXT VERIFIED: YES/NO
+CATEGORY URLS IMPLEMENTED: YES/NO
+SHARE CANONICAL URL WORKING: YES/NO
+DATABASE MIGRATION REQUIRED: YES/NO
+NEW DEPENDENCIES:
+NEW ENVIRONMENT VARIABLES:
+TESTS RUN:
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for my approval to push Phase C to GitHub and DigitalOcean.
+
+==================================================
+CRITICAL
+==================================================
+
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
+Preserve all production data.
+Do not expose private seller information.
+Do not begin Phase D AI work yet.
+
+IMPLEMENT PHASE C NOW.
