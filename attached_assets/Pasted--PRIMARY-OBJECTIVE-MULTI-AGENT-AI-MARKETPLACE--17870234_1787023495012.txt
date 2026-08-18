@@ -1,0 +1,307 @@
+==================================================
+PRIMARY OBJECTIVE — MULTI-AGENT AI MARKETPLACE
+==================================================
+
+I am evolving the EXISTING JHE Haul Marketplace into a modern, scalable, AI-powered marketplace platform.
+
+This project is specifically intended to become a:
+
+MULTI-AGENT AI MARKETPLACE
++
+MULTIPLE INTELLIGENCE LAYERS
++
+USER-FACING AI COPILOT
++
+ADVANCED MARKETPLACE AUTOMATION
++
+MODERN UI/UX ARCHITECTURE
+
+This is NOT simply adding a chatbot to JHE Haul.
+
+I want an architecture capable of supporting multiple specialized AI agents that can work independently and together through secure application services.
+
+The long-term architecture should support specialized agents including:
+
+1. AI MARKETPLACE COPILOT
+The main user-facing AI assistant.
+
+Helps users navigate JHE Haul, search the marketplace, understand listings, manage their account, find seller tools, understand offers/messages, and access delivery functionality.
+
+The Copilot should act as the intelligent interface between the user and JHE Haul.
+
+2. AI BUYER AGENT
+Helps buyers:
+- Find products
+- Compare listings
+- Understand listings
+- Discover good matches
+- Use natural-language search
+- Find listings based on budget/location/preferences
+- Monitor saved searches
+- Discover newly listed matching items
+
+3. AI SELLER AGENT
+Helps sellers:
+- Create listings
+- Generate titles
+- Improve descriptions
+- Suggest categories
+- Identify missing listing information
+- Improve listing quality
+- Analyze listing performance
+- Respond to marketplace activity
+- Manage listings
+
+4. AI SEARCH & MATCHING AGENT
+Provides intelligence for:
+- Natural-language search
+- Semantic search
+- Buyer/listing matching
+- Similar listings
+- Saved-search matching
+- Location relevance
+- Price relevance
+- Personalized discovery
+
+5. AI FRAUD & SAFETY AGENT
+Analyzes marketplace activity for:
+- Potential scams
+- Suspicious listings
+- Duplicate listings
+- Spam
+- Suspicious links
+- Unusual account behavior
+- Potential prohibited activity
+- Repeated reports
+
+This agent should FLAG serious issues for Admin review rather than automatically making irreversible enforcement decisions.
+
+6. AI ADMIN / OPERATIONS AGENT
+Helps operate the marketplace.
+
+Potential capabilities:
+- Marketplace summaries
+- User/report summaries
+- Listing activity
+- Fraud alerts
+- Seller activity
+- Buyer activity
+- Delivery activity
+- Unresolved issues
+- Marketplace analytics
+- Operational recommendations
+
+7. AI DELIVERY INTELLIGENCE AGENT
+Future intelligence supporting JHE Haul delivery.
+
+Potential capabilities:
+- Delivery matching
+- Distance analysis
+- Delivery requirements
+- Scheduling assistance
+- Route intelligence
+- Hauler matching
+- Delivery-status assistance
+
+Do NOT automatically establish pricing without approval.
+
+==================================================
+SHARED INTELLIGENCE LAYERS
+==================================================
+
+These agents should NOT become isolated chatbots.
+
+Build toward shared intelligence services that can support multiple agents.
+
+Potential intelligence layers include:
+
+SEARCH INTELLIGENCE
+RECOMMENDATION INTELLIGENCE
+LISTING INTELLIGENCE
+SELLER INTELLIGENCE
+BUYER INTELLIGENCE
+FRAUD/SAFETY INTELLIGENCE
+DELIVERY INTELLIGENCE
+MARKETPLACE ANALYTICS
+NOTIFICATION INTELLIGENCE
+PERSONALIZATION
+SEMANTIC SEARCH / EMBEDDINGS
+
+Agents should reuse these services rather than unnecessarily duplicating functionality.
+
+==================================================
+AI ORCHESTRATION
+==================================================
+
+The user-facing JHE Haul Copilot may eventually coordinate specialized agents.
+
+Example:
+
+User:
+“Find me a reliable SUV under $15,000 near me that the seller can have delivered.”
+
+Copilot may coordinate:
+
+Buyer/Search Agent
+→ finds listings
+
+Matching Intelligence
+→ ranks relevant listings
+
+Delivery Intelligence
+→ determines applicable delivery options
+
+Copilot
+→ presents the results clearly to the user
+
+The user should experience ONE coherent JHE Haul interface even though multiple specialized intelligence systems may operate behind it.
+
+==================================================
+SECURE AI TOOL LAYER
+==================================================
+
+AI agents must NOT receive unrestricted access to the production database.
+
+Agents should interact with JHE Haul through controlled backend tools/services such as:
+
+search_listings()
+get_listing()
+get_user_listings()
+get_offers()
+get_messages()
+get_delivery_options()
+get_saved_searches()
+suggest_listing_description()
+suggest_listing_category()
+get_marketplace_statistics()
+
+Every tool must enforce normal server-side:
+
+Authentication
+Authorization
+Role permissions
+Listing ownership
+Privacy
+Marketplace rules
+
+AI must NEVER be able to bypass these protections.
+
+==================================================
+MODERN UI/UX ARCHITECTURE
+==================================================
+
+The AI transformation must also include a major modernization of the JHE Haul user experience.
+
+I want the interface to eventually feel like a modern marketplace application, NOT an old website with AI added on top.
+
+Review and improve:
+
+Marketplace Home
+Seller Dashboard
+My Listings
+Listing Creation
+Listing Details
+Search
+Filters
+Messages
+Offers
+Favorites
+Account
+Delivery
+Admin
+Notifications
+Navigation
+Mobile experience
+Desktop experience
+Forms
+Cards
+Buttons
+Typography
+Spacing
+Loading states
+Empty states
+Error states
+
+Create a reusable JHE Haul design system rather than styling every page independently.
+
+==================================================
+AI-NATIVE USER EXPERIENCE
+==================================================
+
+AI should be integrated naturally into the interface.
+
+Examples:
+
+Marketplace Search:
+“Ask JHE Haul what you're looking for...”
+
+Listing Creation:
+“Help me create this listing”
+
+Seller Dashboard:
+“Ask AI how I can improve my listings”
+
+Listing Page:
+“Ask JHE Haul about this item”
+
+Delivery:
+“Help me understand my delivery options”
+
+Admin:
+“Summarize today's marketplace activity”
+
+AI should enhance the existing interface.
+
+It should NOT replace normal buttons, navigation, search, filters, forms, or marketplace functionality.
+
+==================================================
+IMPORTANT ARCHITECTURAL PRINCIPLE
+==================================================
+
+DO NOT design JHE Haul around one giant monolithic AI assistant.
+
+Build the architecture so specialized AI agents can operate independently through secure application tools and shared intelligence services while the user-facing AI Copilot coordinates the experience.
+
+The architecture must allow additional specialized agents to be added later without rebuilding the entire application.
+
+==================================================
+VERY IMPORTANT — DO NOT BUILD ALL OF THIS YET
+==================================================
+
+This describes the TARGET ARCHITECTURE.
+
+For the FIRST TASK:
+
+AUDIT THE EXISTING JHE HAUL APPLICATION ONLY.
+
+Do NOT implement the agents yet.
+Do NOT install unnecessary AI frameworks.
+Do NOT restructure production yet.
+Do NOT modify the database yet.
+Do NOT deploy anything yet.
+
+After reviewing the existing JHE Haul architecture, provide:
+
+1. Current architecture
+2. Current UI/UX architecture
+3. Existing features that can be reused
+4. Recommended multi-agent architecture
+5. Recommended shared intelligence layers
+6. Recommended Copilot architecture
+7. Recommended secure AI tool layer
+8. Recommended background-worker architecture
+9. Recommended search/embedding architecture
+10. Recommended UI/UX modernization architecture
+11. Recommended staging architecture
+12. Recommended implementation phases
+13. Risks
+14. Estimated complexity
+15. What should NOT be changed
+
+Then STOP and wait for my approval.
+
+CRITICAL:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
