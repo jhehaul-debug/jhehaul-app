@@ -1,0 +1,108 @@
+Add a separate Vehicle Delivery Test Quote option in the JHE Haul Admin dashboard.
+
+Right now there is only a general Test Delivery Quote button. I also need to test automobile/vehicle delivery separately.
+
+ADD NEW ADMIN BUTTON
+
+In Admin → Quick Actions, add another clearly visible button:
+
+🚗 Test Vehicle Delivery Quote
+
+Do not replace or remove the existing Test Delivery Quote button.
+
+VEHICLE TEST FORM
+
+The Vehicle Delivery Test Quote form should allow Admin to enter:
+
+* Pickup address
+* Delivery address
+* Vehicle year
+* Vehicle make
+* Vehicle model
+* Vehicle type
+* Running or non-running
+* Optional VIN
+* Optional notes
+* Up to 5 vehicle photos
+
+VEHICLE PRICING
+
+Use the existing vehicle delivery pricing setup.
+
+The vehicle quote should use:
+
+$119.99 vehicle base fee + applicable mileage/distance pricing
+
+Use the existing Stripe/environment configuration for the vehicle base fee.
+
+Do not hard-code a different vehicle price if the system already reads the configured vehicle base fee.
+
+Show Admin the pricing breakdown clearly:
+
+Vehicle Base Fee: $119.99
+Mileage Charge: $___
+Total Quote: $___
+
+Admin must still be able to adjust the final quote before sending it if the current delivery workflow allows manual quote adjustment.
+
+COMPLETE TEST FLOW
+
+The vehicle test must use the same real workflow that customers will use:
+
+Vehicle test request
+→ Appears in Admin
+→ Admin reviews vehicle/photos
+→ Admin sends vehicle delivery quote
+→ Customer/test account sees quote
+→ Customer clicks Accept Quote & Pay
+→ Stripe checkout opens
+→ Correct vehicle delivery amount appears
+→ Successful payment updates the delivery
+→ Admin sees payment confirmation
+
+The vehicle test request must be clearly marked:
+
+TEST VEHICLE DELIVERY
+
+DELETE TEST
+
+Admin must also be able to permanently delete the test vehicle delivery after testing.
+
+Add:
+
+Delete Test Vehicle Delivery
+
+Verify it is actually a test record before allowing deletion.
+
+IMPORTANT
+
+Do not combine the vehicle test with the regular item-delivery test in a way that makes pricing ambiguous.
+
+Keep:
+
+* Test Delivery Quote for normal item/load deliveries
+* Test Vehicle Delivery Quote for automobiles
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+PUSH THE UPDATE
+
+After completing and testing this:
+
+1. Commit the changes.
+2. Push to the GitHub branch connected to the JHE Haul DigitalOcean production deployment.
+3. Verify the push succeeded.
+
+Report:
+
+* Commit hash
+* Branch pushed
+* Where the new Vehicle Test button was added
+* Confirmation the $119.99 vehicle base fee is being used
+* Confirmation mileage is added correctly
+* Confirmation Accept Quote & Pay reaches Stripe
+* Confirmation vehicle test records can be deleted
