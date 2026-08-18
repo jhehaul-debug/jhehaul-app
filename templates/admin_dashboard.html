@@ -303,14 +303,68 @@
     </a>
 </div>
 
-<!-- Deploy Health Alerts -->
-{% if health_alert_events %}
+<!-- Deploy Health Check Failures (persistent DB records) -->
+{% if health_check_logs %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid #dc2626;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h3 style="margin:0;color:#dc2626;">🚨 Deploy Health Check Failures</h3>
+        <a href="{{ url_for('admin_health_alerts') }}" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626;">Full log →</a>
+    </div>
+    <div style="font-size:0.82rem;color:#718096;margin-bottom:10px;">
+        Last {{ health_check_logs|length }} failure record(s) — persisted in the database so they survive container restarts.
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+                <tr style="background:#fef2f2;">
+                    <th style="padding:6px 10px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">When</th>
+                    <th style="padding:6px 10px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Check</th>
+                    <th style="padding:6px 10px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Alerted</th>
+                    <th style="padding:6px 10px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Errors</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in health_check_logs %}
+                <tr style="border-bottom:1px solid #fee2e2;{% if loop.index is odd %}background:#fffbfb;{% endif %}vertical-align:top;">
+                    <td style="padding:6px 10px;white-space:nowrap;color:#374151;font-size:0.82rem;">
+                        {{ log.checked_at.strftime('%b %d %Y') }}<br>
+                        <span style="color:#9ca3af;">{{ log.checked_at.strftime('%I:%M %p') }}</span>
+                    </td>
+                    <td style="padding:6px 10px;white-space:nowrap;">
+                        {% if log.source == 'startup_import' %}
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:4px;padding:1px 7px;font-size:0.78rem;font-weight:600;">Import fail</span>
+                        {% else %}
+                        <span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:0.78rem;font-weight:600;">Liveness fail</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:6px 10px;white-space:nowrap;">
+                        {% if log.notified %}
+                        <span style="color:#16a34a;font-weight:600;">✓ yes</span>
+                        {% else %}
+                        <span style="color:#9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:6px 10px;color:#374151;max-width:420px;">
+                        <ul style="margin:0;padding-left:16px;font-size:0.82rem;line-height:1.6;">
+                            {% for err in log.errors %}
+                            <li style="color:#b91c1c;">{{ err }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif health_alert_events %}
+<!-- Fallback: show notification-delivery log if no DB records exist yet -->
 <div class="card" style="margin-bottom:16px;border-left:4px solid #dc2626;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
         <h3 style="margin:0;color:#dc2626;">🚨 Deploy Health Alerts</h3>
         <a href="{{ url_for('admin_health_alerts') }}" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626;">Full log →</a>
     </div>
-    <div style="font-size:0.82rem;color:#718096;margin-bottom:10px;">Last {{ health_alert_events|length }} event(s) — recorded each time a deploy health check failed.</div>
+    <div style="font-size:0.82rem;color:#718096;margin-bottom:10px;">Last {{ health_alert_events|length }} notification event(s) — SMS/email delivery records.</div>
     <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
             <thead>

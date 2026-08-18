@@ -7,42 +7,108 @@
         <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
         <h2 class="page-title" style="margin:0;">🚨 Deploy Health Alerts</h2>
     </div>
-    {% if events %}
+    {% if check_logs %}
     <span style="background:#fee2e2;color:#b91c1c;font-size:0.85rem;font-weight:700;padding:4px 14px;border-radius:20px;">
-        {{ events|length }} event{{ 's' if events|length != 1 else '' }}
+        {{ check_logs|length }} failure record{{ 's' if check_logs|length != 1 else '' }}
     </span>
     {% endif %}
 </div>
 
+<!-- Section 1: Persistent failure records (survive restarts) -->
 <div class="card" style="margin-bottom:16px;padding:14px 18px;background:#fef2f2;border-left:4px solid #dc2626;">
     <p style="margin:0;font-size:0.88rem;color:#7f1d1d;line-height:1.5;">
-        This log shows every deploy-time health-check failure notification sent via <strong>email</strong> or <strong>SMS</strong>.
-        Both channels are shown together, sorted by time. The first alert from each deploy is always recorded here even if the
-        admin's phone or inbox missed it.
+        <strong>Failure records</strong> are written to the database at the moment a check fails — they survive container
+        restarts and are always available here even if the SMS or email notification was missed.
+        The <strong>notification log</strong> below shows whether the alert was successfully delivered.
+    </p>
+</div>
+
+{% if not check_logs %}
+<div class="card" style="text-align:center;padding:40px 20px;color:#718096;margin-bottom:16px;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">✅</div>
+    <div style="font-size:1rem;font-weight:600;margin-bottom:6px;">No failure records on file</div>
+    <div style="font-size:0.88rem;">All deploys have passed their startup health checks so far.</div>
+</div>
+{% else %}
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:20px;">
+    <div style="padding:12px 16px;background:#fef2f2;border-bottom:1px solid #fecaca;">
+        <strong style="color:#991b1b;font-size:0.9rem;">📋 Health-Check Failure Records</strong>
+        <span style="color:#9ca3af;font-size:0.82rem;margin-left:8px;">persisted in DB — newest first</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+                <tr style="background:#fef2f2;">
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;white-space:nowrap;">Timestamp</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Check type</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Admin alerted</th>
+                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Errors detected</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in check_logs %}
+                <tr style="border-bottom:1px solid #fee2e2;{% if loop.index is odd %}background:#fffbfb;{% endif %}vertical-align:top;">
+                    <td style="padding:9px 14px;white-space:nowrap;color:#374151;font-size:0.82rem;">
+                        {{ log.checked_at.strftime('%b %d, %Y') }}<br>
+                        <span style="color:#9ca3af;">{{ log.checked_at.strftime('%I:%M:%S %p') }}</span>
+                    </td>
+                    <td style="padding:9px 14px;white-space:nowrap;">
+                        {% if log.source == 'startup_import' %}
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 9px;font-size:0.78rem;font-weight:600;">Import failure</span>
+                        {% else %}
+                        <span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 9px;font-size:0.78rem;font-weight:600;">Liveness failure</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:9px 14px;white-space:nowrap;">
+                        {% if log.notified %}
+                        <span style="color:#16a34a;font-weight:600;">✓ yes</span>
+                        {% else %}
+                        <span style="color:#9ca3af;font-weight:600;">— no</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:9px 14px;color:#374151;font-size:0.82rem;max-width:540px;word-break:break-word;">
+                        <ul style="margin:0;padding-left:18px;line-height:1.7;">
+                            {% for err in log.errors %}
+                            <li style="color:#b91c1c;">{{ err }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Section 2: Notification delivery log (email + SMS send attempts) -->
+<h3 style="margin:0 0 10px;color:#374151;font-size:1rem;">📬 Notification Delivery Log</h3>
+<div class="card" style="margin-bottom:6px;padding:12px 16px;background:#f8fafc;border-left:4px solid #94a3b8;">
+    <p style="margin:0;font-size:0.86rem;color:#475569;line-height:1.5;">
+        Each row below is an SMS or email send attempt triggered by a health-check failure alert.
+        This log only covers the delivery channel — the <strong>failure records</strong> above are the authoritative audit trail.
     </p>
 </div>
 
 {% if not events %}
-<div class="card" style="text-align:center;padding:40px 20px;color:#718096;">
-    <div style="font-size:2.5rem;margin-bottom:12px;">✅</div>
-    <div style="font-size:1rem;font-weight:600;margin-bottom:6px;">No health alerts on record</div>
-    <div style="font-size:0.88rem;">All deploys have passed their startup health checks so far.</div>
+<div class="card" style="text-align:center;padding:30px 20px;color:#718096;">
+    <div style="font-size:0.9rem;">No notification delivery events recorded.</div>
 </div>
 {% else %}
 <div class="card" style="padding:0;overflow:hidden;">
     <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
             <thead>
-                <tr style="background:#fef2f2;">
-                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;white-space:nowrap;">Timestamp</th>
-                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Channel</th>
-                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Status</th>
-                    <th style="padding:10px 14px;text-align:left;color:#991b1b;font-weight:600;border-bottom:1px solid #fecaca;">Detail / Error</th>
+                <tr style="background:#f1f5f9;">
+                    <th style="padding:10px 14px;text-align:left;color:#374151;font-weight:600;border-bottom:1px solid #e2e8f0;white-space:nowrap;">Timestamp</th>
+                    <th style="padding:10px 14px;text-align:left;color:#374151;font-weight:600;border-bottom:1px solid #e2e8f0;">Channel</th>
+                    <th style="padding:10px 14px;text-align:left;color:#374151;font-weight:600;border-bottom:1px solid #e2e8f0;">Status</th>
+                    <th style="padding:10px 14px;text-align:left;color:#374151;font-weight:600;border-bottom:1px solid #e2e8f0;">Detail / Error</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ev in events %}
-                <tr style="border-bottom:1px solid #fee2e2;{% if loop.index is odd %}background:#fffbfb;{% endif %}vertical-align:top;">
+                <tr style="border-bottom:1px solid #e2e8f0;{% if loop.index is odd %}background:#f8fafc;{% endif %}vertical-align:top;">
                     <td style="padding:9px 14px;white-space:nowrap;color:#374151;font-size:0.82rem;">
                         {{ ev.ts.strftime('%b %d, %Y') }}<br>
                         <span style="color:#9ca3af;">{{ ev.ts.strftime('%I:%M:%S %p') }}</span>

@@ -31,6 +31,36 @@ _ALERT_SENTINEL = "/tmp/jhe_health_alert_sent"
 # have failed to import — it only uses sms_service and email_service, which
 # are independently loadable.
 
+def _write_health_log(errors, source, notified=False):
+    """Persist a HealthCheckLog row so failures survive container restarts.
+
+    Safe to call both inside and outside an active app context — creates one
+    when needed.  Swallows all exceptions so a broken DB never masks the alert.
+    """
+    try:
+        import json as _json
+        from models import HealthCheckLog as _HCL
+        row = _HCL(
+            source=source,
+            errors_json=_json.dumps(errors),
+            notified=notified,
+        )
+        # Reuse the active context when available; open a temporary one otherwise.
+        try:
+            from flask import has_app_context as _hac
+            if _hac():
+                db.session.add(row)
+                db.session.commit()
+            else:
+                with app.app_context():
+                    db.session.add(row)
+                    db.session.commit()
+        except Exception as _ctx_exc:
+            logging.error("startup health log DB write failed: %s", _ctx_exc)
+    except Exception as _exc:
+        logging.error("startup health log unexpected error: %s", _exc)
+
+
 def _notify_admin(errors):
     """
     Send SMS + email to admin listing startup failures.
@@ -121,7 +151,18 @@ if _import_errors:
     # Critical imports failed — alert admin, then crash so DigitalOcean can
     # restart the container (it won't serve correctly without these modules).
     logging.error("Startup import failures detected: %s", _import_errors)
-    _claim_and_notify(_import_errors)
+    _write_health_log(_import_errors, source='startup_import', notified=False)
+    notified = _claim_and_notify(_import_errors)
+    # Update the DB row's notified flag now that we know whether the alert went out.
+    try:
+        with app.app_context():
+            from models import HealthCheckLog as _HCL
+            last = _HCL.query.filter_by(source='startup_import').order_by(_HCL.id.desc()).first()
+            if last:
+                last.notified = notified
+                db.session.commit()
+    except Exception as _upd_exc:
+        logging.error("startup health log notified-flag update failed: %s", _upd_exc)
     raise ImportError(f"Startup aborted due to import failures: {_import_errors}")
 
 # ── Step 3: post-import liveness check (packages + DB SELECT 1) ───────────────
@@ -142,7 +183,17 @@ def _run_startup_health_check():
         return
 
     logging.error("Startup health check FAILED. Errors: %s", errors)
-    _claim_and_notify(errors)
+    _write_health_log(errors, source='startup_liveness', notified=False)
+    notified = _claim_and_notify(errors)
+    # Update notified flag on the row we just wrote.
+    try:
+        from models import HealthCheckLog as _HCL2
+        last = _HCL2.query.filter_by(source='startup_liveness').order_by(_HCL2.id.desc()).first()
+        if last:
+            last.notified = notified
+            db.session.commit()
+    except Exception as _upd2_exc:
+        logging.error("startup health log notified-flag update (liveness) failed: %s", _upd2_exc)
 
 
 try:

@@ -1125,6 +1125,35 @@ class MonetizationAuditLog(db.Model):
         return f'<MonetizationAuditLog {self.id} {self.event_type}>'
 
 
+class HealthCheckLog(db.Model):
+    """Persistent record of startup / liveness health-check failures.
+
+    Written once per failed check by wsgi.py so failures survive container
+    restarts and remain visible in the admin dashboard even if the admin
+    missed the SMS or email notification.
+    """
+    __tablename__ = 'health_check_logs'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    checked_at  = db.Column(db.DateTime, default=datetime.now, index=True)
+    # 'startup_import'   — auth/routes import failed before routes loaded
+    # 'startup_liveness' — post-import liveness check (packages + DB SELECT 1)
+    source      = db.Column(db.String(50), nullable=False)
+    errors_json = db.Column(db.Text, nullable=False)   # JSON list of error strings
+    # True when _claim_and_notify() sent (or attempted) the SMS/email alert
+    notified    = db.Column(db.Boolean, default=False)
+
+    @property
+    def errors(self):
+        try:
+            return json.loads(self.errors_json)
+        except Exception:
+            return [self.errors_json]
+
+    def __repr__(self):
+        return f'<HealthCheckLog {self.id} {self.source} {self.checked_at}>'
+
+
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def expire_pending_offers(listing_id):

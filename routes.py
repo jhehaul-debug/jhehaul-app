@@ -6999,6 +6999,12 @@ def admin_dashboard():
     _health_events_raw.sort(key=lambda x: x['ts'], reverse=True)
     health_alert_events = _health_events_raw[:20]
 
+    # Persistent health-check failure records (survive container restarts)
+    from models import HealthCheckLog as _HCL
+    health_check_logs = (_HCL.query
+                         .order_by(_HCL.checked_at.desc())
+                         .limit(10).all())
+
     return render_template('admin_dashboard.html',
                            total_users=total_users,
                            active_listings=active_listings,
@@ -7022,7 +7028,8 @@ def admin_dashboard():
                            sms_failed_total=sms_failed_total,
                            twilio_configured=twilio_configured,
                            spaces_configured=spaces_configured,
-                           health_alert_events=health_alert_events)
+                           health_alert_events=health_alert_events,
+                           health_check_logs=health_check_logs)
 
 @app.route("/admin/photo-health")
 @require_admin
@@ -7508,8 +7515,13 @@ def admin_notifications():
 @app.route("/admin/health-alerts")
 @require_admin
 def admin_health_alerts():
-    """Full audit log of deploy health-check alert events (email + SMS combined)."""
-    from models import NotificationLog as _NL, SmsLog as _SL
+    """Full audit log of deploy health-check failures and alert events."""
+    from models import NotificationLog as _NL, SmsLog as _SL, HealthCheckLog as _HCL
+    # Persistent failure records (source of truth — survive restarts)
+    check_logs = (_HCL.query
+                  .order_by(_HCL.checked_at.desc())
+                  .limit(200).all())
+    # Notification delivery log (email + SMS send attempts)
     email_alerts = (_NL.query
                     .filter_by(event_type='admin_health_alert')
                     .order_by(_NL.created_at.desc())
@@ -7534,7 +7546,9 @@ def admin_health_alerts():
             'detail': s.error_msg or (s.message_body or ''),
         })
     events.sort(key=lambda x: x['ts'], reverse=True)
-    return render_template('admin_health_alerts.html', events=events)
+    return render_template('admin_health_alerts.html',
+                           events=events,
+                           check_logs=check_logs)
 
 
 @app.route("/admin/suppression-check")
