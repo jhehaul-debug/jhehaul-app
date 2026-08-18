@@ -1,0 +1,557 @@
+JHE HAUL — PHASE D
+AI-ASSISTED LISTING CREATION
+
+Phase C is approved and completed.
+
+Now begin Phase D.
+
+This is the FIRST actual AI intelligence layer for JHE Haul Marketplace.
+
+IMPORTANT:
+
+Do NOT build the full AI Copilot yet.
+Do NOT build multiple autonomous agents yet.
+Do NOT give AI unrestricted database access.
+Do NOT make AI required for listing creation.
+
+AI must assist the seller, not replace the existing Sell flow.
+
+==================================================
+PHASE D OBJECTIVE
+==================================================
+
+Add AI assistance to the existing JHE Haul Sell/Create Listing workflow.
+
+AI should help sellers create better listings by suggesting:
+
+- Listing title
+- Description
+- Category
+- Subcategory where supported
+- Condition guidance
+- Missing information
+- Useful keywords
+- Vehicle details where appropriate
+- Listing quality improvements
+
+The seller must always review and approve AI-generated content before publishing.
+
+==================================================
+1. PRESERVE EXISTING SELL FLOW
+==================================================
+
+Keep the existing listing flow:
+
+Photos / Video
+→ Details
+→ Price
+→ Location
+→ Delivery
+→ Publish
+
+Do NOT replace this workflow.
+
+AI should appear inside the existing flow as optional assistance.
+
+==================================================
+2. ADD “AI ASSIST” ENTRY POINT
+==================================================
+
+Add a clear optional control such as:
+
+✨ Help Me Create This Listing
+
+or
+
+✨ AI Listing Assistant
+
+Place it in the Details step.
+
+The seller should still be able to complete the entire listing manually without using AI.
+
+==================================================
+3. AI TITLE SUGGESTION
+==================================================
+
+Allow AI to suggest a listing title based on available seller information.
+
+Potential input:
+
+- Category
+- Seller-entered description
+- Vehicle year/make/model
+- Condition
+- Public item attributes
+- Uploaded image analysis later, if approved
+
+Example:
+
+2014 Chevrolet Volt LT — 73K Miles
+
+Seller can:
+
+USE SUGGESTION
+EDIT
+IGNORE
+
+Never automatically overwrite the seller's existing title.
+
+==================================================
+4. AI DESCRIPTION GENERATION
+==================================================
+
+Allow AI to generate a suggested description.
+
+Use only information available to the listing.
+
+Do not invent:
+
+- condition
+- features
+- ownership history
+- mechanical condition
+- mileage
+- warranties
+- included accessories
+- product specifications
+
+If the AI does not know something, it must not fabricate it.
+
+Example output should be clearly labeled:
+
+AI Suggested Description
+
+Seller can:
+
+Use
+Edit
+Discard
+
+==================================================
+5. CATEGORY SUGGESTION
+==================================================
+
+AI may suggest:
+
+Category
+Subcategory
+
+Example:
+
+Uploaded/listed sofa
+→ Furniture
+→ Sofas
+
+Seller must confirm before applying the suggestion.
+
+Do not automatically move listings into a category without seller confirmation.
+
+==================================================
+6. VEHICLE LISTINGS
+==================================================
+
+When Category = Vehicles, AI assistance may use structured fields such as:
+
+- Year
+- Make
+- Model
+- Trim
+- Mileage
+- Condition
+- Transmission
+- Fuel Type
+- Drivetrain
+- Title Status
+
+Potential AI assistance:
+
+- title formatting
+- description organization
+- missing-detail reminders
+- keyword suggestions
+
+Do NOT infer VIN or legal/title history.
+
+==================================================
+7. LISTING COMPLETENESS CHECK
+==================================================
+
+Add an optional AI quality check before Publish.
+
+Example:
+
+“Your listing may perform better if you add:”
+
+- More photos
+- Mileage
+- Item dimensions
+- Condition details
+- Delivery availability
+
+These are suggestions only.
+
+Do not prevent publishing unless the existing marketplace already requires the field.
+
+==================================================
+8. AI LISTING SCORE
+==================================================
+
+Optionally prepare for a simple listing-quality score.
+
+Example:
+
+Listing Quality:
+Good
+
+or:
+
+7 / 10
+
+The score should be based on transparent listing completeness criteria, not arbitrary AI judgment.
+
+Potential criteria:
+
+- photo count
+- title completeness
+- description length/quality
+- category selected
+- price entered
+- condition
+- location
+- useful category-specific details
+
+Do not use this score to suppress the listing.
+
+==================================================
+9. IMAGE ANALYSIS — PREPARE, DO NOT OVERBUILD
+==================================================
+
+Do NOT automatically add expensive image AI unless approved.
+
+First inspect the existing photo upload architecture.
+
+Recommend whether future image analysis could safely support:
+
+- object/category recognition
+- photo quality checks
+- duplicate photo checks
+- listing description assistance
+
+For Phase D, text-based AI assistance may be sufficient.
+
+If image AI would materially improve this phase, report the cost/complexity before implementing it.
+
+==================================================
+10. AI SERVICE LAYER
+==================================================
+
+Do NOT call an AI provider directly from templates or frontend JavaScript.
+
+Create a backend AI abstraction/service.
+
+Example concept:
+
+AIService
+
+Potential methods:
+
+suggest_listing_title()
+suggest_listing_description()
+suggest_category()
+check_listing_completeness()
+
+Do not hard-code the entire app around one provider.
+
+==================================================
+11. CONTROLLED INPUT
+==================================================
+
+Only send the minimum necessary listing data to the AI provider.
+
+Do NOT send:
+
+- passwords
+- authentication tokens
+- seller email
+- seller phone
+- exact private address
+- banking/payment information
+- private messages
+- admin data
+
+General item/category/location information may be used where appropriate.
+
+==================================================
+12. PROMPT-INJECTION PROTECTION
+==================================================
+
+Treat seller-entered listing text as untrusted content.
+
+Do not allow listing descriptions to override system/application instructions.
+
+The AI listing assistant should only perform approved listing-assistance tasks.
+
+==================================================
+13. AI OUTPUT VALIDATION
+==================================================
+
+AI output must be treated as a suggestion.
+
+Validate:
+
+- text length
+- allowed fields
+- formatting
+- no HTML/script injection
+- no prohibited marketplace content
+
+Do not directly execute AI-generated content.
+
+==================================================
+14. COST CONTROL
+==================================================
+
+Add basic AI usage controls.
+
+Potential controls:
+
+- one active request at a time
+- rate limiting
+- request timeout
+- retry limits
+- token/output limits
+- usage logging
+
+Do not call AI repeatedly when the seller has not changed the relevant listing data.
+
+Prepare for caching where useful.
+
+==================================================
+15. AI FAILURE FALLBACK
+==================================================
+
+If AI fails:
+
+Display something like:
+
+“AI assistance is temporarily unavailable. You can continue creating your listing manually.”
+
+Do NOT block listing creation.
+
+The Sell flow must continue working without AI.
+
+==================================================
+16. USER EXPERIENCE
+==================================================
+
+AI assistance should feel integrated into JHE Haul.
+
+Use JHE Haul styling.
+
+Avoid making the page look like a separate chatbot.
+
+Potential interface:
+
+✨ AI Listing Assistant
+
+[Generate Title]
+[Help Write Description]
+[Suggest Category]
+[Check My Listing]
+
+Keep controls simple on mobile.
+
+==================================================
+17. SELLER CONTROL
+==================================================
+
+AI must NEVER automatically:
+
+- publish a listing
+- change price
+- change seller location
+- change delivery option
+- change title without approval
+- replace seller description without approval
+
+Seller always has final control.
+
+==================================================
+18. ADMIN AI USAGE VISIBILITY
+==================================================
+
+Prepare a simple Admin AI usage view.
+
+Potential metrics:
+
+- AI listing-assistance requests
+- successful requests
+- failed requests
+- approximate usage/cost where available
+
+Do not expose seller private content unnecessarily.
+
+==================================================
+19. LOGGING
+==================================================
+
+Log important AI events safely.
+
+Examples:
+
+AI title suggestion requested
+AI description generated
+AI category suggestion generated
+AI request failed
+
+Do NOT log:
+
+- API keys
+- passwords
+- private seller data
+- full sensitive prompts
+
+==================================================
+20. PROVIDER CONFIGURATION
+==================================================
+
+Before choosing or implementing an AI provider, inspect the existing environment.
+
+Report:
+
+- whether an AI API provider is already configured
+- what environment variables exist
+- whether a new API key is required
+- estimated per-request cost
+- whether multiple providers can be supported later
+
+Do NOT expose existing secrets.
+
+If an external API key is required from me, STOP and tell me exactly what needs to be created/configured.
+
+==================================================
+21. DATABASE
+==================================================
+
+Avoid unnecessary database changes.
+
+If AI usage/suggestion history requires storage, recommend the smallest safe schema.
+
+Potential future fields/tables:
+
+ai_usage
+ai_suggestions
+ai_events
+
+Do not store huge prompts/responses unnecessarily.
+
+==================================================
+22. TESTING
+==================================================
+
+Test:
+
+MANUAL LISTING:
+Seller ignores AI
+→ listing can still be created normally
+
+AI TITLE:
+→ suggestion generated
+→ seller can use/edit/discard
+
+AI DESCRIPTION:
+→ suggestion generated
+→ seller can edit before using
+
+CATEGORY:
+→ suggestion shown
+→ seller confirms before applying
+
+AI FAILURE:
+→ Sell flow still works
+
+SECURITY:
+→ unauthorized user cannot invoke AI against another seller's listing
+
+MOBILE:
+→ AI controls usable on iPhone-sized screen
+
+==================================================
+23. DO NOT BREAK
+==================================================
+
+Preserve:
+
+- 20-photo maximum
+- 1-video maximum
+- 60-second video maximum
+- strict no-draft policy
+- vehicle listing fields
+- Marketplace Home
+- seller dashboard
+- My Listings
+- messages
+- offers
+- favorites
+- notifications
+- email
+- delivery
+- admin
+- authentication
+- Stripe
+- SEO work from Phase C
+
+==================================================
+24. IMPLEMENT LOCALLY FIRST
+==================================================
+
+Implement Phase D locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation, report:
+
+AI SERVICE CREATED: YES/NO
+AI PROVIDER:
+NEW ENVIRONMENT VARIABLES:
+NEW DEPENDENCIES:
+DATABASE MIGRATION: YES/NO
+TITLE ASSISTANCE: YES/NO
+DESCRIPTION ASSISTANCE: YES/NO
+CATEGORY ASSISTANCE: YES/NO
+LISTING COMPLETENESS CHECK: YES/NO
+MANUAL FALLBACK WORKING: YES/NO
+MOBILE TESTED: YES/NO
+SECURITY TESTED: YES/NO
+ESTIMATED AI COST:
+FILES CHANGED:
+TEST RESULTS:
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for my production approval.
+
+==================================================
+25. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not implement the full Copilot yet.
+
+Do not implement autonomous agents yet.
+
+Do not give AI unrestricted database access.
+
+Do not make AI mandatory.
+
+BEGIN PHASE D IMPLEMENTATION.
