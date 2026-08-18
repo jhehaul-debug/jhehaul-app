@@ -45,11 +45,19 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upload
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# ---- Stripe payment links ----
+# ---- Stripe payment links (haul-job tier checkout) ----
 PAY_LINK_UNDER_150 = os.environ.get("PAY_LINK_UNDER_150", "")
-PAY_LINK_150_300 = os.environ.get("PAY_LINK_150_300", "")
-PAY_LINK_300_500 = os.environ.get("PAY_LINK_300_500", "")
+PAY_LINK_150_300 = os.environ.get("PAY_LINK_150_300", "")   # removed — gracefully absent
+PAY_LINK_300_500 = os.environ.get("PAY_LINK_300_500", "")   # removed — gracefully absent
 PAY_LINK_OVER_500 = os.environ.get("PAY_LINK_OVER_500", "")
+
+# ---- Stripe Price IDs (Phase N monetization products) ----
+# These are read-only at startup; the actual Price ID values are never logged or stored in code.
+# Products are seeded into MonetizationProduct (is_active=False by default).
+# Admin must explicitly activate a product before buyers can purchase it.
+STRIPE_PRICE_LISTING_BOOST_7_DAY    = os.environ.get("STRIPE_PRICE_LISTING_BOOST_7_DAY", "")
+STRIPE_PRICE_FEATURED_BOOST_14_DAY  = os.environ.get("STRIPE_PRICE_FEATURED_BOOST_14_DAY", "")
+STRIPE_PRICE_DELIVERY_BASE_FEE      = os.environ.get("STRIPE_PRICE_DELIVERY_BASE_FEE", "")
 
 
 def choose_pay_link(accepted_quote):
@@ -1080,6 +1088,73 @@ with app.app_context():
     except Exception as _e:
         db.session.rollback()
         logging.info("Column migration (Phase N) skipped: %s", _e)
+
+    # ── Phase N: Seed MonetizationProduct catalog (idempotent, all OFF by default) ──
+    # Rows are inserted only if no row with that product_type + duration_days already exists.
+    # stripe_price_id is populated from environment variables — never hard-coded.
+    # is_active stays False until an admin explicitly activates the product.
+    try:
+        from models import MonetizationProduct as _MP
+        _pn_products = [
+            dict(
+                product_type  = 'boost',
+                name          = 'JHE Haul \u2013 7-Day Listing Boost',
+                duration_days = 7,
+                price_cents   = 899,
+                stripe_price_id = STRIPE_PRICE_LISTING_BOOST_7_DAY or None,
+                features_json = '["Higher marketplace placement for 7 days"]',
+                display_order = 10,
+            ),
+            dict(
+                product_type  = 'featured_listing',
+                name          = 'JHE Haul \u2013 Featured + Boost (14 Days)',
+                duration_days = 14,
+                price_cents   = 1499,
+                stripe_price_id = STRIPE_PRICE_FEATURED_BOOST_14_DAY or None,
+                features_json = '["Featured badge on listing","Higher marketplace placement for 14 days"]',
+                display_order = 20,
+            ),
+            dict(
+                product_type  = 'delivery_base_fee',
+                name          = 'JHE Haul \u2013 Delivery Base Fee',
+                duration_days = None,
+                price_cents   = 1999,
+                stripe_price_id = STRIPE_PRICE_DELIVERY_BASE_FEE or None,
+                features_json = '["Base platform fee for marketplace delivery requests"]',
+                display_order = 30,
+            ),
+        ]
+        _seeded = 0
+        for _pd in _pn_products:
+            _exists = _MP.query.filter_by(
+                product_type  = _pd['product_type'],
+                duration_days = _pd['duration_days'],
+            ).first()
+            if _exists:
+                # Update stripe_price_id if the env var is now set and was previously absent
+                if _pd['stripe_price_id'] and not _exists.stripe_price_id:
+                    _exists.stripe_price_id = _pd['stripe_price_id']
+                    _seeded += 1
+            else:
+                db.session.add(_MP(
+                    product_type    = _pd['product_type'],
+                    name            = _pd['name'],
+                    duration_days   = _pd['duration_days'],
+                    price_cents     = _pd['price_cents'],
+                    stripe_price_id = _pd['stripe_price_id'],
+                    features_json   = _pd['features_json'],
+                    is_active       = False,
+                    display_order   = _pd['display_order'],
+                ))
+                _seeded += 1
+        if _seeded:
+            db.session.commit()
+            logging.info("Phase N: %d MonetizationProduct row(s) seeded/updated", _seeded)
+        else:
+            logging.info("Phase N: MonetizationProduct catalog already up to date")
+    except Exception as _e:
+        db.session.rollback()
+        logging.warning("Phase N: MonetizationProduct seed skipped: %s", _e)
 
     # ── Seed default marketplace categories ──────────────────────────────────
     try:

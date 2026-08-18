@@ -8295,11 +8295,14 @@ def _run_health_checks():
         "SENDGRID_API_KEY",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
-        # Stripe payment-link tiers — missing any tier breaks payment for that price range
+        # Stripe payment-link tiers (haul-job checkout)
+        # The $150-$500 tiers were removed; they degrade gracefully (pay_link_missing=True).
         "PAY_LINK_UNDER_150",
-        "PAY_LINK_150_300",
-        "PAY_LINK_300_500",
         "PAY_LINK_OVER_500",
+        # Phase N Stripe Price IDs — must be set before admin can activate the product
+        "STRIPE_PRICE_LISTING_BOOST_7_DAY",
+        "STRIPE_PRICE_FEATURED_BOOST_14_DAY",
+        "STRIPE_PRICE_DELIVERY_BASE_FEE",
     ]
     for var in strictly_required:
         if not os.environ.get(var):
