@@ -1,0 +1,342 @@
+JHE HAUL — PHASE B APPROVAL
+COMMIT, PUSH, DEPLOY, AND VERIFY PRODUCTION
+
+I am approving the completed Phase B UI/UX + Seller Experience work for production deployment.
+
+Do NOT begin Phase C yet.
+Do NOT begin AI implementation yet.
+
+Your task now is ONLY to safely move the approved Phase B changes through:
+
+LOCAL CODE
+→ GITHUB
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+==================================================
+1. FINAL PRE-DEPLOYMENT CHECK
+==================================================
+
+Before committing, verify:
+
+- Buyer Marketplace Home still works
+- Seller dashboard is a SEPARATE page from Marketplace Home
+- Account → Selling / My Listings works
+- Create Listing still uses the existing listing flow
+- Your Listings shows only the logged-in seller's listings
+- Offers still work
+- Messages still work
+- Saved Items still work
+- Deliveries still work
+- Admin still works
+- Admin Switch Account still works
+- Regular users do not receive Admin-only controls
+- Sign Out works
+- Photos work
+- Videos work
+- Mobile navigation works
+- No horizontal overflow
+- No broken routes
+- No database data was lost
+
+Do not proceed if a major regression exists.
+
+==================================================
+2. RUN TESTS
+==================================================
+
+Run the existing automated tests.
+
+Also test the major marketplace flows manually.
+
+Report:
+
+AUTOMATED TESTS PASSED:
+MANUAL SELLER FLOW PASSED:
+MANUAL BUYER FLOW PASSED:
+ADMIN FLOW PASSED:
+
+If something fails, fix ONLY the Phase B-related issue before deployment.
+
+Do not change unrelated functionality.
+
+==================================================
+3. CHECK GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Review the files before committing.
+
+Do not include temporary files, screenshots, secrets, logs, local databases, or irrelevant generated files in the production commit.
+
+==================================================
+4. COMMIT PHASE B
+==================================================
+
+Commit only the approved Phase B implementation.
+
+Use a clear commit message such as:
+
+Phase B: modernize UI and add dedicated seller dashboard
+
+==================================================
+5. PUSH TO EXISTING PRODUCTION GITHUB
+==================================================
+
+Push to the EXISTING repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT:
+
+- create another repository
+- create another production application
+- push to an unrelated branch
+- overwrite production history
+- force-push unless absolutely necessary and explicitly approved
+
+==================================================
+6. VERIFY GITHUB
+==================================================
+
+After pushing, report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+
+Confirm:
+
+LOCAL = GITHUB: YES/NO
+AHEAD: 0
+BEHIND: 0
+
+If they do not match, STOP and fix the Git problem before proceeding.
+
+==================================================
+7. DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Verify DigitalOcean production is still connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Confirm Auto Deploy is enabled.
+
+Verify DigitalOcean detects the NEW Phase B commit.
+
+If DigitalOcean does not automatically deploy the new commit, manually trigger a deployment of the latest GitHub main commit.
+
+Do NOT redeploy an older SHA.
+
+==================================================
+8. VERIFY DEPLOYED COMMIT
+==================================================
+
+Report:
+
+GITHUB SHA:
+DIGITALOCEAN DEPLOYED SHA:
+
+They must match.
+
+Also report:
+
+DEPLOYMENT STATUS:
+DEPLOYMENT START:
+DEPLOYMENT FINISHED:
+
+Do not mark deployment complete merely because DigitalOcean says the application is running.
+
+==================================================
+9. LIVE PRODUCTION TEST
+==================================================
+
+Test the actual production site:
+
+jhehaul.com
+
+Do NOT test only the Replit preview.
+
+==================================================
+10. VERIFY BUYER MARKETPLACE
+==================================================
+
+Confirm Marketplace Home still provides the buyer experience:
+
+- Search
+- Categories
+- Filters
+- City/ZIP
+- Recently Listed
+- Listing cards
+- Saved items
+
+Do not convert this page into the seller dashboard.
+
+==================================================
+11. VERIFY SELLER DASHBOARD
+==================================================
+
+Log into a seller account.
+
+Test:
+
+Account
+→ Selling / My Listings
+
+Confirm this opens the NEW dedicated seller dashboard.
+
+The seller dashboard should show:
+
+Selling
+
+Manage your listings, offers and sales
+
++ Create Listing
+
+Quick navigation:
+- Your Listings
+- Messages
+- Offers
+- Sold
+
+Overview:
+- Active Listings
+- Offers Received
+- New Messages
+- Items Sold
+
+Your Listings:
+- seller's own listings only
+- photo
+- title
+- price
+- status
+- posted date
+- applicable management controls
+
+Performance:
+- only real metrics
+- no fake demo statistics
+
+==================================================
+12. VERIFY THE OLD PROBLEM IS GONE
+==================================================
+
+The Seller dashboard must NOT simply display the buyer Marketplace Home.
+
+When I open:
+
+Account → Selling / My Listings
+
+I should NOT see the seller page dominated by:
+
+- Search Marketplace
+- general category filters
+- Recently Listed
+- general buyer browsing
+- the old “Have something to list?” buyer page layout
+
+If I still see the old marketplace layout instead of the dedicated seller dashboard:
+
+THE TASK IS NOT COMPLETE.
+
+Find and fix the route/template/navigation problem before stopping.
+
+==================================================
+13. MOBILE PRODUCTION TEST
+==================================================
+
+Verify the live seller dashboard on mobile.
+
+Check:
+
+- iPhone-sized screen
+- touch targets
+- card layout
+- navigation
+- text wrapping
+- scrolling
+- buttons
+- listing controls
+- no horizontal overflow
+
+==================================================
+14. FINAL PRODUCTION REPORT
+==================================================
+
+Give me this exact report:
+
+PHASE B DEPLOYED: YES/NO
+
+BUYER MARKETPLACE WORKING: YES/NO
+
+DEDICATED SELLER ROUTE:
+[route]
+
+ACCOUNT → SELLING LINK WORKING: YES/NO
+
+SELLER DASHBOARD LIVE: YES/NO
+
+YOUR LISTINGS LIVE: YES/NO
+
+CREATE LISTING WORKING: YES/NO
+
+MESSAGES WORKING: YES/NO
+
+OFFERS WORKING: YES/NO
+
+ADMIN WORKING: YES/NO
+
+ADMIN SWITCH ACCOUNT WORKING: YES/NO
+
+REGULAR USER ADMIN CONTROLS HIDDEN: YES/NO
+
+MOBILE VERIFIED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE SHAs MATCH: YES/NO
+
+PRODUCTION DEPLOYMENT STATUS:
+
+==================================================
+15. STOP
+==================================================
+
+After successful production verification:
+
+STOP.
+
+Do NOT begin Phase C.
+Do NOT begin AI agents.
+Do NOT begin Copilot.
+Do NOT install AI frameworks.
+
+Wait for my approval.
+
+==================================================
+CRITICAL
+==================================================
+
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
