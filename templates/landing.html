@@ -334,6 +334,30 @@
 </div>
 {% endif %}
 
+{# ── Recent Listings (mixed fallback when for_sale or rental section is empty) ── #}
+{% if recent_listings and (not for_sale_listings or not rental_listings) %}
+<div class="card" style="padding:40px 36px;margin-bottom:20px;">
+    <div class="lp-section-head">
+        <h2>🆕 Recent Listings</h2>
+        <p>The latest listings across all categories — items, homes, and rentals.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+        {% for listing in recent_listings %}
+        {% if listing.listing_type == 'property_sale' %}
+        {{ listing_card(listing, badge_label='For Sale', badge_emoji='🏠') }}
+        {% elif listing.listing_type == 'rental' %}
+        {{ listing_card(listing, badge_label='For Rent', badge_emoji='🔑', price_suffix='/mo') }}
+        {% else %}
+        {{ listing_card(listing) }}
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+        <a href="{{ url_for('marketplace') }}" style="font-size:0.95rem;color:#3182ce;font-weight:700;text-decoration:none;">See all listings →</a>
+    </div>
+</div>
+{% endif %}
+
 {# ── How It Works ── #}
 <div class="card" style="padding:40px 36px;margin-bottom:20px;">
     <div class="lp-section-head">

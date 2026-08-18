@@ -9865,12 +9865,23 @@ def landing():
         .limit(6)
         .all()
     )
+    # Build a mixed "Recent Listings" fallback when any typed section (for_sale or rental)
+    # has no listings — so the page never looks sparse for new sites with thin inventory.
+    recent_listings = []
+    if not for_sale_listings or not rental_listings:
+        recent_listings = (
+            _active_approved
+            .order_by(Listing.created_at.desc())
+            .limit(6)
+            .all()
+        )
     return render_template(
         'landing.html',
         gallery_photos=_gallery_photos(active_only=True),
         preview_listings=preview_listings,
         for_sale_listings=for_sale_listings,
         rental_listings=rental_listings,
+        recent_listings=recent_listings,
     )
 
 @app.route("/admin/gallery/<int:photo_id>/move", methods=["POST"])
