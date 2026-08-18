@@ -3377,9 +3377,13 @@ def api_ai_listing_assist():
 @app.route("/api/notifications/count")
 @require_login
 def api_notification_count():
-    """JSON endpoint for badge polling. Returns {count: N}."""
+    """JSON endpoint for badge polling. Returns {count: N}.
+
+    Uses jsonify so the response always carries Content-Type: application/json,
+    which satisfies strict fetch() consumers and avoids browser sniffing.
+    """
     from notification_service import get_unread_count as _gc
-    return {'count': _gc(current_user.id)}
+    return jsonify({'count': _gc(current_user.id)})
 
 
 @app.route("/admin/send-notice/<user_id>", methods=["POST"])

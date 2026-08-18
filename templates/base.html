@@ -834,7 +834,13 @@
 
 {% if current_user.is_authenticated %}
 <script>
-/* Notification badge polling — updates every 45 s without a full page reload */
+/* Notification badge polling — keeps the badge in sync without a full page reload.
+ *
+ * Design tradeoff: we poll every 45 s (server-sent events / WebSockets would be
+ * faster but add infrastructure complexity not yet warranted).  If a user reads
+ * notifications on another device the badge on this device corrects itself within
+ * one poll cycle (~45 s).  The first poll fires after 5 s so the badge updates
+ * quickly when navigating between pages without waiting a full interval. */
 (function() {
   function updateBadge(count) {
     var desktopBadge = document.getElementById('notif-count-desktop');
@@ -855,8 +861,8 @@
       .then(function(d) { if (d && typeof d.count === 'number') updateBadge(d.count); })
       .catch(function() {});
   }
-  setTimeout(poll, 10000);          /* first poll 10 s after page load */
-  setInterval(poll, 45000);         /* then every 45 s */
+  setTimeout(poll, 5000);           /* first poll 5 s after page load — corrects badge faster after navigation */
+  setInterval(poll, 45000);         /* then every 45 s — balances freshness against server load */
 })();
 </script>
 {% endif %}
