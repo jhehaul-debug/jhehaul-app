@@ -583,7 +583,7 @@ def home():
             hide_sold='1' if hide_sold_pref else '',
             no_vehicles_filter='',
             listing_type_filter='', active_category=None,
-            city_zip_filter='', area_filter='',
+            city_zip_filter=session.get('city_zip_pref', ''), area_filter='',
             show_welcome=show_welcome,
             show_profile_nudge=show_profile_nudge,
             gallery_photos=_gallery_photos(active_only=True),
