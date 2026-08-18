@@ -1546,6 +1546,7 @@ document.addEventListener('click', function(e) {
         vehicle:    '🚗',
         housing:    '🏠',
         listing:    '📦',
+        seller:     '👤',
         search_all: '🔍',
     };
 
@@ -1562,38 +1563,58 @@ document.addEventListener('click', function(e) {
         }
 
         function renderSuggestions(items, isPopular) {
+            // Clear previous content safely — no innerHTML
+            while (box.firstChild) { box.removeChild(box.firstChild); }
             if (!items.length) { box.classList.remove('open'); return; }
-            box.innerHTML = (isPopular
-                ? '<div style="font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;padding:8px 16px 4px;">Popular searches</div>'
-                : ''
-            ) + items.map(function(s, i) {
+
+            if (isPopular) {
+                var header = document.createElement('div');
+                header.style.cssText = 'font-size:.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;padding:8px 16px 4px;';
+                header.textContent = 'Popular searches';
+                box.appendChild(header);
+            }
+
+            items.forEach(function(s, i) {
                 var icon = ICONS[s.type] || '🔍';
-                return '<div class="mp-suggestion-item" data-idx="' + i +
-                       '" data-url="' + s.url.replace(/"/g, '&quot;') +
-                       '" data-type="' + s.type +
-                       '" data-text="' + s.text.replace(/"/g, '&quot;') + '">' +
-                       '<span class="mp-suggestion-icon">' + icon + '</span>' +
-                       '<span>' + s.text + '</span></div>';
-            }).join('');
-            focusIdx = -1;
-            box.classList.add('open');
-            box.querySelectorAll('.mp-suggestion-item').forEach(function(el) {
+
+                var el = document.createElement('div');
+                el.className = 'mp-suggestion-item';
+                el.dataset.idx  = i;
+                el.dataset.url  = s.url;
+                el.dataset.type = s.type;
+                el.dataset.text = s.text;
+
+                var iconSpan = document.createElement('span');
+                iconSpan.className = 'mp-suggestion-icon';
+                iconSpan.textContent = icon;
+
+                var textSpan = document.createElement('span');
+                textSpan.textContent = s.text;  // safe: text, not HTML
+
+                el.appendChild(iconSpan);
+                el.appendChild(textSpan);
+
                 el.addEventListener('mousedown', function(e) {
                     e.preventDefault();
                     box.classList.remove('open');
-                    var stype = el.getAttribute('data-type');
-                    var url   = el.getAttribute('data-url');
-                    var text  = el.getAttribute('data-text');
+                    var stype = el.dataset.type;
+                    var url   = el.dataset.url;
+                    var text  = el.dataset.text;
                     if (stype === 'search_all' || stype === 'listing') {
                         // Text search: set input and submit form
                         inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');
                         if (form) { form.submit(); } else { navigate(url); }
                     } else {
-                        // Category / housing / vehicle: navigate directly
+                        // Category / housing / vehicle / seller: navigate directly
                         navigate(url);
                     }
                 });
+
+                box.appendChild(el);
             });
+
+            focusIdx = -1;
+            box.classList.add('open');
         }
 
         function showPopular() {
@@ -1634,9 +1655,9 @@ document.addEventListener('click', function(e) {
             } else if (e.key === 'Enter' && focusIdx >= 0) {
                 e.preventDefault();
                 var el   = items[focusIdx];
-                var stype = el.getAttribute('data-type');
-                var url   = el.getAttribute('data-url');
-                var text  = el.getAttribute('data-text');
+                var stype = el.dataset.type;
+                var url   = el.dataset.url;
+                var text  = el.dataset.text;
                 box.classList.remove('open');
                 if (stype === 'search_all' || stype === 'listing') {
                     inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');

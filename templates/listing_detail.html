@@ -791,7 +791,95 @@
   .ld-mobile-only { display: none; }
   .ld-desktop-only { display: block; }
 }
+
+/* ══════════════════════════════════════════
+   MOBILE-ONLY COMPACT SEARCH HEADER
+   ══════════════════════════════════════════ */
+.ld-mobile-search-bar {
+  display: none;
+  padding: 10px 16px 4px;
+}
+@media (max-width: 768px) {
+  .ld-mobile-search-bar { display: block; }
+}
+.ld-mobile-search-form {
+  display: flex;
+  border-radius: 9px;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0,0,0,.09);
+  border: 1.5px solid #e2e8f0;
+  position: relative;
+}
+.ld-mobile-search-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+.ld-mobile-search-input-wrap input {
+  flex: 1;
+  padding: 11px 14px;
+  border: none;
+  font-size: .95rem;
+  outline: none;
+  color: #1a202c;
+  background: #fff;
+  border-radius: 9px 0 0 9px;
+}
+.ld-mobile-search-form button[type=submit] {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  padding: 11px 18px;
+  font-size: .92rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 0 9px 9px 0;
+}
+.ld-mobile-search-form button[type=submit]:hover { background: #2f855a; }
+.ld-mobile-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.13);
+  z-index: 600;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.ld-mobile-suggestions.open { display: block; }
+.ld-mobile-suggestions .mp-suggestion-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: .92rem;
+  color: #1a202c;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ld-mobile-suggestions .mp-suggestion-item:last-child { border-bottom: none; }
+.ld-mobile-suggestions .mp-suggestion-item:hover,
+.ld-mobile-suggestions .mp-suggestion-item.focused { background: #f0fdf4; }
+.ld-mobile-suggestions .mp-suggestion-label { font-size: .72rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; padding: 8px 16px 4px; }
 </style>
+
+<!-- ── Mobile-only compact search bar (hidden on desktop via CSS) ── -->
+<div class="ld-mobile-search-bar">
+  <form action="/marketplace" method="get" class="ld-mobile-search-form" id="ld-search-form-mobile">
+    <div class="ld-mobile-search-input-wrap">
+      <input type="text" name="q" id="ld-mp-q-mobile"
+             placeholder="Search marketplace…"
+             autocomplete="off" value="">
+      <div class="ld-mobile-suggestions" id="ld-mp-suggestions-mobile"></div>
+    </div>
+    <button type="submit">🔍</button>
+  </form>
+</div>
 
 <div class="ld-wrap">
 
@@ -1969,5 +2057,158 @@ function closeReportModal(e) {
   var m = document.getElementById('report-modal');
   if (m) m.classList.remove('open');
 }
+
+// ══════════════════════════════════════════
+// MOBILE SEARCH TYPEAHEAD
+// Mirrors the desktop typeahead on marketplace.html
+// ══════════════════════════════════════════
+(function() {
+  var POPULAR = [
+    { text: 'Vehicles',            type: 'category', url: '/marketplace?category=vehicles' },
+    { text: 'Apartments for Rent', type: 'housing',  url: '/marketplace?listing_type=rental&q=apartment' },
+    { text: 'Homes for Sale',      type: 'housing',  url: '/marketplace?listing_type=property_sale' },
+    { text: 'Furniture',           type: 'category', url: '/marketplace?category=furniture' },
+    { text: 'Appliances',          type: 'category', url: '/marketplace?category=appliances' },
+    { text: 'Electronics',         type: 'category', url: '/marketplace?category=electronics' },
+    { text: 'Tools',               type: 'category', url: '/marketplace?category=tools' },
+    { text: 'Free Items',          type: 'category', url: '/marketplace?category=free-items' },
+  ];
+
+  var ICONS = {
+    category:   '🏷️',
+    vehicle:    '🚗',
+    housing:    '🏠',
+    listing:    '📦',
+    seller:     '👤',
+    search_all: '🔍',
+  };
+
+  var inp      = document.getElementById('ld-mp-q-mobile');
+  var box      = document.getElementById('ld-mp-suggestions-mobile');
+  var form     = document.getElementById('ld-search-form-mobile');
+  if (!inp || !box) return;
+
+  var timer, focusIdx = -1;
+
+  function navigate(url) { window.location.href = url; }
+
+  function renderSuggestions(items, isPopular) {
+    // Clear previous content safely
+    while (box.firstChild) { box.removeChild(box.firstChild); }
+    if (!items.length) { box.classList.remove('open'); return; }
+
+    if (isPopular) {
+      var header = document.createElement('div');
+      header.className = 'mp-suggestion-label';
+      header.textContent = 'Popular searches';
+      box.appendChild(header);
+    }
+
+    items.forEach(function(s, i) {
+      var icon = ICONS[s.type] || '🔍';
+
+      var el = document.createElement('div');
+      el.className = 'mp-suggestion-item';
+      el.dataset.idx  = i;
+      el.dataset.url  = s.url;   // used via dataset, never via innerHTML
+      el.dataset.type = s.type;
+      el.dataset.text = s.text;
+
+      var iconSpan = document.createElement('span');
+      iconSpan.className = 'mp-suggestion-icon';
+      iconSpan.textContent = icon;
+
+      var textSpan = document.createElement('span');
+      textSpan.textContent = s.text;  // safe: assigned as text, not HTML
+
+      el.appendChild(iconSpan);
+      el.appendChild(textSpan);
+
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        box.classList.remove('open');
+        var stype = el.dataset.type;
+        var url   = el.dataset.url;
+        var text  = el.dataset.text;
+        if (stype === 'search_all' || stype === 'listing') {
+          inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');
+          if (form) { form.submit(); } else { navigate(url); }
+        } else {
+          navigate(url);
+        }
+      });
+
+      box.appendChild(el);
+    });
+
+    focusIdx = -1;
+    box.classList.add('open');
+  }
+
+  function showPopular() { renderSuggestions(POPULAR, true); }
+
+  function fetchSuggestions(q) {
+    fetch('/api/search-suggestions?q=' + encodeURIComponent(q))
+      .then(function(r) { return r.json(); })
+      .then(function(d) { renderSuggestions(d.suggestions || [], false); })
+      .catch(function() {});
+  }
+
+  inp.addEventListener('focus', function() {
+    if (!inp.value.trim()) showPopular();
+  });
+
+  inp.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = inp.value.trim();
+    if (!q) { showPopular(); return; }
+    if (q.length < 2) { box.classList.remove('open'); return; }
+    timer = setTimeout(function() { fetchSuggestions(q); }, 200);
+  });
+
+  // Keyboard navigation
+  inp.addEventListener('keydown', function(e) {
+    var items = box.querySelectorAll('.mp-suggestion-item');
+    if (!box.classList.contains('open') || !items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, -1);
+    } else if (e.key === 'Escape') {
+      box.classList.remove('open'); return;
+    } else if (e.key === 'Enter' && focusIdx >= 0) {
+      e.preventDefault();
+      var el    = items[focusIdx];
+      var stype = el.dataset.type;
+      var url   = el.dataset.url;
+      var text  = el.dataset.text;
+      box.classList.remove('open');
+      if (stype === 'search_all' || stype === 'listing') {
+        inp.value = text.replace(/^Search "(.+)" in all Marketplace$/, '$1');
+        if (form) { form.submit(); } else { navigate(url); }
+      } else {
+        navigate(url);
+      }
+      return;
+    } else { return; }
+    items.forEach(function(el, i) { el.classList.toggle('focused', i === focusIdx); });
+    if (focusIdx >= 0) items[focusIdx].scrollIntoView({ block: 'nearest' });
+  });
+
+  // Dismiss on outside click / tap
+  document.addEventListener('click', function(e) {
+    if (!inp.contains(e.target) && !box.contains(e.target)) {
+      box.classList.remove('open');
+    }
+  });
+  // Also dismiss on touchstart outside (Safari)
+  document.addEventListener('touchstart', function(e) {
+    if (!inp.contains(e.target) && !box.contains(e.target)) {
+      box.classList.remove('open');
+    }
+  }, { passive: true });
+})();
 </script>
 {% endblock %}

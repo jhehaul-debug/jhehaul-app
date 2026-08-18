@@ -3213,8 +3213,43 @@ def api_search_suggestions():
                 _add(make, 'vehicle',
                      f'/marketplace?category=vehicles&q={make}')
 
-    # ── 5. Active listing titles that contain the query ──────────────
+    # ── 5. Sellers whose display name matches the query ─────────────
     if len(suggestions) < 7:
+        from models import User as _User
+        # Only surface sellers who have at least one active, approved listing
+        seller_sub = (db.session.query(Listing.seller_id)
+            .filter(
+                Listing.status == 'active',
+                Listing.moderation_status == 'approved',
+            )
+            .distinct()
+            .subquery())
+        sellers = (_User.query
+            .filter(
+                _User.id.in_(seller_sub),
+                _User.is_banned == False,
+                db.or_(
+                    _User.first_name.ilike(f'%{q}%'),
+                    _User.last_name.ilike(f'%{q}%'),
+                )
+            )
+            .limit(3).all())
+        for seller in sellers:
+            first = (seller.first_name or '').strip()
+            last  = (seller.last_name  or '').strip()
+            # Use "First L." public display convention — never expose full last name
+            if first and last:
+                name = f'{first} {last[0]}.'
+            elif first:
+                name = first
+            elif last:
+                name = f'{last[0]}.'
+            else:
+                continue  # skip users with no name at all
+            _add(name, 'seller', f'/seller/{seller.id}')
+
+    # ── 6. Active listing titles that contain the query ──────────────
+    if len(suggestions) < 8:
         listings = (Listing.query
             .filter(
                 Listing.status == 'active',
@@ -3226,7 +3261,7 @@ def api_search_suggestions():
         for l in listings:
             _add(l.title, 'listing', f'/listing/{l.id}')
 
-    # ── 6. Always end with "Search 'X' in all Marketplace" ──────────
+    # ── 7. Always end with "Search 'X' in all Marketplace" ──────────
     _add(f'Search "{q}" in all Marketplace', 'search_all',
          f'/marketplace?q={q}')
 
