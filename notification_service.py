@@ -276,7 +276,12 @@ def notify_delivery_status(buyer_id, status_label, listing_title, dr_id):
 
 
 def notify_admin_notice(user_id, title, message=None, action_url=None):
-    """Send an admin-authored notice to any user."""
+    """Send an admin-authored notice to any user.
+
+    Admin notices are ALWAYS delivered — they intentionally bypass every user
+    notification preference.  Do NOT add preference checks here; the whole
+    point of an admin notice is that it reaches the user unconditionally.
+    """
     return create_notification(
         user_id=user_id,
         notif_type='admin_notice',
