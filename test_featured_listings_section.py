@@ -348,6 +348,32 @@ def test_section_hidden_on_category_filter_view():
         _cleanup((GalleryPhoto, gp_id), (User, user_id))
 
 
+def test_section_shown_on_marketplace_direct_visit():
+    """Featured section appears on /marketplace (no query params) when active gallery items exist."""
+    user_id = gp_id = None
+    with app.app_context():
+        user_id = _make_user()
+        gp_id = _make_gallery_custom(headline="Marketplace Direct Visit Deal!")
+
+    try:
+        mock_user = _mock_user_for(user_id)
+        # Explicitly set hide_sold_pref=False so the /marketplace route doesn't treat
+        # this as a search request (truthy MagicMock would set hide_sold='1' → is_search=True)
+        mock_user.hide_sold_pref = False
+        with patch("flask_login.utils._get_user", return_value=mock_user):
+            client = app.test_client()
+            resp = client.get("/marketplace")
+        assert resp.status_code == 200, f"Expected 200, got {resp.status_code}"
+        html = resp.data.decode()
+        assert "⭐ Featured Listings" in html, \
+            "Featured Listings section should appear on /marketplace when active gallery items exist"
+        assert "Marketplace Direct Visit Deal!" in html, \
+            "Gallery item headline should appear on direct /marketplace visit"
+    finally:
+        from models import GalleryPhoto, User
+        _cleanup((GalleryPhoto, gp_id), (User, user_id))
+
+
 def test_featured_items_rendered_in_display_order():
     """Items with lower display_order appear before items with higher display_order in the HTML."""
     user_id = gp_first_id = gp_second_id = None
@@ -407,6 +433,8 @@ if __name__ == "__main__":
         test_inactive_pinned_listing_skipped_in_featured_section)
     run("section hidden on category filter view",
         test_section_hidden_on_category_filter_view)
+    run("section shown on /marketplace direct visit (no query params)",
+        test_section_shown_on_marketplace_direct_visit)
     run("featured items rendered in display_order sequence",
         test_featured_items_rendered_in_display_order)
 

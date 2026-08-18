@@ -857,6 +857,7 @@ def marketplace():
             hide_sold='1' if hide_sold_pref else '',
             show_welcome=show_welcome,
             show_profile_nudge=_mp_show_nudge,
+            gallery_photos=_gallery_photos(active_only=True),
             saved_listing_ids=_saved_listing_ids(), **ctx))
         # Prevent browser back-button from replaying a cached response that still
         # contains the welcome banner HTML (the session flag is already consumed).
