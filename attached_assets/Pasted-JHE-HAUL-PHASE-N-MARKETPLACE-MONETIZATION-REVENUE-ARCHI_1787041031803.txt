@@ -1,0 +1,935 @@
+JHE HAUL — PHASE N
+MARKETPLACE MONETIZATION + REVENUE ARCHITECTURE
+
+Phase M is complete and verified.
+
+Now begin Phase N.
+
+This phase creates the monetization architecture for JHE Haul.
+
+IMPORTANT:
+
+DO NOT activate live billing yet.
+
+DO NOT charge any user.
+
+DO NOT create live recurring subscriptions yet.
+
+DO NOT automatically deduct marketplace fees.
+
+DO NOT modify the existing JHE Haul delivery/payment workflow unless specifically required for architecture preparation.
+
+Build the monetization FOUNDATION first.
+
+I will approve pricing, fees, plans, and activation separately.
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+PHASE N OBJECTIVE
+==================================================
+
+Prepare JHE Haul to generate revenue from multiple marketplace channels.
+
+Potential revenue streams:
+
+1. Featured Listings
+2. Listing Boosts
+3. Promoted Listings
+4. Business Seller Plans
+5. Dealer Plans
+6. Seller Storefronts
+7. AI Premium Seller Tools
+8. Premium Buyer Tools
+9. JHE Haul Delivery Revenue
+10. Future Marketplace Transaction Fees
+11. Future Advertising
+12. Future Business Copilot Plans
+
+The architecture should support multiple revenue streams without forcing all of them to launch.
+
+==================================================
+1. MONETIZATION SERVICE
+==================================================
+
+Create a centralized monetization architecture.
+
+Potential service:
+
+MonetizationService
+
+Responsibilities may include:
+
+- product definitions
+- plan definitions
+- feature entitlements
+- promotion eligibility
+- subscription status
+- purchase status
+- expiration
+- revenue event tracking
+- Stripe product mapping
+
+Do not scatter pricing/business rules throughout templates.
+
+==================================================
+2. FEATURED LISTINGS
+==================================================
+
+Prepare:
+
+Featured Listing
+
+A seller may eventually pay to feature a listing for a defined period.
+
+Potential durations:
+
+24 hours
+3 days
+7 days
+30 days
+
+DO NOT set final prices yet.
+
+Use configuration/database products so pricing can be changed without rewriting application code.
+
+==================================================
+3. FEATURED LISTING DISPLAY
+==================================================
+
+Prepare a clearly labeled:
+
+Featured
+
+badge.
+
+Potential placements:
+
+Marketplace Home
+Category pages
+Search results
+
+Featured listings must be clearly distinguishable from organic recommendations.
+
+Do not disguise paid placement as an AI recommendation.
+
+==================================================
+4. LISTING BOOSTS
+==================================================
+
+Prepare a Boost Listing product.
+
+Potential behavior:
+
+Seller purchases boost
+→ listing receives additional approved visibility
+→ boost expires automatically
+
+Possible placements:
+
+Boosted in category
+Boosted in relevant search
+Boosted in discovery sections
+
+Do not permanently pin boosted listings above everything.
+
+==================================================
+5. PROMOTED LISTINGS
+==================================================
+
+Prepare future:
+
+Promoted
+
+placement.
+
+Every paid placement must have an appropriate visible label such as:
+
+Promoted
+Sponsored
+Featured
+
+Do not make paid listings appear to be purely organic recommendations.
+
+==================================================
+6. ORGANIC VS PAID RANKING
+==================================================
+
+Keep Phase K organic RecommendationService separate from paid promotion.
+
+Conceptually:
+
+ORGANIC RECOMMENDATIONS
+→ relevance
+
+PAID PLACEMENT
+→ monetization rules
+
+The two systems may be displayed together only when paid placement is clearly labeled.
+
+==================================================
+7. BUSINESS SELLER PLAN
+==================================================
+
+Prepare a future Business Seller subscription.
+
+Potential benefits:
+
+- more active listings
+- business profile
+- storefront
+- advanced analytics
+- AI Seller tools
+- bulk listing tools
+- enhanced listing management
+- priority support
+- business verification features
+
+Do NOT finalize benefits or price yet.
+
+==================================================
+8. DEALER PLAN
+==================================================
+
+Prepare a specialized Dealer Plan for vehicle sellers.
+
+Potential features:
+
+- dealership profile
+- larger vehicle inventory
+- bulk vehicle management
+- VIN/vehicle tools
+- advanced vehicle analytics
+- AI inventory assistant
+- dealership storefront
+- lead management
+- delivery integration
+
+Do not activate subscriptions yet.
+
+==================================================
+9. SELLER STOREFRONTS
+==================================================
+
+Prepare public seller storefronts.
+
+Potential URL:
+
+/store/seller-name
+
+Potential content:
+
+Business/Seller Name
+Profile image/logo
+Description
+Active listings
+Sold count where appropriate
+Seller rating if legitimately tracked
+General location
+JHE Haul delivery availability
+
+Do not expose private contact information.
+
+==================================================
+10. STOREFRONT PRIVACY
+==================================================
+
+Never expose:
+
+- private home address
+- private email
+- private phone unless seller explicitly chooses approved public business contact information
+- banking information
+- internal seller analytics
+- Admin notes
+- fraud signals
+
+==================================================
+11. AI PREMIUM SELLER TOOLS
+==================================================
+
+Prepare entitlements for future premium AI capabilities.
+
+Potential premium tools:
+
+Advanced listing optimization
+AI pricing analysis
+Advanced seller insights
+Bulk AI listing creation
+AI inventory analysis
+Business Copilot
+Advanced sales analytics
+Listing performance recommendations
+
+Do NOT remove useful basic AI functionality currently available just to create artificial scarcity.
+
+==================================================
+12. FREE VS PREMIUM
+==================================================
+
+Create an entitlement architecture such as:
+
+FREE
+BUSINESS
+DEALER
+
+and/or:
+
+individual purchased features.
+
+Do not hard-code entitlement checks across templates.
+
+Create centralized checks such as:
+
+has_feature(user, feature)
+
+or equivalent.
+
+==================================================
+13. PREMIUM BUYER FEATURES
+==================================================
+
+Prepare architecture only for possible future buyer premium tools.
+
+Examples:
+
+Advanced saved searches
+Priority alerts
+Advanced AI search
+Advanced buyer Copilot
+Deal tracking
+
+Do not charge buyers yet.
+
+==================================================
+14. DELIVERY REVENUE
+==================================================
+
+JHE Haul Delivery is an important marketplace advantage.
+
+Prepare revenue tracking for:
+
+Delivery requests
+Accepted deliveries
+Completed deliveries
+Delivery revenue
+Platform delivery fees where applicable
+
+Do NOT change current delivery pricing automatically.
+
+Do NOT let AI determine delivery pricing.
+
+==================================================
+15. MARKETPLACE TRANSACTION FEES
+==================================================
+
+Prepare architecture for future marketplace checkout.
+
+Potential future flow:
+
+Buyer purchase
+→ payment
+→ marketplace fee
+→ seller proceeds
+
+Do NOT activate this yet.
+
+Do not change existing Stripe behavior unless required for architecture preparation.
+
+==================================================
+16. STRIPE ARCHITECTURE
+==================================================
+
+Reuse the existing Stripe integration.
+
+Do NOT create a second unrelated payment system.
+
+Prepare for Stripe concepts such as:
+
+Products
+Prices
+Checkout
+Subscriptions
+Webhooks
+Customer IDs
+Purchase records
+
+Do not create live products/prices unless explicitly approved.
+
+==================================================
+17. STRIPE TEST MODE
+==================================================
+
+If monetization payment flows need testing:
+
+Use Stripe TEST MODE only.
+
+No real charges.
+
+Report clearly:
+
+STRIPE MODE: TEST
+
+Do not switch production billing on.
+
+==================================================
+18. WEBHOOK FOUNDATION
+==================================================
+
+Prepare secure Stripe webhook handling where needed.
+
+Potential events:
+
+checkout completed
+subscription created
+subscription updated
+subscription canceled
+payment failed
+
+Verify webhook signatures.
+
+Never trust frontend payment-success parameters alone.
+
+==================================================
+19. ENTITLEMENTS
+==================================================
+
+Payment status and product entitlement must be verified server-side.
+
+Example:
+
+Stripe confirms subscription active
+→ entitlement becomes active
+
+Subscription ends
+→ entitlement removed according to plan rules
+
+Do not allow users to unlock premium features by manipulating frontend requests.
+
+==================================================
+20. PURCHASE RECORDS
+==================================================
+
+Prepare records for purchases such as:
+
+user_id
+product
+listing_id if applicable
+Stripe reference
+status
+created_at
+starts_at
+expires_at
+
+Do not store full card information.
+
+Stripe handles card data.
+
+==================================================
+21. PROMOTION EXPIRATION
+==================================================
+
+Featured/Boosted promotions must automatically expire.
+
+Use Phase F workers/scheduled processing where appropriate.
+
+Example:
+
+7-day Featured Listing
+→ expires after approved duration
+→ listing remains active
+→ Featured status removed
+
+Never delete the listing because a promotion expired.
+
+==================================================
+22. PROMOTION ELIGIBILITY
+==================================================
+
+Do not allow:
+
+sold listings
+removed listings
+suspended listings
+private listings
+fraud-restricted listings
+
+to purchase/use inappropriate public promotion.
+
+Integrate Phase J safety status.
+
+==================================================
+23. SELLER MONETIZATION DASHBOARD
+==================================================
+
+Prepare a seller-facing area such as:
+
+Grow Your Sales
+
+Potential cards:
+
+Boost Listing
+Feature Listing
+Business Plan
+Dealer Plan
+AI Premium Tools
+Storefront
+
+Do not overwhelm sellers with upsells.
+
+==================================================
+24. LISTING-LEVEL MONETIZATION
+==================================================
+
+On seller-owned listings, prepare an optional:
+
+Promote Listing
+
+entry point.
+
+Potential flow:
+
+Promote
+→ choose promotion
+→ preview
+→ checkout
+
+Keep disabled/test-only until approved.
+
+==================================================
+25. PRICING CONFIGURATION
+==================================================
+
+Do NOT hard-code prices throughout application code.
+
+Create configurable monetization products.
+
+Potential structure:
+
+Product
+Product Type
+Price
+Duration
+Features
+Active/Inactive
+Stripe Price ID
+Display Order
+
+Admin should eventually be able to manage approved offerings.
+
+==================================================
+26. ADMIN MONETIZATION CONTROL
+==================================================
+
+Add or prepare Admin:
+
+Monetization
+
+Potential sections:
+
+Products
+Plans
+Promotions
+Subscriptions
+Purchases
+Revenue Analytics
+AI Premium Usage
+Delivery Revenue
+
+Do not expose this to normal users.
+
+==================================================
+27. ADMIN ENABLE / DISABLE
+==================================================
+
+Admin should eventually be able to activate/deactivate monetization products.
+
+Example:
+
+Featured Listings:
+OFF
+
+Business Plans:
+OFF
+
+Dealer Plans:
+OFF
+
+All new products should default to OFF until approved.
+
+==================================================
+28. REVENUE ANALYTICS
+==================================================
+
+Prepare actual revenue tracking.
+
+Potential metrics:
+
+Promotion revenue
+Subscription revenue
+Delivery revenue
+Future transaction-fee revenue
+AI premium revenue
+
+Never mix estimated revenue with collected revenue.
+
+Clearly distinguish:
+
+Collected
+Pending
+Refunded
+Estimated
+
+==================================================
+29. ADMIN AI INTEGRATION
+==================================================
+
+Integrate with Phase L architecture.
+
+Future Admin questions:
+
+“How much revenue did JHE Haul generate today?”
+
+“Which revenue stream is growing fastest?”
+
+“How many sellers bought boosts?”
+
+“How many Business subscriptions are active?”
+
+“What is delivery revenue this month?”
+
+Use actual recorded data only.
+
+If monetization is not active:
+report $0 / inactive appropriately.
+
+==================================================
+30. SELLER INTELLIGENCE INTEGRATION
+==================================================
+
+Phase I Seller Intelligence may eventually suggest OPTIONAL monetization.
+
+Example:
+
+“This listing is receiving strong engagement. You can optionally feature it for additional visibility.”
+
+Do not manipulate sellers with unsupported claims.
+
+Do not say paying guarantees a sale.
+
+==================================================
+31. COPILOT INTEGRATION
+==================================================
+
+Prepare Ask JHE Haul to explain monetization.
+
+Examples:
+
+“What does Featured mean?”
+
+“What is a listing boost?”
+
+“What comes with the Business Plan?”
+
+Copilot may explain configured products.
+
+Do NOT allow Copilot to silently purchase anything.
+
+==================================================
+32. PURCHASE CONFIRMATION
+==================================================
+
+Future purchases must always require explicit user confirmation.
+
+AI must never:
+
+- automatically purchase a boost
+- automatically start a subscription
+- automatically charge a card
+
+==================================================
+33. CANCELLATION
+==================================================
+
+Prepare proper subscription cancellation architecture.
+
+Users should eventually be able to manage/cancel subscriptions according to approved billing terms.
+
+Do not create intentionally difficult cancellation flows.
+
+==================================================
+34. PAYMENT FAILURE
+==================================================
+
+Prepare safe behavior:
+
+Payment fails
+→ premium entitlement not incorrectly granted
+→ user informed
+→ normal free marketplace remains usable
+
+Do not lock users out of unrelated marketplace functionality.
+
+==================================================
+35. REFUNDS
+==================================================
+
+Do not give AI automatic refund authority.
+
+Refunds remain controlled through approved Admin/payment workflows.
+
+==================================================
+36. ADVERTISING FOUNDATION
+==================================================
+
+Prepare architecture only for possible future advertising.
+
+Potential:
+
+Sponsored seller
+Sponsored business
+Promoted marketplace placement
+
+Do NOT launch third-party ads in Phase N.
+
+==================================================
+37. MARKETPLACE FAIRNESS
+==================================================
+
+Paid products must not make JHE Haul unusable for free sellers.
+
+Organic marketplace discovery must continue.
+
+New/free sellers should still have an opportunity to be discovered.
+
+==================================================
+38. MOBILE UX
+==================================================
+
+Design monetization interfaces mobile-first.
+
+Examples:
+
+Promote Listing
+→ bottom sheet
+
+Plans
+→ clean comparison cards
+
+Storefront
+→ mobile seller page
+
+Avoid complicated desktop-only pricing tables.
+
+==================================================
+39. SECURITY
+==================================================
+
+Verify:
+
+- Stripe secrets backend only
+- webhook signatures validated
+- entitlement checks server-side
+- ownership verified
+- purchase belongs to correct user/listing
+- Admin monetization routes protected
+- no card data stored locally
+
+==================================================
+40. FRAUD PROTECTION
+==================================================
+
+Integrate Phase J.
+
+Suspicious accounts should not be able to exploit:
+
+promotions
+subscriptions
+refunds
+storefronts
+
+Do not create automatic financial punishment based solely on AI fraud scores.
+
+==================================================
+41. AUDIT LOGGING
+==================================================
+
+Prepare audit logs for:
+
+Product created/changed
+Promotion purchased
+Subscription changed
+Entitlement changed
+Refund/admin action
+Promotion expiration
+
+Do not log payment secrets.
+
+==================================================
+42. TESTING
+==================================================
+
+Use TEST MODE only.
+
+Test:
+
+Free user
+→ marketplace still works
+
+Featured product disabled
+→ cannot purchase
+
+Admin enables test Featured product
+→ test checkout available
+
+Successful test checkout
+→ entitlement/promotion recorded
+
+Failed payment
+→ no entitlement
+
+Expired promotion
+→ Featured removed, listing stays active
+
+Canceled subscription
+→ entitlement updates correctly
+
+Unauthorized user attempts to promote another seller's listing
+→ denied
+
+Sold listing promotion attempt
+→ denied
+
+==================================================
+43. PRESERVE EXISTING SYSTEM
+==================================================
+
+Do not break:
+
+Marketplace Home
+Seller Dashboard
+AI Listing Assistant
+AI Search
+Workers/Queue
+Copilot
+Controlled Actions
+Seller Intelligence
+Fraud/Safety
+Recommendations
+Admin AI
+Growth Automation
+Messages
+Offers
+Saved Items
+Delivery
+Notifications
+Email
+Admin
+Photos
+Videos
+Vehicle fields
+SEO
+Authentication
+existing Stripe functionality
+
+==================================================
+44. IMPLEMENT LOCALLY / STAGING FIRST
+==================================================
+
+Implement Phase N architecture locally/staging first.
+
+DO NOT activate production monetization.
+
+DO NOT push yet.
+
+After implementation report:
+
+MONETIZATION SERVICE: YES/NO
+
+PRODUCT CONFIGURATION: YES/NO
+
+FEATURED LISTING FOUNDATION: YES/NO
+
+BOOST FOUNDATION: YES/NO
+
+PROMOTED LISTING FOUNDATION: YES/NO
+
+BUSINESS PLAN FOUNDATION: YES/NO
+
+DEALER PLAN FOUNDATION: YES/NO
+
+SELLER STOREFRONT FOUNDATION: YES/NO
+
+AI PREMIUM ENTITLEMENTS: YES/NO
+
+DELIVERY REVENUE TRACKING: YES/NO
+
+TRANSACTION-FEE FOUNDATION: YES/NO
+
+STRIPE TEST MODE INTEGRATION: YES/NO
+
+STRIPE WEBHOOK FOUNDATION: YES/NO
+
+SERVER-SIDE ENTITLEMENTS: YES/NO
+
+PROMOTION EXPIRATION: YES/NO
+
+SELLER MONETIZATION UI: YES/NO
+
+ADMIN MONETIZATION UI: YES/NO
+
+REVENUE ANALYTICS FOUNDATION: YES/NO
+
+ADMIN AI REVENUE TOOLS: YES/NO
+
+ALL PRODUCTS DEFAULT OFF: YES/NO
+
+LIVE CHARGES ENABLED: NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+NEW ENVIRONMENT VARIABLES:
+(NAMES ONLY — NEVER VALUES)
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+SECURITY TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+Do NOT activate live billing.
+
+Wait for approval.
+
+==================================================
+45. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+DO NOT charge users.
+
+DO NOT activate live subscriptions.
+
+DO NOT create autonomous purchases.
+
+DO NOT allow AI to move money.
+
+DO NOT begin the next phase.
+
+BEGIN PHASE N ARCHITECTURE IMPLEMENTATION.
