@@ -205,6 +205,16 @@
       </div>
       {% endif %}
 
+      {% if is_admin and dr.status in ('requested', 'offers_received') %}
+      <div style="margin-top:14px;border-top:1px solid #f1f5f9;padding-top:14px;">
+        <form method="POST" action="{{ url_for('delivery_update_status', dr_id=dr.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="status" value="quoted">
+          <button type="submit" class="btn btn-primary btn-sm" style="width:100%;background:#8b5cf6;border-color:#8b5cf6;" onclick="return confirm('Mark as Quoted and notify the buyer?')">💵 Mark as Quoted</button>
+        </form>
+      </div>
+      {% endif %}
+
       {% if is_buyer and dr.status == 'requested' %}
       <div style="margin-top:14px;border-top:1px solid #f1f5f9;padding-top:14px;">
         <form method="POST" action="{{ url_for('delivery_update_status', dr_id=dr.id) }}">

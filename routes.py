@@ -5139,6 +5139,7 @@ def delivery_detail(dr_id):
         hauler_own_bid=hauler_own_bid,
         listing_photo=listing_photo,
         status_icon=icon, status_label=label, status_color=color,
+        status_meta=_DELIVERY_STATUS_META,
     )
 
 
