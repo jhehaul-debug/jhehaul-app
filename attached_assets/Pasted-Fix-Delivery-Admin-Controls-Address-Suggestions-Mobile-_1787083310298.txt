@@ -1,0 +1,150 @@
+Fix Delivery Admin Controls, Address Suggestions & Mobile Layout
+
+Update the JHE Haul delivery request system with the following changes and push the completed changes to GitHub/production so I can test them live.
+
+1. Admin Must Be Able to Delete Delivery Requests
+
+In the Admin Delivery/Quote management area, add a clearly visible:
+
+Delete Delivery
+
+button/action for every delivery request, including:
+
+* New requests
+* Quoted requests
+* Accepted requests
+* Paid requests
+* Completed requests
+* Test quotes
+
+When Delete is selected:
+
+* Show a confirmation such as: “Are you sure you want to permanently delete this delivery request?”
+* Require confirmation before deleting.
+* Delete the delivery request from the admin list.
+* Remove associated test data when appropriate.
+* Make sure deleted test deliveries do not affect revenue, analytics, delivery totals, or reporting.
+* Do not accidentally delete unrelated customer/account information.
+
+Only authorized admin users should have access to this delete function.
+
+2. Add Address Suggestions / Autocomplete
+
+Improve the delivery request form so customers receive suggestions while entering pickup and drop-off information.
+
+Add autocomplete/suggestions for:
+
+* Street address
+* City
+* State
+* ZIP code
+
+When a customer begins typing an address or city, show matching suggestions in a dropdown.
+
+When the customer selects a suggestion, automatically populate as much of the following as possible:
+
+* Street address
+* City
+* State
+* ZIP code
+
+The user must still be able to manually type or correct the information.
+
+Use the same functionality for both:
+
+Pickup Location
+
+and
+
+Drop-Off Location
+
+Do not restrict this only to Minneapolis unless the current delivery service intentionally has that restriction.
+
+3. Fix Mobile Form Overlapping
+
+The delivery request/test delivery form must be completely responsive on mobile devices.
+
+The screenshots show several fields going outside the screen and overlapping.
+
+Fix the layout so no input field extends beyond its container or the phone screen.
+
+Specifically fix:
+
+* Name / Phone / Email
+* Description
+* Approx dimensions
+* Approx weight
+* Item count
+* Special instructions
+* Pickup City / State / ZIP
+* Drop-off City / State / ZIP
+* Any other multi-column delivery fields
+
+Mobile Layout
+
+On smaller screens, fields should automatically stack vertically when there is not enough horizontal room.
+
+For example:
+
+Desktop:
+
+City | State | ZIP
+
+Mobile:
+
+City
+State
+ZIP
+
+Do the same for other groups such as:
+
+Name | Phone | Email
+
+and
+
+Dimensions | Weight | Item Count
+
+Inputs should use:
+
+* width: 100%
+* Proper responsive grid/flex behavior
+* Proper box-sizing
+* No fixed widths that cause horizontal overflow
+* Enough spacing between labels and fields
+* No horizontal scrolling
+
+Text areas should also fit completely inside their cards.
+
+4. Keep Bottom Navigation From Covering Fields
+
+Make sure the fixed mobile bottom navigation and Ask JHE Haul button do not cover:
+
+* Form fields
+* Checkboxes
+* Dropdown suggestions
+* Submit buttons
+* Important form content
+
+Add sufficient bottom spacing/padding to the delivery page.
+
+5. Test Both Real and Test Delivery Forms
+
+The fixes must work on:
+
+* Customer Request Delivery form
+* Admin Test Delivery Request Form
+* Delivery details
+* Admin delivery management screen
+
+Test specifically on an iPhone/mobile-width screen.
+
+6. Push the Changes
+
+After completing and testing the changes:
+
+* Commit the changes.
+* Push them to the GitHub branch used by DigitalOcean production.
+* Make sure DigitalOcean receives the new deployment.
+* Give me the commit hash when finished so I can confirm the live site updated.
+
+IMPORTANT: Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
