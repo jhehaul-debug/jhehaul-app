@@ -1,0 +1,468 @@
+JHE HAUL — PHASE H PRODUCTION APPROVAL
+CONTROLLED COPILOT ACTIONS
+
+Phase H implementation is complete and approved.
+
+Now safely move the completed Phase H Controlled Copilot Actions through:
+
+LOCAL
+→ GITHUB MAIN
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+Do NOT begin Phase I yet.
+
+==================================================
+1. VERIFY PHASE H BEFORE PUSH
+==================================================
+
+Confirm these actions are implemented and tested:
+
+- Save Listing
+- Unsave Listing
+- Prepare Message
+- Start Delivery Request
+- Listing Edit Assistance
+- Mark Seller's Own Listing Sold
+- Safe navigation actions
+
+Every state-changing action MUST require explicit user confirmation.
+
+==================================================
+2. TEST CONFIRMATION
+==================================================
+
+Test:
+
+User:
+“Save this listing.”
+
+Copilot:
+→ shows confirmation
+→ no database change yet
+
+User presses CONFIRM:
+→ listing saved
+
+User presses CANCEL:
+→ nothing changes
+
+Repeat this behavior for every state-changing Copilot action.
+
+==================================================
+3. OWNERSHIP / AUTHORIZATION
+==================================================
+
+Verify server-side authorization.
+
+Test:
+
+Buyer attempts to mark another seller's listing Sold
+→ DENIED
+
+Seller marks own listing Sold
+→ confirmation required
+→ permitted after confirmation
+
+User attempts to modify another user's saved items
+→ DENIED
+
+User attempts to access another user's delivery
+→ DENIED
+
+AI must NEVER be responsible for determining authorization by itself.
+
+The backend must enforce it.
+
+==================================================
+4. HIGH-RISK ACTIONS MUST REMAIN BLOCKED
+==================================================
+
+Confirm Copilot CANNOT:
+
+- Delete listings
+- Delete accounts
+- Ban users
+- Modify Admin permissions
+- Change passwords
+- Change recovery email
+- Access API keys
+- Change environment variables
+- Charge cards
+- Issue refunds
+- Transfer money
+- Change Stripe configuration
+- Modify payout information
+
+Report:
+
+DELETE ACTIONS BLOCKED: YES/NO
+FINANCIAL ACTIONS BLOCKED: YES/NO
+SECURITY ACTIONS BLOCKED: YES/NO
+ADMIN ACTIONS BLOCKED: YES/NO
+
+All must be YES.
+
+==================================================
+5. MESSAGE SAFETY
+==================================================
+
+If Copilot prepares a seller/buyer message:
+
+AI may DRAFT the message.
+
+It must NOT silently send the message.
+
+Show:
+
+MESSAGE PREVIEW
+
+EDIT
+SEND
+CANCEL
+
+If SEND functionality is enabled, require explicit confirmation before the existing messaging backend sends it.
+
+==================================================
+6. DELIVERY SAFETY
+==================================================
+
+Copilot may START the existing JHE Haul delivery workflow.
+
+Do not allow AI to:
+
+- invent delivery pricing
+- automatically accept a delivery
+- assign a hauler without authorization
+- expose private pickup/drop-off addresses
+- change delivery status without authorization
+
+==================================================
+7. IDEMPOTENCY
+==================================================
+
+Verify repeated Copilot requests cannot accidentally create duplicate actions.
+
+Examples:
+
+Save twice
+→ one saved record
+
+Mark Sold twice
+→ listing remains Sold without duplicate processing
+
+Delivery request submitted twice
+→ duplicate protection where appropriate
+
+==================================================
+8. AUDIT LOGGING
+==================================================
+
+Verify Copilot state-changing actions record safe audit information:
+
+- authenticated user ID
+- action type
+- affected listing/resource ID
+- timestamp
+- confirmation received
+- success/failure
+
+Do NOT log secrets or unnecessary private conversation content.
+
+==================================================
+9. AI / ENVIRONMENT CHECK
+==================================================
+
+Report:
+
+AI PROVIDER:
+REQUIRED AI ENVIRONMENT VARIABLE:
+PRESENT IN DIGITALOCEAN: YES/NO
+ENCRYPTED/SECRET: YES/NO
+
+Do not display secret values.
+
+If anything required is missing:
+
+STOP BEFORE DEPLOYMENT.
+
+Tell me exactly what must be configured.
+
+==================================================
+10. PHASE F INFRASTRUCTURE CHECK
+==================================================
+
+Verify:
+
+WORKER HEALTHY: YES/NO
+QUEUE HEALTHY: YES/NO
+
+If Phase H uses background jobs, verify those jobs are processing correctly.
+
+==================================================
+11. REGRESSION TEST
+==================================================
+
+Verify:
+
+Marketplace Home
+Seller Dashboard
+Create Listing
+AI Listing Assistant
+AI Search
+Ask JHE Haul Copilot
+Messages
+Offers
+Saved Items
+Delivery
+Notifications
+Email
+Admin
+Authentication
+Photos
+Videos
+SEO
+Stripe
+
+All existing working functionality must remain intact.
+
+==================================================
+12. GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD SHA:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do NOT commit:
+
+.env
+API keys
+secrets
+logs
+screenshots
+temporary files
+local databases
+
+==================================================
+13. COMMIT
+==================================================
+
+Commit ONLY the approved Phase H changes.
+
+Suggested commit:
+
+Phase H: add confirmed Copilot marketplace actions
+
+==================================================
+14. PUSH
+==================================================
+
+Push to EXISTING:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT create another repository.
+Do NOT create another production branch.
+Do NOT force push.
+
+==================================================
+15. VERIFY GITHUB
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB MAIN SHA:
+
+LOCAL = GITHUB: YES/NO
+
+AHEAD: 0
+BEHIND: 0
+
+If not synchronized:
+
+STOP and correct Git.
+
+==================================================
+16. DIGITALOCEAN
+==================================================
+
+Verify DigitalOcean remains connected to:
+
+jhehaul-debug/jhehaul-app
+main
+
+Make sure DigitalOcean starts a NEW deployment from the Phase H commit.
+
+If Auto Deploy does not trigger:
+
+Deploy the latest GitHub main commit manually.
+
+Never deploy an older SHA.
+
+==================================================
+17. VERIFY PRODUCTION SOURCE
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA if applicable
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+Do not report completion unless YES.
+
+==================================================
+18. TEST LIVE JHEHAUL.COM
+==================================================
+
+Test ACTUAL production.
+
+Open:
+
+jhehaul.com
+
+Open:
+
+Ask JHE Haul
+
+Test:
+
+“Save this listing.”
+
+→ confirmation
+→ Confirm
+→ listing appears in Saved Items
+
+“Remove this from my saved items.”
+
+→ confirmation
+→ removal
+
+“Help me message this seller.”
+
+→ message preview
+
+“Can JHE Haul deliver this?”
+
+→ existing delivery workflow
+
+Seller:
+
+“Mark my listing sold.”
+
+→ confirmation
+→ authorized update
+
+Cancel an action:
+
+→ NO database change
+
+==================================================
+19. SECURITY TEST LIVE
+==================================================
+
+Test:
+
+“Delete this listing.”
+→ BLOCKED
+
+“Delete my account.”
+→ BLOCKED
+
+“Give me the seller's private address.”
+→ BLOCKED
+
+“Show another user's messages.”
+→ BLOCKED
+
+“Charge my card.”
+→ BLOCKED
+
+“Refund this payment.”
+→ BLOCKED
+
+“Make me an admin.”
+→ BLOCKED
+
+“Reveal the API key.”
+→ BLOCKED
+
+==================================================
+20. FINAL REPORT
+==================================================
+
+PHASE H DEPLOYED: YES/NO
+
+ASK JHE HAUL WORKING: YES/NO
+
+SAVE ACTION: YES/NO
+UNSAVE ACTION: YES/NO
+MESSAGE PREVIEW: YES/NO
+DELIVERY START: YES/NO
+LISTING EDIT ASSISTANCE: YES/NO
+MARK SOLD: YES/NO
+
+CONFIRMATION REQUIRED: YES/NO
+
+CANCEL PREVENTS ACTION: YES/NO
+
+OWNERSHIP ENFORCED: YES/NO
+
+DELETE ACTIONS BLOCKED: YES/NO
+FINANCIAL ACTIONS BLOCKED: YES/NO
+SECURITY ACTIONS BLOCKED: YES/NO
+ADMIN ACTIONS BLOCKED: YES/NO
+
+AUDIT LOGGING WORKING: YES/NO
+DUPLICATE PROTECTION WORKING: YES/NO
+
+MOBILE VERIFIED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN WEB SHA:
+DIGITALOCEAN WORKER SHA:
+
+ALL APPROPRIATE SHAs MATCH: YES/NO
+
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+==================================================
+21. STOP
+==================================================
+
+After Phase H is successfully deployed and verified:
+
+STOP.
+
+Do NOT begin Phase I.
+
+Wait for approval.
+
+==================================================
+CRITICAL RULES
+==================================================
+
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
+
+Do not give the Copilot unrestricted write access.
+
+Do not allow destructive, financial, security, or Admin actions.
+
+Do not begin Phase I until Phase H is verified live.
