@@ -394,6 +394,153 @@ def test_non_owner_gets_403():
         _cleanup(attacker_id, None)
 
 
+def _create_gallery_pin(listing_id):
+    """Create an active listing-type gallery pin for the given listing."""
+    from models import GalleryPhoto
+    pin = GalleryPhoto()
+    pin.item_type       = "listing"
+    pin.listing_id      = listing_id
+    pin.is_active       = True
+    pin.auto_deactivated = False
+    pin.display_order   = 0
+    db.session.add(pin)
+    db.session.commit()
+    return pin.id
+
+
+def _cleanup_pin(pin_id):
+    from models import GalleryPhoto
+    with app.app_context():
+        pin = GalleryPhoto.query.get(pin_id)
+        if pin:
+            db.session.delete(pin)
+            db.session.commit()
+
+
+def test_mark_sold_deactivates_gallery_pin():
+    """Gallery pin for a listing is deactivated immediately when seller marks it sold."""
+    seller_id = listing_id = pin_id = None
+    with app.app_context():
+        seller_id  = _create_seller()
+        listing_id = _create_listing(seller_id, status="active")
+        pin_id     = _create_gallery_pin(listing_id)
+        from models import User
+        seller = User.query.get(seller_id)
+
+    try:
+        with app.test_client() as client:
+            with patch("flask_login.utils._get_user", return_value=seller), \
+                 patch("flask_wtf.csrf.validate_csrf"):
+                resp = _post_status(client, listing_id, "sold")
+
+        assert resp.status_code in (302, 303), (
+            f"Expected redirect, got {resp.status_code}"
+        )
+
+        with app.app_context():
+            from models import Listing, GalleryPhoto
+            updated = Listing.query.get(listing_id)
+            assert updated.status == "sold", (
+                f"Expected 'sold', got '{updated.status}'"
+            )
+            pin = GalleryPhoto.query.get(pin_id)
+            assert pin is not None, "Gallery pin row should still exist (deactivated, not deleted)"
+            assert pin.is_active is False, (
+                f"Gallery pin should be deactivated after mark-sold, but is_active={pin.is_active}"
+            )
+    finally:
+        _cleanup_pin(pin_id)
+        _cleanup(seller_id, listing_id)
+
+
+def test_mark_reserved_deactivates_gallery_pin():
+    """Gallery pin for a listing is deactivated immediately when seller marks it reserved."""
+    seller_id = listing_id = pin_id = None
+    with app.app_context():
+        seller_id  = _create_seller()
+        listing_id = _create_listing(seller_id, status="active")
+        pin_id     = _create_gallery_pin(listing_id)
+        from models import User
+        seller = User.query.get(seller_id)
+
+    try:
+        with app.test_client() as client:
+            with patch("flask_login.utils._get_user", return_value=seller), \
+                 patch("flask_wtf.csrf.validate_csrf"):
+                resp = _post_status(client, listing_id, "reserved")
+
+        assert resp.status_code in (302, 303), (
+            f"Expected redirect, got {resp.status_code}"
+        )
+
+        with app.app_context():
+            from models import Listing, GalleryPhoto
+            updated = Listing.query.get(listing_id)
+            assert updated.status == "reserved", (
+                f"Expected 'reserved', got '{updated.status}'"
+            )
+            pin = GalleryPhoto.query.get(pin_id)
+            assert pin is not None, "Gallery pin row should still exist (deactivated, not deleted)"
+            assert pin.is_active is False, (
+                f"Gallery pin should be deactivated after mark-reserved, but is_active={pin.is_active}"
+            )
+    finally:
+        _cleanup_pin(pin_id)
+        _cleanup(seller_id, listing_id)
+
+
+def test_reactivate_listing_reactivates_auto_deactivated_pin():
+    """A pin that was auto-deactivated when sold comes back active when listing is reactivated."""
+    seller_id = listing_id = pin_id = None
+    with app.app_context():
+        seller_id  = _create_seller()
+        listing_id = _create_listing(seller_id, status="sold")
+        # Simulate a pin that was auto-deactivated when the listing was sold
+        from models import GalleryPhoto
+        pin = GalleryPhoto()
+        pin.item_type       = "listing"
+        pin.listing_id      = listing_id
+        pin.is_active       = False
+        pin.auto_deactivated = True   # set by _deactivate_stale_gallery_pins
+        pin.display_order   = 0
+        db.session.add(pin)
+        db.session.commit()
+        pin_id = pin.id
+        # Also fix the listing: approved + sold so reactivation goes through
+        from models import Listing
+        l = Listing.query.get(listing_id)
+        l.moderation_status = "approved"
+        db.session.commit()
+        from models import User
+        seller = User.query.get(seller_id)
+
+    try:
+        with app.test_client() as client:
+            with patch("flask_login.utils._get_user", return_value=seller), \
+                 patch("flask_wtf.csrf.validate_csrf"):
+                resp = _post_status(client, listing_id, "active")
+
+        assert resp.status_code in (302, 303), (
+            f"Expected redirect, got {resp.status_code}"
+        )
+
+        with app.app_context():
+            from models import Listing, GalleryPhoto
+            updated = Listing.query.get(listing_id)
+            assert updated.status == "active", (
+                f"Expected 'active', got '{updated.status}'"
+            )
+            pin = GalleryPhoto.query.get(pin_id)
+            assert pin is not None, "Gallery pin row should still exist"
+            assert pin.is_active is True, (
+                f"Auto-deactivated pin should be re-activated when listing goes active, "
+                f"but is_active={pin.is_active}"
+            )
+    finally:
+        _cleanup_pin(pin_id)
+        _cleanup(seller_id, listing_id)
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -407,6 +554,9 @@ if __name__ == "__main__":
     run("invalid status value rejected",              test_invalid_status_value_rejected)
     run("missing CSRF token → 400",                   test_missing_csrf_token_returns_400)
     run("non-owner → 403",                            test_non_owner_gets_403)
+    run("mark-sold deactivates gallery pin",          test_mark_sold_deactivates_gallery_pin)
+    run("mark-reserved deactivates gallery pin",      test_mark_reserved_deactivates_gallery_pin)
+    run("reactivate re-enables auto-deactivated pin", test_reactivate_listing_reactivates_auto_deactivated_pin)
 
     print(f"\n{'='*50}")
     print(f"Results: {len(PASS)} passed, {len(FAIL)} failed")
