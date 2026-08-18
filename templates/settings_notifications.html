@@ -116,9 +116,9 @@
   <p class="subtitle">Choose what you want to hear about and how.</p>
 
   <div class="transactional-note">
-    <strong>Note:</strong> Transactional notifications — new messages, offer responses,
-    and delivery updates — are always delivered regardless of these settings.
-    Only non-essential growth and marketing alerts can be turned off here.
+    <strong>Note:</strong> Account and billing emails are always sent and cannot be disabled.
+    Marketplace notifications (new messages, offers, delivery quotes) can be individually
+    turned off in the <strong>Marketplace Emails</strong> section below.
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -207,12 +207,56 @@
       </div>
     </div>
 
+    {# ── Marketplace email opt-outs ───────────────────────────────── #}
+    <div class="notif-section">
+      <h2>📨 Marketplace Emails</h2>
+      <p class="notif-pref-note" style="margin-bottom:16px;">
+        Control which marketplace activity emails you receive. In-app notifications are
+        unaffected by these toggles.
+      </p>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">New message from a buyer</div>
+          <div class="notif-pref-note">Email when a buyer sends their first message about your listing.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_new_message"
+                 {% if user.notify_email_new_message != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Offer accepted</div>
+          <div class="notif-pref-note">Email when a seller accepts your offer on a listing.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_offer_accepted"
+                 {% if user.notify_email_offer_accepted != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">Delivery quote ready</div>
+          <div class="notif-pref-note">Email when your JHE Haul delivery quote has been prepared.</div>
+        </div>
+        <label class="toggle-wrap">
+          <input type="checkbox" name="notify_email_delivery_quote"
+                 {% if user.notify_email_delivery_quote != False %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
     {# ── Email notifications ───────────────────────────────────────── #}
     <div class="notif-section">
-      <h2>📧 Email Notifications</h2>
+      <h2>📧 Growth &amp; Discovery Emails</h2>
       <p class="notif-pref-note" style="margin-bottom:16px;">
-        Controlling email here only affects non-essential alert emails.
-        Offer responses, message threads, and account emails are always sent.
+        Non-essential alert emails about marketplace activity, price changes, and recommendations.
       </p>
 
       <div class="notif-row">

@@ -2573,10 +2573,10 @@ def offer_seller_respond(listing_id, offer_id):
             return _done_redirect()
         buyer = offer.buyer
         # SMS disabled for marketplace — in-app + email used instead
-        # Email notification → buyer
+        # Email notification → buyer (respects their opt-out preference)
         try:
             from email_service import notify_buyer_offer_accepted as _eboa
-            if buyer and buyer.email:
+            if buyer and buyer.email and getattr(buyer, 'notify_email_offer_accepted', True):
                 _eboa(buyer.email, listing.title, listing_id, offer.amount)
         except Exception:
             pass
@@ -3584,7 +3584,7 @@ def listing_message(listing_id, convo_id=None):
                 if _is_buyer_sender and _existing_count == 0:
                     try:
                         seller = User.query.get(convo.seller_id)
-                        if seller and seller.email:
+                        if seller and seller.email and getattr(seller, 'notify_email_new_message', True):
                             buyer_name = (current_user.first_name or
                                           current_user.email or 'A buyer')
                             # Phase F: queue the email; fall back to sync if queue unavailable
@@ -3687,7 +3687,7 @@ def listing_message(listing_id, convo_id=None):
             if _is_first_buyer_msg:
                 try:
                     seller = User.query.get(listing.seller_id)
-                    if seller and seller.email:
+                    if seller and seller.email and getattr(seller, 'notify_email_new_message', True):
                         buyer_name = (current_user.first_name or
                                       current_user.email or 'A buyer')
                         # Phase F: queue the email; fall back to sync if queue unavailable
@@ -5258,11 +5258,11 @@ def delivery_update_status(dr_id):
                   amount=dr.quote_amount)
     except Exception:
         pass
-    # Email buyer when a delivery quote is ready
+    # Email buyer when a delivery quote is ready (respects their opt-out preference)
     if new_status == 'quoted' and is_admin:
         try:
             buyer = User.query.get(dr.buyer_id)
-            if buyer and buyer.email:
+            if buyer and buyer.email and getattr(buyer, 'notify_email_delivery_quote', True):
                 from models import Listing as _QL
                 _ql = _QL.query.get(dr.listing_id) if dr.listing_id else None
                 _qtitle = _ql.title if _ql else 'your item'
@@ -9058,6 +9058,10 @@ def settings_notifications():
         ('notify_email_offers',          'notify_email_offers',          'Offer reminder emails',      'email'),
         ('notify_email_listing_expiry',  'notify_email_listing_expiry',  'Listing expiry emails',      'email'),
         ('notify_email_recommendations', 'notify_email_recommendations', 'Recommendation emails',      'email'),
+        # Marketplace transactional email opt-outs
+        ('notify_email_new_message',     'notify_email_new_message',     'New message from a buyer',   'marketplace_email'),
+        ('notify_email_offer_accepted',  'notify_email_offer_accepted',  'Offer accepted',             'marketplace_email'),
+        ('notify_email_delivery_quote',  'notify_email_delivery_quote',  'Delivery quote ready',       'marketplace_email'),
     ]
     if request.method == "POST":
         _check_listing_csrf()

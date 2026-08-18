@@ -1044,6 +1044,10 @@ with app.app_context():
             ("users",         "notify_email_listing_expiry",   "BOOLEAN DEFAULT TRUE"),
             ("users",         "notify_email_recommendations",  "BOOLEAN DEFAULT FALSE"),
             ("notifications", "dedup_key",                     "VARCHAR(200)"),
+            # Task 205: marketplace transactional email opt-outs
+            ("users",         "notify_email_new_message",       "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_email_offer_accepted",    "BOOLEAN DEFAULT TRUE"),
+            ("users",         "notify_email_delivery_quote",    "BOOLEAN DEFAULT TRUE"),
         ]
         for _tbl, _col, _defn in _pm_cols:
             db.session.execute(_text(

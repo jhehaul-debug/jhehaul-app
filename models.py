@@ -58,6 +58,11 @@ class User(UserMixin, db.Model):
     notify_email_listing_expiry  = db.Column(db.Boolean, default=True)
     notify_email_recommendations = db.Column(db.Boolean, default=False)  # opt-in marketing
 
+    # ── Marketplace transactional email opt-outs (Task 205) ───────────────────
+    notify_email_new_message     = db.Column(db.Boolean, default=True)   # seller: new buyer message
+    notify_email_offer_accepted  = db.Column(db.Boolean, default=True)   # buyer: offer accepted
+    notify_email_delivery_quote  = db.Column(db.Boolean, default=True)   # buyer: delivery quote ready
+
     # Admin security fields (only meaningful on is_admin=True accounts)
     admin_password_hash          = db.Column(db.String(256), nullable=True)
     admin_recovery_email         = db.Column(db.String(256), nullable=True)   # verified recovery address
