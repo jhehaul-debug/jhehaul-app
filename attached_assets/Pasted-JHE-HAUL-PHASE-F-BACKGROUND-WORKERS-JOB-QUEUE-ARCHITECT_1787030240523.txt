@@ -1,0 +1,606 @@
+JHE HAUL — PHASE F
+BACKGROUND WORKERS + JOB QUEUE ARCHITECTURE
+
+Phase E is complete and verified.
+
+Now begin Phase F.
+
+This phase is infrastructure-focused.
+
+Do NOT begin the full AI Copilot yet.
+Do NOT begin autonomous multi-agent orchestration yet.
+Do NOT redesign the marketplace UI.
+Do NOT change production hosting away from DigitalOcean.
+
+IMPORTANT:
+
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+PHASE F OBJECTIVE
+
+Prepare JHE Haul to safely run heavier AI and automation tasks in the background without slowing down the main web application.
+
+The main web app should remain responsive while background workers process tasks such as:
+
+* AI listing analysis
+* Search embedding generation
+* Fraud/safety checks
+* Recommendation processing
+* Notification processing
+* Email jobs
+* Analytics
+* Listing expiration cleanup
+* Saved-search matching
+* Future AI agent tasks
+* Future media analysis
+
+==================================================
+
+1. AUDIT CURRENT BACKGROUND PROCESSING
+    ==================================================
+
+Before changing architecture, inspect the existing application.
+
+Report whether JHE Haul currently uses:
+
+* background threads
+* scheduled jobs
+* cron
+* Celery
+* RQ
+* Redis
+* database-backed jobs
+* DigitalOcean jobs/workers
+* synchronous email sending
+* synchronous AI requests
+* any other task system
+
+Identify which current tasks block normal web requests.
+
+==================================================
+2. SELECT THE SIMPLEST SAFE QUEUE
+
+Evaluate the current Flask/DigitalOcean architecture and recommend the simplest reliable job queue.
+
+Potential options may include:
+
+* Redis + RQ
+* Redis + Celery
+* database-backed queue
+* another appropriate solution
+
+Do NOT install complicated infrastructure unless needed.
+
+Prefer:
+
+* reliability
+* simplicity
+* observability
+* reasonable cost
+* compatibility with DigitalOcean
+* future multi-agent support
+
+Explain why the selected solution is appropriate.
+
+==================================================
+3. DIGITALOCEAN WORKER ARCHITECTURE
+
+Prepare the application for a separate DigitalOcean Worker component.
+
+Conceptually:
+
+WEB SERVICE
+→ accepts user request
+→ validates request
+→ creates background job
+→ immediately responds
+
+WORKER
+→ receives job
+→ performs heavy task
+→ stores result
+→ updates status
+→ triggers notification if appropriate
+
+Do NOT run heavy AI workloads inside the main Flask request process when they can safely run asynchronously.
+
+==================================================
+4. JOB TYPES
+
+Create a clean job architecture.
+
+Potential initial job types:
+
+AI_LISTING_TITLE
+
+AI_LISTING_DESCRIPTION
+
+AI_CATEGORY_SUGGESTION
+
+AI_SEARCH_PROCESSING where appropriate
+
+EMAIL_NOTIFICATION
+
+MARKETPLACE_NOTIFICATION
+
+LISTING_EXPIRATION
+
+SAVED_SEARCH_MATCH
+
+ANALYTICS_EVENT
+
+FRAUD_SCAN
+
+FUTURE_IMAGE_ANALYSIS
+
+Do not move everything into the queue unnecessarily.
+
+Simple fast database operations should remain synchronous.
+
+==================================================
+5. JOB DATA SAFETY
+
+Queue payloads must contain only the minimum information required.
+
+Prefer IDs over entire database objects.
+
+Example:
+
+listing_id
+user_id
+job_type
+
+Then the worker should safely fetch authorized data.
+
+Do not put:
+
+* passwords
+* API keys
+* authentication tokens
+* payment credentials
+* private secrets
+
+inside job payloads.
+
+==================================================
+6. JOB STATUS
+
+Support basic job states:
+
+QUEUED
+
+PROCESSING
+
+COMPLETED
+
+FAILED
+
+RETRYING
+
+CANCELLED where appropriate
+
+Record:
+
+* created time
+* started time
+* completed time
+* failure reason
+* retry count
+
+Do not expose sensitive stack traces to normal users.
+
+==================================================
+7. RETRIES
+
+Implement controlled retry behavior.
+
+Example:
+
+Temporary AI/API/network failure
+→ retry safely
+
+Permanent validation failure
+→ do not retry indefinitely
+
+Use:
+
+* retry limits
+* exponential backoff where appropriate
+* failure logging
+
+Prevent endless retry loops.
+
+==================================================
+8. IDEMPOTENCY
+
+Important jobs should be safe against duplicate execution.
+
+Examples:
+
+Email notification job should not accidentally send the same email multiple times.
+
+Fraud scan should not create duplicate reports.
+
+Saved-search matching should not repeatedly send identical alerts.
+
+Design jobs to be idempotent where practical.
+
+==================================================
+9. PRIORITY
+
+Prepare for job priority levels.
+
+Potential examples:
+
+HIGH:
+
+* security/account email
+* delivery status
+* critical notification
+
+NORMAL:
+
+* AI listing assistance
+* saved-search matching
+
+LOW:
+
+* analytics
+* recommendation processing
+* background enrichment
+
+Do not over-engineer priority logic if the selected queue does not require it yet.
+
+==================================================
+10. AI JOBS
+
+Move appropriate heavier AI requests toward background execution where doing so improves responsiveness.
+
+However:
+
+Interactive tasks such as AI title suggestions may still need quick user-visible responses.
+
+Evaluate which AI operations should remain synchronous vs asynchronous.
+
+Document the decision.
+
+Do not make the UI feel slow just because a queue exists.
+
+==================================================
+11. USER EXPERIENCE FOR ASYNC JOBS
+
+For background tasks that take time, show clear states.
+
+Example:
+
+“Analyzing your listing…”
+
+“Preparing recommendations…”
+
+“Processing…”
+
+Then update when complete.
+
+Do not leave users wondering whether an action worked.
+
+==================================================
+12. WORKER SECURITY
+
+Worker processes should use backend-only credentials.
+
+Never expose:
+
+* AI keys
+* database credentials
+* email API keys
+* Stripe secret
+* authentication secrets
+
+to frontend clients.
+
+Use DigitalOcean environment secrets.
+
+==================================================
+13. FAILURE FALLBACK
+
+If the worker/queue becomes unavailable:
+
+The core marketplace must remain usable.
+
+Examples:
+
+Buyer can still browse.
+
+Seller can still manually create a listing.
+
+Messages still work.
+
+Offers still work.
+
+Delivery still works.
+
+AI/background enhancements may temporarily show unavailable status.
+
+Do not make the queue a single point of failure for basic marketplace functionality.
+
+==================================================
+14. MONITORING
+
+Add basic worker/job monitoring for Admin.
+
+Potential Admin metrics:
+
+Queued jobs
+Processing jobs
+Completed jobs
+Failed jobs
+Retrying jobs
+
+Recent failures
+
+Average processing time
+
+Do not expose secrets or sensitive job payloads.
+
+==================================================
+15. FAILED JOB REVIEW
+
+Admin should be able to inspect safe metadata for failed jobs.
+
+Examples:
+
+Job type
+Timestamp
+Error category
+Retry count
+
+Do not show full secrets or unnecessary private user data.
+
+==================================================
+16. CLEANUP
+
+Create a safe retention policy for completed job records.
+
+Do not allow the jobs table/store to grow forever.
+
+Potential approach:
+
+Keep recent job metadata for operational visibility.
+
+Archive/delete old completed job records after a reasonable period.
+
+Preserve important audit/security records separately where needed.
+
+==================================================
+17. ANALYTICS EVENTS
+
+Evaluate moving non-critical analytics writes to the background.
+
+Examples:
+
+Listing view events
+Search analytics
+AI usage metrics
+
+Do not risk losing business-critical transaction data just to make it asynchronous.
+
+==================================================
+18. EMAIL
+
+Evaluate whether outbound email should use the queue.
+
+Potential benefits:
+
+* retries
+* failure tracking
+* reduced web-request latency
+
+Important account/security emails should remain reliable and timely.
+
+Do not re-enable SMS.
+
+==================================================
+19. SAVED SEARCH MATCHING
+
+Prepare the queue for future:
+
+New listing published
+→ background match against saved searches
+→ notify matching buyers
+
+Do not create spam.
+
+Respect notification preferences.
+
+==================================================
+20. FUTURE MULTI-AGENT SUPPORT
+
+Phase F must prepare the infrastructure for future specialized AI agents.
+
+Potential future agents:
+
+Buyer Agent
+Seller Agent
+Search Agent
+Fraud Agent
+Admin Agent
+Delivery Agent
+
+Agents may create controlled jobs for background processing.
+
+Do NOT implement those agents in this phase.
+
+==================================================
+21. DATABASE
+
+If the selected architecture needs new tables such as:
+
+jobs
+job_events
+worker_failures
+
+use proper migrations.
+
+Preserve all production data.
+
+Do not modify unrelated tables unnecessarily.
+
+==================================================
+22. REDIS / QUEUE INFRASTRUCTURE
+
+If Redis is recommended:
+
+Report:
+
+* why Redis is needed
+* expected DigitalOcean cost
+* connection architecture
+* environment variables required
+* security configuration
+* failure behavior
+
+Do NOT assume Redis must be added.
+
+If a database-backed queue is sufficient at this stage, explain why.
+
+==================================================
+23. DIGITALOCEAN COST CONTROL
+
+Report the expected additional infrastructure cost for:
+
+* worker component
+* Redis/cache if needed
+* additional database usage
+
+Recommend the smallest production-safe setup initially.
+
+Do not unnecessarily increase hosting costs.
+
+==================================================
+24. OBSERVABILITY
+
+Log:
+
+* job created
+* job started
+* job completed
+* job failed
+* retry
+
+Use structured logs where practical.
+
+Do not log secrets.
+
+==================================================
+25. TESTING
+
+Test:
+
+Job submitted
+→ queued
+
+Worker picks up job
+→ processing
+
+Job succeeds
+→ completed
+
+Temporary failure
+→ retries
+
+Permanent failure
+→ failed after retry limit
+
+Duplicate job
+→ does not cause harmful duplicate action
+
+Queue unavailable
+→ core marketplace still works
+
+Worker unavailable
+→ core marketplace still works
+
+Email/background task
+→ does not block normal web request
+
+==================================================
+26. PRESERVE EXISTING FEATURES
+
+Do not break:
+
+* Marketplace Home
+* Phase D AI Listing Assistant
+* Phase E AI Search
+* Seller Dashboard
+* My Listings
+* Messages
+* Offers
+* Delivery
+* Saved Items
+* Admin
+* Notifications
+* Email
+* Photos
+* Videos
+* Vehicle fields
+* SEO
+* Authentication
+* Stripe
+
+==================================================
+27. IMPLEMENT LOCALLY / STAGING FIRST
+
+Implement Phase F locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation, report:
+
+QUEUE TECHNOLOGY:
+WORKER ARCHITECTURE:
+NEW DIGITALOCEAN COMPONENT REQUIRED: YES/NO
+REDIS REQUIRED: YES/NO
+DATABASE MIGRATION: YES/NO
+NEW ENVIRONMENT VARIABLES:
+NEW DEPENDENCIES:
+JOB TYPES IMPLEMENTED:
+RETRY LOGIC: YES/NO
+IDEMPOTENCY PROTECTION: YES/NO
+ADMIN JOB MONITORING: YES/NO
+QUEUE FAILURE FALLBACK: YES/NO
+EMAIL QUEUED: YES/NO
+AI TASKS QUEUED:
+EXPECTED MONTHLY INFRASTRUCTURE COST:
+FILES CHANGED:
+TEST RESULTS:
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+28. CRITICAL RULES
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not begin Phase G yet.
+
+Do not implement autonomous agents yet.
+
+Do not move production away from DigitalOcean.
+
+Do not create unnecessary infrastructure.
+
+BEGIN PHASE F IMPLEMENTATION.

@@ -180,6 +180,25 @@ from services.seo import (
 )
 from ai.listing_assistant import suggest as _ai_suggest
 from ai.search_intelligence import parse_marketplace_search as _ai_search_parse
+
+
+def _queue_email(fn_name, **kwargs):
+    """Enqueue an EMAIL_NOTIFICATION background job.
+
+    Returns True when the job was queued successfully; False when the queue is
+    unavailable (caller should fall back to a direct synchronous send).
+    Never raises — callers rely on try/except for resilience.
+
+    Payload contains only non-secret kwargs (email addresses, IDs, titles).
+    Secrets are never placed in job payloads per Phase F design rules.
+    """
+    try:
+        from worker.queue import enqueue, NORMAL
+        enqueue('EMAIL_NOTIFICATION', {'fn': fn_name, 'kwargs': kwargs}, priority=NORMAL)
+        return True
+    except Exception as _qe:
+        app.logger.warning("_queue_email: could not enqueue %s — %s", fn_name, _qe)
+        return False
 _VEHICLE_MAKES_MODELS_JSON = _json.dumps(_VMM)
 
 @app.context_processor
@@ -3509,9 +3528,18 @@ def listing_message(listing_id, convo_id=None):
                         if seller and seller.email:
                             buyer_name = (current_user.first_name or
                                           current_user.email or 'A buyer')
-                            notify_seller_new_message(
-                                seller.email, listing.title, listing_id,
-                                buyer_name, convo.id)
+                            # Phase F: queue the email; fall back to sync if queue unavailable
+                            if not _queue_email(
+                                'notify_seller_new_message',
+                                seller_email=seller.email,
+                                listing_title=listing.title,
+                                listing_id=listing_id,
+                                buyer_name=buyer_name,
+                                conversation_id=convo.id,
+                            ):
+                                notify_seller_new_message(
+                                    seller.email, listing.title, listing_id,
+                                    buyer_name, convo.id)
                     except Exception:
                         pass
                 # In-app notification → the other participant
@@ -3603,9 +3631,18 @@ def listing_message(listing_id, convo_id=None):
                     if seller and seller.email:
                         buyer_name = (current_user.first_name or
                                       current_user.email or 'A buyer')
-                        notify_seller_new_message(
-                            seller.email, listing.title, listing_id,
-                            buyer_name, convo.id)
+                        # Phase F: queue the email; fall back to sync if queue unavailable
+                        if not _queue_email(
+                            'notify_seller_new_message',
+                            seller_email=seller.email,
+                            listing_title=listing.title,
+                            listing_id=listing_id,
+                            buyer_name=buyer_name,
+                            conversation_id=convo.id,
+                        ):
+                            notify_seller_new_message(
+                                seller.email, listing.title, listing_id,
+                                buyer_name, convo.id)
                 except Exception:
                     pass
         else:
@@ -5930,6 +5967,74 @@ def admin_photo_health():
         broken_rows=broken_rows,
         no_url_rows=no_url_rows,
         total_checked=len(jobs),
+    )
+
+
+@app.route("/admin/jobs")
+def admin_jobs():
+    """Phase F: Admin background job monitoring dashboard."""
+    if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+        return jsonify({"error": "forbidden"}), 403
+
+    from models import BackgroundJob
+    from sqlalchemy import func
+    from worker.queue import stats as _job_stats
+
+    # ── Summary counts ───────────────────────────────────────────────────────
+    try:
+        counts = _job_stats()
+    except Exception:
+        counts = {s: 0 for s in ('QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED')}
+
+    # ── Recent failures (last 50 — no secrets, no full payloads) ─────────────
+    failed_jobs = (
+        BackgroundJob.query
+        .filter(BackgroundJob.status.in_(['FAILED', 'QUEUED']))
+        .filter(BackgroundJob.error_category.isnot(None))
+        .order_by(BackgroundJob.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    # ── Average processing time for recently completed jobs ───────────────────
+    try:
+        from datetime import timedelta as _td
+        _recent_done = (
+            BackgroundJob.query
+            .filter(
+                BackgroundJob.status == 'COMPLETED',
+                BackgroundJob.started_at.isnot(None),
+            )
+            .order_by(BackgroundJob.completed_at.desc())
+            .limit(200)
+            .all()
+        )
+        if _recent_done:
+            durations = [
+                (j.completed_at - j.started_at).total_seconds()
+                for j in _recent_done
+                if j.completed_at and j.started_at
+            ]
+            avg_ms = int(sum(durations) / len(durations) * 1000) if durations else 0
+        else:
+            avg_ms = 0
+    except Exception:
+        avg_ms = 0
+
+    # ── Most recent 200 jobs (all statuses) ───────────────────────────────────
+    recent_jobs = (
+        BackgroundJob.query
+        .order_by(BackgroundJob.created_at.desc())
+        .limit(200)
+        .all()
+    )
+
+    return render_template(
+        'admin_jobs.html',
+        counts=counts,
+        failed_jobs=failed_jobs,
+        recent_jobs=recent_jobs,
+        avg_ms=avg_ms,
     )
 
 

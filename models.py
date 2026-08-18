@@ -722,6 +722,71 @@ class SavedSearch(db.Model):
                            backref=db.backref('saved_searches', lazy='dynamic'))
 
 
+class BackgroundJob(db.Model):
+    """Database-backed job queue for Phase F background worker infrastructure.
+
+    Provides race-condition-safe job claiming via SELECT FOR UPDATE SKIP LOCKED.
+    Payload must contain only safe identifiers (IDs, non-secret strings) — never
+    API keys, tokens, passwords, or full model objects.
+
+    Status lifecycle: QUEUED → PROCESSING → COMPLETED
+                                          ↓ (on error)
+                               QUEUED (retry with backoff) → FAILED
+    """
+    __tablename__ = 'background_jobs'
+    __table_args__ = (
+        db.UniqueConstraint('job_type', 'idempotency_key',
+                            name='uq_background_job_idempotency'),
+    )
+
+    # ── Identity ────────────────────────────────────────────────────────────
+    id              = db.Column(db.String(36), primary_key=True,
+                                default=lambda: str(uuid.uuid4()))
+    job_type        = db.Column(db.String(64),  nullable=False, index=True)
+
+    # ── Routing ─────────────────────────────────────────────────────────────
+    status          = db.Column(db.String(16),  nullable=False, default='QUEUED', index=True)
+    priority        = db.Column(db.Integer,     nullable=False, default=2)
+    # 1 = HIGH  (security emails, delivery status, critical notifications)
+    # 2 = NORMAL (AI listing help, saved-search matching, offer notifications)
+    # 3 = LOW   (analytics, recommendations, background enrichment)
+
+    # ── Payload (IDs only — no secrets, no full objects) ────────────────────
+    payload_json    = db.Column(db.Text, nullable=True)
+
+    # ── Idempotency ─────────────────────────────────────────────────────────
+    idempotency_key = db.Column(db.String(128), nullable=True, index=True)
+
+    # ── Timing ──────────────────────────────────────────────────────────────
+    created_at      = db.Column(db.DateTime, default=datetime.now)
+    started_at      = db.Column(db.DateTime, nullable=True)
+    completed_at    = db.Column(db.DateTime, nullable=True)
+    next_retry_after= db.Column(db.DateTime, nullable=True, index=True)
+
+    # ── Error tracking (safe, truncated — no stack traces or secrets) ────────
+    error_category  = db.Column(db.String(64),  nullable=True)
+    error_detail    = db.Column(db.String(500),  nullable=True)
+
+    # ── Retry control ───────────────────────────────────────────────────────
+    retry_count     = db.Column(db.Integer, default=0)
+    max_retries     = db.Column(db.Integer, default=3)
+
+    # ── Worker ownership ────────────────────────────────────────────────────
+    worker_id       = db.Column(db.String(64),  nullable=True)
+    claimed_at      = db.Column(db.DateTime,    nullable=True)
+
+    def payload(self):
+        """Deserialize payload_json → dict. Returns {} on any error."""
+        import json
+        try:
+            return json.loads(self.payload_json or '{}')
+        except Exception:
+            return {}
+
+    def __repr__(self):
+        return f'<BackgroundJob {self.id[:8]} {self.job_type} {self.status}>'
+
+
 class AIUsageLog(db.Model):
     """Lightweight log of AI listing-assistant requests.
     Stores no sensitive data — only success/fail, tool name, and response time.

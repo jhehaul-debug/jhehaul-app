@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Job Queue Monitor — JHE Haul Admin{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+    <a href="/admin" style="color:#6b7280;text-decoration:none;font-size:.9rem;">← Admin</a>
+    <h1 style="margin:0;font-size:1.4rem;font-weight:700;color:#1a202c;">⚙️ Job Queue Monitor</h1>
+    <span style="margin-left:auto;font-size:.82rem;color:#9ca3af;">Phase F — database-backed queue</span>
+    <button onclick="location.reload()" style="padding:6px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:.84rem;">↻ Refresh</button>
+  </div>
+
+  {# ── Status summary ── #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px;">
+    {% set card_styles = {
+      'QUEUED':     ('🕐','#eff6ff','#1d4ed8','#dbeafe'),
+      'PROCESSING': ('⚡','#fffbeb','#b45309','#fef3c7'),
+      'COMPLETED':  ('✅','#f0fdf4','#15803d','#dcfce7'),
+      'FAILED':     ('❌','#fef2f2','#b91c1c','#fee2e2'),
+      'CANCELLED':  ('⊘', '#f9fafb','#6b7280','#f3f4f6'),
+    } %}
+    {% for status, (icon, bg, color, border_bg) in card_styles.items() %}
+    <div style="background:{{ bg }};border:1px solid {{ border_bg }};border-radius:10px;padding:16px 18px;text-align:center;">
+      <div style="font-size:1.6rem;margin-bottom:4px;">{{ icon }}</div>
+      <div style="font-size:1.7rem;font-weight:800;color:{{ color }};">{{ counts.get(status, 0) }}</div>
+      <div style="font-size:.78rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ status }}</div>
+    </div>
+    {% endfor %}
+    <div style="background:#f8f0ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px 18px;text-align:center;">
+      <div style="font-size:1.6rem;margin-bottom:4px;">⏱️</div>
+      <div style="font-size:1.7rem;font-weight:800;color:#7c3aed;">{{ avg_ms }} ms</div>
+      <div style="font-size:.78rem;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Avg time</div>
+    </div>
+  </div>
+
+  {# ── Infrastructure info ── #}
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:24px;font-size:.88rem;color:#475569;">
+    <strong>Queue technology:</strong> PostgreSQL (database-backed, Phase F) &nbsp;·&nbsp;
+    <strong>Worker:</strong> <code>python -m worker.runner</code> &nbsp;·&nbsp;
+    <strong>Redis required:</strong> No &nbsp;·&nbsp;
+    <strong>Retention:</strong> completed 7 days, failed 30 days
+  </div>
+
+  {# ── Recent failures ── #}
+  {% if failed_jobs %}
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:12px;color:#1a202c;">⚠️ Recent Failures / Retrying</h2>
+  <div style="overflow-x:auto;margin-bottom:28px;">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+          <th style="padding:10px 12px;text-align:left;color:#374151;font-weight:600;">Type</th>
+          <th style="padding:10px 12px;text-align:left;color:#374151;font-weight:600;">Status</th>
+          <th style="padding:10px 12px;text-align:left;color:#374151;font-weight:600;">Error</th>
+          <th style="padding:10px 12px;text-align:left;color:#374151;font-weight:600;">Detail</th>
+          <th style="padding:10px 8px;text-align:center;color:#374151;font-weight:600;">Retries</th>
+          <th style="padding:10px 12px;text-align:left;color:#374151;font-weight:600;">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in failed_jobs %}
+        <tr style="border-bottom:1px solid #f3f4f6;{% if loop.index is odd %}background:#fff;{% else %}background:#f9fafb;{% endif %}">
+          <td style="padding:9px 12px;font-family:monospace;font-size:.82rem;color:#1d4ed8;">{{ job.job_type }}</td>
+          <td style="padding:9px 12px;">
+            {% if job.status == 'FAILED' %}
+              <span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:12px;font-size:.78rem;font-weight:700;">FAILED</span>
+            {% elif job.status == 'QUEUED' and job.retry_count > 0 %}
+              <span style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:12px;font-size:.78rem;font-weight:700;">RETRYING</span>
+            {% else %}
+              <span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:12px;font-size:.78rem;font-weight:600;">{{ job.status }}</span>
+            {% endif %}
+          </td>
+          <td style="padding:9px 12px;color:#dc2626;font-size:.82rem;">{{ job.error_category or '—' }}</td>
+          <td style="padding:9px 12px;color:#6b7280;font-size:.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ job.error_detail or '' }}">
+            {{ (job.error_detail or '—')[:80] }}{% if job.error_detail and job.error_detail|length > 80 %}…{% endif %}
+          </td>
+          <td style="padding:9px 8px;text-align:center;color:#374151;">{{ job.retry_count }}/{{ job.max_retries }}</td>
+          <td style="padding:9px 12px;color:#6b7280;white-space:nowrap;font-size:.8rem;">{{ job.created_at.strftime('%m/%d %H:%M') if job.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin-bottom:24px;color:#15803d;font-size:.9rem;">
+    ✅ No failed jobs.
+  </div>
+  {% endif %}
+
+  {# ── Recent jobs (all statuses) ── #}
+  <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:12px;color:#1a202c;">📋 Recent Jobs (last 200)</h2>
+  {% if recent_jobs %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">ID</th>
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">Type</th>
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">Status</th>
+          <th style="padding:9px 6px;text-align:center;color:#374151;font-weight:600;">Pri</th>
+          <th style="padding:9px 6px;text-align:center;color:#374151;font-weight:600;">Retry</th>
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">Worker</th>
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">Created</th>
+          <th style="padding:9px 10px;text-align:left;color:#374151;font-weight:600;">Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        {% set status_colors = {
+          'QUEUED':     ('#dbeafe','#1d4ed8'),
+          'PROCESSING': ('#fef3c7','#b45309'),
+          'COMPLETED':  ('#dcfce7','#15803d'),
+          'FAILED':     ('#fee2e2','#b91c1c'),
+          'CANCELLED':  ('#f3f4f6','#6b7280'),
+        } %}
+        {% set sc = status_colors.get(job.status, ('#f3f4f6','#6b7280')) %}
+        <tr style="border-bottom:1px solid #f3f4f6;{% if loop.index is odd %}background:#fff;{% else %}background:#f9fafb;{% endif %}">
+          <td style="padding:8px 10px;font-family:monospace;font-size:.78rem;color:#9ca3af;">{{ job.id[:8] }}</td>
+          <td style="padding:8px 10px;font-family:monospace;font-size:.8rem;color:#1d4ed8;">{{ job.job_type }}</td>
+          <td style="padding:8px 10px;">
+            <span style="background:{{ sc[0] }};color:{{ sc[1] }};padding:2px 8px;border-radius:10px;font-size:.76rem;font-weight:700;">{{ job.status }}</span>
+          </td>
+          <td style="padding:8px 6px;text-align:center;color:#6b7280;">
+            {% if job.priority == 1 %}🔴{% elif job.priority == 2 %}🟡{% else %}🟢{% endif %}
+          </td>
+          <td style="padding:8px 6px;text-align:center;color:#6b7280;font-size:.8rem;">{{ job.retry_count }}</td>
+          <td style="padding:8px 10px;font-size:.78rem;color:#9ca3af;font-family:monospace;">{{ (job.worker_id or '—')[:16] }}</td>
+          <td style="padding:8px 10px;color:#6b7280;white-space:nowrap;font-size:.79rem;">{{ job.created_at.strftime('%m/%d %H:%M:%S') if job.created_at else '—' }}</td>
+          <td style="padding:8px 10px;color:#6b7280;font-size:.79rem;">
+            {% if job.completed_at and job.started_at %}
+              {% set dur = (job.completed_at - job.started_at).total_seconds() %}
+              {% if dur < 1 %}{{ (dur * 1000)|int }}ms{% else %}{{ "%.1f"|format(dur) }}s{% endif %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:40px 20px;color:#9ca3af;font-size:.95rem;">
+    No jobs in the queue yet.
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
