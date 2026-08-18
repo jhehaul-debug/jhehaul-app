@@ -642,6 +642,7 @@ class DeliveryRequest(db.Model):
     vt_can_steer     = db.Column(db.Boolean, default=True, nullable=True)
     vt_can_brake     = db.Column(db.Boolean, default=True, nullable=True)
     vt_estimated_miles = db.Column(db.Float, nullable=True)     # admin-entered estimate
+    vt_vin           = db.Column(db.String(17), nullable=True)  # optional, never shown publicly
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 

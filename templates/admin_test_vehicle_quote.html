@@ -91,14 +91,22 @@
                  value="{{ form.get('vt_model','') if form else '' }}" style="margin-top:4px;">
         </div>
       </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Vehicle Type</label>
-        <select name="vt_vehicle_type" class="form-control" style="margin-top:4px;">
-          <option value="">— Select type —</option>
-          {% for t in vehicle_types %}
-          <option value="{{ t }}" {{ 'selected' if form and form.get('vt_vehicle_type') == t else '' }}>{{ t }}</option>
-          {% endfor %}
-        </select>
+      <div class="tvq-grid-2" style="margin-bottom:0;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Vehicle Type</label>
+          <select name="vt_vehicle_type" class="form-control" style="margin-top:4px;">
+            <option value="">— Select type —</option>
+            {% for t in vehicle_types %}
+            <option value="{{ t }}" {{ 'selected' if form and form.get('vt_vehicle_type') == t else '' }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">VIN <span style="font-weight:400;color:#a0aec0;">(optional)</span></label>
+          <input type="text" name="vt_vin" class="form-control" placeholder="1HGBH41JXMN109186"
+                 maxlength="17" autocomplete="off"
+                 value="{{ form.get('vt_vin','') if form else '' }}" style="margin-top:4px;">
+        </div>
       </div>
     </div>
 

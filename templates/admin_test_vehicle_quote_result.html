@@ -84,6 +84,8 @@
       <tr><td style="padding:5px 0;color:#718096;">Drop-off</td><td>{{ dr.delivery_city or '' }} {{ dr.delivery_state or '' }} {{ dr.delivery_zip or '' }}</td></tr>
       <tr><td style="padding:5px 0;color:#718096;">Est. miles entered</td>
           <td>{% if dr.vt_estimated_miles %}{{ dr.vt_estimated_miles|round(1) }} mi{% else %}<span style="color:#9ca3af;">—</span>{% endif %}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">VIN</td>
+          <td>{% if dr.vt_vin %}<code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:0.85em;">{{ dr.vt_vin }}</code>{% else %}<span style="color:#9ca3af;">—</span>{% endif %}</td></tr>
       <tr><td style="padding:5px 0;color:#718096;">Instructions</td><td>{{ dr.special_instructions or '—' }}</td></tr>
       <tr><td style="padding:5px 0;color:#718096;">Created</td><td>{{ dr.created_at.strftime('%b %d, %Y %I:%M %p') if dr.created_at else '—' }}</td></tr>
     </table>

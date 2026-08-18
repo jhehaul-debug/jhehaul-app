@@ -1101,6 +1101,7 @@ with app.app_context():
             "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_can_steer BOOLEAN DEFAULT true",
             "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_can_brake BOOLEAN DEFAULT true",
             "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_estimated_miles FLOAT",
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS vt_vin VARCHAR(17)",
         ]
         for _sql in _vt_cols:
             db.session.execute(_text(_sql))

@@ -6276,6 +6276,7 @@ def admin_test_vehicle_quote():
     vt_make         = request.form.get('vt_make', '').strip() or None
     vt_model        = request.form.get('vt_model', '').strip() or None
     vt_vehicle_type = request.form.get('vt_vehicle_type', '').strip() or None
+    vt_vin          = request.form.get('vt_vin', '').strip().upper() or None
     vt_is_running   = request.form.get('vt_is_running') != '0'    # default True
     vt_can_roll     = request.form.get('vt_can_roll')  != '0'
     vt_can_steer    = request.form.get('vt_can_steer') != '0'
@@ -6390,11 +6391,13 @@ def admin_test_vehicle_quote():
         vt_can_steer=vt_can_steer,
         vt_can_brake=vt_can_brake,
         vt_estimated_miles=vt_estimated_miles if vt_estimated_miles > 0 else None,
+        vt_vin=vt_vin,
         quote_amount=estimated_total,   # pre-fill with estimate; admin can override
         admin_notes=(
             f"[TEST VEHICLE QUOTE] Created by admin {current_user.email or current_user.id}. "
             f"Vehicle: {vehicle_label}. Condition: {condition_str}. "
-            f"Contact: {contact_name} / {contact_phone} / {contact_email}"
+            + (f"VIN: {vt_vin}. " if vt_vin else "")
+            + f"Contact: {contact_name} / {contact_phone} / {contact_email}"
         ),
     )
     db.session.add(dr)
