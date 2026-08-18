@@ -1362,6 +1362,31 @@ function mpToggleRadius(val) {
                 Try adjusting your search or filters.
             {% endif %}
         </p>
+        {# ── City suggestions ── #}
+        {% if city_zip_filter and city_suggestions %}
+        <div style="margin:0 auto 18px;max-width:400px;">
+            <p style="font-size:0.88rem;color:#6b7280;margin:0 0 8px;font-weight:600;">Did you mean:</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                {% for suggestion in city_suggestions %}
+                {# Build suggestion URL: replace city_zip with the suggested city, keep other params #}
+                {% set ns2 = namespace(sug_url='/marketplace?city_zip=' ~ suggestion) %}
+                {% if search_query %}{% set ns2.sug_url = ns2.sug_url ~ '&q=' ~ search_query %}{% endif %}
+                {% if listing_type_filter %}{% set ns2.sug_url = ns2.sug_url ~ '&listing_type=' ~ listing_type_filter %}{% endif %}
+                {% if active_category %}{% set ns2.sug_url = ns2.sug_url ~ '&category=' ~ active_category.slug %}{% endif %}
+                {% if price_type_filter %}{% set ns2.sug_url = ns2.sug_url ~ '&price_type=' ~ price_type_filter %}{% endif %}
+                {% if hide_sold %}{% set ns2.sug_url = ns2.sug_url ~ '&hide_sold=1' %}{% endif %}
+                <a href="{{ ns2.sug_url }}"
+                   style="display:inline-block;background:#f0fdf4;border:1.5px solid #86efac;color:#15803d;
+                          font-size:0.88rem;font-weight:700;padding:6px 16px;border-radius:20px;
+                          text-decoration:none;transition:background .12s,border-color .12s;"
+                   onmouseover="this.style.background='#dcfce7';this.style.borderColor='#4ade80'"
+                   onmouseout="this.style.background='#f0fdf4';this.style.borderColor='#86efac'">
+                    📍 {{ suggestion }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         {% if listing_type_filter == 'property_sale' and (city_zip_filter or request.args.get('min_price') or request.args.get('max_price') or request.args.get('min_beds') or request.args.get('open_house')) %}
         <a href="/marketplace?listing_type=property_sale{{ ('&q=' ~ search_query) if search_query else '' }}" class="mp-btn-browse" style="display:inline-block;font-size:0.97rem;padding:11px 28px;margin-bottom:8px;">✕ Clear Filters</a>
         {% elif listing_type_filter == 'rental' and (city_zip_filter or request.args.get('max_price') or request.args.get('min_beds')) %}

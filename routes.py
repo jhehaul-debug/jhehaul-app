@@ -909,6 +909,65 @@ def marketplace():
         has_more = len(_all) > _limit
         search_results = _all[:_limit]
         active_category = Category.query.filter_by(slug=category_slug).first() if category_slug else None
+
+        # ── Nearby city suggestions when city search returns nothing ──────────
+        city_suggestions = []
+        if city_zip_filter and not search_results:
+            _czf_stripped = city_zip_filter.strip()
+            _is_zip = _czf_stripped.isdigit() and len(_czf_stripped) == 5
+            if not _is_zip:
+                try:
+                    # Fetch distinct cities that have approved listings
+                    _distinct_cities = [
+                        row[0] for row in
+                        Listing.query
+                        .filter(
+                            Listing.city.isnot(None),
+                            Listing.city != '',
+                            Listing.moderation_status == 'approved',
+                            Listing.status.in_(['active', 'sold', 'reserved', 'pending'])
+                        )
+                        .with_entities(Listing.city)
+                        .distinct()
+                        .all()
+                        if row[0]
+                    ]
+                    # Normalize common abbreviations for fuzzy matching
+                    _ABBR = {
+                        'st': 'saint', 'mt': 'mount', 'ft': 'fort',
+                        'n': 'north',  's': 'south',  'e': 'east', 'w': 'west',
+                    }
+                    def _norm_city(s):
+                        return ' '.join(_ABBR.get(w, w) for w in s.lower().split())
+
+                    _norm_query = _norm_city(_czf_stripped)
+                    _norm_map = {city: _norm_city(city) for city in _distinct_cities}
+
+                    # Collect candidates: normalized-substring match first, then difflib
+                    _candidates = []
+                    _czf_lower = _czf_stripped.lower()
+                    for city, norm in _norm_map.items():
+                        if _norm_query in norm or norm.startswith(_norm_query) or _czf_lower in city.lower():
+                            _candidates.append(city)
+
+                    if len(_candidates) < 3:
+                        from difflib import get_close_matches as _gcm
+                        _close_norms = _gcm(_norm_query, list(_norm_map.values()), n=5, cutoff=0.6)
+                        for city, norm in _norm_map.items():
+                            if norm in _close_norms and city not in _candidates:
+                                _candidates.append(city)
+
+                    # Deduplicate (case-insensitive) and cap at 5
+                    _seen_lower = set()
+                    for _c in _candidates:
+                        _cl = _c.lower()
+                        if _cl not in _seen_lower:
+                            _seen_lower.add(_cl)
+                            city_suggestions.append(_c)
+                        if len(city_suggestions) >= 5:
+                            break
+                except Exception as _cse:
+                    app.logger.debug("city_suggestions lookup failed: %s", _cse)
         _mp_profile_incomplete = (
             current_user.is_authenticated and
             not current_user.profile_image_url and
@@ -945,6 +1004,7 @@ def marketplace():
                                show_welcome=False,
                                show_profile_nudge=_mp_show_nudge,
                                zip_radius_fallback=zip_radius_fallback,
+                               city_suggestions=city_suggestions,
                                recent_listings=[], free_listings=[], featured_listings=[],
                                for_sale_listings=[], rental_listings=[])
     else:
