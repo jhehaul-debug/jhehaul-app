@@ -1,0 +1,400 @@
+JHE HAUL — PHASE B START
+UI/UX FOUNDATION + SELLER EXPERIENCE
+
+The architecture audit is complete.
+
+I am now approving the FIRST IMPLEMENTATION PHASE.
+
+Do NOT begin the AI agents yet.
+
+Do NOT begin semantic search, embeddings, background workers, fraud AI, or Copilot yet.
+
+This phase is focused on creating the UI/UX foundation that the future AI system will sit on top of.
+
+==================================================
+PHASE B OBJECTIVE
+==================================================
+
+Modernize the existing JHE Haul interface and fix the seller experience without rebuilding the application.
+
+Primary goals:
+
+1. Create a consistent reusable design system
+2. Separate buyer and seller experiences clearly
+3. Create the correct dedicated seller dashboard
+4. Improve mobile usability
+5. Preserve all existing marketplace functionality
+6. Prepare the UI architecture for future AI Copilot integration
+
+==================================================
+1. DO NOT REBUILD THE APP
+==================================================
+
+Use the EXISTING JHE Haul application.
+
+Preserve:
+
+- Authentication
+- Users
+- Admin
+- Listings
+- Messages
+- Offers
+- Delivery
+- Photos
+- Videos
+- Saved items
+- Notifications
+- Stripe
+- Existing database
+- Production data
+- GitHub
+- DigitalOcean
+
+Do not replace working backend logic unless required to support this phase.
+
+==================================================
+2. CREATE A BASIC DESIGN SYSTEM
+==================================================
+
+Audit the existing CSS/templates/components and create reusable UI patterns.
+
+Standardize:
+
+- Colors
+- Typography
+- Button sizes
+- Input styling
+- Cards
+- Badges
+- Alerts
+- Tabs
+- Navigation
+- Spacing
+- Border radius
+- Shadows
+- Mobile touch targets
+
+Use JHE Haul branding.
+
+Do NOT create a full frontend framework migration unless absolutely necessary.
+
+Work with the current architecture.
+
+==================================================
+3. BUYER MARKETPLACE HOME
+==================================================
+
+Keep Marketplace Home as the BUYER/BROWSING experience.
+
+It should continue to support:
+
+- Search
+- Categories
+- Filters
+- City/ZIP filtering
+- Recently Listed
+- Saved items
+- Listing cards
+- Buyer browsing
+
+Do NOT turn Marketplace Home into the seller dashboard.
+
+Improve visual consistency only where needed.
+
+==================================================
+4. CREATE THE CORRECT SELLER DASHBOARD
+==================================================
+
+Create a completely separate seller-management page.
+
+Route should be something like:
+
+/selling
+or
+/account/selling
+
+This must NOT reuse the Marketplace Home template.
+
+Account
+→ Selling / My Listings
+→ opens this dedicated page.
+
+==================================================
+5. SELLER DASHBOARD LAYOUT
+==================================================
+
+Use a clean, modern, mobile-first seller dashboard.
+
+TOP:
+
+Selling
+
+Subtitle:
+Manage your listings, offers and sales
+
+Large full-width button:
+
++ Create Listing
+
+This must open the EXISTING Sell/Create Listing flow.
+
+==================================================
+6. SELLER QUICK NAVIGATION
+==================================================
+
+Add clear tabs or buttons:
+
+Your Listings
+Messages
+Offers
+Sold
+
+Only use functionality that actually exists.
+
+Do not invent fake features.
+
+==================================================
+7. SELLER OVERVIEW
+==================================================
+
+Create a 2-column mobile card grid.
+
+Cards:
+
+Active Listings
+Offers Received
+New Messages
+Items Sold
+
+Each card must use REAL JHE Haul data.
+
+Each card should be clickable where practical.
+
+==================================================
+8. ACTION ALERTS
+==================================================
+
+Show action alerts only when something needs attention.
+
+Examples:
+
+“You have 2 new offers”
+“3 unread buyer messages”
+“1 listing expires soon”
+
+Use real data only.
+
+Do NOT hard-code example values.
+
+==================================================
+9. YOUR LISTINGS
+==================================================
+
+Create a clear Your Listings section/page.
+
+Show only the logged-in seller’s listings.
+
+Each listing should display:
+
+- Photo
+- Title
+- Price
+- Status
+- Posted date
+
+Seller controls where supported:
+
+- View
+- Edit
+- Mark Sold
+- Delete
+- Renew / Relist
+
+Do not expose other users’ listings.
+
+==================================================
+10. SELLER PERFORMANCE
+==================================================
+
+Add:
+
+Performance — Last 7 Days
+
+Only display metrics that already exist or can be safely calculated from existing data.
+
+Potential metrics:
+
+- Listing Views
+- Buyer Inquiries
+- Offers Received
+- Items Sold
+
+Do NOT invent:
+
+- Followers
+- Seller ratings
+- Video views
+- Fake engagement numbers
+
+If a metric is not tracked, omit it.
+
+==================================================
+11. ACCOUNT PAGE
+==================================================
+
+Add a clear:
+
+Selling / My Listings
+
+entry to Account.
+
+Do not remove important working Account features.
+
+Preserve:
+
+- Sign Out
+- Admin Switch Account functionality where appropriate
+- Profile
+- Saved Items
+- Offers
+- Messages
+- Deliveries
+
+Regular users should not receive Admin-only controls.
+
+==================================================
+12. MOBILE-FIRST REQUIREMENTS
+==================================================
+
+Test primarily on mobile.
+
+Optimize for:
+
+- iPhone
+- Android
+- Touch controls
+- Readable font sizes
+- Two-column cards
+- Full-width action buttons
+- Bottom navigation
+- Seller listing management
+- Forms
+- Images
+- Scrolling
+- No horizontal overflow
+
+==================================================
+13. PREPARE FOR FUTURE AI COPILOT
+==================================================
+
+Do NOT implement AI yet.
+
+However, structure the UI so a future Copilot can be added cleanly.
+
+Potential future placement:
+
+- Floating Ask JHE Haul button
+- Search-area AI entry
+- Seller dashboard AI helper
+- Listing-page assistant
+- Admin AI assistant
+
+Do not add these yet unless needed as placeholder architecture.
+
+==================================================
+14. DO NOT CHANGE BACKEND BUSINESS RULES
+==================================================
+
+Do not change:
+
+- Payment behavior
+- Listing ownership
+- Delivery pricing
+- Offer rules
+- Authentication
+- Admin permissions
+- Notifications
+- Email
+- Stripe logic
+- Database schema
+
+unless absolutely required for this UI phase.
+
+If a backend change is required, explain it BEFORE making it.
+
+==================================================
+15. TESTING
+==================================================
+
+Test these flows:
+
+BUYER:
+Login
+→ Marketplace Home
+→ Search
+→ Open listing
+→ Save listing
+→ Message seller
+
+SELLER:
+Login
+→ Account
+→ Selling / My Listings
+→ Seller dashboard
+→ Create Listing
+→ View own listing
+→ Edit
+→ Mark Sold
+→ Messages
+→ Offers
+
+ADMIN:
+Verify Admin access still works.
+Verify Admin Switch Account still works if currently supported.
+
+==================================================
+16. DO NOT PUSH YET
+==================================================
+
+For this phase:
+
+Implement and test locally first.
+
+Then show me:
+
+- Files changed
+- Routes added
+- Templates added
+- CSS/design-system changes
+- Seller dashboard screenshots or clear descriptions
+- Tests run
+- Any backend changes required
+- Any risks
+
+Then STOP.
+
+Do NOT push to GitHub yet.
+Do NOT deploy to DigitalOcean yet.
+
+Wait for my approval before production deployment.
+
+==================================================
+17. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not rebuild JHE Haul from scratch.
+
+Do not create a new repository.
+
+Do not create a second production app.
+
+Do not deploy yet.
+
+BEGIN PHASE B NOW.

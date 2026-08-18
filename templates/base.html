@@ -22,6 +22,7 @@
     <link rel="icon" type="image/png" href="/static/og-image.png">
     <link rel="shortcut icon" type="image/png" href="/static/og-image.png">
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/jhe.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
@@ -246,6 +247,14 @@
     }
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════
+     AI COPILOT MOUNT POINT — Phase C placeholder
+     The FAB button and drawer panel will be injected here
+     when the Copilot is ready. The slot is intentionally
+     empty and hidden until then.
+     ═══════════════════════════════════════════════════════ -->
+<div id="jhe-copilot-mount" aria-hidden="true"></div>
 
 {% if current_user.is_authenticated %}
 <script>
