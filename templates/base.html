@@ -26,6 +26,7 @@
     <link rel="shortcut icon" type="image/png" href="/static/og-image.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/jhe.css">
+    <link rel="stylesheet" href="/static/css/copilot.css">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
@@ -317,12 +318,353 @@
 </script>
 
 <!-- ═══════════════════════════════════════════════════════
-     AI COPILOT MOUNT POINT — Phase C placeholder
-     The FAB button and drawer panel will be injected here
-     when the Copilot is ready. The slot is intentionally
-     empty and hidden until then.
+     AI COPILOT — Phase G  ✨ Ask JHE Haul
      ═══════════════════════════════════════════════════════ -->
-<div id="jhe-copilot-mount" aria-hidden="true"></div>
+<div id="jhe-copilot-mount" aria-hidden="false">
+
+  <!-- FAB trigger -->
+  <button id="jhe-cop-fab" aria-label="Ask JHE Haul AI assistant" aria-expanded="false" aria-controls="jhe-cop-panel">
+    ✨ Ask JHE Haul
+  </button>
+
+  <!-- Backdrop -->
+  <div id="jhe-cop-overlay" role="presentation"></div>
+
+  <!-- Panel -->
+  <div id="jhe-cop-panel" role="dialog" aria-modal="true" aria-label="Ask JHE Haul assistant" aria-hidden="true">
+    <div id="jhe-cop-handle" aria-hidden="true"></div>
+
+    <!-- Header -->
+    <div id="jhe-cop-header">
+      <div id="jhe-cop-title">✨ Ask JHE Haul</div>
+      <div class="jhe-cop-hdr-actions">
+        <button class="jhe-cop-hdr-btn" id="jhe-cop-clear-btn" title="Clear chat" aria-label="Clear chat">↺</button>
+        <button class="jhe-cop-hdr-btn" id="jhe-cop-close-btn" title="Close" aria-label="Close assistant">✕</button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="jhe-cop-messages" role="log" aria-live="polite" aria-label="Conversation">
+      <!-- Empty state shown on first open -->
+      <div id="jhe-cop-empty">
+        <div class="cop-empty-icon">✨</div>
+        <p>Ask me anything about JHE Haul — search listings, check your offers, find similar items, or get navigation help.</p>
+        <div class="cop-suggestions" id="jhe-cop-suggestions">
+          <button class="cop-suggestion-chip" data-q="Find vehicles under $10,000">🚗 Vehicles under $10k</button>
+          <button class="cop-suggestion-chip" data-q="Show items with JHE Haul delivery">📦 JHE delivery</button>
+          <button class="cop-suggestion-chip" data-q="How do I create a listing?">➕ How to sell</button>
+          <button class="cop-suggestion-chip" data-q="Do I have any pending offers?">💬 My offers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div id="jhe-cop-footer">
+      <div id="jhe-cop-input-row">
+        <textarea id="jhe-cop-input" rows="1"
+          placeholder="Ask about listings, your offers, delivery…"
+          aria-label="Ask JHE Haul"
+          maxlength="800"></textarea>
+        <button id="jhe-cop-send" aria-label="Send message" disabled>➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── JHE Haul Copilot Widget — Phase G ── */
+(function() {
+  'use strict';
+
+  /* Elements */
+  var fab      = document.getElementById('jhe-cop-fab');
+  var overlay  = document.getElementById('jhe-cop-overlay');
+  var panel    = document.getElementById('jhe-cop-panel');
+  var msgArea  = document.getElementById('jhe-cop-messages');
+  var empty    = document.getElementById('jhe-cop-empty');
+  var input    = document.getElementById('jhe-cop-input');
+  var sendBtn  = document.getElementById('jhe-cop-send');
+  var clearBtn = document.getElementById('jhe-cop-clear-btn');
+  var closeBtn = document.getElementById('jhe-cop-close-btn');
+  var chips    = document.getElementById('jhe-cop-suggestions');
+
+  var history  = [];   /* [{role:'user'|'assistant', content:str}] */
+  var busy     = false;
+
+  /* ── Open / Close ── */
+  function openPanel() {
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    overlay.classList.add('open');
+    fab.setAttribute('aria-expanded', 'true');
+    input.focus();
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('open');
+    fab.setAttribute('aria-expanded', 'false');
+    fab.focus();
+  }
+
+  fab.addEventListener('click', function() {
+    panel.classList.contains('open') ? closePanel() : openPanel();
+  });
+  overlay.addEventListener('click', closePanel);
+  closeBtn.addEventListener('click', closePanel);
+
+  /* Escape key closes panel */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+  });
+
+  /* ── Clear chat ── */
+  function clearChat() {
+    history = [];
+    /* Remove all message rows, restore empty state */
+    var rows = msgArea.querySelectorAll('.cop-msg');
+    rows.forEach(function(r) { r.remove(); });
+    if (empty) { empty.style.display = ''; }
+    if (chips)  { chips.style.display = ''; }
+  }
+  clearBtn.addEventListener('click', clearChat);
+
+  /* ── Auto-resize textarea ── */
+  input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    sendBtn.disabled = !this.value.trim() || busy;
+  });
+
+  /* ── Send on Enter (Shift+Enter = newline) ── */
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) send();
+    }
+  });
+  sendBtn.addEventListener('click', send);
+
+  /* ── Suggestion chips ── */
+  if (chips) {
+    chips.addEventListener('click', function(e) {
+      var chip = e.target.closest('.cop-suggestion-chip');
+      if (!chip) return;
+      input.value = chip.dataset.q || '';
+      sendBtn.disabled = false;
+      send();
+    });
+  }
+
+  /* ── Page context ── */
+  function getContext() {
+    var path = window.location.pathname;
+    var ctx  = { page_type: 'general', listing_id: null };
+    if (path === '/marketplace' || path === '/') {
+      ctx.page_type = 'marketplace';
+    } else if (/^\/listing\/(\d+)/.test(path)) {
+      ctx.page_type  = 'listing';
+      ctx.listing_id = parseInt(path.match(/^\/listing\/(\d+)/)[1], 10) || null;
+    } else if (/^\/selling|^\/my-listings/.test(path)) {
+      ctx.page_type = 'seller_dashboard';
+    } else if (/^\/delivery/.test(path))  { ctx.page_type = 'delivery'; }
+    else if (/^\/messages/.test(path))    { ctx.page_type = 'messages'; }
+    else if (/^\/offers/.test(path))      { ctx.page_type = 'offers'; }
+    else if (/^\/saved/.test(path))       { ctx.page_type = 'saved'; }
+    /* Fallback: check data attribute placed by page-specific templates */
+    var el = document.querySelector('[data-listing-id]');
+    if (el && !ctx.listing_id) {
+      ctx.listing_id  = parseInt(el.dataset.listingId, 10) || null;
+      ctx.page_type   = 'listing';
+    }
+    return ctx;
+  }
+
+  /* ── CSRF helper ── */
+  function getCsrf() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.content : '';
+  }
+
+  /* ── Append a message bubble ── */
+  function appendMsg(role, content) {
+    if (empty)  { empty.style.display  = 'none'; }
+    if (chips)  { chips.style.display  = 'none'; }
+    var row = document.createElement('div');
+    row.className = 'cop-msg ' + role;
+    var bubble = document.createElement('div');
+    bubble.className = 'cop-bubble';
+    bubble.innerHTML = renderMarkdown(content);
+    row.appendChild(bubble);
+    msgArea.appendChild(row);
+    msgArea.scrollTop = msgArea.scrollHeight;
+    return row;
+  }
+
+  /* ── Append listing cards ── */
+  function appendCards(cards, parentRow) {
+    if (!cards || !cards.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'cop-cards';
+    cards.slice(0, 8).forEach(function(c) {
+      var a = document.createElement('a');
+      a.className = 'cop-card';
+      a.href = c.url || ('/listing/' + c.id);
+      a.target = '_self';
+      a.rel = 'noopener';
+      /* Image */
+      var imgWrap;
+      if (c.thumbnail) {
+        imgWrap = document.createElement('img');
+        imgWrap.className = 'cop-card-img';
+        imgWrap.src  = c.thumbnail;
+        imgWrap.alt  = c.title || 'Listing photo';
+        imgWrap.loading = 'lazy';
+        imgWrap.onerror = function() { this.style.display='none'; };
+      } else {
+        imgWrap = document.createElement('div');
+        imgWrap.className = 'cop-card-img-placeholder';
+        imgWrap.textContent = c.listing_type === 'property_sale' ? '🏠' : c.listing_type === 'rental' ? '🔑' : '📦';
+      }
+      a.appendChild(imgWrap);
+      /* Body */
+      var body = document.createElement('div');
+      body.className = 'cop-card-body';
+      var title = document.createElement('div');
+      title.className = 'cop-card-title';
+      title.textContent = c.title || 'Listing';
+      body.appendChild(title);
+      var meta = document.createElement('div');
+      meta.className = 'cop-card-meta';
+      var priceEl = document.createElement('span');
+      priceEl.className = 'cop-card-price';
+      priceEl.textContent = c.price ? '$' + Number(c.price).toLocaleString() : (c.price_type === 'free' ? 'Free' : '—');
+      meta.appendChild(priceEl);
+      if (c.city) {
+        var city = document.createElement('span');
+        city.textContent = '· ' + c.city;
+        meta.appendChild(city);
+      }
+      if (c.has_jhe_delivery) {
+        var badge = document.createElement('span');
+        badge.className = 'cop-card-delivery';
+        badge.textContent = 'JHE Delivery';
+        meta.appendChild(badge);
+      }
+      body.appendChild(meta);
+      a.appendChild(body);
+      wrap.appendChild(a);
+    });
+    /* Attach cards after the bot bubble */
+    parentRow.appendChild(wrap);
+    msgArea.scrollTop = msgArea.scrollHeight;
+  }
+
+  /* ── Append navigation links ── */
+  function appendNavLinks(links, parentRow) {
+    if (!links || !links.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'cop-nav-links';
+    links.forEach(function(lk) {
+      var a = document.createElement('a');
+      a.className = 'cop-nav-link';
+      a.href = lk.url;
+      a.textContent = lk.label;
+      wrap.appendChild(a);
+    });
+    parentRow.appendChild(wrap);
+  }
+
+  /* ── Typing indicator ── */
+  function showTyping() {
+    var row = document.createElement('div');
+    row.className = 'cop-msg bot';
+    row.id = 'cop-typing-row';
+    var ind = document.createElement('div');
+    ind.className = 'cop-typing';
+    ind.innerHTML = '<span></span><span></span><span></span>';
+    row.appendChild(ind);
+    msgArea.appendChild(row);
+    msgArea.scrollTop = msgArea.scrollHeight;
+  }
+  function hideTyping() {
+    var row = document.getElementById('cop-typing-row');
+    if (row) row.remove();
+  }
+
+  /* ── Minimal markdown renderer (bold, bullets, links) ── */
+  function renderMarkdown(text) {
+    if (!text) return '';
+    /* Escape HTML first */
+    var s = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    /* Bold: **text** */
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    /* Bullet points */
+    s = s.replace(/^[•\-\*] (.+)$/gm, '<li>$1</li>');
+    s = s.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+    /* Newlines */
+    s = s.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    return '<p>' + s + '</p>';
+  }
+
+  /* ── Main send function ── */
+  function send() {
+    var msg = input.value.trim();
+    if (!msg || busy) return;
+
+    busy = true;
+    sendBtn.disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    appendMsg('user', msg);
+    showTyping();
+
+    history.push({ role: 'user', content: msg });
+    /* Keep history to last 8 entries for the request */
+    var trimmedHistory = history.slice(-8);
+
+    fetch('/api/copilot/chat', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'X-CSRFToken':   getCsrf(),
+      },
+      body: JSON.stringify({
+        message: msg,
+        history: trimmedHistory.slice(0, -1),   /* exclude the current message */
+        context: getContext(),
+      }),
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      hideTyping();
+      var reply  = data.reply  || 'Sorry, I could not get a response. Please try again.';
+      var cards  = data.cards  || [];
+      var links  = data.nav_links || [];
+      var row = appendMsg('bot', reply);
+      appendCards(cards, row);
+      appendNavLinks(links, row);
+      history.push({ role: 'assistant', content: reply });
+    })
+    .catch(function(err) {
+      hideTyping();
+      appendMsg('bot', 'Ask JHE Haul is temporarily unavailable. You can continue using marketplace search and navigation.');
+      /* Pop the user message from history so they can retry */
+      history.pop();
+    })
+    .finally(function() {
+      busy = false;
+      sendBtn.disabled = !input.value.trim();
+      input.focus();
+    });
+  }
+
+})();
+</script>
 
 {% if current_user.is_authenticated %}
 <script>

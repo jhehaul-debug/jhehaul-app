@@ -806,6 +806,29 @@ class AIUsageLog(db.Model):
                            backref=db.backref('ai_usage_logs', lazy='dynamic'))
 
 
+class CopilotSession(db.Model):
+    """Analytics record for one Copilot request.
+    Stores no private conversation content — only operational metadata.
+    Used for admin visibility: request counts, tool usage, cost estimation.
+    """
+    __tablename__ = 'copilot_sessions'
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.String, db.ForeignKey('users.id'), nullable=True, index=True)
+    ip_hash       = db.Column(db.String(64), nullable=True)   # hashed, not raw IP
+    page_type     = db.Column(db.String(50), nullable=True)
+    tools_called  = db.Column(db.String(200), nullable=True)  # comma-separated list
+    success       = db.Column(db.Boolean, default=False)
+    rate_limited  = db.Column(db.Boolean, default=False)
+    error_type    = db.Column(db.String(100), nullable=True)
+    tokens_in     = db.Column(db.Integer, default=0)
+    tokens_out    = db.Column(db.Integer, default=0)
+    response_ms   = db.Column(db.Integer, nullable=True)
+    created_at    = db.Column(db.DateTime, default=datetime.now, index=True)
+
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref=db.backref('copilot_sessions', lazy='dynamic'))
+
+
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
 def expire_pending_offers(listing_id):

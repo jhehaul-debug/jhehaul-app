@@ -8834,3 +8834,121 @@ def admin_gallery_delete(photo_id):
             app.logger.warning("admin_gallery_delete: storage cleanup failed: %s", exc)
     flash("Photo removed from the gallery.", "success")
     return redirect(url_for('admin_gallery'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE G — AI MARKETPLACE COPILOT
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/copilot/chat", methods=["POST"])
+def copilot_chat():
+    """Main Copilot endpoint.  Read-only.  No write/delete/payment actions allowed.
+
+    Request JSON:
+      { "message": str, "history": [{role, content}, ...], "context": {page_type, listing_id} }
+
+    Response JSON:
+      { "reply": str, "cards": [...], "nav_links": [...], "error": str|null }
+    """
+    import time as _time
+    import hashlib
+    from models import CopilotSession
+
+    t0 = _time.time()
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+    ip_hash   = hashlib.sha256((client_ip or "").encode()).hexdigest()[:16]
+
+    data = request.get_json(silent=True) or {}
+    message  = (data.get("message") or "").strip()[:800]
+    history  = (data.get("history") or [])[:16]   # cap at 16 items before copilot trims further
+    context  = data.get("context") or {}
+
+    # Sanitise context — only accept known safe keys
+    safe_context = {
+        "page_type":  str(context.get("page_type") or "general")[:50],
+        "listing_id": int(context["listing_id"]) if context.get("listing_id") and str(context.get("listing_id", "")).isdigit() else None,
+    }
+
+    if not message:
+        return jsonify({"reply": "Please ask me something!", "cards": [], "nav_links": [], "error": None})
+
+    try:
+        from ai.copilot import run_copilot
+        result = run_copilot(
+            message=message,
+            history=history,
+            context=safe_context,
+            current_user=current_user,
+            client_ip=client_ip,
+        )
+    except Exception as e:
+        app.logger.error("copilot_chat unhandled error: %s", e)
+        result = {
+            "reply": "Ask JHE Haul is temporarily unavailable. You can continue using marketplace search and navigation.",
+            "cards": [], "nav_links": [], "tokens_in": 0, "tokens_out": 0,
+            "error": str(e), "rate_limited": False,
+        }
+
+    elapsed_ms = int((_time.time() - t0) * 1000)
+
+    # Log analytics (no private content stored)
+    try:
+        log_entry = CopilotSession(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            ip_hash=ip_hash,
+            page_type=safe_context.get("page_type"),
+            success=not bool(result.get("error")) and not result.get("rate_limited"),
+            rate_limited=result.get("rate_limited", False),
+            error_type=str(result.get("error") or "")[:100] or None,
+            tokens_in=result.get("tokens_in", 0),
+            tokens_out=result.get("tokens_out", 0),
+            response_ms=elapsed_ms,
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+    except Exception as e:
+        app.logger.warning("copilot analytics log failed: %s", e)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+
+    return jsonify({
+        "reply":      result.get("reply", ""),
+        "cards":      result.get("cards", []),
+        "nav_links":  result.get("nav_links", []),
+        "error":      result.get("error"),
+    })
+
+
+@app.route("/admin/copilot-analytics")
+@require_admin
+def admin_copilot_analytics():
+    """Admin view: Copilot usage analytics (no private conversation content)."""
+    from models import CopilotSession
+    from sqlalchemy import func
+    total       = CopilotSession.query.count()
+    successful  = CopilotSession.query.filter_by(success=True).count()
+    rate_limited= CopilotSession.query.filter_by(rate_limited=True).count()
+    errored     = CopilotSession.query.filter(CopilotSession.error_type.isnot(None)).count()
+    avg_ms_row  = db.session.query(func.avg(CopilotSession.response_ms)).scalar()
+    avg_ms      = int(avg_ms_row or 0)
+    total_tok_in  = db.session.query(func.sum(CopilotSession.tokens_in)).scalar() or 0
+    total_tok_out = db.session.query(func.sum(CopilotSession.tokens_out)).scalar() or 0
+    # Approximate cost: gpt-4o-mini $0.15/1M in, $0.60/1M out
+    approx_cost = (total_tok_in / 1_000_000 * 0.15) + (total_tok_out / 1_000_000 * 0.60)
+    page_counts = (db.session.query(CopilotSession.page_type, func.count())
+                   .group_by(CopilotSession.page_type)
+                   .order_by(func.count().desc()).all())
+    recent = (CopilotSession.query
+              .order_by(CopilotSession.created_at.desc())
+              .limit(50).all())
+    return render_template(
+        "admin_copilot_analytics.html",
+        total=total, successful=successful, rate_limited=rate_limited,
+        errored=errored, avg_ms=avg_ms,
+        total_tok_in=total_tok_in, total_tok_out=total_tok_out,
+        approx_cost=round(approx_cost, 4),
+        page_counts=page_counts,
+        recent=recent,
+    )
