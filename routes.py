@@ -1377,11 +1377,22 @@ def listing_step(listing_id, step):
                 else:
                     listing.latitude  = None
                     listing.longitude = None
-                    flash(
-                        f"ZIP code {listing.zip_code} wasn't found in our location database. "
-                        "Your listing will still be saved, but it may not appear in location-based "
-                        "searches. Double-check the ZIP and update it if needed.",
-                        "warning"
+                    # Stay on step 4 so the seller can immediately correct the ZIP
+                    # without losing city/state values.
+                    if listing.status == 'draft':
+                        listing.draft_activity_at = datetime.now()
+                    if listing.is_property:
+                        listing.property_address = request.form.get('property_address', '').strip()[:200] or None
+                    db.session.commit()
+                    _tpl = 'property_wizard.html' if listing.is_property else 'listing_wizard.html'
+                    return render_template(
+                        _tpl,
+                        listing=listing,
+                        step=step,
+                        total_steps=TOTAL_STEPS,
+                        categories=categories,
+                        zip_not_found=True,
+                        now=datetime.now(),
                     )
             else:
                 listing.latitude  = None

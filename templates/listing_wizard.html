@@ -1346,6 +1346,14 @@
 
     zipInput.addEventListener('blur', function(){ lookupZip(this.value.trim()); });
     zipInput.addEventListener('change', function(){ lookupZip(this.value.trim()); });
+
+    // After a failed-ZIP POST the server sets zip_not_found; focus and highlight the field.
+    {% if zip_not_found %}
+    zipInput.style.borderColor = '#f59e0b';
+    zipInput.style.boxShadow   = '0 0 0 3px #fde68a';
+    zipInput.focus();
+    zipInput.select();
+    {% endif %}
   })();
   </script>
 
