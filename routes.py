@@ -5587,7 +5587,7 @@ def delete_account():
     db.session.flush()  # run cascades before buyer-side deletes
 
     # Buyer-side records on other sellers' listings
-    ListingFavorite.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
+    ListingFavorite.query.filter_by(user_id=user_id).delete(synchronize_session=False)
     ListingOffer.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
     ListingConversation.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
     DeliveryRequest.query.filter_by(buyer_id=user_id).delete(synchronize_session=False)
