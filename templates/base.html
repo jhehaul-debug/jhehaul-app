@@ -53,17 +53,17 @@
                     <a href="{{ url_for('notifications_page') }}" id="notif-bell-desktop" style="position:relative;font-size:1.05rem;" title="Notifications">🔔{% if notif_unread_count > 0 %}<span id="notif-count-desktop" style="position:absolute;top:-5px;right:-8px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;line-height:1.4;">{{ notif_unread_count }}</span>{% else %}<span id="notif-count-desktop" style="display:none;position:absolute;top:-5px;right:-8px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;line-height:1.4;"></span>{% endif %}</a>
                     {# Account dropdown — consolidates My Account, My Listings, Saved Items, Admin, Sign Out #}
                     <div class="nav-account-wrap" id="navAccountWrap">
-                        <button class="nav-account-btn" id="navAccountBtn" aria-haspopup="true" aria-expanded="false">Account ▾</button>
-                        <div class="nav-account-dropdown" id="navAccountDropdown">
-                            <a href="{{ url_for('profile') }}">👤 My Account</a>
-                            <a href="{{ url_for('selling') }}">🏪 Selling</a>
-                            <a href="{{ url_for('saved_items') }}">❤️ Saved Items</a>
+                        <button class="nav-account-btn" id="navAccountBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="navAccountDropdown">Account ▾</button>
+                        <div class="nav-account-dropdown" id="navAccountDropdown" role="menu">
+                            <a href="{{ url_for('profile') }}" role="menuitem" tabindex="-1">👤 My Account</a>
+                            <a href="{{ url_for('selling') }}" role="menuitem" tabindex="-1">🏪 Selling</a>
+                            <a href="{{ url_for('saved_items') }}" role="menuitem" tabindex="-1">❤️ Saved Items</a>
                             {% if current_user.is_admin %}
-                            <div class="dropdown-divider"></div>
-                            <a href="{{ url_for('admin_dashboard') }}" class="nav-admin" style="position:relative;">⚙ Admin{% if admin_unread_count > 0 %}<span style="position:absolute;top:-5px;right:-8px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;line-height:1.4;">{{ admin_unread_count }}</span>{% endif %}</a>
+                            <div class="dropdown-divider" role="separator"></div>
+                            <a href="{{ url_for('admin_dashboard') }}" class="nav-admin" role="menuitem" tabindex="-1" style="position:relative;">⚙ Admin{% if admin_unread_count > 0 %}<span style="position:absolute;top:-5px;right:-8px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 5px;border-radius:20px;line-height:1.4;">{{ admin_unread_count }}</span>{% endif %}</a>
                             {% endif %}
-                            <div class="dropdown-divider"></div>
-                            <a href="{{ url_for('auth.logout') }}" class="dropdown-signout">← Sign Out</a>
+                            <div class="dropdown-divider" role="separator"></div>
+                            <a href="{{ url_for('auth.logout') }}" class="dropdown-signout" role="menuitem" tabindex="-1">← Sign Out</a>
                         </div>
                     </div>
                 {% else %}
@@ -214,19 +214,94 @@
             }
         });
     }
-    // Account dropdown toggle
+    // Account dropdown — click + keyboard accessible
     var acctWrap = document.getElementById('navAccountWrap');
     var acctBtn  = document.getElementById('navAccountBtn');
-    if (acctWrap && acctBtn) {
+    var acctDrop = document.getElementById('navAccountDropdown');
+    if (acctWrap && acctBtn && acctDrop) {
+        function getMenuItems() {
+            return Array.from(acctDrop.querySelectorAll('a[role="menuitem"]'));
+        }
+        function openDropdown(focusFirst) {
+            acctWrap.classList.add('open');
+            acctBtn.setAttribute('aria-expanded', 'true');
+            if (focusFirst) {
+                var items = getMenuItems();
+                if (items.length) items[0].focus();
+            }
+        }
+        function closeDropdown(returnFocus) {
+            acctWrap.classList.remove('open');
+            acctBtn.setAttribute('aria-expanded', 'false');
+            if (returnFocus) acctBtn.focus();
+        }
+        // Click toggle
         acctBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            acctWrap.classList.toggle('open');
-            acctBtn.setAttribute('aria-expanded', acctWrap.classList.contains('open'));
+            if (acctWrap.classList.contains('open')) {
+                closeDropdown(false);
+            } else {
+                openDropdown(false);
+            }
         });
+        // Keyboard on the trigger button
+        acctBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                openDropdown(true);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                openDropdown(false);
+                var items = getMenuItems();
+                if (items.length) items[items.length - 1].focus();
+            } else if (e.key === 'Escape') {
+                closeDropdown(true);
+            }
+        });
+        // Keyboard within the dropdown
+        acctDrop.addEventListener('keydown', function(e) {
+            var items = getMenuItems();
+            var idx = items.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (idx < items.length - 1) items[idx + 1].focus();
+                else items[0].focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (idx > 0) items[idx - 1].focus();
+                else items[items.length - 1].focus();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDropdown(true);
+            } else if (e.key === 'Tab') {
+                // Keep focus inside the open dropdown; Shift+Tab wraps backward
+                if (e.shiftKey) {
+                    e.preventDefault();
+                    if (idx > 0) items[idx - 1].focus();
+                    else items[items.length - 1].focus();
+                } else {
+                    e.preventDefault();
+                    if (idx < items.length - 1) items[idx + 1].focus();
+                    else items[0].focus();
+                }
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                if (items.length) items[0].focus();
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                if (items.length) items[items.length - 1].focus();
+            }
+        });
+        // Close on outside click
         document.addEventListener('click', function(e) {
             if (!acctWrap.contains(e.target)) {
-                acctWrap.classList.remove('open');
-                acctBtn.setAttribute('aria-expanded', 'false');
+                closeDropdown(false);
+            }
+        });
+        // Close on outside focus (e.g. Tab away from the whole component)
+        document.addEventListener('focusin', function(e) {
+            if (!acctWrap.contains(e.target)) {
+                closeDropdown(false);
             }
         });
     }
