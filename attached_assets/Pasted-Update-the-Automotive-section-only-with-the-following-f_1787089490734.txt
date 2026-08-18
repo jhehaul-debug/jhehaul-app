@@ -1,0 +1,89 @@
+Update the Automotive section only with the following fixes.
+
+1. Add location templates / autocomplete suggestions
+
+For every Automotive form that asks for location information, add searchable suggestions/autocomplete instead of making the user type everything manually.
+
+Apply this to:
+
+* City
+* State
+* ZIP Code
+* Pickup City
+* Pickup State
+* Pickup ZIP Code
+* Delivery City
+* Delivery State
+* Delivery ZIP Code
+* Any other Automotive pickup or destination location field
+
+Requirements:
+
+* When the user starts typing a city, show matching city suggestions.
+* When a city is selected, automatically populate the correct State when possible.
+* State fields should have a searchable dropdown containing all U.S. states.
+* ZIP Code fields should accept valid 5-digit ZIP codes.
+* Location suggestions should be mobile-friendly.
+* Users must still be able to manually enter a location if a suggestion is not available.
+* Use the same location/autocomplete component throughout the Automotive section so the design and behavior are consistent.
+* Do not create duplicate city/state fields.
+
+Example:
+
+City:
+Minneapolis
+
+Suggestions:
+
+* Minneapolis, MN
+* Minnetonka, MN
+* Maplewood, MN
+
+State:
+Minnesota (MN)
+
+ZIP:
+55401
+
+2. Fix Automotive Delivery Test overlap
+
+The Automotive Delivery / Test Delivery Quote section currently has boxes, text, buttons, or form fields overlapping each other.
+
+Fix the responsive layout so:
+
+* No input fields overlap.
+* No buttons overlap.
+* Labels remain above or correctly aligned with their fields.
+* Cards/containers expand to fit their content.
+* Long text wraps instead of running into another element.
+* Proper spacing is added between fields and sections.
+* Desktop, tablet, and mobile layouts all display correctly.
+* On smaller screens, fields should stack vertically instead of squeezing together.
+* The Test Automotive Delivery Quote controls must remain fully visible and clickable.
+
+Do not remove the existing Automotive Delivery Test feature while fixing the layout.
+
+3. Verify before completion
+
+Test:
+
+* Automotive listing form
+* Automotive delivery request form
+* Automotive Test Delivery Quote in Admin
+* City autocomplete
+* State dropdown
+* ZIP entry
+* Pickup location
+* Delivery destination
+* Mobile screen sizes
+* Desktop screen sizes
+
+Make sure the Automotive Delivery Test no longer overlaps anywhere.
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+Do not rebuild or redesign unrelated sections.
+
+After the fixes are tested successfully, commit and push the changes to the existing GitHub production branch so DigitalOcean can deploy the update.

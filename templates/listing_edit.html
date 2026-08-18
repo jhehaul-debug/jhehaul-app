@@ -29,6 +29,15 @@
   .form-row-3 { display: grid; grid-template-columns: 1fr 80px 110px; gap: 12px; }
   @media (max-width: 500px) { .form-row, .form-row-3 { grid-template-columns: 1fr; } }
 
+  /* Location autocomplete dropdown */
+  .loc-drop { position:absolute; top:100%; left:0; right:0; z-index:1000;
+    background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+    box-shadow:0 4px 16px rgba(0,0,0,.12); max-height:200px; overflow-y:auto; margin-top:2px; }
+  .loc-drop-item { padding:9px 12px; cursor:pointer; font-size:0.88rem; color:#1a202c;
+    border-bottom:1px solid #f1f5f9; }
+  .loc-drop-item:last-child { border-bottom:none; }
+  .loc-drop-item:hover { background:#eff6ff; }
+
   /* Price type */
   .price-options { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .price-option input { display: none; }
@@ -499,22 +508,28 @@
       <p style="font-size:.85rem;color:#6b7280;margin:0 0 14px">Only city and state are shown to buyers — no street address.</p>
       {% endif %}
       <div class="form-row-3">
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">City</label>
-          <input class="form-control" type="text" name="city" value="{{ listing.city or '' }}" maxlength="100">
+          <input id="edit_city" class="form-control" type="text" name="city"
+                 value="{{ listing.city or '' }}" maxlength="100"
+                 placeholder="Minneapolis" autocomplete="off">
+          <div id="edit-city-drop" class="loc-drop" style="display:none;"></div>
         </div>
         <div class="form-group">
           <label class="form-label">State</label>
-          <select class="form-control" name="state">
+          <select id="edit_state" class="form-control" name="state">
             <option value="">—</option>
             {% for abbr in ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] %}
             <option value="{{ abbr }}" {{ 'selected' if listing.state == abbr }}>{{ abbr }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position:relative;">
           <label class="form-label">ZIP</label>
-          <input class="form-control" type="text" name="zip_code" value="{{ listing.zip_code or '' }}" maxlength="10">
+          <input id="edit_zip" class="form-control" type="text" name="zip_code"
+                 value="{{ listing.zip_code or '' }}" maxlength="10"
+                 placeholder="55401" autocomplete="off">
+          <div id="edit-zip-drop" class="loc-drop" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -923,6 +938,21 @@ makeSelectEdit?.addEventListener('change', onMakeChangeEdit);
   const makOg = document.getElementById('vehicleMakeOtherGroupEdit');
   if (makOg) makOg.style.display = (initMake === 'Other') ? '' : 'none';
   initModelSelectE(initMake, initModel);
+})();
+
+/* ── City / ZIP autocomplete for location fields ─────────────────────────── */
+(function(){
+  var _lt={};
+  function locFetch(key,url,cb){clearTimeout(_lt[key]);_lt[key]=setTimeout(function(){fetch(url).then(function(r){return r.json();}).then(function(d){cb(d.results||[]);});},220);}
+  function locShow(id,results,onSel){var el=document.getElementById(id);if(!el||!results.length){if(el)el.style.display='none';return;}el.innerHTML='';results.forEach(function(r){var it=document.createElement('div');it.className='loc-drop-item';it.textContent=r.city+', '+r.state+' '+r.zip;it.addEventListener('mousedown',function(e){e.preventDefault();onSel(r);});el.appendChild(it);});el.style.display='block';}
+  function locHide(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+  var cEl=document.getElementById('edit_city'),sEl=document.getElementById('edit_state'),zEl=document.getElementById('edit_zip');
+  if(!cEl||!sEl||!zEl)return;
+  cEl.addEventListener('input',function(){var v=this.value.trim();if(v.length<2){locHide('edit-city-drop');return;}locFetch('ec','/api/zip-suggest?q='+encodeURIComponent(v),function(res){locShow('edit-city-drop',res,function(r){cEl.value=r.city;sEl.value=r.state;zEl.value=r.zip;locHide('edit-city-drop');});});});
+  cEl.addEventListener('blur',function(){setTimeout(function(){locHide('edit-city-drop');},150);});
+  zEl.addEventListener('input',function(){var c=this.value.replace(/\D/g,'');if(c.length===5){fetch('/api/zip_lookup?zip='+c).then(function(r){return r.json();}).then(function(d){if(d.found){cEl.value=d.city||cEl.value;sEl.value=d.state||sEl.value;locHide('edit-zip-drop');}});return;}if(c.length>=2){locFetch('ez','/api/zip-suggest?q='+encodeURIComponent(c),function(res){locShow('edit-zip-drop',res,function(r){zEl.value=r.zip;cEl.value=r.city;sEl.value=r.state;locHide('edit-zip-drop');});});}else{locHide('edit-zip-drop');}});
+  zEl.addEventListener('blur',function(){setTimeout(function(){locHide('edit-zip-drop');},150);});
+  document.addEventListener('click',function(e){['edit-city-drop','edit-zip-drop'].forEach(function(id){var el=document.getElementById(id);if(el&&!el.contains(e.target)&&e.target!==cEl&&e.target!==zEl)el.style.display='none';});});
 })();
 </script>
 {% endblock %}
