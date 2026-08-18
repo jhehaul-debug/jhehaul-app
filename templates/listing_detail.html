@@ -1111,7 +1111,9 @@
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavorite()">
+              <button type="button" id="fav-btn" class="btn-fav {% if is_favorited %}favorited{% endif %}"
+                      onclick="toggleFavorite()"
+                      data-label-saved="Watching" data-label-unsaved="Notify Me If It Falls Through">
                 <span id="fav-icon">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
                 <span id="fav-label">{% if is_favorited %}Watching{% else %}Notify Me If It Falls Through{% endif %}</span>
               </button>
@@ -1582,7 +1584,9 @@
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('listing_favorite_toggle', listing_id=listing.id) }}" id="fav-form-desktop">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}" onclick="toggleFavoriteDesktop()">
+              <button type="button" id="fav-btn-desktop" class="btn-fav {% if is_favorited %}favorited{% endif %}"
+                        onclick="toggleFavoriteDesktop()"
+                        data-label-saved="Watching" data-label-unsaved="Notify Me If It Falls Through">
                 <span id="fav-icon-desktop">{% if is_favorited %}❤️{% else %}🤍{% endif %}</span>
                 <span id="fav-label-desktop">{% if is_favorited %}Watching{% else %}Notify Me If It Falls Through{% endif %}</span>
               </button>
@@ -1883,6 +1887,10 @@ function _doFavoriteToggle(formId, btnId, iconId, labelId) {
   var icon  = document.getElementById(iconId);
   var label = document.getElementById(labelId);
   if (!form) return;
+  // Per-status labels are stored on the button as data attributes; fall back
+  // to generic text for listings that don't set them.
+  var labelSaved   = (btn && btn.dataset.labelSaved)   || 'Saved';
+  var labelUnsaved = (btn && btn.dataset.labelUnsaved) || 'Save Listing';
   fetch(form.action, {
     method: 'POST',
     headers: {
@@ -1897,11 +1905,11 @@ function _doFavoriteToggle(formId, btnId, iconId, labelId) {
     if (data.favorited) {
       if (btn)   btn.classList.add('favorited');
       if (icon)  icon.textContent = '❤️';
-      if (label) label.textContent = 'Saved';
+      if (label) label.textContent = labelSaved;
     } else {
       if (btn)   btn.classList.remove('favorited');
       if (icon)  icon.textContent = '🤍';
-      if (label) label.textContent = 'Save Listing';
+      if (label) label.textContent = labelUnsaved;
     }
   })
   .catch(function() { if (form) form.submit(); });
