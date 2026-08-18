@@ -1088,6 +1088,13 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (is_test) skipped: %s", _e)
 
+    # ── Delivery request photos table ────────────────────────────────────────
+    try:
+        db.create_all()   # creates delivery_request_photos if it doesn't exist
+        logging.info("Table migration: delivery_request_photos ensured via db.create_all()")
+    except Exception as _e:
+        logging.info("Table migration (delivery_request_photos) skipped: %s", _e)
+
     # ── Phase N: Monetization columns ────────────────────────────────────────
     try:
         _pn_cols = [

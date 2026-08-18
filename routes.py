@@ -12,7 +12,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, ZipCode, MonetizationProduct, Notification, expire_pending_offers, expire_stale_timed_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, DeliveryRequestPhoto, FraudFlag, ListingView, RecommendationEvent, ZipCode, MonetizationProduct, Notification, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -379,6 +379,18 @@ def uploaded_completion_file_db(photo_id):
     from flask import Response
     r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
     r.headers["Cache-Control"] = "no-cache, max-age=0"
+    return r
+
+
+@app.route("/uploads/delivery/<int:photo_id>")
+def serve_delivery_photo(photo_id):
+    """Serve a delivery request photo stored as binary in the database."""
+    photo = DeliveryRequestPhoto.query.get(photo_id)
+    if not photo or not photo.data:
+        return "", 404
+    from flask import Response
+    r = Response(photo.data, mimetype=photo.content_type or 'image/jpeg')
+    r.headers["Cache-Control"] = "public, max-age=3600"
     return r
 
 
@@ -5161,6 +5173,11 @@ def delivery_detail(dr_id):
         lp = sorted(dr.listing.photos, key=lambda p: (0 if p.is_primary else 1, p.display_order))
         listing_photo = lp[0] if lp else None
 
+    # Customer-uploaded delivery photos
+    dr_photos = DeliveryRequestPhoto.query.filter_by(
+        delivery_request_id=dr.id
+    ).order_by(DeliveryRequestPhoto.display_order).all()
+
     icon, label, color = _delivery_status_meta(dr.status)
     return render_template('delivery_detail.html',
         dr=dr, is_buyer=is_buyer, is_seller=is_seller,
@@ -5169,6 +5186,7 @@ def delivery_detail(dr_id):
         hauler_bids=hauler_bids, selected_bid=selected_bid,
         hauler_own_bid=hauler_own_bid,
         listing_photo=listing_photo,
+        dr_photos=dr_photos,
         status_icon=icon, status_label=label, status_color=color,
         status_meta=_DELIVERY_STATUS_META,
     )
@@ -5329,6 +5347,101 @@ def delivery_update_status(dr_id):
     return redirect(url_for('delivery_detail', dr_id=dr_id))
 
 
+# ── Delivery photo upload helpers ─────────────────────────────────────────────
+
+_DELIVERY_PHOTO_ALLOWED   = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'}
+_DELIVERY_PHOTO_MAX_BYTES = 15 * 1024 * 1024   # 15 MB per photo
+_DELIVERY_PHOTO_MAX_COUNT = 5
+
+
+def _validate_and_read_delivery_photos(files):
+    """Read and validate delivery photo files before any DB writes.
+
+    Parameters
+    ----------
+    files : list[FileStorage]
+        Raw list from request.files.getlist('delivery_photos').
+
+    Returns
+    -------
+    (error_msg, processed)
+        On failure : (str, None)  — user-readable error; no DR should be created.
+        On success : (None, list) — list of (data, content_type, save_ext) tuples.
+    """
+    import os as _os
+    valid = [f for f in files if f and getattr(f, 'filename', '') and f.filename.strip()]
+    if not valid:
+        return None, []
+    if len(valid) > _DELIVERY_PHOTO_MAX_COUNT:
+        return (
+            f"Maximum {_DELIVERY_PHOTO_MAX_COUNT} photos allowed — you selected {len(valid)}. "
+            "Please remove some and try again."
+        ), None
+
+    processed = []
+    for i, f in enumerate(valid[:_DELIVERY_PHOTO_MAX_COUNT], start=1):
+        raw_ext = _os.path.splitext(f.filename)[1].lower()
+        if raw_ext not in _DELIVERY_PHOTO_ALLOWED:
+            return (
+                f"Photo {i}: unsupported file type '{raw_ext}'. "
+                "Accepted types: JPG, PNG, WEBP, GIF, HEIC, BMP, TIFF."
+            ), None
+        data, ct = _read_photo_bytes(f, raw_ext)
+        if len(data) > _DELIVERY_PHOTO_MAX_BYTES:
+            mb = round(len(data) / (1024 * 1024), 1)
+            return f"Photo {i} is {mb} MB — the maximum allowed size is 15 MB per photo.", None
+        # HEIC/HEIF converted to JPEG → store as .jpg
+        save_ext = '.jpg' if ct == 'image/jpeg' and raw_ext in ('.heic', '.heif') else raw_ext
+        processed.append((data, ct, save_ext))
+
+    return None, processed
+
+
+def _store_delivery_photos(dr_id, processed):
+    """Persist pre-validated delivery photos to storage and DB.
+
+    Parameters
+    ----------
+    dr_id : int
+        DeliveryRequest id.
+    processed : list
+        List of (data, content_type, save_ext) tuples from
+        _validate_and_read_delivery_photos.
+
+    Returns
+    -------
+    int
+        Number of photos successfully saved.
+    """
+    import uuid as _uuid
+    from storage import upload_bytes as _upload_bytes
+
+    saved = 0
+    for i, (data, ct, save_ext) in enumerate(processed):
+        try:
+            filename, storage_url = _upload_bytes(data, save_ext)
+        except Exception as _se:
+            app.logger.error(
+                "Delivery photo storage error (DR #%s photo %s): %s", dr_id, i + 1, _se
+            )
+            filename    = f"{_uuid.uuid4().hex}{save_ext}"
+            storage_url = None                      # falls back to DB storage
+
+        db.session.add(DeliveryRequestPhoto(
+            delivery_request_id = dr_id,
+            filename             = filename,
+            storage_url          = storage_url,
+            data                 = data if not storage_url else None,
+            content_type         = ct,
+            display_order        = i,
+        ))
+        saved += 1
+
+    if saved:
+        db.session.commit()
+    return saved
+
+
 @app.route("/request-delivery", methods=["GET", "POST"])
 @require_login
 def standalone_request_delivery():
@@ -5363,6 +5476,15 @@ def standalone_request_delivery():
     preferred_date  = request.form.get('preferred_date', '').strip() or None
     preferred_time  = request.form.get('preferred_time', '').strip() or None
     special_instructions = request.form.get('special_instructions', '').strip() or None
+
+    # Validate photos BEFORE creating any DB records — a bad photo must not silently
+    # produce a partial delivery request.
+    photo_files  = request.files.getlist('delivery_photos')
+    photo_err, processed_photos = _validate_and_read_delivery_photos(photo_files)
+    if photo_err:
+        flash(photo_err, "error")
+        return render_template('standalone_delivery_request_form.html',
+                               prefill_name=prefill_name, prefill_phone=prefill_phone)
 
     if not item_description:
         flash("Please describe what needs to be delivered.", "error")
@@ -5433,6 +5555,11 @@ def standalone_request_delivery():
     )
     db.session.add(dr)
     db.session.commit()
+
+    # Save photos now that we have dr.id
+    if processed_photos:
+        _n_saved = _store_delivery_photos(dr.id, processed_photos)
+        app.logger.info("Saved %d delivery photo(s) for DR #%s", _n_saved, dr.id)
 
     # Notify admin
     try:
@@ -5582,7 +5709,13 @@ def admin_test_delivery_quote():
     preferred_time   = request.form.get('preferred_time', '').strip() or None
     special_instructions = request.form.get('special_instructions', '').strip() or None
 
+    # Validate photos BEFORE creating any DB records
+    test_photo_files = request.files.getlist('delivery_photos')
+    test_photo_err, test_processed_photos = _validate_and_read_delivery_photos(test_photo_files)
+
     errors = []
+    if test_photo_err:
+        errors.append(test_photo_err)
     if not item_description:
         errors.append("Item/load description is required.")
     if not pickup_zip:
@@ -5661,6 +5794,11 @@ def admin_test_delivery_quote():
     db.session.commit()
     app.logger.info("TEST DELIVERY QUOTE created: dr_id=%s job_id=%s by admin=%s",
                     dr.id, job.id, current_user.id)
+
+    # Save photos now that we have dr.id
+    if test_processed_photos:
+        _tn_saved = _store_delivery_photos(dr.id, test_processed_photos)
+        app.logger.info("Saved %d test delivery photo(s) for DR #%s", _tn_saved, dr.id)
 
     flash(f"✅ Test delivery quote #{dr.id} created — review the results below.", "success")
     return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr.id))
@@ -5751,6 +5889,10 @@ def admin_test_delivery_quote_result(dr_id):
         ("Notification functions importable", notif_ok,                  notif_error),
     ]
 
+    dr_photos = DeliveryRequestPhoto.query.filter_by(
+        delivery_request_id=dr.id
+    ).order_by(DeliveryRequestPhoto.display_order).all()
+
     return render_template('admin_test_delivery_quote_result.html',
         dr=dr, job=job,
         checkout_test=checkout_test,
@@ -5764,6 +5906,7 @@ def admin_test_delivery_quote_result(dr_id):
         stripe_product_connected=stripe_product_connected,
         delivery_product=delivery_product,
         checks=checks,
+        dr_photos=dr_photos,
     )
 
 
@@ -5877,7 +6020,12 @@ def admin_test_delivery_delete(dr_id):
         n_del = Notification.query.filter_by(related_delivery_request_id=dr_id).delete()
         deleted_counts['notifications'] = n_del
 
-        # 2. The DeliveryRequest itself
+        # 1b. Delivery photos (SQLAlchemy cascade handles deletion via relationship,
+        #     but we count them here so the summary is informative)
+        p_count = DeliveryRequestPhoto.query.filter_by(delivery_request_id=dr_id).count()
+        deleted_counts['delivery_photos'] = p_count
+
+        # 2. The DeliveryRequest itself (cascade removes DeliveryRequestPhoto rows)
         db.session.delete(dr)
         db.session.flush()   # FK to jobs must be gone before we touch the job
 

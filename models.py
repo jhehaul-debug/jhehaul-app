@@ -637,6 +637,32 @@ class DeliveryRequest(db.Model):
                             backref=db.backref('delivery_requests_as_buyer', lazy=True))
     seller = db.relationship('User', foreign_keys=[seller_id],
                              backref=db.backref('delivery_requests_as_seller', lazy=True))
+    photos = db.relationship('DeliveryRequestPhoto',
+                             backref='delivery_request',
+                             lazy=True,
+                             order_by='DeliveryRequestPhoto.display_order',
+                             cascade='all, delete-orphan')
+
+
+class DeliveryRequestPhoto(db.Model):
+    """Customer-uploaded photo of the item(s) to be delivered.
+
+    Mirrors ListingPhoto structure.  Storage follows the same Spaces/local-fallback
+    pattern used throughout the app — storage_url when Spaces is configured,
+    raw bytes in the data column otherwise.
+    """
+    __tablename__ = 'delivery_request_photos'
+
+    id                  = db.Column(db.Integer, primary_key=True)
+    delivery_request_id = db.Column(db.Integer,
+                                    db.ForeignKey('delivery_requests.id', ondelete='CASCADE'),
+                                    nullable=False, index=True)
+    filename            = db.Column(db.String(200), nullable=False)
+    storage_url         = db.Column(db.Text, nullable=True)   # Spaces CDN URL; None = local/DB
+    data                = db.Column(db.LargeBinary, nullable=True)  # fallback when no remote URL
+    content_type        = db.Column(db.String(50), default='image/jpeg')
+    display_order       = db.Column(db.Integer, default=0)
+    created_at          = db.Column(db.DateTime, default=datetime.now)
 
 
 class ListingReport(db.Model):

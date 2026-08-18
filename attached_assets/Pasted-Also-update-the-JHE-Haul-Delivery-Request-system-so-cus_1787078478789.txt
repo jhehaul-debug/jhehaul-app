@@ -1,0 +1,67 @@
+Also update the JHE Haul Delivery Request system so customers can upload pictures of the item(s) they need delivered.
+
+DELIVERY PHOTO UPLOAD
+
+Allow the customer to upload:
+
+Up to 5 photos per delivery request.
+
+The customer should be able to upload 1, 2, 3, 4, or 5 photos.
+
+Display text near the uploader:
+
+Add up to 5 photos of the item(s) you need delivered. Multiple angles help us provide an accurate quote.
+
+Support normal mobile photo formats currently supported by the application.
+
+MOBILE
+
+This must work properly from phones.
+
+Customers should be able to:
+
+* Choose photos from their phone
+* Take a photo with their camera where supported
+* Preview selected photos before submitting
+* Remove an individual photo before submitting
+* Upload multiple photos without replacing previously selected photos
+
+ADMIN
+
+When the delivery request reaches Admin, display all uploaded photos directly on the delivery request detail page.
+
+Admin should be able to tap/click a photo to view it larger before determining the delivery price.
+
+The photos need to remain associated with the correct delivery request throughout:
+
+Request → Admin Review → Quote → Customer Acceptance → Payment → Delivery
+
+TEST DELIVERY QUOTE
+
+Add the same photo-upload capability to Test Delivery Quote so I can verify that photo uploads are working before relying on them for real customers.
+
+IMPORTANT
+
+Use the application’s existing image-upload/storage system if one already exists. Do not create a second unnecessary image-storage system.
+
+Validate file types and file sizes securely.
+
+A failed photo upload must not silently create a broken delivery request. Show the user a clear error.
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+PUSH
+
+Include this with the current delivery quote updates.
+
+After completing and testing everything:
+
+1. Commit the changes.
+2. Push to the GitHub branch connected to JHE Haul’s DigitalOcean production deployment.
+3. Verify the push succeeded.
+
+Report the commit hash and confirm that up to 5 delivery photos are working on both the customer delivery request and Test Delivery Quote.

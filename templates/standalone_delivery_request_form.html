@@ -17,7 +17,8 @@
   {% endfor %}
 {% endwith %}
 
-<form method="POST" action="{{ url_for('standalone_request_delivery') }}" style="max-width:640px;">
+<form method="POST" action="{{ url_for('standalone_request_delivery') }}"
+      enctype="multipart/form-data" style="max-width:640px;">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <!-- Contact Info -->
@@ -157,9 +158,34 @@
     </div>
   </div>
 
+  <!-- Photo upload -->
+  <div class="card" style="padding:20px;margin-bottom:16px;">
+    <h3 style="margin:0 0 6px;font-size:1rem;color:#1a202c;">📸 Photos <span style="font-weight:400;color:#718096;font-size:0.9rem;">(optional)</span></h3>
+    <p style="color:#718096;font-size:0.84rem;margin:0 0 14px;">
+      Add up to 5 photos of the item(s) you need delivered. Multiple angles help us provide an accurate quote.
+    </p>
+
+    <!-- Drop zone / file picker -->
+    <label id="photo-drop-zone"
+           style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+                  border:2px dashed #cbd5e0;border-radius:10px;padding:24px 16px;cursor:pointer;
+                  background:#f8fafc;transition:border-color .2s;">
+      <span style="font-size:2rem;">🖼️</span>
+      <span style="font-weight:600;color:#4a5568;">Tap to choose photos</span>
+      <span style="font-size:0.8rem;color:#a0aec0;">JPG, PNG, WEBP, HEIC — up to 15 MB each</span>
+      <input id="photo-input" type="file" name="delivery_photos" multiple
+             accept="image/*,.heic,.heif"
+             style="display:none;" onchange="drAddPhotos(this)">
+    </label>
+
+    <!-- Preview grid -->
+    <div id="photo-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;"></div>
+    <div id="photo-count-note" style="font-size:0.8rem;color:#718096;margin-top:6px;"></div>
+  </div>
+
   <!-- Privacy notice -->
   <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:0.84rem;color:#1d4ed8;margin-bottom:20px;">
-    🔒 <strong>Privacy:</strong> Your street addresses are kept private and only shared with JHE Haul to prepare your quote. Want to attach photos? You can send them to JHE Haul after submitting your request.
+    🔒 <strong>Privacy:</strong> Your street addresses are kept private and only shared with JHE Haul to prepare your quote.
   </div>
 
   <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">🚚 Submit Request &amp; Get a Quote</button>
@@ -169,5 +195,71 @@
 @media (max-width:600px) {
   [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
 }
+#photo-drop-zone:hover,#photo-drop-zone:focus-within { border-color:#3498db; }
+.dr-thumb-wrap {
+  position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;
+  border:1px solid #e2e8f0;background:#f1f5f9;flex-shrink:0;
+}
+.dr-thumb-wrap img { width:100%;height:100%;object-fit:cover; }
+.dr-thumb-remove {
+  position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;
+  border:none;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+}
 </style>
+
+<script>
+(function() {
+  var MAX = 5;
+  var selectedFiles = [];   // DataTransfer-backed list
+
+  function refreshInput() {
+    var dt = new DataTransfer();
+    selectedFiles.forEach(function(f){ dt.items.add(f); });
+    document.getElementById('photo-input').files = dt.files;
+    updateNote();
+    renderPreviews();
+  }
+
+  function updateNote() {
+    var n = selectedFiles.length;
+    var el = document.getElementById('photo-count-note');
+    if (!n) { el.textContent = ''; return; }
+    el.textContent = n + ' photo' + (n!==1?'s':'') + ' selected' + (n===MAX ? ' (maximum reached)' : '');
+  }
+
+  function renderPreviews() {
+    var grid = document.getElementById('photo-preview');
+    grid.innerHTML = '';
+    selectedFiles.forEach(function(f, i) {
+      var wrap = document.createElement('div');
+      wrap.className = 'dr-thumb-wrap';
+      var img = document.createElement('img');
+      img.alt = f.name;
+      var reader = new FileReader();
+      reader.onload = function(e){ img.src = e.target.result; };
+      reader.readAsDataURL(f);
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'dr-thumb-remove'; btn.textContent = '×';
+      btn.title = 'Remove ' + f.name;
+      (function(idx){ btn.addEventListener('click', function(){
+        selectedFiles.splice(idx,1); refreshInput();
+      }); })(i);
+      wrap.appendChild(img);
+      wrap.appendChild(btn);
+      grid.appendChild(wrap);
+    });
+  }
+
+  window.drAddPhotos = function(input) {
+    var files = Array.from(input.files);
+    files.forEach(function(f){
+      if (selectedFiles.length < MAX) selectedFiles.push(f);
+    });
+    // Reset the native input so the same file can be re-added after removal
+    input.value = '';
+    refreshInput();
+  };
+})();
+</script>
 {% endblock %}

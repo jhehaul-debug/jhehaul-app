@@ -178,6 +178,51 @@
   </div>
 </div>
 
+<!-- Uploaded photos -->
+{% if dr_photos %}
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin-bottom:12px;">📸 Item Photos ({{ dr_photos|length }}/5) <span style="background:#10b981;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;">✅ Upload worked</span></h3>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;">
+    {% for photo in dr_photos %}
+    <a href="#" onclick="drLightboxTq('{{ photo.storage_url or url_for('serve_delivery_photo', photo_id=photo.id) }}');return false;"
+       style="display:block;width:110px;height:110px;border-radius:10px;overflow:hidden;border:2px solid #d8b4fe;flex-shrink:0;">
+      <img src="{{ photo.storage_url or url_for('serve_delivery_photo', photo_id=photo.id) }}"
+           alt="Test photo {{ loop.index }}"
+           style="width:100%;height:100%;object-fit:cover;"
+           loading="lazy">
+    </a>
+    {% endfor %}
+  </div>
+  <div style="margin-top:10px;font-size:0.82rem;color:#718096;">
+    {{ 'Stored via Spaces CDN' if dr_photos[0].storage_url else 'Stored in database (Spaces not configured)' }}
+    — stays associated with this delivery request through every status change.
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom:20px;background:#fafafa;">
+  <h3 style="margin-bottom:8px;color:#718096;">📸 Item Photos</h3>
+  <div style="color:#9ca3af;font-size:0.85rem;">No photos were uploaded with this test quote. Use the form to test photo upload.</div>
+</div>
+{% endif %}
+
+<!-- Lightbox for test result photos -->
+<div id="tq-result-lightbox"
+     onclick="this.style.display='none'"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;
+            align-items:center;justify-content:center;cursor:zoom-out;">
+  <img id="tq-result-lightbox-img" src="" alt="Test photo"
+       style="max-width:92vw;max-height:88vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.5);">
+</div>
+<script>
+function drLightboxTq(src){
+  document.getElementById('tq-result-lightbox-img').src=src;
+  document.getElementById('tq-result-lightbox').style.display='flex';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.getElementById('tq-result-lightbox').style.display='none';
+});
+</script>
+
 <!-- Admin notes -->
 {% if dr.admin_notes %}
 <div class="card" style="margin-bottom:20px;">

@@ -38,7 +38,8 @@
     Uses the same fields and validation as a real customer delivery request.
   </p>
 
-  <form method="POST" action="{{ url_for('admin_test_delivery_quote') }}">
+  <form method="POST" action="{{ url_for('admin_test_delivery_quote') }}"
+        enctype="multipart/form-data">
 
     <!-- Contact info -->
     <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
@@ -182,6 +183,27 @@
       </div>
     </div>
 
+    <!-- Photo upload (mirrors customer form) -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 6px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📸 Photos <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(optional — same upload path as real customer)</span></h4>
+      <p style="font-size:0.82rem;color:#718096;margin:0 0 12px;">Add up to 5 photos of the item(s) you need delivered. Multiple angles help us provide an accurate quote.</p>
+
+      <label id="tq-photo-zone"
+             style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+                    border:2px dashed #c4b5fd;border-radius:10px;padding:20px 16px;cursor:pointer;
+                    background:#faf5ff;transition:border-color .2s;">
+        <span style="font-size:1.8rem;">🖼️</span>
+        <span style="font-weight:600;color:#7c3aed;">Choose photos</span>
+        <span style="font-size:0.78rem;color:#a0aec0;">JPG, PNG, WEBP, HEIC — up to 15 MB each</span>
+        <input id="tq-photo-input" type="file" name="delivery_photos" multiple
+               accept="image/*,.heic,.heif" style="display:none;"
+               onchange="tqAddPhotos(this)">
+      </label>
+
+      <div id="tq-photo-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;"></div>
+      <div id="tq-photo-note" style="font-size:0.78rem;color:#718096;margin-top:6px;"></div>
+    </div>
+
     <div style="display:flex;gap:12px;align-items:center;">
       <button type="submit" class="btn btn-primary" style="background:#7c3aed;border-color:#7c3aed;padding:10px 28px;">
         🧪 Submit Test Quote
@@ -190,4 +212,37 @@
     </div>
   </form>
 </div>
+
+<style>
+#tq-photo-zone:hover,#tq-photo-zone:focus-within { border-color:#7c3aed; }
+.tq-thumb { position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #d8b4fe;flex-shrink:0; }
+.tq-thumb img { width:100%;height:100%;object-fit:cover; }
+.tq-thumb-rm { position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;
+               width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0; }
+</style>
+<script>
+(function(){
+  var MAX=5, sel=[];
+  function refresh(){
+    var dt=new DataTransfer();
+    sel.forEach(function(f){dt.items.add(f);});
+    document.getElementById('tq-photo-input').files=dt.files;
+    var n=sel.length;
+    document.getElementById('tq-photo-note').textContent=n?n+' photo'+(n!==1?'s':'')+' selected'+(n===MAX?' (max)':''):'';
+    var grid=document.getElementById('tq-photo-preview'); grid.innerHTML='';
+    sel.forEach(function(f,i){
+      var w=document.createElement('div'); w.className='tq-thumb';
+      var img=document.createElement('img'); img.alt=f.name;
+      var r=new FileReader(); r.onload=function(e){img.src=e.target.result;}; r.readAsDataURL(f);
+      var b=document.createElement('button'); b.type='button'; b.className='tq-thumb-rm'; b.textContent='×';
+      (function(idx){b.addEventListener('click',function(){sel.splice(idx,1);refresh();});})(i);
+      w.appendChild(img); w.appendChild(b); grid.appendChild(w);
+    });
+  }
+  window.tqAddPhotos=function(inp){
+    Array.from(inp.files).forEach(function(f){if(sel.length<MAX)sel.push(f);});
+    inp.value=''; refresh();
+  };
+})();
+</script>
 {% endblock %}
