@@ -12,7 +12,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, ZipCode, MonetizationProduct, expire_pending_offers, expire_stale_timed_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, ZipCode, MonetizationProduct, Notification, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -5836,6 +5836,81 @@ def admin_test_delivery_checkout(dr_id):
         app.logger.error("TEST checkout error DR #%s: %s", dr_id, _e)
         flash(f"Stripe checkout error: {_e}", "error")
         return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr_id))
+
+
+@app.route("/admin/test-delivery-quote/<int:dr_id>/delete", methods=["POST"])
+@require_admin
+def admin_test_delivery_delete(dr_id):
+    """Permanently delete a test delivery request and all its associated test records.
+
+    Safety guarantees:
+    - Admin-only (require_admin decorator).
+    - Verifies is_test=True before touching anything — refuses real deliveries.
+    - Deletes in FK-safe order so no constraint errors.
+    - Real delivery records are never reachable via this endpoint.
+    """
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+
+    # Hard safety check — refuse deletion of any real delivery through this route
+    if not dr.is_test:
+        app.logger.warning(
+            "Admin %s attempted to delete real delivery DR #%s via test-delete route — refused.",
+            current_user.id, dr_id,
+        )
+        flash("⛔ Refused: that delivery is not marked as a test. Use the standard delivery management tools.", "error")
+        return redirect(url_for('admin_deliveries'))
+
+    job_id = dr.job_id  # capture before we delete the DR
+
+    try:
+        deleted_counts = {}
+
+        # 1. Notifications referencing this DR
+        n_del = Notification.query.filter_by(related_delivery_request_id=dr_id).delete()
+        deleted_counts['notifications'] = n_del
+
+        # 2. The DeliveryRequest itself
+        db.session.delete(dr)
+        db.session.flush()   # FK to jobs must be gone before we touch the job
+
+        # 3. Job-linked records (only if the test created a job)
+        if job_id:
+            job = Job.query.get(job_id)
+            if job:
+                # Only delete the job when its description marks it as a test quote
+                # (prevents accidental deletion of real jobs that somehow share a job_id)
+                if '[TEST QUOTE]' in (job.job_description or ''):
+                    m_del  = Message.query.filter_by(job_id=job_id).delete()
+                    b_del  = Bid.query.filter_by(job_id=job_id).delete()
+                    q_del  = Quote.query.filter_by(job_id=job_id).delete()
+                    jp_del = JobPhoto.query.filter_by(job_id=job_id).delete()
+                    cp_del = CompletionPhoto.query.filter_by(job_id=job_id).delete()
+                    rv_del = Review.query.filter_by(job_id=job_id).delete()
+                    deleted_counts.update({
+                        'messages': m_del, 'bids': b_del, 'quotes': q_del,
+                        'job_photos': jp_del, 'completion_photos': cp_del, 'reviews': rv_del,
+                    })
+                    db.session.delete(job)
+                    deleted_counts['job'] = 1
+                else:
+                    app.logger.warning(
+                        "Test DR #%s job_id=%s does not carry [TEST QUOTE] marker — "
+                        "job retained as a safety measure.", dr_id, job_id,
+                    )
+                    deleted_counts['job'] = 0
+
+        db.session.commit()
+
+        summary = ", ".join(f"{v} {k}" for k, v in deleted_counts.items() if v)
+        app.logger.info("Admin %s deleted test DR #%s. Cleaned: %s", current_user.id, dr_id, summary)
+        flash(f"✅ Test delivery #{dr_id} and all associated test data permanently deleted. ({summary})", "success")
+
+    except Exception as _e:
+        db.session.rollback()
+        app.logger.error("Failed to delete test DR #%s: %s", dr_id, _e)
+        flash(f"Error deleting test delivery: {_e}", "error")
+
+    return redirect(url_for('admin_deliveries', show_tests='1'))
 
 
 # ── end ADMIN TEST DELIVERY QUOTE ─────────────────────────────────────────────

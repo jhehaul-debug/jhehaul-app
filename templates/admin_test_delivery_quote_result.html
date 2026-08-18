@@ -187,7 +187,7 @@
 {% endif %}
 
 <!-- Actions -->
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
   <a href="{{ url_for('admin_test_delivery_quote') }}" class="btn btn-primary" style="background:#7c3aed;border-color:#7c3aed;">
     🧪 Run Another Test
   </a>
@@ -195,6 +195,40 @@
     📋 Open in Delivery Detail
   </a>
   <a href="{{ url_for('admin_deliveries') }}" class="btn btn-outline">← All Deliveries</a>
+
+  <!-- Delete test delivery -->
+  <button type="button" onclick="document.getElementById('confirm-delete-modal').style.display='flex'"
+          class="btn btn-sm"
+          style="background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;margin-left:auto;">
+    🗑 Delete Test Delivery
+  </button>
+</div>
+
+<!-- Confirmation modal -->
+<div id="confirm-delete-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 10px;color:#dc2626;">⚠️ Permanently Delete Test Delivery?</h3>
+    <p style="color:#4a5568;margin-bottom:18px;line-height:1.55;">
+      Are you sure you want to permanently delete <strong>Test Delivery #{{ dr.id }}</strong> and all its associated test data?
+      <br><br>
+      This will remove the test delivery request, linked test job, any messages, and notification records created for this test.
+      <strong>This cannot be undone.</strong>
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:0.83rem;color:#991b1b;">
+      ✅ Only this test record will be deleted.<br>
+      ✅ Real deliveries, customers, and analytics are not affected.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="document.getElementById('confirm-delete-modal').style.display='none'"
+              class="btn btn-outline">Cancel</button>
+      <form method="POST" action="{{ url_for('admin_test_delivery_delete', dr_id=dr.id) }}" style="margin:0;">
+        <button type="submit" class="btn btn-primary" style="background:#dc2626;border-color:#dc2626;">
+          Yes, Delete Test Delivery
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
 
 {% endblock %}

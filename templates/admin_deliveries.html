@@ -121,6 +121,11 @@
       <td style="padding:10px 12px;text-align:right;">
         {% if dr.is_test %}
         <a href="{{ url_for('admin_test_delivery_quote_result', dr_id=dr.id) }}" class="btn btn-sm" style="background:#f3e8ff;color:#7c3aed;border:1px solid #d8b4fe;">Results</a>
+        <button type="button"
+                onclick="confirmDeleteTest({{ dr.id }})"
+                class="btn btn-sm"
+                style="background:#fff0f0;color:#dc2626;border:1px solid #fca5a5;margin-left:4px;"
+                title="Permanently delete this test delivery">🗑</button>
         {% else %}
         <a href="{{ url_for('delivery_detail', dr_id=dr.id) }}" class="btn btn-outline btn-sm">View</a>
         {% endif %}
@@ -143,5 +148,39 @@
   {% if status_filter %}<a href="{{ url_for('admin_deliveries') }}" style="color:#3498db;">Show all deliveries</a>{% endif %}
 </div>
 {% endif %}
+
+<!-- Delete-test confirmation modal (shared, populated by JS) -->
+<div id="delete-test-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 10px;color:#dc2626;">⚠️ Permanently Delete Test Delivery?</h3>
+    <p style="color:#4a5568;margin-bottom:18px;line-height:1.55;">
+      Are you sure you want to permanently delete <strong id="delete-dr-label">this test delivery</strong> and all its associated test data?
+      <br><br>This will remove the test delivery request, linked test job, any messages, and notification records.
+      <strong>This cannot be undone.</strong>
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:0.83rem;color:#991b1b;">
+      ✅ Only this test record will be deleted.<br>
+      ✅ Real deliveries, customers, and analytics are not affected.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="document.getElementById('delete-test-modal').style.display='none'"
+              class="btn btn-outline">Cancel</button>
+      <form id="delete-test-form" method="POST" action="" style="margin:0;">
+        <button type="submit" class="btn btn-primary" style="background:#dc2626;border-color:#dc2626;">
+          Yes, Delete Test Delivery
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDeleteTest(drId) {
+  document.getElementById('delete-dr-label').textContent = 'Test Delivery #' + drId;
+  document.getElementById('delete-test-form').action = '/admin/test-delivery-quote/' + drId + '/delete';
+  document.getElementById('delete-test-modal').style.display = 'flex';
+}
+</script>
 
 {% endblock %}
