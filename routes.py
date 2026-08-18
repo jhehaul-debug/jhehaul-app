@@ -9041,6 +9041,39 @@ def copilot_action_execute():
     })
 
 
+@app.route("/api/seller/insights")
+@require_login
+def seller_insights_api():
+    """Return seller intelligence JSON for the current authenticated seller.
+    Used by the Seller Dashboard AJAX load and the Copilot overview tool.
+    Result is cached 5 minutes per seller server-side.
+    """
+    from ai.seller_intelligence import get_seller_overview
+    try:
+        data = get_seller_overview(current_user.id)
+        if "error" in data:
+            return jsonify({"error": data["error"]}), 500
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error("seller_insights_api error: %s", e)
+        return jsonify({"error": "Could not load seller insights."}), 500
+
+
+@app.route("/api/seller/insights/listing/<int:listing_id>")
+@require_login
+def seller_listing_insights_api(listing_id):
+    """Return per-listing seller intelligence. Enforces ownership."""
+    from ai.seller_intelligence import get_listing_intel
+    try:
+        data = get_listing_intel(listing_id, current_user.id)
+        if "error" in data:
+            return jsonify({"error": data["error"]}), 403 if "permission" in data["error"] else 404
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error("seller_listing_insights_api error: %s", e)
+        return jsonify({"error": "Could not load listing insights."}), 500
+
+
 @app.route("/admin/copilot-analytics")
 @require_admin
 def admin_copilot_analytics():

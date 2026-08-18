@@ -1,0 +1,725 @@
+JHE HAUL — PHASE I
+AI SELLER INTELLIGENCE
+
+Phase H is complete and verified.
+
+Now begin Phase I.
+
+This phase adds proactive seller intelligence to JHE Haul.
+
+IMPORTANT:
+
+Do NOT begin the full autonomous multi-agent system yet.
+
+Do NOT allow AI to automatically change listings, prices, offers, or seller settings without explicit confirmation.
+
+Do NOT invent analytics.
+
+All seller intelligence must use REAL JHE Haul marketplace data.
+
+==================================================
+PHASE I OBJECTIVE
+==================================================
+
+Build an AI Seller Intelligence layer that helps sellers understand:
+
+- how their listings are performing
+- which listings need attention
+- whether buyers are engaging
+- whether offers/messages are being missed
+- which listings may need improvement
+- when listings are getting old or stale
+- which listings are performing best
+
+The seller should receive useful recommendations based on real activity.
+
+==================================================
+1. SELLER INTELLIGENCE DASHBOARD
+==================================================
+
+Add an AI-powered section to the existing dedicated Seller Dashboard.
+
+Suggested heading:
+
+Seller Insights
+
+or
+
+AI Seller Insights
+
+Do NOT replace the existing dashboard.
+
+Add intelligence to it.
+
+==================================================
+2. REAL DATA ONLY
+==================================================
+
+Use actual seller data such as:
+
+- listing views
+- active listings
+- offers received
+- unread messages
+- listing age
+- sold listings
+- listing completeness
+- price
+- photo count
+- video availability
+- delivery availability
+- category
+- recent engagement
+
+Do NOT create fake numbers.
+
+Do NOT create fake performance history.
+
+==================================================
+3. PRIORITY INSIGHTS
+==================================================
+
+Surface the most useful issues first.
+
+Examples:
+
+“Your Chevrolet Volt has 87 views but no offers.”
+
+“You have 3 unanswered buyer messages.”
+
+“Your listing has been active for 21 days.”
+
+“This listing has fewer photos than your other listings.”
+
+“This listing is receiving more views than your other vehicles.”
+
+“Your listing has 4 pending offers.”
+
+Use only actual supported facts.
+
+==================================================
+4. ACTION REQUIRED SECTION
+==================================================
+
+Create an optional:
+
+Needs Attention
+
+section.
+
+Potential cards:
+
+Unanswered Messages
+
+Pending Offers
+
+Listings Expiring Soon
+
+Listings With Low Engagement
+
+Incomplete Listings
+
+Listings With High Views But No Offers
+
+Only show cards when there is real data that requires attention.
+
+==================================================
+5. LISTING PERFORMANCE ANALYSIS
+==================================================
+
+Analyze each seller-owned listing using available metrics.
+
+Potential performance dimensions:
+
+- views
+- inquiries
+- offers
+- listing age
+- sold conversion
+- completeness
+- photos
+- video
+- price changes
+- delivery availability
+
+Do not claim causation without evidence.
+
+Example:
+
+Good:
+“This listing has 120 views and no offers.”
+
+Avoid:
+“Your price is definitely too high.”
+
+Instead suggest:
+
+“You may want to review the price or listing details.”
+
+==================================================
+6. AI RECOMMENDATIONS
+==================================================
+
+Provide suggestions such as:
+
+- Add more photos
+- Add a video
+- Add missing vehicle mileage
+- Improve description
+- Clarify condition
+- Review price
+- Enable JHE Haul delivery
+- Respond to messages
+- Review pending offers
+- Relist/renew
+- Mark sold if item is no longer available
+
+Do not automatically apply changes.
+
+==================================================
+7. PRICE RECOMMENDATIONS
+==================================================
+
+Do NOT create unsupported market-value claims.
+
+If real comparable listing data exists inside JHE Haul, AI may say:
+
+“Similar JHE Haul listings are generally priced between X and Y.”
+
+Only if sufficient comparable data exists.
+
+If not enough data exists:
+
+Do not invent a market price.
+
+Instead say:
+
+“JHE Haul does not yet have enough comparable listings to estimate a reliable price.”
+
+==================================================
+8. LISTING QUALITY SCORE
+==================================================
+
+Use the Phase D listing completeness framework.
+
+Potential score:
+
+Listing Quality:
+Excellent
+Good
+Needs Improvement
+
+or:
+
+8/10
+
+Base it on transparent criteria such as:
+
+- title
+- description
+- category
+- condition
+- price
+- location
+- photos
+- video
+- category-specific details
+- delivery information
+
+Do not use arbitrary AI judgment.
+
+==================================================
+9. SELLER PERFORMANCE SUMMARY
+==================================================
+
+Allow:
+
+Ask JHE Haul:
+“How are my listings doing?”
+
+Copilot response may summarize:
+
+“You currently have:
+3 active listings
+145 total listing views this week
+4 pending offers
+2 unread buyer conversations”
+
+Use actual authorized data only.
+
+==================================================
+10. BEST-PERFORMING LISTINGS
+==================================================
+
+Identify seller-owned listings with strongest activity.
+
+Potential ranking factors:
+
+- views
+- inquiries
+- offers
+- recent activity
+
+Example:
+
+“Your most-viewed listing this week is the Chevrolet Volt.”
+
+Do not rank using fake engagement.
+
+==================================================
+11. LOW-PERFORMING LISTINGS
+==================================================
+
+Identify low engagement carefully.
+
+Example:
+
+“This listing has been active for 14 days with 2 views.”
+
+Provide optional recommendations.
+
+Do not suppress or remove listings automatically.
+
+==================================================
+12. SELLER NOTIFICATIONS
+==================================================
+
+Create intelligent in-app seller alerts for meaningful events.
+
+Examples:
+
+“Your listing has 3 new offers.”
+
+“You have 4 unanswered buyer messages.”
+
+“Your listing expires soon.”
+
+“Your listing is getting strong interest.”
+
+Do NOT over-notify.
+
+Do NOT send spam.
+
+Use existing notification preferences.
+
+Email may be used for important events where appropriate.
+
+Do NOT use SMS.
+
+==================================================
+13. DAILY / WEEKLY SELLER SUMMARY FOUNDATION
+==================================================
+
+Prepare for seller summaries.
+
+Potential future summary:
+
+This Week:
+
+Views: 214
+Messages: 17
+Offers: 6
+Sold: 2
+
+Top Listing:
+2014 Chevrolet Volt
+
+Listings Needing Attention:
+2
+
+Do not automatically email daily summaries unless specifically approved later.
+
+==================================================
+14. AI SELLER TOOL LAYER
+==================================================
+
+Extend the secure tool/service architecture.
+
+Potential seller-intelligence tools:
+
+get_seller_overview()
+
+get_listing_performance()
+
+get_seller_unread_messages_count()
+
+get_seller_offer_summary()
+
+get_listing_completeness()
+
+get_listing_attention_signals()
+
+get_seller_top_listings()
+
+All tools must enforce:
+
+authentication
+authorization
+ownership
+privacy
+
+==================================================
+15. COPILOT INTEGRATION
+==================================================
+
+Integrate Seller Intelligence into Ask JHE Haul.
+
+Examples:
+
+“How are my listings doing?”
+
+“Which listing needs attention?”
+
+“Which item has the most views?”
+
+“Do I have any unanswered messages?”
+
+“Should I improve my Volt listing?”
+
+Use Seller Intelligence data.
+
+Do not allow Copilot to invent metrics.
+
+==================================================
+16. RECOMMENDATION EXPLANATIONS
+==================================================
+
+Every recommendation should have a clear reason.
+
+Example:
+
+Recommendation:
+Add more photos.
+
+Reason:
+“This listing currently has 2 photos.”
+
+Recommendation:
+Review pending offers.
+
+Reason:
+“You currently have 3 pending offers.”
+
+Avoid unexplained AI advice.
+
+==================================================
+17. NO AUTONOMOUS CHANGES
+==================================================
+
+Seller Intelligence must NOT automatically:
+
+- change price
+- edit description
+- delete listing
+- mark listing sold
+- accept offer
+- decline offer
+- send messages
+- change delivery options
+
+It may recommend or prepare an action.
+
+Phase H confirmation rules still apply if the seller chooses to perform an approved action.
+
+==================================================
+18. BACKGROUND PROCESSING
+==================================================
+
+Reuse Phase F workers where appropriate.
+
+Potential background tasks:
+
+listing performance calculations
+
+seller summary generation
+
+attention-signal detection
+
+notification matching
+
+Do not run unnecessary heavy analysis on every page load.
+
+==================================================
+19. COST CONTROL
+==================================================
+
+Use normal application logic for metrics whenever possible.
+
+Do NOT call an AI model merely to calculate:
+
+view counts
+
+offer counts
+
+message counts
+
+listing age
+
+photo count
+
+Use AI only where language generation or higher-level recommendation is valuable.
+
+==================================================
+20. SELLER PRIVACY
+==================================================
+
+Seller Intelligence must not expose:
+
+- another seller’s private analytics
+- private messages
+- private addresses
+- contact information
+- internal fraud data
+- admin notes
+
+Each seller sees only authorized data.
+
+==================================================
+21. ADMIN VISIBILITY
+==================================================
+
+Admin may see aggregate Seller Intelligence usage such as:
+
+- seller insight requests
+- recommendations generated
+- failed analysis jobs
+
+Do not expose unnecessary private recommendation conversations.
+
+==================================================
+22. ANALYTICS FOUNDATION
+==================================================
+
+Prepare accurate seller metrics.
+
+Potential time windows:
+
+Today
+Last 7 Days
+Last 30 Days
+All Time
+
+Do not create historical statistics that were never tracked.
+
+If historical data is unavailable, clearly use data from the point tracking begins.
+
+==================================================
+23. MOBILE UX
+==================================================
+
+Optimize Seller Insights for mobile.
+
+Suggested layout:
+
+Seller Dashboard
+
+Needs Attention
+
+2-column overview cards
+
+Seller Insights
+
+Top Listing
+
+Listings to Improve
+
+Ask JHE Haul
+
+Avoid long blocks of text.
+
+==================================================
+24. EMPTY STATE
+==================================================
+
+If seller has no listings:
+
+Show:
+
+“Create your first listing to start receiving seller insights.”
+
+Button:
+
++ Create Listing
+
+Do not generate fake recommendations.
+
+==================================================
+25. NEW SELLER STATE
+==================================================
+
+If there is not enough activity yet:
+
+Show:
+
+“We’re still gathering activity for this listing.”
+
+Do not pretend the system has meaningful performance conclusions.
+
+==================================================
+26. SECURITY TESTING
+==================================================
+
+Test:
+
+Seller A asks for Seller B analytics
+→ rejected
+
+Normal buyer asks for seller private analytics
+→ rejected
+
+Prompt injection attempts
+→ rejected
+
+Unauthorized listing ID
+→ rejected
+
+==================================================
+27. FUNCTIONAL TESTING
+==================================================
+
+Test:
+
+Seller with active listing
+→ insights displayed
+
+High views / no offers
+→ appropriate suggestion
+
+Pending offers
+→ Needs Attention
+
+Unread messages
+→ Needs Attention
+
+Incomplete listing
+→ completeness suggestion
+
+No activity
+→ honest insufficient-data state
+
+No listings
+→ create-listing empty state
+
+==================================================
+28. PRESERVE EXISTING FEATURES
+==================================================
+
+Do not break:
+
+Marketplace Home
+
+Seller Dashboard
+
+Phase D AI Listing Assistant
+
+Phase E AI Search
+
+Phase F Workers/Queue
+
+Phase G Copilot
+
+Phase H Controlled Actions
+
+Messages
+
+Offers
+
+Saved Items
+
+Delivery
+
+Notifications
+
+Email
+
+Admin
+
+Photos
+
+Videos
+
+Vehicle fields
+
+SEO
+
+Authentication
+
+Stripe
+
+==================================================
+29. IMPLEMENT LOCALLY / STAGING FIRST
+==================================================
+
+Implement Phase I locally/staging first.
+
+Do NOT push to production yet.
+
+After implementation report:
+
+SELLER INTELLIGENCE SERVICE: YES/NO
+
+SELLER INSIGHTS UI: YES/NO
+
+NEEDS ATTENTION: YES/NO
+
+LISTING PERFORMANCE ANALYSIS: YES/NO
+
+QUALITY SCORE: YES/NO
+
+PRICE RECOMMENDATION BEHAVIOR:
+
+TOP LISTINGS: YES/NO
+
+LOW-ENGAGEMENT DETECTION: YES/NO
+
+COPILOT SELLER INTELLIGENCE: YES/NO
+
+IN-APP SELLER ALERTS: YES/NO
+
+BACKGROUND PROCESSING USED: YES/NO
+
+REAL DATA ONLY VERIFIED: YES/NO
+
+SELLER PRIVACY TESTED: YES/NO
+
+MOBILE TESTED: YES/NO
+
+DATABASE MIGRATION: YES/NO
+
+NEW DEPENDENCIES:
+
+NEW ENVIRONMENT VARIABLES:
+
+EXPECTED AI COST:
+
+FILES CHANGED:
+
+TEST RESULTS:
+
+RISKS / ISSUES:
+
+Then STOP.
+
+Do NOT commit.
+Do NOT push.
+Do NOT deploy.
+
+Wait for production approval.
+
+==================================================
+30. CRITICAL RULES
+==================================================
+
+Do not change anything else.
+
+Do not break anything else.
+
+Keep all unrelated functionality exactly as it is.
+
+Do not begin Phase J yet.
+
+Do not invent seller analytics.
+
+Do not autonomously alter seller listings.
+
+BEGIN PHASE I IMPLEMENTATION.

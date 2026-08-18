@@ -515,6 +515,24 @@ def prepare_listing_edit(listing_id: int, field: str, new_value: str, current_us
     return _prep(int(listing_id), field, new_value, current_user)
 
 
+# ---------------------------------------------------------------------------
+# Phase I — Seller Intelligence tools (read-only, auth + ownership enforced)
+# ---------------------------------------------------------------------------
+
+def get_seller_intelligence_overview(current_user) -> dict:
+    """Return a full seller intelligence overview: metrics, attention signals,
+    top listings, quality distribution, and AI narrative."""
+    from ai.seller_intelligence import get_seller_overview
+    return get_seller_overview(current_user.id)
+
+
+def get_listing_intelligence(listing_id: int, current_user) -> dict:
+    """Return detailed intelligence for one of the seller's own listings:
+    quality score, recommendations, views, comparable price range."""
+    from ai.seller_intelligence import get_listing_intel
+    return get_listing_intel(int(listing_id), current_user.id)
+
+
 _TOOL_REGISTRY = {
     # Phase G — read-only
     "search_listings":              search_listings,
@@ -528,6 +546,9 @@ _TOOL_REGISTRY = {
     "get_delivery_status":          get_delivery_status,
     "get_seller_performance":       get_seller_performance,
     "get_account_navigation_help":  get_account_navigation_help,
+    # Phase I — seller intelligence (read-only)
+    "get_seller_intelligence_overview": get_seller_intelligence_overview,
+    "get_listing_intelligence":         get_listing_intelligence,
     # Phase H — controlled write actions (return pending, not executed)
     "save_listing":                 save_listing,
     "unsave_listing":               unsave_listing,
@@ -545,6 +566,10 @@ _AUTH_REQUIRED_TOOLS = {
     "get_user_messages_summary",
     "get_delivery_status",
     "get_seller_performance",
+    # Phase I
+    "get_seller_intelligence_overview",
+    "get_listing_intelligence",
+    # Phase H
     "save_listing",
     "unsave_listing",
     "mark_listing_sold",

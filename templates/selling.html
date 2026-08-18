@@ -133,6 +133,162 @@
     </div>
   </div>
 
+  <!-- ── AI Seller Insights (Phase I — AJAX loaded) ────────────────────── -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/seller_insights.css') }}">
+  <div class="si-section" id="si-container">
+    <div class="si-section-header">
+      <span class="si-section-title">✨ AI Seller Insights</span>
+      <span class="si-badge">Beta</span>
+      <button class="si-refresh-btn" onclick="loadInsights(true)" title="Refresh insights">↻ Refresh</button>
+    </div>
+    <div id="si-body">
+      <div class="si-loading"><div class="si-spinner"></div> Loading your insights…</div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var container = document.getElementById('si-body');
+    var loaded = false;
+
+    function fmt(n) {
+      return Number(n || 0).toLocaleString();
+    }
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function qualityClass(label) {
+      if (label === 'Excellent') return 'excellent';
+      if (label === 'Good') return 'good';
+      return 'needs';
+    }
+    function attentionIcon(type) {
+      var icons = {
+        pending_offers: '📬', unread_messages: '💬', expiring_soon: '⏰',
+        high_views_no_offers: '📈', low_engagement: '😴', incomplete_listing: '✏️'
+      };
+      return icons[type] || '⚠️';
+    }
+
+    function renderInsights(d) {
+      if (!d || d.error) {
+        container.innerHTML = '<div class="si-empty">Seller insights are temporarily unavailable.</div>';
+        return;
+      }
+
+      var html = '';
+
+      /* Empty state */
+      if (d.active_count === 0 && d.sold_count === 0) {
+        container.innerHTML = '<div class="si-empty"><div>Create your first listing to start receiving seller insights.</div><a href="/sell">+ Create Listing</a></div>';
+        return;
+      }
+
+      /* AI narrative */
+      if (d.ai_narrative) {
+        html += '<div class="si-narrative"><span class="si-narrative-icon">🤖</span><span>' + escHtml(d.ai_narrative) + '</span></div>';
+      }
+
+      /* Needs Attention */
+      var sigs = d.attention_signals || [];
+      if (sigs.length > 0) {
+        html += '<div class="si-attention-title">⚠️ Needs Attention</div>';
+        html += '<div class="si-attention-cards">';
+        sigs.slice(0, 6).forEach(function(s) {
+          var cls = s.priority <= 1 ? ' priority-1' : '';
+          html += '<a href="' + escHtml(s.url) + '" class="si-attention-card' + cls + '">'
+               +    '<span class="si-attention-icon">' + attentionIcon(s.type) + '</span>'
+               +    '<span class="si-attention-body">'
+               +      '<div class="si-attention-label">' + escHtml(s.label) + '</div>'
+               +      '<div class="si-attention-msg">' + escHtml(s.message) + '</div>'
+               +    '</span>'
+               +    '<span class="si-attention-arrow">›</span>'
+               + '</a>';
+        });
+        html += '</div>';
+      }
+
+      /* Top listings */
+      var tops = d.top_listings || [];
+      if (tops.length > 0) {
+        html += '<div class="si-sub-title">🏆 Top Listings</div>';
+        html += '<div class="si-listing-cards">';
+        tops.forEach(function(l) {
+          var priceStr = l.price ? '$' + Number(l.price).toLocaleString() : (l.price_type === 'free' ? 'Free' : '—');
+          var qCls = qualityClass(l.quality_label);
+          html += '<a href="' + escHtml(l.url) + '" class="si-listing-card">'
+               +    '<span class="si-listing-card-body">'
+               +      '<div class="si-listing-card-title">' + escHtml(l.title) + '</div>'
+               +      '<div class="si-listing-card-meta">'
+               +        '<span>' + priceStr + '</span>'
+               +        '<span>👁 ' + fmt(l.views) + ' views</span>'
+               +        (l.days_active > 0 ? '<span>📅 ' + l.days_active + 'd active</span>' : '')
+               +        (l.photo_count > 0 ? '<span>📷 ' + l.photo_count + ' photos</span>' : '')
+               +      '</div>'
+               +    '</span>'
+               +    '<span class="si-quality-badge ' + qCls + '">' + escHtml(l.quality_label) + '</span>'
+               + '</a>';
+        });
+        html += '</div>';
+      }
+
+      /* Listings to improve */
+      var lows = (d.low_eng_listings || []).filter(function(l) {
+        return !(tops || []).find(function(t) { return t.id === l.id; });
+      });
+      if (lows.length > 0) {
+        html += '<div class="si-sub-title">💡 Listings to Improve</div>';
+        html += '<div class="si-listing-cards">';
+        lows.slice(0, 4).forEach(function(l) {
+          var qCls = qualityClass(l.quality_label);
+          var editUrl = l.edit_url || ('/listing/' + l.id + '/edit');
+          html += '<a href="' + escHtml(editUrl) + '" class="si-listing-card">'
+               +    '<span class="si-listing-card-body">'
+               +      '<div class="si-listing-card-title">' + escHtml(l.title) + '</div>'
+               +      '<div class="si-listing-card-meta">'
+               +        '<span>👁 ' + fmt(l.views) + ' views</span>'
+               +        '<span>📅 ' + l.days_active + 'd active</span>'
+               +        (l.quality_missing && l.quality_missing.length
+               +          ? '<span>Missing: ' + escHtml(l.quality_missing.slice(0,2).join(', ')) + '</span>'
+               +          : '')
+               +      '</div>'
+               +    '</span>'
+               +    '<span class="si-quality-badge ' + qCls + '">' + escHtml(l.quality_label) + '</span>'
+               + '</a>';
+        });
+        html += '</div>';
+      }
+
+      /* No signals / listings message */
+      if (sigs.length === 0 && tops.length === 0) {
+        html += '<div class="si-empty">We\'re still gathering activity data for your listings.</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    window.loadInsights = function(force) {
+      if (loaded && !force) return;
+      container.innerHTML = '<div class="si-loading"><div class="si-spinner"></div> Loading your insights…</div>';
+      fetch('/api/seller/insights', {
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) { loaded = true; renderInsights(d); })
+      .catch(function() {
+        container.innerHTML = '<div class="si-empty">Seller insights are temporarily unavailable.</div>';
+      });
+    };
+
+    /* Load on page show — defer so the dashboard renders first */
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(loadInsights, 100); });
+    } else {
+      setTimeout(loadInsights, 100);
+    }
+  })();
+  </script>
+
   <!-- ── Your Listings ─────────────────────────────────────────────────── -->
   <div class="sl-section" style="padding-bottom:16px;">
     <div class="sl-listings-header">

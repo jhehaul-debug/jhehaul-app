@@ -189,6 +189,40 @@ COPILOT_TOOLS = [
         },
     },
 
+    # ── Phase I seller intelligence tools (read-only, auth required) ──────────
+    {
+        "type": "function",
+        "function": {
+            "name": "get_seller_intelligence_overview",
+            "description": (
+                "Return a full seller intelligence overview for the authenticated seller: "
+                "active listing count, total views, pending offers, unread messages, "
+                "attention signals, top listings, quality distribution, and an AI narrative. "
+                "Use when seller asks 'How are my listings doing?', 'Which listing needs attention?', "
+                "'What should I focus on?', or similar performance questions."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_listing_intelligence",
+            "description": (
+                "Return detailed intelligence for one of the authenticated seller's own listings: "
+                "quality score, recommendations, views, pending offers, comparable price range, and AI summary. "
+                "Use when seller asks about a specific listing's performance or how to improve it."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "listing_id": {"type": "integer", "description": "ID of the seller's listing to analyze"},
+                },
+                "required": ["listing_id"],
+            },
+        },
+    },
+
     # ── Phase H controlled write tools (return pending action for user confirmation) ──
     {
         "type": "function",
