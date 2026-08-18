@@ -1,0 +1,313 @@
+JHE HAUL — PHASE D PRODUCTION APPROVAL
+COMMIT, PUSH, DEPLOY, AND VERIFY AI LISTING ASSISTANT
+
+Phase D implementation is approved for production.
+
+Do NOT begin Phase E yet.
+
+Your task now is ONLY to safely move the approved Phase D AI-assisted listing features through:
+
+LOCAL
+→ GITHUB
+→ DIGITALOCEAN
+→ LIVE JHEHAUL.COM
+
+IMPORTANT:
+Do not change anything else.
+Do not break any other working features.
+Keep all unrelated functionality exactly as it is.
+
+==================================================
+1. PRE-DEPLOYMENT CHECK
+==================================================
+
+Verify all approved Phase D features are working locally/staging:
+
+- AI title suggestion
+- AI description assistance
+- AI category suggestion
+- listing completeness check
+- seller can edit or ignore AI suggestions
+- seller can create listings manually without AI
+- AI failure does not block listing creation
+- no AI action automatically publishes a listing
+- no AI action changes price/location/delivery without seller approval
+
+Also verify existing marketplace functionality still works:
+
+- Marketplace Home
+- Seller Dashboard
+- My Listings
+- Messages
+- Offers
+- Saved Items
+- Delivery
+- Admin
+- Authentication
+- Photos
+- Videos
+- 20-photo maximum
+- 1-video maximum
+- 60-second video maximum
+- strict no-draft behavior
+- vehicle listing fields
+- SEO work from Phase C
+
+==================================================
+2. AI PROVIDER / ENVIRONMENT CHECK
+==================================================
+
+Before pushing, confirm whether Phase D requires a new AI API key or environment variable.
+
+Report:
+
+AI PROVIDER:
+AI ENVIRONMENT VARIABLE NAME:
+ENV VARIABLE PRESENT LOCALLY: YES/NO
+ENV VARIABLE PRESENT IN DIGITALOCEAN: YES/NO
+ENV VARIABLE ENCRYPTED/SECRET: YES/NO
+
+Do NOT expose the actual secret value.
+
+If the required AI environment variable is missing in DigitalOcean:
+
+STOP.
+
+Tell me exactly what variable needs to be added.
+
+Do NOT deploy broken AI functionality.
+
+==================================================
+3. SECURITY CHECK
+==================================================
+
+Verify:
+
+- AI API keys are backend-only
+- no AI secret is exposed in frontend JavaScript
+- seller private email/phone/private address is not sent to AI
+- unauthorized users cannot invoke AI for another seller's listing
+- AI output is sanitized/validated
+- prompt-injection protections are in place
+- AI has no unrestricted database access
+
+==================================================
+4. COST / RATE-LIMIT CHECK
+==================================================
+
+Verify:
+
+- AI requests are rate-limited
+- request timeout exists
+- retry limit exists
+- seller cannot accidentally trigger unlimited duplicate AI calls
+- usage is logged safely
+- AI failure falls back to manual listing creation
+
+==================================================
+5. RUN TESTS
+==================================================
+
+Test:
+
+MANUAL LISTING:
+→ works without AI
+
+AI TITLE:
+→ suggestion works
+→ seller can edit/discard
+
+AI DESCRIPTION:
+→ suggestion works
+→ seller can edit/discard
+
+AI CATEGORY:
+→ suggestion works
+→ seller confirms before applying
+
+AI FAILURE:
+→ listing flow continues manually
+
+MOBILE:
+→ AI controls work on iPhone-sized screen
+
+SECURITY:
+→ unauthorized access rejected
+
+==================================================
+6. CHECK GIT STATUS
+==================================================
+
+Report:
+
+CURRENT BRANCH:
+LOCAL HEAD:
+UNCOMMITTED FILES:
+UNTRACKED FILES:
+COMMITS AHEAD:
+COMMITS BEHIND:
+
+Do not include secrets, logs, screenshots, local databases, or temporary files in the commit.
+
+==================================================
+7. COMMIT PHASE D
+==================================================
+
+Commit the approved Phase D work.
+
+Use a clear commit message such as:
+
+Phase D: add AI-assisted listing creation
+
+==================================================
+8. PUSH TO EXISTING GITHUB
+==================================================
+
+Push to the EXISTING production repository:
+
+jhehaul-debug/jhehaul-app
+
+Branch:
+
+main
+
+Do NOT create a new repository.
+Do NOT create a second production branch.
+Do NOT force push.
+
+==================================================
+9. VERIFY GITHUB
+==================================================
+
+Report:
+
+LOCAL HEAD SHA:
+GITHUB MAIN SHA:
+
+Confirm:
+
+LOCAL = GITHUB: YES/NO
+AHEAD: 0
+BEHIND: 0
+
+If they do not match:
+STOP and fix the Git issue.
+
+==================================================
+10. DIGITALOCEAN DEPLOYMENT
+==================================================
+
+Verify DigitalOcean production remains connected to:
+
+Repository:
+jhehaul-debug/jhehaul-app
+
+Branch:
+main
+
+Verify a NEW deployment starts from the Phase D commit.
+
+If auto-deploy does not trigger, manually deploy the newest GitHub main commit.
+
+Do not deploy an older SHA.
+
+==================================================
+11. VERIFY SHAs
+==================================================
+
+Report:
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+
+ALL THREE MATCH: YES/NO
+
+Do not mark complete unless YES.
+
+==================================================
+12. LIVE PRODUCTION TEST
+==================================================
+
+Test the actual live site:
+
+jhehaul.com
+
+Log in as a seller.
+
+Go to:
+
+Sell
+→ Details
+
+Verify the AI Listing Assistant is visible and working.
+
+Test:
+
+- Generate title suggestion
+- Generate description suggestion
+- Suggest category
+- Check listing completeness
+- edit AI output
+- discard AI output
+- continue manually if AI is unavailable
+
+==================================================
+13. VERIFY NO EXISTING FLOW BROKE
+==================================================
+
+On LIVE production verify:
+
+- create listing
+- publish listing
+- seller dashboard
+- messages
+- offers
+- delivery
+- admin
+- buyer browsing
+- photos
+- video
+- SEO listing pages
+
+==================================================
+14. FINAL REPORT
+==================================================
+
+PHASE D DEPLOYED: YES/NO
+
+AI PROVIDER:
+AI ENVIRONMENT VARIABLE CONFIGURED: YES/NO
+
+AI TITLE LIVE: YES/NO
+AI DESCRIPTION LIVE: YES/NO
+AI CATEGORY LIVE: YES/NO
+LISTING COMPLETENESS LIVE: YES/NO
+
+MANUAL LISTING FALLBACK WORKING: YES/NO
+AI SECURITY VERIFIED: YES/NO
+MOBILE VERIFIED: YES/NO
+
+LOCAL SHA:
+GITHUB SHA:
+DIGITALOCEAN SHA:
+ALL THREE MATCH: YES/NO
+
+LIVE JHEHAUL.COM VERIFIED: YES/NO
+
+==================================================
+15. STOP
+==================================================
+
+After Phase D is verified live:
+
+STOP.
+
+Do NOT begin Phase E yet.
+
+Wait for approval.
+
+CRITICAL:
+Do not change anything else.
+Do not break anything else.
+Keep all unrelated functionality exactly as it is.
