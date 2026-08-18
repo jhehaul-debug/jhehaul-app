@@ -1077,6 +1077,17 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (Phase M) skipped: %s", _e)
 
+    # ── Test delivery quotes: is_test column ─────────────────────────────────
+    try:
+        db.session.execute(_text(
+            "ALTER TABLE delivery_requests ADD COLUMN IF NOT EXISTS is_test BOOLEAN NOT NULL DEFAULT false"
+        ))
+        db.session.commit()
+        logging.info("Column migration: delivery_requests.is_test ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (is_test) skipped: %s", _e)
+
     # ── Phase N: Monetization columns ────────────────────────────────────────
     try:
         _pn_cols = [

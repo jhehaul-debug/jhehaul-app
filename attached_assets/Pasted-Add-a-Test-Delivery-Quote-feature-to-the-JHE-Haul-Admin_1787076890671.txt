@@ -1,0 +1,80 @@
+Add a Test Delivery Quote feature to the JHE Haul Admin dashboard so I can test the complete delivery quote workflow before we launch it.
+
+ADMIN TEST DELIVERY QUOTE
+
+Add a clearly visible button in the Admin dashboard labeled:
+
+Test Delivery Quote
+
+When Admin clicks this button, open a test form that allows me to simulate a real customer delivery quote request.
+
+The test form should include:
+
+* Pickup address
+* Delivery/drop-off address
+* Item/load description
+* Optional customer name
+* Optional phone number
+* Optional email
+* Any other fields currently required by the real delivery quote system
+
+Use the same backend quote workflow and calculations that real delivery requests use. Do not create a completely separate fake system that could pass while the real system is broken.
+
+TEST THE COMPLETE FLOW
+
+When I submit the test quote, verify that:
+
+1. The quote request is successfully created.
+2. The request appears in the Admin dashboard.
+3. Admin can open and review the request.
+4. Pickup and delivery information displays correctly.
+5. Mileage/distance calculation works if it is currently part of the delivery system.
+6. The delivery pricing calculation works.
+7. Admin can enter, adjust, or approve the final delivery quote if that is part of the current workflow.
+8. The correct Stripe delivery payment option/product is connected.
+9. The system can generate the proper payment/checkout link.
+10. Quote status changes correctly throughout the process.
+11. Any customer notification connected to the quote system works correctly.
+12. Errors are clearly displayed instead of silently failing.
+
+Mark test requests clearly as:
+
+TEST QUOTE
+
+Test quotes must NOT be counted as real revenue, real orders, real deliveries, or normal marketplace analytics.
+
+IMPORTANT
+
+Before making changes, inspect the existing delivery quote code, database structure, Admin dashboard, Stripe integration, and current customer delivery workflow.
+
+Reuse the existing system wherever possible. Do not duplicate working functionality.
+
+Do not change anything else.
+
+Do not break any other working features.
+
+Keep all unrelated functionality exactly as it is.
+
+Do NOT modify the marketplace listing system, Boost, Featured + Boost, user accounts, existing Stripe products, authentication, or other working Admin features unless absolutely required for this test feature.
+
+DO NOT PUSH YET
+
+Make and test the changes in the development environment only.
+
+DO NOT push to GitHub.
+DO NOT deploy to DigitalOcean.
+DO NOT update production.
+
+When finished, report back:
+
+* What files were changed
+* Where the Test Delivery Quote button was added
+* What parts of the real quote workflow the test uses
+* Whether quote creation works
+* Whether the quote appears in Admin
+* Whether mileage/pricing works
+* Whether Stripe checkout generation works
+* Any errors found
+* Confirmation that nothing was pushed or deployed
+
+Wait for my approval before pushing anything.

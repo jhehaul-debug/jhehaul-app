@@ -12,7 +12,7 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
 from app import app, db, UPLOAD_FOLDER, choose_pay_link
 from auth import require_login
-from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, expire_pending_offers, expire_stale_timed_offers
+from models import User, Job, JobPhoto, Bid, CompletionPhoto, Review, PageView, HaulerServiceZip, Quote, Message, Category, Listing, ListingPhoto, ListingReport, DeliveryRequest, FraudFlag, ListingView, RecommendationEvent, ZipCode, MonetizationProduct, expire_pending_offers, expire_stale_timed_offers
 from email_service import (
     notify_customer_new_bid, notify_customer_bid_accepted_confirm,
     notify_customer_job_completed,
@@ -5512,24 +5512,333 @@ def hauler_deliveries_page():
 @require_admin
 def admin_deliveries():
     status_filter = request.args.get('status', '')
+    show_tests    = request.args.get('show_tests', '') == '1'
+
     q = DeliveryRequest.query
+    if not show_tests:
+        q = q.filter_by(is_test=False)   # hide test quotes from real delivery list by default
     if status_filter:
         q = q.filter_by(status=status_filter)
     deliveries = q.order_by(DeliveryRequest.created_at.desc()).all()
 
+    # Stats exclude test quotes so they never inflate real metrics
     stats = {}
     for s in _DELIVERY_STATUS_META:
-        stats[s] = DeliveryRequest.query.filter_by(status=s).count()
-    stats['total'] = DeliveryRequest.query.count()
+        stats[s] = DeliveryRequest.query.filter_by(status=s, is_test=False).count()
+    stats['total']       = DeliveryRequest.query.filter_by(is_test=False).count()
+    stats['test_count']  = DeliveryRequest.query.filter_by(is_test=True).count()
 
     return render_template('admin_deliveries.html',
         deliveries=deliveries, stats=stats,
         status_filter=status_filter,
+        show_tests=show_tests,
         status_meta=_DELIVERY_STATUS_META,
     )
 
 
 # ── end MARKETPLACE DELIVERY ──────────────────────────────────────────────────
+
+
+# ── ADMIN TEST DELIVERY QUOTE ─────────────────────────────────────────────────
+
+@app.route("/admin/test-delivery-quote", methods=["GET", "POST"])
+@require_admin
+def admin_test_delivery_quote():
+    """Admin-only: submit a test delivery quote through the real backend workflow."""
+    if request.method == 'GET':
+        checkout_test = request.args.get('checkout_test', '')
+        return render_template('admin_test_delivery_quote.html',
+                               checkout_test=checkout_test)
+
+    # ── POST: reuse the exact same creation logic as standalone_request_delivery ─
+    contact_name     = request.form.get('contact_name', '').strip() or 'Admin Test'
+    contact_phone    = request.form.get('contact_phone', '').strip() or ''
+    contact_email    = request.form.get('contact_email', '').strip() or ''
+    item_description = request.form.get('item_description', '').strip()
+    approx_dimensions = request.form.get('approx_dimensions', '').strip() or None
+    approx_weight    = request.form.get('approx_weight', '').strip() or None
+    item_count       = max(1, int(request.form.get('item_count', 1) or 1))
+    pickup_address   = request.form.get('pickup_address', '').strip()
+    pickup_city      = request.form.get('pickup_city', '').strip()
+    pickup_state     = request.form.get('pickup_state', 'MN').strip()
+    pickup_zip       = request.form.get('pickup_zip', '').strip()
+    delivery_address = request.form.get('delivery_address', '').strip()
+    delivery_city    = request.form.get('delivery_city', '').strip()
+    delivery_state   = request.form.get('delivery_state', 'MN').strip()
+    delivery_zip     = request.form.get('delivery_zip', '').strip()
+    pickup_stairs    = request.form.get('pickup_stairs') == '1'
+    delivery_stairs  = request.form.get('delivery_stairs') == '1'
+    need_loading     = request.form.get('need_loading') == '1'
+    need_unloading   = request.form.get('need_unloading') == '1'
+    preferred_date   = request.form.get('preferred_date', '').strip() or None
+    preferred_time   = request.form.get('preferred_time', '').strip() or None
+    special_instructions = request.form.get('special_instructions', '').strip() or None
+
+    errors = []
+    if not item_description:
+        errors.append("Item/load description is required.")
+    if not pickup_zip:
+        errors.append("Pickup ZIP code is required.")
+    if not delivery_zip:
+        errors.append("Drop-off ZIP code is required.")
+    if errors:
+        for e in errors:
+            flash(e, "error")
+        return render_template('admin_test_delivery_quote.html', form=request.form)
+
+    # Build public job description — identical logic to standalone_request_delivery
+    extras = []
+    if approx_dimensions: extras.append(f"Size: {approx_dimensions}")
+    if approx_weight:     extras.append(f"Weight: {approx_weight}")
+    extras.append(f"{item_count} item(s)")
+    if pickup_stairs:    extras.append("stairs at pickup")
+    if delivery_stairs:  extras.append("stairs at delivery")
+    if need_loading:     extras.append("loading help needed")
+    if need_unloading:   extras.append("unloading help needed")
+    job_desc = "[TEST QUOTE] " + item_description + \
+               (" | " + " | ".join(extras) if extras else "")
+    if special_instructions:
+        job_desc += f"\nNotes: {special_instructions}"
+
+    dim_parts = [p for p in [approx_dimensions,
+                              (f"~{approx_weight}" if approx_weight else None)] if p]
+    combined_dimensions = " / ".join(dim_parts) if dim_parts else None
+
+    job = Job(
+        customer_id=current_user.id,
+        customer_name=contact_name,
+        customer_phone=contact_phone,
+        pickup_address=f"{pickup_city}, {pickup_state} {pickup_zip}".strip(', '),
+        pickup_zip=pickup_zip,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        job_description=job_desc,
+        service_type='standalone_delivery',
+        status='open',
+    )
+    db.session.add(job)
+    db.session.flush()
+
+    dr = DeliveryRequest(
+        listing_id=None,
+        buyer_id=current_user.id,
+        seller_id=None,
+        pickup_address=pickup_address,
+        pickup_city=pickup_city,
+        pickup_state=pickup_state,
+        pickup_zip=pickup_zip,
+        pickup_stairs=pickup_stairs,
+        delivery_address=delivery_address,
+        delivery_city=delivery_city,
+        delivery_state=delivery_state,
+        delivery_zip=delivery_zip,
+        delivery_stairs=delivery_stairs,
+        item_description=item_description,
+        approx_dimensions=combined_dimensions,
+        item_count=item_count,
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        special_instructions=special_instructions,
+        need_loading=need_loading,
+        need_unloading=need_unloading,
+        job_id=job.id,
+        status='requested',
+        is_test=True,
+        admin_notes=(
+            f"[TEST QUOTE] Created by admin {current_user.email or current_user.id}. "
+            f"Contact: {contact_name} / {contact_phone} / {contact_email}"
+        ),
+    )
+    db.session.add(dr)
+    db.session.commit()
+    app.logger.info("TEST DELIVERY QUOTE created: dr_id=%s job_id=%s by admin=%s",
+                    dr.id, job.id, current_user.id)
+
+    flash(f"✅ Test delivery quote #{dr.id} created — review the results below.", "success")
+    return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr.id))
+
+
+@app.route("/admin/test-delivery-quote/<int:dr_id>")
+@require_admin
+def admin_test_delivery_quote_result(dr_id):
+    """Admin: display full diagnostic results for a test delivery quote."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if not dr.is_test:
+        flash("This is not a test delivery quote.", "error")
+        return redirect(url_for('admin_deliveries'))
+
+    checkout_test = request.args.get('checkout_test', '')
+    job = Job.query.get(dr.job_id) if dr.job_id else None
+
+    # ── Check 5: Mileage / distance calculation ──────────────────────────────
+    distance_miles = None
+    distance_error = None
+    try:
+        from distance import haversine_miles as _hav
+        pz = ZipCode.query.get(dr.pickup_zip)
+        dz = ZipCode.query.get(dr.delivery_zip)
+        if pz and dz:
+            distance_miles = round(_hav(pz.lat, pz.lon, dz.lat, dz.lon), 1)
+        else:
+            missing = []
+            if not pz: missing.append(f"pickup ZIP {dr.pickup_zip!r}")
+            if not dz: missing.append(f"delivery ZIP {dr.delivery_zip!r}")
+            distance_error = "ZIP not in database: " + ", ".join(missing)
+    except Exception as _de:
+        distance_error = str(_de)
+
+    # ── Check 6: Delivery pricing estimate ───────────────────────────────────
+    BASE_FEE      = 19.99   # mirrors STRIPE_PRICE_DELIVERY_BASE_FEE product ($19.99)
+    PER_MILE_RATE = 2.50    # standard per-mile rate
+    price_estimate = None
+    if distance_miles is not None:
+        price_estimate = round(BASE_FEE + distance_miles * PER_MILE_RATE, 2)
+
+    # ── Check 8/9: Stripe product connected ──────────────────────────────────
+    stripe_mode            = None
+    stripe_error           = None
+    stripe_product_connected = False
+    delivery_product       = None
+    try:
+        from stripe_service import get_stripe_mode as _gsm, _assert_test_mode as _atm
+        stripe_mode = _gsm()
+        _atm()
+        delivery_product = MonetizationProduct.query.filter_by(
+            product_type='delivery_base_fee'
+        ).first()
+        stripe_product_connected = bool(
+            delivery_product and delivery_product.stripe_price_id
+        )
+    except Exception as _se:
+        stripe_error = str(_se)
+
+    # ── Notification check ───────────────────────────────────────────────────
+    # Confirm the in-app notification functions exist and are importable
+    notif_ok = False
+    notif_error = None
+    try:
+        from notification_service import (
+            notify_delivery_request as _ndr_check,
+            notify_delivery_quote_ready as _ndqr_check,
+        )
+        from email_service import notify_buyer_delivery_quote_ready as _nbdqr_check
+        notif_ok = True
+    except Exception as _ne:
+        notif_error = str(_ne)
+
+    # ── Build checklist ──────────────────────────────────────────────────────
+    checks = [
+        ("Quote request created",           dr.id is not None,          None),
+        ("Linked Job created",              job is not None,             None),
+        ("Appears in admin deliveries",     DeliveryRequest.query.filter_by(id=dr.id).first() is not None, None),
+        ("Pickup info displays correctly",  bool(dr.pickup_city or dr.pickup_zip), None),
+        ("Drop-off info displays correctly",bool(dr.delivery_city or dr.delivery_zip), None),
+        ("Distance / mileage calculated",   distance_miles is not None,  distance_error),
+        ("Delivery pricing calculated",     price_estimate is not None,  None if price_estimate else "Distance needed"),
+        ("Stripe in TEST mode",             stripe_mode == 'test',       stripe_error),
+        ("Delivery base fee product connected", stripe_product_connected,
+         None if stripe_product_connected else "Set STRIPE_PRICE_DELIVERY_BASE_FEE in DigitalOcean and activate in /admin/monetization"),
+        ("Status starts as 'requested'",    dr.status in ('requested','quoted'), None),
+        ("Marked as TEST (excluded from real analytics)", dr.is_test,   None),
+        ("Notification functions importable", notif_ok,                  notif_error),
+    ]
+
+    return render_template('admin_test_delivery_quote_result.html',
+        dr=dr, job=job,
+        checkout_test=checkout_test,
+        distance_miles=distance_miles,
+        distance_error=distance_error,
+        BASE_FEE=BASE_FEE,
+        PER_MILE_RATE=PER_MILE_RATE,
+        price_estimate=price_estimate,
+        stripe_mode=stripe_mode,
+        stripe_error=stripe_error,
+        stripe_product_connected=stripe_product_connected,
+        delivery_product=delivery_product,
+        checks=checks,
+    )
+
+
+@app.route("/admin/test-delivery-quote/<int:dr_id>/set-quote", methods=["POST"])
+@require_admin
+def admin_test_delivery_set_quote(dr_id):
+    """Admin: assign a quote amount to a test DR and advance status to 'quoted'."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if not dr.is_test:
+        flash("This is not a test delivery quote.", "error")
+        return redirect(url_for('admin_deliveries'))
+    try:
+        amount = float(request.form.get('quote_amount', '').strip())
+        if amount <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        flash("Please enter a valid positive quote amount.", "error")
+        return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr_id))
+
+    dr.quote_amount = amount
+    dr.status = 'quoted'
+    db.session.commit()
+    app.logger.info("TEST QUOTE #%s: quote_amount=%.2f status=quoted", dr_id, amount)
+    flash(f"✅ Test quote amount set to ${amount:.2f} — status advanced to 'quoted'.", "success")
+    return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr_id))
+
+
+@app.route("/admin/test-delivery-quote/<int:dr_id>/checkout-test")
+@require_admin
+def admin_test_delivery_checkout(dr_id):
+    """Admin: generate a real Stripe TEST checkout session for a test delivery quote."""
+    dr = DeliveryRequest.query.get_or_404(dr_id)
+    if not dr.is_test:
+        flash("Only test quotes can use this checkout test.", "error")
+        return redirect(url_for('admin_deliveries'))
+    if not dr.quote_amount or dr.quote_amount <= 0:
+        flash("Set a quote amount on the test quote before generating a checkout.", "error")
+        return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr_id))
+
+    try:
+        from stripe_service import _assert_test_mode as _atm
+        _atm()   # raises if live key detected
+
+        domain    = os.environ.get("APP_BASE_URL", "https://jhehaul.com").rstrip("/")
+        fee_cents = int(round(dr.quote_amount * 100))
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': f'[TEST] JHE Haul Delivery Quote #{dr.id}',
+                        'description': (
+                            f'Test delivery: {(dr.item_description or "item")[:60]} '
+                            f'— ${dr.quote_amount:.2f}'
+                        ),
+                    },
+                    'unit_amount': fee_cents,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=(f"{domain}/admin/test-delivery-quote/{dr.id}"
+                         f"?checkout_test=success"),
+            cancel_url=(f"{domain}/admin/test-delivery-quote/{dr.id}"
+                        f"?checkout_test=cancel"),
+            metadata={
+                'test_quote': 'true',
+                'dr_id':      str(dr.id),
+                'is_test':    'true',
+            },
+        )
+        app.logger.info("TEST CHECKOUT SESSION created for DR #%s: %s", dr.id, session.id)
+        return redirect(session.url, code=303)
+
+    except Exception as _e:
+        app.logger.error("TEST checkout error DR #%s: %s", dr_id, _e)
+        flash(f"Stripe checkout error: {_e}", "error")
+        return redirect(url_for('admin_test_delivery_quote_result', dr_id=dr_id))
+
+
+# ── end ADMIN TEST DELIVERY QUOTE ─────────────────────────────────────────────
 
 @app.route("/hauler/jobs")
 def hauler_jobs():

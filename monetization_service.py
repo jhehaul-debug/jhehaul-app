@@ -266,27 +266,35 @@ def get_delivery_revenue_summary(days: int = 30) -> dict:
 
         since = datetime.now() - timedelta(days=days)
 
-        total   = DeliveryRequest.query.filter(DeliveryRequest.created_at >= since).count()
+        # All counts and revenue exclude is_test=True records
+        total   = DeliveryRequest.query.filter(
+            DeliveryRequest.created_at >= since,
+            DeliveryRequest.is_test == False,
+        ).count()
         pending = DeliveryRequest.query.filter(
             DeliveryRequest.created_at >= since,
-            DeliveryRequest.status.in_(["pending", "quoted"])
+            DeliveryRequest.status.in_(["pending", "quoted"]),
+            DeliveryRequest.is_test == False,
         ).count()
         accepted = DeliveryRequest.query.filter(
             DeliveryRequest.created_at >= since,
-            DeliveryRequest.status == "accepted"
+            DeliveryRequest.status == "accepted",
+            DeliveryRequest.is_test == False,
         ).count()
         completed = DeliveryRequest.query.filter(
             DeliveryRequest.created_at >= since,
-            DeliveryRequest.status == "completed"
+            DeliveryRequest.status == "completed",
+            DeliveryRequest.is_test == False,
         ).count()
 
-        # Sum accepted quote amounts — these are collected revenue
+        # Sum accepted quote amounts — collected revenue only, test quotes excluded
         revenue_row = (
             db.session.query(func.sum(DeliveryRequest.quote_amount))
             .filter(
                 DeliveryRequest.created_at >= since,
                 DeliveryRequest.status.in_(["accepted", "completed"]),
                 DeliveryRequest.quote_amount != None,
+                DeliveryRequest.is_test == False,
             )
             .scalar()
         )

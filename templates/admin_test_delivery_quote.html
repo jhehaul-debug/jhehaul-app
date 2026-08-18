@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Test Delivery Quote — JHE Haul Admin{% endblock %}
+{% block content %}
+
+<div class="page-header" style="flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="{{ url_for('admin_dashboard') }}" style="color:#718096;font-size:0.9rem;">← Admin</a>
+    <h2 class="page-title" style="margin:0;">🧪 Test Delivery Quote</h2>
+  </div>
+</div>
+
+<!-- Warning banner -->
+<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;">
+  <span style="font-size:1.6rem;line-height:1;">⚠️</span>
+  <div>
+    <strong style="color:#92400e;font-size:1rem;">TEST MODE — No real orders created</strong>
+    <p style="color:#78350f;margin:4px 0 0;font-size:0.88rem;">
+      This form runs through the <strong>real delivery quote backend</strong> but marks the request as
+      <strong>TEST QUOTE</strong>. Test quotes are excluded from revenue, analytics, and real delivery counts.
+      Stripe is in TEST mode — no real charges occur.
+    </p>
+  </div>
+</div>
+
+{% if checkout_test == 'success' %}
+<div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ✅ <strong style="color:#065f46;">Stripe TEST checkout completed successfully</strong> — the full payment flow works end-to-end.
+</div>
+{% elif checkout_test == 'cancel' %}
+<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+  ⚠️ <strong style="color:#92400e;">Stripe TEST checkout was cancelled</strong> — the checkout session was created correctly (cancel is expected in testing).
+</div>
+{% endif %}
+
+<div class="card" style="max-width:780px;">
+  <h3 style="margin-bottom:6px;">📋 Test Delivery Request Form</h3>
+  <p style="color:#718096;font-size:0.88rem;margin-bottom:20px;">
+    Uses the same fields and validation as a real customer delivery request.
+  </p>
+
+  <form method="POST" action="{{ url_for('admin_test_delivery_quote') }}">
+
+    <!-- Contact info -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">Contact (optional)</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Name</label>
+          <input type="text" name="contact_name" class="form-control" placeholder="Test Customer"
+                 value="{{ form.get('contact_name','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Phone</label>
+          <input type="text" name="contact_phone" class="form-control" placeholder="612-555-0100"
+                 value="{{ form.get('contact_phone','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Email</label>
+          <input type="email" name="contact_email" class="form-control" placeholder="test@example.com"
+                 value="{{ form.get('contact_email','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Item info -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">Item / Load <span style="color:#ef4444;">*</span></h4>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Description <span style="color:#ef4444;">*</span></label>
+        <textarea name="item_description" class="form-control" rows="2" required
+                  placeholder="e.g. 3-cushion sofa, dark brown leather" style="margin-top:4px;">{{ form.get('item_description','') if form else '' }}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Approx dimensions</label>
+          <input type="text" name="approx_dimensions" class="form-control" placeholder='84"W x 36"D x 34"H'
+                 value="{{ form.get('approx_dimensions','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Approx weight</label>
+          <input type="text" name="approx_weight" class="form-control" placeholder="~150 lbs"
+                 value="{{ form.get('approx_weight','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Item count</label>
+          <input type="number" name="item_count" class="form-control" min="1" value="{{ form.get('item_count','1') if form else '1' }}" style="margin-top:4px;">
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Special instructions</label>
+        <textarea name="special_instructions" class="form-control" rows="2"
+                  placeholder="Fragile — wrap carefully. Gate code: 1234." style="margin-top:4px;">{{ form.get('special_instructions','') if form else '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Pickup -->
+    <div style="background:#eff6ff;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#1d4ed8;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📍 Pickup Location</h4>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Full street address (private)</label>
+        <input type="text" name="pickup_address" class="form-control" placeholder="123 Main St"
+               value="{{ form.get('pickup_address','') if form else '' }}" style="margin-top:4px;">
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
+          <input type="text" name="pickup_city" class="form-control" placeholder="Minneapolis"
+                 value="{{ form.get('pickup_city','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
+          <input type="text" name="pickup_state" class="form-control" value="{{ form.get('pickup_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="pickup_zip" class="form-control" placeholder="55401" required
+                 value="{{ form.get('pickup_zip','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" name="pickup_stairs" value="1" {% if form and form.get('pickup_stairs')=='1' %}checked{% endif %}>
+          Stairs at pickup
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" name="need_loading" value="1" {% if form and form.get('need_loading')=='1' %}checked{% endif %}>
+          Loading help needed
+        </label>
+      </div>
+    </div>
+
+    <!-- Drop-off -->
+    <div style="background:#f0fdf4;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <h4 style="margin:0 0 12px;color:#065f46;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">🏁 Drop-off Location</h4>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.83rem;font-weight:600;color:#718096;">Full street address (private)</label>
+        <input type="text" name="delivery_address" class="form-control" placeholder="456 Oak Ave"
+               value="{{ form.get('delivery_address','') if form else '' }}" style="margin-top:4px;">
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">City</label>
+          <input type="text" name="delivery_city" class="form-control" placeholder="St. Paul"
+                 value="{{ form.get('delivery_city','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">State</label>
+          <input type="text" name="delivery_state" class="form-control" value="{{ form.get('delivery_state','MN') if form else 'MN' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">ZIP <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="delivery_zip" class="form-control" placeholder="55102" required
+                 value="{{ form.get('delivery_zip','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" name="delivery_stairs" value="1" {% if form and form.get('delivery_stairs')=='1' %}checked{% endif %}>
+          Stairs at drop-off
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" name="need_unloading" value="1" {% if form and form.get('need_unloading')=='1' %}checked{% endif %}>
+          Unloading help needed
+        </label>
+      </div>
+    </div>
+
+    <!-- Scheduling -->
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;">
+      <h4 style="margin:0 0 12px;color:#4a5568;font-size:0.9rem;text-transform:uppercase;letter-spacing:.05em;">📅 Preferred Schedule (optional)</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Date</label>
+          <input type="date" name="preferred_date" class="form-control"
+                 value="{{ form.get('preferred_date','') if form else '' }}" style="margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.83rem;font-weight:600;color:#718096;">Time preference</label>
+          <input type="text" name="preferred_time" class="form-control" placeholder="Morning / Afternoon / Evening"
+                 value="{{ form.get('preferred_time','') if form else '' }}" style="margin-top:4px;">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;">
+      <button type="submit" class="btn btn-primary" style="background:#7c3aed;border-color:#7c3aed;padding:10px 28px;">
+        🧪 Submit Test Quote
+      </button>
+      <a href="{{ url_for('admin_deliveries') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

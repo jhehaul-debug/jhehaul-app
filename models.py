@@ -628,6 +628,8 @@ class DeliveryRequest(db.Model):
     quote_amount = db.Column(db.Float, nullable=True)
     admin_notes = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), default='pending')
+    # Test flag — test quotes never counted as real revenue, orders, or analytics
+    is_test = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
