@@ -873,6 +873,10 @@ def marketplace():
             not current_user.phone
         )
         _mp_show_nudge = _mp_profile_incomplete and not getattr(current_user, 'profile_nudge_dismissed', False)
+        from urllib.parse import urlencode as _urlencode
+        _lm_args = {k: v for k, v in request.args.items() if k != 'limit'}
+        _lm_qs = _urlencode(_lm_args)
+        _load_more_base_url = '/marketplace?' + (_lm_qs + '&' if _lm_qs else '')
         return render_template('marketplace.html',
                                categories=categories,
                                is_search=True,
@@ -890,6 +894,7 @@ def marketplace():
                                hide_sold=hide_sold,
                                search_limit=_limit,
                                has_more=has_more,
+                               load_more_base_url=_load_more_base_url,
                                saved_listing_ids=_saved_listing_ids(),
                                show_welcome=False,
                                show_profile_nudge=_mp_show_nudge,
@@ -8294,11 +8299,15 @@ def marketplace_category(cat_page):
             id_set = [cat_obj.id] + child_ids
             q = q.filter(Listing.category_id.in_(id_set))
 
-    _limit      = 48
+    _limit      = min(max(int(request.args.get('limit', 48) or 48), 1), 192)
     all_results = q.order_by(Listing.created_at.desc()).limit(_limit + 1).all()
     has_more    = len(all_results) > _limit
     results     = all_results[:_limit]
 
+    from urllib.parse import urlencode as _urlencode
+    _lm_args2 = {k: v for k, v in request.args.items() if k != 'limit'}
+    _lm_qs2 = _urlencode(_lm_args2)
+    _load_more_base_url2 = f'/marketplace/{cat_page}?' + (_lm_qs2 + '&' if _lm_qs2 else '')
     return render_template(
         "marketplace.html",
         categories=categories,
@@ -8319,6 +8328,7 @@ def marketplace_category(cat_page):
         hide_sold=False,
         search_limit=_limit,
         has_more=has_more,
+        load_more_base_url=_load_more_base_url2,
         saved_listing_ids=_saved_listing_ids(),
         show_welcome=False,
         show_profile_nudge=False,

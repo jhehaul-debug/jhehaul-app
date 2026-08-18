@@ -1226,11 +1226,8 @@ document.addEventListener('DOMContentLoaded',function(){
     {# ── Load More ── #}
     {% if has_more is defined and has_more %}
     {% set _next_limit = (search_limit + 24) if search_limit is defined else 48 %}
-    {% set _lm_url = request.url | replace('&limit=' ~ (search_limit if search_limit is defined else 24), '') %}
-    {% set _lm_url = _lm_url | replace('?limit=' ~ (search_limit if search_limit is defined else 24) ~ '&', '?') %}
-    {% set _lm_url = _lm_url | replace('?limit=' ~ (search_limit if search_limit is defined else 24), '') %}
     <div class="mp-load-more">
-        <a href="{{ _lm_url }}{{ '&' if '?' in _lm_url else '?' }}limit={{ _next_limit }}">Load More Listings ↓</a>
+        <a href="{{ load_more_base_url }}limit={{ _next_limit }}">Load More Listings ↓</a>
     </div>
     {% endif %}
     {% else %}
