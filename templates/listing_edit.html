@@ -355,12 +355,9 @@
           </div>
         </div>
 
-        {# ── Make (searchable) ── #}
+        {# ── Make ── #}
         <div class="form-group">
           <label class="form-label">Make</label>
-          <input type="text" id="makeSearchEdit" class="form-control"
-                 placeholder="🔍 Type to filter makes…" autocomplete="off"
-                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_make" id="vehicleMakeEdit">
             <option value="">— Select make —</option>
             {% for m in VEHICLE_MAKES %}
@@ -377,15 +374,11 @@
                  placeholder="Enter make not listed above">
         </div>
 
-        {# ── Model (searchable, dependent on make) ── #}
+        {# ── Model (dependent on make) ── #}
         <div class="form-group">
           <label class="form-label">Model</label>
-          <input type="text" id="modelSearchEdit" class="form-control"
-                 placeholder="🔍 Type to filter models…" autocomplete="off"
-                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_model" id="vehicleModelEdit">
             <option value="">— Select model —</option>
-            <option value="Other">Other / Not Listed</option>
           </select>
         </div>
         <div class="form-group" id="vehicleModelOtherGroupEdit" style="display:none">
@@ -859,53 +852,35 @@ function toggleVehicleFieldsEdit(catId) {
 }
 if (catSelect?.value) toggleVehicleFieldsEdit(catSelect.value);
 
-/* ─── Vehicle make/model searchable selects (edit page) ─── */
+/* ─── Vehicle make/model dependent selects (edit page) ─── */
 const VMD_E = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
 
-// Make search
-const makeSearchEdit = document.getElementById('makeSearchEdit');
-const makeSelectEdit = document.getElementById('vehicleMakeEdit');
-let _allMakeOptsE = makeSelectEdit ? Array.from(makeSelectEdit.options) : [];
-makeSearchEdit?.addEventListener('input', () => {
-  const q = makeSearchEdit.value.toLowerCase();
-  const cur = makeSelectEdit.value;
-  makeSelectEdit.innerHTML = '';
-  _allMakeOptsE
-    .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
-    .forEach(o => makeSelectEdit.appendChild(o.cloneNode(true)));
-  if (makeSelectEdit.querySelector(`option[value="${CSS.escape(cur)}"]`)) makeSelectEdit.value = cur;
-});
-
-// Model select helpers
-const modelSearchEdit  = document.getElementById('modelSearchEdit');
-const modelSelectEdit  = document.getElementById('vehicleModelEdit');
+const makeSelectEdit  = document.getElementById('vehicleMakeEdit');
+const modelSelectEdit = document.getElementById('vehicleModelEdit');
 let _allModelOptsE = [];
 
 function _buildModelOptsE(make) {
-  const models = VMD_E[make] || [];
   _allModelOptsE = [];
   const blank = document.createElement('option'); blank.value = ''; blank.textContent = '— Select model —';
   _allModelOptsE.push(blank);
-  models.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; _allModelOptsE.push(o); });
-  const oth = document.createElement('option'); oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
-  _allModelOptsE.push(oth);
+  (VMD_E[make] || []).forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; _allModelOptsE.push(o); });
+  if (make) {  // Only offer "Other" once a make is chosen
+    const oth = document.createElement('option'); oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
+    _allModelOptsE.push(oth);
+  }
 }
 
-function _renderModelOptsE(filterQ) {
+function _renderModelOptsE() {
   if (!modelSelectEdit) return;
-  const q = (filterQ || '').toLowerCase();
   const cur = modelSelectEdit.value;
   modelSelectEdit.innerHTML = '';
-  _allModelOptsE
-    .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
-    .forEach(o => modelSelectEdit.appendChild(o.cloneNode(true)));
+  _allModelOptsE.forEach(o => modelSelectEdit.appendChild(o.cloneNode(true)));
   if (modelSelectEdit.querySelector(`option[value="${CSS.escape(cur)}"]`)) modelSelectEdit.value = cur;
 }
 
 function initModelSelectE(make, existingModel) {
   _buildModelOptsE(make);
-  _renderModelOptsE('');
-  if (modelSearchEdit) modelSearchEdit.value = '';
+  _renderModelOptsE();
   const og = document.getElementById('vehicleModelOtherGroupEdit');
   const otherInp = document.getElementById('vehicleModelOtherEdit');
   if (!existingModel) { if (og) og.style.display = 'none'; return; }
@@ -919,8 +894,6 @@ function initModelSelectE(make, existingModel) {
     if (otherInp) otherInp.value = existingModel;
   }
 }
-
-modelSearchEdit?.addEventListener('input', () => _renderModelOptsE(modelSearchEdit.value));
 
 modelSelectEdit?.addEventListener('change', () => {
   const og = document.getElementById('vehicleModelOtherGroupEdit');

@@ -783,12 +783,9 @@
           </div>
         </div>
 
-        {# ── Make (searchable) ── #}
+        {# ── Make ── #}
         <div class="form-group">
           <label class="form-label">Make <span class="req">*</span></label>
-          <input type="text" id="makeSearch" class="form-control"
-                 placeholder="🔍 Type to filter makes…" autocomplete="off"
-                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_make" id="vehicleMake">
             <option value="">— Select make —</option>
             {% for m in VEHICLE_MAKES %}
@@ -805,15 +802,11 @@
                  placeholder="Enter make not listed above">
         </div>
 
-        {# ── Model (searchable, dependent on make) ── #}
+        {# ── Model (dependent on make) ── #}
         <div class="form-group">
           <label class="form-label">Model <span class="req">*</span></label>
-          <input type="text" id="modelSearch" class="form-control"
-                 placeholder="🔍 Type to filter models…" autocomplete="off"
-                 style="margin-bottom:5px;border-color:#a5b4fc">
           <select class="form-control" name="vehicle_model" id="vehicleModel">
             <option value="">— Select model —</option>
-            <option value="Other">Other / Not Listed</option>
           </select>
         </div>
         <div class="form-group" id="vehicleModelOtherGroup" style="display:none">
@@ -939,60 +932,41 @@
     toggleVehicleFields(catSelect.value);
   }
 
-  // ── Vehicle make/model searchable selects ─────────────────────────────────
+  // ── Vehicle make/model dependent selects ─────────────────────────────────
   const VEHICLE_MODELS_DATA = {{ VEHICLE_MAKES_MODELS_JSON | safe }};
 
-  // ── Make: filter-above-select ──────────────────────────────────────────────
-  const makeSearch  = document.getElementById('makeSearch');
   const makeSelect  = document.getElementById('vehicleMake');
-  let _allMakeOpts  = makeSelect ? Array.from(makeSelect.options) : [];
-
-  makeSearch?.addEventListener('input', () => {
-    const q   = makeSearch.value.toLowerCase();
-    const cur = makeSelect.value;
-    makeSelect.innerHTML = '';
-    _allMakeOpts
-      .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
-      .forEach(o => makeSelect.appendChild(o.cloneNode(true)));
-    if (makeSelect.querySelector(`option[value="${CSS.escape(cur)}"]`)) makeSelect.value = cur;
-  });
-
-  // ── Model: dependent select rebuilt on make change ─────────────────────────
-  const modelSearch = document.getElementById('modelSearch');
   const modelSelect = document.getElementById('vehicleModel');
   let _allModelOpts = [];
 
   function _buildModelOpts(make) {
-    const models = VEHICLE_MODELS_DATA[make] || [];
     _allModelOpts = [];
     const blank = document.createElement('option');
     blank.value = ''; blank.textContent = '— Select model —';
     _allModelOpts.push(blank);
-    models.forEach(m => {
+    (VEHICLE_MODELS_DATA[make] || []).forEach(m => {
       const o = document.createElement('option'); o.value = m; o.textContent = m;
       _allModelOpts.push(o);
     });
-    const oth = document.createElement('option');
-    oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
-    _allModelOpts.push(oth);
+    if (make) {  // Only offer "Other" once a make is chosen
+      const oth = document.createElement('option');
+      oth.value = 'Other'; oth.textContent = 'Other / Not Listed';
+      _allModelOpts.push(oth);
+    }
   }
 
-  function _renderModelOpts(filterQ) {
+  function _renderModelOpts() {
     if (!modelSelect) return;
-    const q   = (filterQ || '').toLowerCase();
     const cur = modelSelect.value;
     modelSelect.innerHTML = '';
-    _allModelOpts
-      .filter(o => !q || o.value === '' || o.value === 'Other' || o.text.toLowerCase().includes(q))
-      .forEach(o => modelSelect.appendChild(o.cloneNode(true)));
+    _allModelOpts.forEach(o => modelSelect.appendChild(o.cloneNode(true)));
     if (modelSelect.querySelector(`option[value="${CSS.escape(cur)}"]`)) modelSelect.value = cur;
   }
 
   function initModelSelect(make, existingModel) {
     _buildModelOpts(make);
-    _renderModelOpts('');
-    if (modelSearch) modelSearch.value = '';
-    const og      = document.getElementById('vehicleModelOtherGroup');
+    _renderModelOpts();
+    const og       = document.getElementById('vehicleModelOtherGroup');
     const otherInp = document.getElementById('vehicleModelOther');
     if (!existingModel) { if (og) og.style.display = 'none'; return; }
     const inList = _allModelOpts.some(o => o.value === existingModel && o.value !== 'Other' && o.value !== '');
@@ -1005,8 +979,6 @@
       if (otherInp) otherInp.value = existingModel;
     }
   }
-
-  modelSearch?.addEventListener('input', () => _renderModelOpts(modelSearch.value));
 
   modelSelect?.addEventListener('change', () => {
     const og = document.getElementById('vehicleModelOtherGroup');

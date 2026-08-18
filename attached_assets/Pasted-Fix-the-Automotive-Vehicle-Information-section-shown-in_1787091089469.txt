@@ -1,0 +1,101 @@
+Fix the Automotive Vehicle Information section shown in the current production version.
+
+The Year / Make / Model functionality was added, but the UI is too cluttered and needs to be corrected.
+
+REQUIRED LAYOUT
+
+The Vehicle Information section should display only:
+
+Year
+[ Select year ▼ ]
+
+Make
+[ Select make ▼ ]
+
+Model
+[ Select model ▼ ]
+
+Vehicle Type
+[ Select vehicle type ▼ ]
+
+VIN (optional)
+[ Enter VIN ]
+
+REMOVE THE EXTRA SEARCH BOXES
+
+Currently Make displays BOTH:
+
+* “Type to filter makes…”
+* “Select make”
+
+And Model displays BOTH:
+
+* “Type to filter models…”
+* Model dropdown
+
+Do NOT display two separate controls.
+
+There should be one control for Make and one control for Model.
+
+When the user taps the Make dropdown, the dropdown itself can provide search/filter functionality.
+
+Do the same for Model.
+
+FIX MODEL DEFAULT
+
+The Model field currently defaults to:
+
+“Other / Not Listed”
+
+This is incorrect.
+
+The default must be:
+
+— Select model —
+
+Only show “Other / Not Listed” as an option inside the Model dropdown.
+
+If the user deliberately selects Other / Not Listed, THEN display the manual field:
+
+Enter model not listed above
+
+Otherwise, that manual field must remain hidden.
+
+DEPENDENT SELECTION
+
+Keep the flow:
+
+Year → Make → Model
+
+After Make is selected, populate the Model choices for that manufacturer.
+
+Do not require the user to type into a separate search field before selecting the Make or Model.
+
+MOBILE UI
+
+This needs to look clean on iPhone and other mobile devices.
+
+* One field per row.
+* Consistent field height.
+* Consistent spacing.
+* Full-width controls.
+* No overlapping.
+* No duplicate controls.
+* No unnecessary empty fields.
+* Labels directly above their corresponding field.
+* Keep everything inside the Vehicle Information card.
+* Make dropdowns easy to tap with a finger.
+
+Also verify that the Ask JHE Haul floating button does not cover important Automotive form controls while the user is completing the form.
+
+KEEP EXISTING FUNCTIONALITY
+
+Keep the vehicle Year, Make and Model data/templates that were already added. This is primarily a UI/UX correction; do not remove the underlying vehicle database just to fix the appearance.
+
+Apply the corrected reusable selector anywhere this same Automotive Year / Make / Model component is used, including Automotive listings and Automotive Delivery/Test Quote where applicable.
+
+IMPORTANT
+
+Do not change anything else. Do not break any other working features. Keep all unrelated functionality exactly as it is.
+
+After fixing and testing the mobile and desktop layouts, commit and push the changes to the existing GitHub production branch so DigitalOcean can deploy the update.
