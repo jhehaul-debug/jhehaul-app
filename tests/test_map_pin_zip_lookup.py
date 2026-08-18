@@ -1,5 +1,6 @@
 """
-Task 121 validation: map pin / ZIP lookup in listing wizard step 4.
+Task 121 / Task 207 validation: map pin / ZIP lookup in listing wizard step 4
+and the /api/zip_lookup endpoint.
 
 Run with:  python tests/test_map_pin_zip_lookup.py
 
@@ -13,6 +14,9 @@ Verifies:
 3.  The admin listing-detail page shows formatted coordinates for the known-ZIP
     listing and the "coordinates not found" message for the unknown-ZIP listing.
 4.  Checks 1–3 are repeated for the property wizard (property_sale listing).
+5.  /api/zip_lookup?zip=<known> returns found:true with lat/lon matching the DB row.
+6.  /api/zip_lookup?zip=<unknown> returns found:false.
+7.  The lat/lon returned by the API matches what the step-4 POST handler saved.
 
 Unique markers used to distinguish Jinja2-rendered blocks from JS string literals:
   - Green block (listing wizard): id="zip-map-frame" (absent from JS showConfirmed)
@@ -313,6 +317,83 @@ with app.app_context():
             check("admin C2: formatted lat absent (no lat/lon for bad ZIP)",
                   LAT_5DP not in html_c2,
                   "formatted lat unexpectedly present for unknown-ZIP listing")
+
+            # ═══════════════════════════════════════════════════════════════
+            # Section D: /api/zip_lookup endpoint (Task 207)
+            # ═══════════════════════════════════════════════════════════════
+            import json as _json
+
+            # ── D1. Known ZIP → found:true with matching lat/lon ──────────
+            r_d1 = client.get(f"/api/zip_lookup?zip={KNOWN_ZIP}")
+            check("api D1: /api/zip_lookup known ZIP returns 200",
+                  r_d1.status_code == 200,
+                  f"status={r_d1.status_code}")
+            d1 = _json.loads(r_d1.data)
+            check("api D1: found is True for known ZIP",
+                  d1.get('found') is True,
+                  f"response={d1}")
+            check("api D1: lat returned matches DB row",
+                  d1.get('lat') == zc.lat,
+                  f"api lat={d1.get('lat')} db lat={zc.lat}")
+            check("api D1: lon returned matches DB row",
+                  d1.get('lon') == zc.lon,
+                  f"api lon={d1.get('lon')} db lon={zc.lon}")
+            check("api D1: city returned",
+                  d1.get('city') == (zc.city or ''),
+                  f"api city={d1.get('city')} db city={zc.city}")
+            check("api D1: state returned",
+                  d1.get('state') == (zc.state or ''),
+                  f"api state={d1.get('state')} db state={zc.state}")
+
+            # ── D2. Unknown ZIP → found:false ─────────────────────────────
+            r_d2 = client.get(f"/api/zip_lookup?zip={UNKNOWN_ZIP}")
+            check("api D2: /api/zip_lookup unknown ZIP returns 200",
+                  r_d2.status_code == 200,
+                  f"status={r_d2.status_code}")
+            d2 = _json.loads(r_d2.data)
+            check("api D2: found is False for unknown ZIP",
+                  d2.get('found') is False,
+                  f"response={d2}")
+            check("api D2: no lat key in response for unknown ZIP",
+                  'lat' not in d2,
+                  f"unexpected lat key: {d2}")
+
+            # ── D3. Empty ZIP → found:false ───────────────────────────────
+            r_d3 = client.get("/api/zip_lookup?zip=")
+            check("api D3: /api/zip_lookup empty ZIP returns 200",
+                  r_d3.status_code == 200,
+                  f"status={r_d3.status_code}")
+            d3 = _json.loads(r_d3.data)
+            check("api D3: found is False for empty ZIP",
+                  d3.get('found') is False,
+                  f"response={d3}")
+
+            # ── D4. API lat/lon matches what the step-4 POST saved ────────
+            # Restore item listing to a clean state, then POST step 4 with
+            # the known ZIP and compare saved DB values against API response.
+            item_lst.latitude  = None
+            item_lst.longitude = None
+            item_lst.zip_code  = None
+            db.session.commit()
+
+            with patch("routes._check_listing_csrf", return_value=None):
+                client.post(
+                    f"/listing/{ITEM_ID}/step/4",
+                    data={"csrf_token": "test", "city": "", "state": "MN",
+                          "zip_code": KNOWN_ZIP},
+                    follow_redirects=False,
+                )
+            db.session.refresh(item_lst)
+
+            check("api D4: step-4 POST saved lat for comparison",
+                  item_lst.latitude is not None,
+                  "step-4 POST did not save latitude — D4 comparison meaningless")
+            check("api D4: API lat matches DB-saved lat from step-4 POST",
+                  d1.get('lat') == item_lst.latitude,
+                  f"api lat={d1.get('lat')} saved lat={item_lst.latitude}")
+            check("api D4: API lon matches DB-saved lon from step-4 POST",
+                  d1.get('lon') == item_lst.longitude,
+                  f"api lon={d1.get('lon')} saved lon={item_lst.longitude}")
 
     finally:
         # ── Clean up ──────────────────────────────────────────────────────
