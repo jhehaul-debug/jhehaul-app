@@ -112,6 +112,24 @@ check(
     "",
 )
 
+# Test 7b: HTML characters in the note are escaped (XSS / layout-break prevention)
+html_xss, _ = _run_email('Price < $100 & no service "guaranteed"')
+check(
+    "HTML special characters in note are escaped (< & > \")",
+    # The raw unescaped sequences from the note must not appear verbatim;
+    # their HTML-escaped forms must be present instead.
+    '< $100' not in html_xss
+    and '& no service' not in html_xss
+    and '&lt; $100' in html_xss
+    and '&amp; no service' in html_xss,
+    f"html snippet: {html_xss[html_xss.find('Note from our team'):html_xss.find('Note from our team')+200]!r}",
+)
+check(
+    "Escaped note text still contains the readable content",
+    'Price' in html_xss and '$100' in html_xss,
+    f"html snippet: {html_xss[html_xss.find('Note from our team'):html_xss.find('Note from our team')+200]!r}",
+)
+
 
 # ── SMS: notify_customer_quote_withdrawn_sms ───────────────────────────────────
 

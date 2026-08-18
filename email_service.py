@@ -927,12 +927,13 @@ def notify_admin_new_request(job_id, customer_name, service_type, pickup_zip, de
 
 def notify_customer_quote_withdrawn(customer_email, job_id, service_type, withdrawal_note=None):
     """Email the customer when admin withdraws a pending quote."""
+    import html as _html_mod
     service_label = service_type or 'Service'
     _note = (withdrawal_note or '').strip()
     note_html = (
         f'<div class="info-box" style="border-left:3px solid #f59e0b;">'
         f'<p><strong>Note from our team:</strong></p>'
-        f'<p style="white-space:pre-wrap;">{_note}</p>'
+        f'<p style="white-space:pre-wrap;">{_html_mod.escape(_note)}</p>'
         f'</div>'
         if _note else ''
     )
