@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Grow Your Sales — JHE Haul{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px">
+
+  <!-- Header -->
+  <div class="mb-4">
+    <h1 class="h3 fw-bold mb-1">🚀 Grow Your Sales</h1>
+    <p class="text-muted mb-0">Tools to boost your visibility and manage your seller presence on JHE Haul.</p>
+  </div>
+
+  <!-- Current plan badge -->
+  <div class="card border-0 shadow-sm mb-4 p-3 d-flex flex-row align-items-center gap-3">
+    <div>
+      {% if plan_info.is_dealer %}
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2">🏎️ Dealer Plan</span>
+      {% elif plan_info.is_business %}
+        <span class="badge bg-primary fs-6 px-3 py-2">💼 Business Plan</span>
+      {% else %}
+        <span class="badge bg-secondary fs-6 px-3 py-2">Free Seller</span>
+      {% endif %}
+    </div>
+    <div class="flex-grow-1">
+      {% if plan_info.plan_expires_at %}
+        <small class="text-muted">Plan active through {{ plan_info.plan_expires_at[:10] }}</small>
+      {% endif %}
+    </div>
+    <div>
+      <a href="/monetize/storefront" class="btn btn-outline-dark btn-sm">
+        {% if storefront %}Edit Storefront{% else %}Create Storefront{% endif %}
+      </a>
+    </div>
+  </div>
+
+  <!-- Promotion products -->
+  {% if promo_products %}
+  <h5 class="fw-semibold mb-3">📣 Listing Promotions</h5>
+  <div class="row g-3 mb-4">
+    {% for product in promo_products %}
+    <div class="col-12 col-sm-6 col-md-4">
+      <div class="card h-100 border shadow-sm">
+        <div class="card-body d-flex flex-column">
+          <h6 class="fw-bold mb-1">{{ product.name }}</h6>
+          {% if product.description %}
+            <p class="text-muted small mb-2">{{ product.description }}</p>
+          {% endif %}
+          {% if product.duration_days %}
+            <p class="small mb-1">⏱ {{ product.duration_days }}-day promotion</p>
+          {% endif %}
+          {% if product.price_cents %}
+            <p class="fw-bold mb-2">${{ "%.2f"|format(product.price_cents / 100) }}</p>
+          {% else %}
+            <p class="text-muted small mb-2">Pricing coming soon</p>
+          {% endif %}
+          <div class="mt-auto">
+            {% if product.is_active and product.stripe_price_id %}
+              <button class="btn btn-primary btn-sm w-100"
+                      onclick="startCheckout({{ product.id }})">
+                Get Started
+              </button>
+            {% else %}
+              <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                Coming Soon
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Plan upgrade cards -->
+  <h5 class="fw-semibold mb-3">📈 Seller Plans</h5>
+  <div class="row g-3 mb-4">
+
+    <!-- Business Plan -->
+    {% set biz = plan_products | selectattr('product_type','eq','business_plan') | first | default(None) %}
+    <div class="col-12 col-md-6">
+      <div class="card border-primary shadow-sm h-100">
+        <div class="card-header bg-primary text-white fw-bold">💼 Business Plan</div>
+        <div class="card-body">
+          <ul class="list-unstyled small mb-3">
+            <li>✅ More active listings</li>
+            <li>✅ Public business profile</li>
+            <li>✅ Seller storefront page</li>
+            <li>✅ Advanced analytics</li>
+            <li>✅ AI Seller tools</li>
+            <li>✅ Bulk listing tools</li>
+            <li>✅ Priority support</li>
+          </ul>
+          {% if biz and biz.price_cents %}
+            <p class="fw-bold">${{ "%.2f"|format(biz.price_cents / 100) }}/month</p>
+          {% else %}
+            <p class="text-muted small">Pricing coming soon</p>
+          {% endif %}
+          {% if plan_info.is_business or plan_info.is_dealer %}
+            <button class="btn btn-outline-primary btn-sm w-100" disabled>Current Plan</button>
+          {% elif biz and biz.is_active and biz.stripe_price_id %}
+            <button class="btn btn-primary btn-sm w-100"
+                    onclick="startCheckout({{ biz.id }})">Upgrade to Business</button>
+          {% else %}
+            <button class="btn btn-outline-secondary btn-sm w-100" disabled>Coming Soon</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Dealer Plan -->
+    {% set dlr = plan_products | selectattr('product_type','eq','dealer_plan') | first | default(None) %}
+    <div class="col-12 col-md-6">
+      <div class="card border-warning shadow-sm h-100">
+        <div class="card-header bg-warning text-dark fw-bold">🏎️ Dealer Plan</div>
+        <div class="card-body">
+          <ul class="list-unstyled small mb-3">
+            <li>✅ Everything in Business</li>
+            <li>✅ Dealership profile & storefront</li>
+            <li>✅ Large vehicle inventory</li>
+            <li>✅ Bulk vehicle management</li>
+            <li>✅ AI inventory assistant</li>
+            <li>✅ Lead management tools</li>
+            <li>✅ Delivery integration</li>
+          </ul>
+          {% if dlr and dlr.price_cents %}
+            <p class="fw-bold">${{ "%.2f"|format(dlr.price_cents / 100) }}/month</p>
+          {% else %}
+            <p class="text-muted small">Pricing coming soon</p>
+          {% endif %}
+          {% if plan_info.is_dealer %}
+            <button class="btn btn-outline-warning btn-sm w-100" disabled>Current Plan</button>
+          {% elif dlr and dlr.is_active and dlr.stripe_price_id %}
+            <button class="btn btn-warning btn-sm w-100"
+                    onclick="startCheckout({{ dlr.id }})">Upgrade to Dealer</button>
+          {% else %}
+            <button class="btn btn-outline-secondary btn-sm w-100" disabled>Coming Soon</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Storefront card -->
+  <h5 class="fw-semibold mb-3">🏪 Your Storefront</h5>
+  <div class="card border-0 shadow-sm mb-4 p-3">
+    {% if storefront %}
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <strong>{{ storefront.display_name }}</strong>
+          {% if storefront.tagline %}<span class="text-muted ms-2">— {{ storefront.tagline }}</span>{% endif %}
+          <br>
+          <a href="/store/{{ storefront.slug }}" target="_blank" class="small text-primary">
+            jhehaul.com/store/{{ storefront.slug }}
+          </a>
+        </div>
+        <a href="/monetize/storefront" class="btn btn-outline-dark btn-sm">Edit</a>
+      </div>
+    {% else %}
+      <p class="text-muted mb-2">Create a public storefront page to showcase all your listings in one place.</p>
+      <a href="/monetize/storefront" class="btn btn-outline-primary btn-sm">Create Storefront</a>
+    {% endif %}
+  </div>
+
+  <!-- Active purchases -->
+  {% if active_purchases %}
+  <h5 class="fw-semibold mb-3">🧾 Active Promotions</h5>
+  <div class="table-responsive mb-4">
+    <table class="table table-sm align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Product</th>
+          <th>Listing</th>
+          <th>Started</th>
+          <th>Expires</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in active_purchases %}
+        <tr>
+          <td>{{ p.product.name if p.product else '—' }}</td>
+          <td>
+            {% if p.listing_id %}
+              <a href="/listing/{{ p.listing_id }}" target="_blank">#{{ p.listing_id }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td>{{ p.starts_at.strftime('%b %d') if p.starts_at else '—' }}</td>
+          <td>{{ p.expires_at.strftime('%b %d, %Y') if p.expires_at else 'Ongoing' }}</td>
+          <td><span class="badge bg-success">{{ p.status|title }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Fairness note -->
+  <div class="alert alert-light border small text-muted">
+    💡 JHE Haul maintains organic discovery for all sellers. Paid promotions
+    increase visibility but do not guarantee a sale and are always clearly labeled.
+    Free sellers can still be discovered and sell successfully.
+  </div>
+
+</div>
+
+<script>
+function startCheckout(productId) {
+  fetch('/api/monetization/checkout', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json',
+               'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.content || ''},
+    body: JSON.stringify({ product_id: productId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+    } else if (data.error) {
+      alert('Could not start checkout: ' + data.error);
+    }
+  })
+  .catch(() => alert('Checkout unavailable. Please try again.'));
+}
+</script>
+{% endblock %}

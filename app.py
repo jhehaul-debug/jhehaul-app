@@ -1059,6 +1059,28 @@ with app.app_context():
         db.session.rollback()
         logging.info("Column migration (Phase M) skipped: %s", _e)
 
+    # ── Phase N: Monetization columns ────────────────────────────────────────
+    try:
+        _pn_cols = [
+            # User: plan level + Stripe customer reference (no card data stored)
+            ("users",    "stripe_customer_id",       "VARCHAR(128)"),
+            ("users",    "seller_plan",              "VARCHAR(20) DEFAULT 'free'"),
+            ("users",    "seller_plan_expires_at",   "TIMESTAMP"),
+            ("users",    "seller_plan_stripe_sub_id","VARCHAR(128)"),
+            # Listing: promotion tracking flags
+            ("listings", "boost_expires_at",         "TIMESTAMP"),
+            ("listings", "promoted_type",            "VARCHAR(20)"),
+        ]
+        for _tbl, _col, _defn in _pn_cols:
+            db.session.execute(_text(
+                f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS {_col} {_defn}"
+            ))
+        db.session.commit()
+        logging.info("Column migration: Phase N monetization columns ensured")
+    except Exception as _e:
+        db.session.rollback()
+        logging.info("Column migration (Phase N) skipped: %s", _e)
+
     # ── Seed default marketplace categories ──────────────────────────────────
     try:
         from models import Category

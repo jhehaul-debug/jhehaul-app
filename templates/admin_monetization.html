@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Admin — Monetization{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:1200px">
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h1 class="h4 fw-bold mb-0">💰 Monetization</h1>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge bg-{{ 'danger' if stripe_mode == 'live' else 'warning text-dark' }} fs-6 px-3">
+        STRIPE MODE: {{ stripe_mode|upper }}
+      </span>
+      <span class="badge bg-secondary fs-6 px-3">LIVE CHARGES: DISABLED</span>
+    </div>
+  </div>
+
+  <!-- Revenue summary cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="h4 fw-bold text-primary mb-0">${{ "%.2f"|format(revenue.promotion_revenue_dollars) }}</div>
+        <div class="text-muted small">Promotion Revenue ({{ revenue.period_days }}d)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="h4 fw-bold text-success mb-0">${{ "%.2f"|format(revenue.delivery_dollars) }}</div>
+        <div class="text-muted small">Delivery Revenue ({{ revenue.period_days }}d)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="h4 fw-bold mb-0">{{ revenue.active_purchases }}</div>
+        <div class="text-muted small">Active Purchases</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="h4 fw-bold mb-0">{{ revenue.active_plans }}</div>
+        <div class="text-muted small">Active Plans</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products table -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between bg-white py-3">
+      <h5 class="mb-0 fw-semibold">Products &amp; Plans</h5>
+      <small class="text-muted">All products default OFF until activated</small>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Duration</th>
+            <th>Price</th>
+            <th>Stripe Price ID</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+          <tr>
+            <td class="fw-semibold">{{ product.name }}</td>
+            <td><span class="badge bg-light text-dark">{{ product.product_type }}</span></td>
+            <td>{{ product.duration_days ~ 'd' if product.duration_days else ('Subscription' if product.product_type in ('business_plan','dealer_plan') else '—') }}</td>
+            <td>
+              {% if product.price_cents %}
+                ${{ "%.2f"|format(product.price_cents / 100) }}
+              {% else %}
+                <span class="text-muted">TBD</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if product.stripe_price_id %}
+                <code class="small">{{ product.stripe_price_id[:24] }}…</code>
+              {% else %}
+                <span class="text-muted small">Not set</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if product.is_active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <form method="post"
+                    action="/admin/monetization/products/{{ product.id }}/toggle"
+                    onsubmit="return confirm('{{ 'Deactivate' if product.is_active else 'Activate' }} {{ product.name }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm {{ 'btn-outline-danger' if product.is_active else 'btn-outline-success' }}">
+                  {{ 'Deactivate' if product.is_active else 'Activate' }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No products defined yet. Products are seeded from the database on first migration.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent purchases -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-semibold">Recent Purchases</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Product</th>
+            <th>Listing</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Expires</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in recent_purchases %}
+          <tr>
+            <td class="text-muted small">#{{ p.id }}</td>
+            <td>
+              <a href="/admin/users/{{ p.user_id }}">{{ p.user.name if p.user else p.user_id[:8] }}</a>
+            </td>
+            <td>{{ p.product.name if p.product else '—' }}</td>
+            <td>
+              {% if p.listing_id %}
+                <a href="/listing/{{ p.listing_id }}">#{{ p.listing_id }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if p.amount_cents %}${{ "%.2f"|format(p.amount_cents / 100) }}{% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="badge bg-{{ 'success' if p.status == 'active' else ('secondary' if p.status == 'expired' else 'warning text-dark') }}">
+                {{ p.status|title }}
+              </span>
+            </td>
+            <td>{{ p.starts_at.strftime('%b %d, %Y') if p.starts_at else '—' }}</td>
+            <td>{{ p.expires_at.strftime('%b %d, %Y') if p.expires_at else 'Ongoing' }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">No purchases yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Storefronts -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-semibold">Seller Storefronts</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Seller</th><th>Slug</th><th>Display Name</th><th>Created</th><th>Active</th></tr>
+        </thead>
+        <tbody>
+          {% for sf in storefronts %}
+          <tr>
+            <td><a href="/admin/users/{{ sf.user_id }}">{{ sf.user_id[:8] }}</a></td>
+            <td><a href="/store/{{ sf.slug }}" target="_blank">/store/{{ sf.slug }}</a></td>
+            <td>{{ sf.display_name }}</td>
+            <td>{{ sf.created_at.strftime('%b %d, %Y') if sf.created_at else '—' }}</td>
+            <td>{% if sf.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No storefronts yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit log -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-semibold">Audit Log (last 50)</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>When</th><th>Event</th><th>User</th><th>Purchase</th><th>By</th></tr>
+        </thead>
+        <tbody>
+          {% for entry in audit_log %}
+          <tr>
+            <td class="text-muted small">{{ entry.created_at.strftime('%m/%d %H:%M') if entry.created_at else '—' }}</td>
+            <td><code class="small">{{ entry.event_type }}</code></td>
+            <td>{% if entry.user_id %}<a href="/admin/users/{{ entry.user_id }}">{{ entry.user_id[:8] }}</a>{% else %}—{% endif %}</td>
+            <td>{% if entry.purchase_id %}#{{ entry.purchase_id }}{% else %}—{% endif %}</td>
+            <td class="small text-muted">{{ entry.performed_by or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No audit events yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-warning small">
+    ⚠️ <strong>Phase N — Architecture Only.</strong> All products are inactive by default.
+    No live billing is enabled. Activating a product requires a Stripe Price ID to be configured first.
+    Do not activate live Stripe keys without explicit approval.
+  </div>
+
+</div>
+{% endblock %}

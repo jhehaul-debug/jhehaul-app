@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{% if storefront %}Edit Storefront{% else %}Create Storefront{% endif %} — JHE Haul{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:680px">
+
+  <div class="mb-4">
+    <a href="/monetize" class="text-muted text-decoration-none small">← Back to Grow Your Sales</a>
+    <h1 class="h4 fw-bold mt-2 mb-0">
+      {% if storefront %}Edit Your Storefront{% else %}Create Your Storefront{% endif %}
+    </h1>
+    <p class="text-muted small">Your storefront is a public page with your active listings.
+      No private contact information is displayed.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ 'success' if cat == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="post" action="/monetize/storefront">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Display Name <span class="text-danger">*</span></label>
+      <input type="text" name="display_name" class="form-control"
+             value="{{ storefront.display_name if storefront else (current_user.name or '') }}"
+             maxlength="100" required>
+      <div class="form-text">Shown on your public storefront page.</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Storefront URL</label>
+      <div class="input-group">
+        <span class="input-group-text text-muted">jhehaul.com/store/</span>
+        <input type="text" name="slug" class="form-control"
+               value="{{ storefront.slug if storefront else '' }}"
+               pattern="[a-z0-9\-]+" maxlength="80"
+               placeholder="your-name" {% if storefront %}readonly{% endif %}>
+      </div>
+      <div class="form-text">Lowercase letters, numbers, and hyphens only.
+        {% if storefront %}Cannot be changed after creation.{% endif %}</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Tagline</label>
+      <input type="text" name="tagline" class="form-control"
+             value="{{ storefront.tagline if storefront else '' }}"
+             maxlength="200" placeholder="e.g. Quality furniture at great prices">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">About</label>
+      <textarea name="description" class="form-control" rows="4" maxlength="1000"
+                placeholder="Tell buyers a bit about what you sell...">{{ storefront.description if storefront else '' }}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">General Location</label>
+      <input type="text" name="location_label" class="form-control"
+             value="{{ storefront.location_label if storefront else '' }}"
+             maxlength="100" placeholder="e.g. Minneapolis, MN">
+      <div class="form-text">General area only — no home addresses are displayed.</div>
+    </div>
+
+    {% if storefront %}
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+               {% if storefront.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="isActive">Storefront is publicly visible</label>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        {% if storefront %}Save Changes{% else %}Create Storefront{% endif %}
+      </button>
+      <a href="/monetize" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+
+    {% if storefront %}
+    <div class="mt-3">
+      <a href="/store/{{ storefront.slug }}" target="_blank" class="small text-primary">
+        View live storefront →
+      </a>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

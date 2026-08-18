@@ -63,6 +63,13 @@ class User(UserMixin, db.Model):
     notify_email_offer_accepted  = db.Column(db.Boolean, default=True)   # buyer: offer accepted
     notify_email_delivery_quote  = db.Column(db.Boolean, default=True)   # buyer: delivery quote ready
 
+    # ── Phase N: Monetization plan + Stripe customer reference ────────────────
+    # Stripe handles all card data — only the customer/subscription IDs are stored here.
+    stripe_customer_id          = db.Column(db.String(128), nullable=True)
+    seller_plan                 = db.Column(db.String(20),  default='free')  # free | business | dealer
+    seller_plan_expires_at      = db.Column(db.DateTime,   nullable=True)
+    seller_plan_stripe_sub_id   = db.Column(db.String(128), nullable=True)
+
     # Admin security fields (only meaningful on is_admin=True accounts)
     admin_password_hash          = db.Column(db.String(256), nullable=True)
     admin_recovery_email         = db.Column(db.String(256), nullable=True)   # verified recovery address
@@ -430,6 +437,10 @@ class Listing(db.Model):
     vehicle_drivetrain     = db.Column(db.String(30),  nullable=True)
     vehicle_vin            = db.Column(db.String(50),  nullable=True)  # never shown publicly
     vehicle_title_status   = db.Column(db.String(30),  nullable=True)
+
+    # ── Phase N: Promotion tracking flags ─────────────────────────────────────
+    boost_expires_at  = db.Column(db.DateTime,   nullable=True)              # when boost expires
+    promoted_type     = db.Column(db.String(20),  nullable=True)             # featured_listing | boost | promoted_listing
 
     seller = db.relationship('User', backref=db.backref('listings', lazy=True), foreign_keys=[seller_id])
     photos = db.relationship('ListingPhoto', backref='listing', lazy=True,
@@ -949,6 +960,126 @@ class CopilotActionLog(db.Model):
 
     user = db.relationship('User', foreign_keys=[user_id],
                            backref=db.backref('copilot_action_logs', lazy='dynamic'))
+
+
+# ── Phase N: Monetization models ─────────────────────────────────────────────
+
+
+class MonetizationProduct(db.Model):
+    """Configurable monetization product definition.
+
+    All products default to is_active=False — nothing is billable until admin
+    explicitly activates it AND a Stripe Price ID is configured.
+    Prices and durations live here so they can be changed without code deploys.
+    """
+    __tablename__ = 'monetization_products'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    product_type   = db.Column(db.String(32),  nullable=False, index=True)
+    # featured_listing | boost | promoted_listing | business_plan | dealer_plan | buyer_premium
+
+    name           = db.Column(db.String(100), nullable=False)
+    description    = db.Column(db.Text,        nullable=True)
+    duration_days  = db.Column(db.Integer,     nullable=True)   # None = subscription / open-ended
+    price_cents    = db.Column(db.Integer,     nullable=True)   # None = TBD; never hard-coded in code
+    stripe_price_id= db.Column(db.String(128), nullable=True)   # required before activation
+    features_json  = db.Column(db.Text,        nullable=True)   # JSON array of feature strings
+    is_active      = db.Column(db.Boolean,     default=False, nullable=False)  # ALL OFF by default
+    display_order  = db.Column(db.Integer,     default=99)
+    created_at     = db.Column(db.DateTime,    default=datetime.now)
+    updated_at     = db.Column(db.DateTime,    default=datetime.now, onupdate=datetime.now)
+
+    purchases = db.relationship('MonetizationPurchase', backref='product', lazy=True)
+
+    def __repr__(self):
+        return f'<MonetizationProduct {self.id} {self.product_type} active={self.is_active}>'
+
+
+class MonetizationPurchase(db.Model):
+    """Purchase record for any monetization product.
+
+    Created when a Stripe Checkout session completes (server-side webhook only —
+    never from a frontend redirect alone). No card data is stored.
+    """
+    __tablename__ = 'monetization_purchases'
+
+    id                        = db.Column(db.Integer, primary_key=True)
+    user_id                   = db.Column(db.String,  db.ForeignKey('users.id'), nullable=False, index=True)
+    product_id                = db.Column(db.Integer, db.ForeignKey('monetization_products.id'), nullable=False)
+    listing_id                = db.Column(db.Integer, nullable=True, index=True)   # for listing-level products
+
+    # Stripe references (IDs only — no secrets, no card data)
+    stripe_payment_intent_id  = db.Column(db.String(128), nullable=True)
+    stripe_subscription_id    = db.Column(db.String(128), nullable=True, index=True)
+    stripe_checkout_session_id= db.Column(db.String(128), nullable=True, index=True)
+
+    # Status: pending → active → expired | refunded | failed
+    status        = db.Column(db.String(20),  nullable=False, default='pending', index=True)
+    amount_cents  = db.Column(db.Integer,     nullable=True)   # amount charged; None = free/TBD
+
+    starts_at     = db.Column(db.DateTime,   nullable=True)
+    expires_at    = db.Column(db.DateTime,   nullable=True, index=True)
+    cancelled_at  = db.Column(db.DateTime,   nullable=True)
+    refunded_at   = db.Column(db.DateTime,   nullable=True)
+
+    metadata_json = db.Column(db.Text,       nullable=True)    # safe operational metadata only
+    created_at    = db.Column(db.DateTime,   default=datetime.now, index=True)
+
+    user = db.relationship('User', backref=db.backref('monetization_purchases', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<MonetizationPurchase {self.id} {self.status} user={self.user_id[:8]}>'
+
+
+class SellerStorefront(db.Model):
+    """Public seller storefront profile page.
+
+    URL: /store/<slug>
+    Exposes only public-safe information. Private address, email, phone,
+    admin notes, and fraud signals are never included.
+    """
+    __tablename__ = 'seller_storefronts'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.String,  db.ForeignKey('users.id'), nullable=False, unique=True)
+    slug           = db.Column(db.String(80),  nullable=False, unique=True, index=True)
+    display_name   = db.Column(db.String(100), nullable=False)
+    tagline        = db.Column(db.String(200), nullable=True)
+    description    = db.Column(db.Text,        nullable=True)
+    location_label = db.Column(db.String(100), nullable=True)  # general area only — no private address
+    is_active      = db.Column(db.Boolean,     default=True)
+    created_at     = db.Column(db.DateTime,    default=datetime.now)
+    updated_at     = db.Column(db.DateTime,    default=datetime.now, onupdate=datetime.now)
+
+    user = db.relationship('User', backref=db.backref('storefront', uselist=False))
+
+    def __repr__(self):
+        return f'<SellerStorefront {self.slug}>'
+
+
+class MonetizationAuditLog(db.Model):
+    """Audit trail for all monetization events.
+
+    Records product changes, purchase lifecycle, entitlement changes, and
+    admin actions. Never stores payment secrets, card data, or auth tokens.
+    """
+    __tablename__ = 'monetization_audit_logs'
+
+    id           = db.Column(db.Integer, primary_key=True)
+    event_type   = db.Column(db.String(64),  nullable=False, index=True)
+    # product_created | product_toggled | promotion_purchased | promotion_expired
+    # subscription_cancelled | entitlement_changed | refund_admin_action | storefront_created
+
+    user_id      = db.Column(db.String,  nullable=True, index=True)
+    purchase_id  = db.Column(db.Integer, nullable=True)
+    product_id   = db.Column(db.Integer, nullable=True)
+    listing_id   = db.Column(db.Integer, nullable=True)
+    performed_by = db.Column(db.String(100), nullable=True)  # user_id | 'system' | 'admin:<id>'
+    detail_json  = db.Column(db.Text,    nullable=True)       # safe metadata only — no secrets
+    created_at   = db.Column(db.DateTime, default=datetime.now, index=True)
+
+    def __repr__(self):
+        return f'<MonetizationAuditLog {self.id} {self.event_type}>'
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Purchase Complete — JHE Haul{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center" style="max-width:520px">
+  <div class="display-4 mb-3">🎉</div>
+  <h1 class="h3 fw-bold mb-2">You're all set!</h1>
+  {% if purchase %}
+    <p class="text-muted mb-3">
+      <strong>{{ purchase.product.name if purchase.product else 'Your purchase' }}</strong>
+      is now active
+      {% if purchase.expires_at %}
+        through <strong>{{ purchase.expires_at.strftime('%B %d, %Y') }}</strong>
+      {% endif %}.
+    </p>
+  {% else %}
+    <p class="text-muted mb-3">Your purchase was successful and is now being activated.</p>
+  {% endif %}
+  <div class="d-flex gap-2 justify-content-center flex-wrap">
+    <a href="/monetize" class="btn btn-primary">View My Promotions</a>
+    <a href="/selling" class="btn btn-outline-secondary">My Listings</a>
+  </div>
+  <p class="text-muted small mt-4">
+    A confirmation email will arrive shortly. Questions?
+    <a href="/contact">Contact support</a>.
+  </p>
+</div>
+{% endblock %}

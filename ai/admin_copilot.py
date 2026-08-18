@@ -298,6 +298,58 @@ ADMIN_COPILOT_TOOLS = [
             "parameters": {"type": "object", "properties": {}},
         },
     },
+    # ── Phase N monetization tools ───────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "get_revenue_analytics",
+            "description": (
+                "Phase N revenue analytics. Collected/pending/refunded promotion revenue, "
+                "delivery revenue, active purchase counts, and plan subscription counts "
+                "(business/dealer). Clearly separates collected vs estimated. "
+                "Use for: 'How much revenue?', 'What did we make today/this week/this month?', "
+                "'How many Business plans?', 'What is delivery revenue?'"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "description": "Lookback period in days (1=today, 7=week, 30=month). Default 30.",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_promotion_summary",
+            "description": (
+                "Phase N — active listing promotions summary. "
+                "Which listings are currently featured or boosted, upcoming expirations (within 3 days), "
+                "and counts by promotion type. "
+                "Use for: 'How many featured listings?', 'Any promotions expiring soon?', "
+                "'What is boosted right now?'"
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_monetization_product_catalog",
+            "description": (
+                "Phase N — monetization product catalog. "
+                "Lists all products (featured listing, boost, business plan, dealer plan), "
+                "their active/inactive state, pricing, and whether a Stripe Price ID is configured. "
+                "All products default to inactive until explicitly activated. "
+                "Use for: 'What products do we have?', 'Is the Business Plan active?', "
+                "'What is the price of a featured listing?', 'Which products have Stripe set up?'"
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
     # ── Phase J admin fraud tools (already implemented in copilot_tools.py) ──
     {
         "type": "function",
@@ -399,6 +451,10 @@ def _dispatch_admin_tool(name: str, args: dict, current_user) -> dict:
             get_ai_usage_summary,
             get_morning_brief,
             get_growth_operations_summary,
+            # Phase N monetization tools
+            get_revenue_analytics,
+            get_promotion_summary,
+            get_monetization_product_catalog,
         )
 
         _OPS_REGISTRY = {
@@ -417,6 +473,10 @@ def _dispatch_admin_tool(name: str, args: dict, current_user) -> dict:
             'get_ai_usage_summary':            lambda a: get_ai_usage_summary(**{k: v for k, v in a.items() if k == 'days'}),
             'get_morning_brief':               lambda a: get_morning_brief(),
             'get_growth_operations_summary':   lambda a: get_growth_operations_summary(**{k: v for k, v in a.items() if k == 'days'}),
+            # Phase N monetization tools
+            'get_revenue_analytics':           lambda a: get_revenue_analytics(**{k: v for k, v in a.items() if k == 'days'}),
+            'get_promotion_summary':           lambda a: get_promotion_summary(),
+            'get_monetization_product_catalog':lambda a: get_monetization_product_catalog(),
         }
 
         if name in _OPS_REGISTRY:

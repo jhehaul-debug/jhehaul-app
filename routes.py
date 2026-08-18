@@ -9723,3 +9723,345 @@ def admin_copilot_analytics():
         page_counts=page_counts,
         recent=recent,
     )
+
+
+# =============================================================================
+# Phase N — Monetization Routes
+# =============================================================================
+
+def _require_admin_monetization():
+    """Belt-and-suspenders admin guard for monetization routes."""
+    if not current_user.is_authenticated or not current_user.is_admin:
+        abort(403)
+
+
+@app.route('/monetize')
+def seller_monetize():
+    """Seller monetization dashboard — Grow Your Sales."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login') + '?next=/monetize')
+    from models import MonetizationProduct, MonetizationPurchase, SellerStorefront
+    from monetization_service import get_seller_plan_info, get_active_products
+
+    plan_info        = get_seller_plan_info(current_user)
+    promo_products   = get_active_products()  # all active, for display; checkout blocked if no stripe_price_id
+    plan_products    = MonetizationProduct.query.filter(
+        MonetizationProduct.product_type.in_(['business_plan', 'dealer_plan'])
+    ).order_by(MonetizationProduct.display_order).all()
+    storefront       = SellerStorefront.query.filter_by(user_id=current_user.id).first()
+    active_purchases = (
+        MonetizationPurchase.query
+        .filter_by(user_id=current_user.id, status='active')
+        .order_by(MonetizationPurchase.created_at.desc())
+        .all()
+    )
+    return render_template(
+        'seller_monetize.html',
+        plan_info=plan_info,
+        promo_products=[p for p in promo_products if p.product_type not in ('business_plan', 'dealer_plan')],
+        plan_products=plan_products,
+        storefront=storefront,
+        active_purchases=active_purchases,
+    )
+
+
+@app.route('/monetize/storefront', methods=['GET', 'POST'])
+def seller_storefront_edit():
+    """Create or edit seller storefront."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login') + '?next=/monetize/storefront')
+    from models import SellerStorefront
+    from monetization_service import record_audit_event
+    import re as _re
+
+    storefront = SellerStorefront.query.filter_by(user_id=current_user.id).first()
+
+    if request.method == 'POST':
+        display_name   = (request.form.get('display_name') or '').strip()[:100]
+        slug_raw       = (request.form.get('slug') or '').strip().lower()[:80]
+        tagline        = (request.form.get('tagline') or '').strip()[:200]
+        description    = (request.form.get('description') or '').strip()[:1000]
+        location_label = (request.form.get('location_label') or '').strip()[:100]
+        is_active      = 'is_active' in request.form
+
+        if not display_name:
+            flash('Display name is required.', 'error')
+            return render_template('seller_storefront_edit.html', storefront=storefront)
+
+        # Sanitise and auto-generate slug if blank
+        slug = _re.sub(r'[^a-z0-9-]', '-', slug_raw).strip('-') or ''
+        if not slug:
+            base = _re.sub(r'[^a-z0-9]', '-', display_name.lower()).strip('-')
+            slug = base[:60]
+
+        if not storefront:
+            # Check uniqueness
+            existing = SellerStorefront.query.filter_by(slug=slug).first()
+            if existing:
+                slug = f"{slug}-{current_user.id[:6]}"
+            storefront = SellerStorefront(
+                user_id=current_user.id,
+                slug=slug,
+                display_name=display_name,
+                tagline=tagline,
+                description=description,
+                location_label=location_label,
+                is_active=True,
+            )
+            db.session.add(storefront)
+            db.session.commit()
+            record_audit_event('storefront_created', user_id=current_user.id,
+                               performed_by=current_user.id,
+                               detail={'slug': slug})
+            flash('Storefront created!', 'success')
+        else:
+            storefront.display_name   = display_name
+            storefront.tagline        = tagline
+            storefront.description    = description
+            storefront.location_label = location_label
+            storefront.is_active      = is_active
+            db.session.commit()
+            flash('Storefront updated.', 'success')
+
+        return redirect(url_for('seller_monetize'))
+
+    return render_template('seller_storefront_edit.html', storefront=storefront)
+
+
+@app.route('/store/<slug>')
+def seller_storefront_public(slug):
+    """Public seller storefront page."""
+    from models import SellerStorefront, Listing, ListingPhoto
+
+    storefront = SellerStorefront.query.filter_by(slug=slug, is_active=True).first()
+    if not storefront:
+        abort(404)
+
+    seller = User.query.get(storefront.user_id)
+    if not seller or getattr(seller, 'is_banned', False):
+        abort(404)
+
+    # Paginated active listings — privacy-safe fields only
+    page     = max(1, request.args.get('page', 1, type=int))
+    per_page = 20
+    q = (
+        Listing.query
+        .filter_by(seller_id=storefront.user_id, status='active',
+                   moderation_status='approved')
+        .order_by(Listing.featured.desc(), Listing.created_at.desc())
+    )
+    total       = q.count()
+    listings    = q.offset((page - 1) * per_page).limit(per_page).all()
+    total_pages = max(1, -(-total // per_page))
+    sold_count  = Listing.query.filter_by(seller_id=storefront.user_id, status='sold').count()
+    active_count= Listing.query.filter_by(seller_id=storefront.user_id, status='active').count()
+
+    # JHE Delivery availability
+    delivery_available = any(
+        'jhe_haul' in (l.delivery_option or '') for l in listings
+    )
+
+    return render_template(
+        'storefront.html',
+        storefront=storefront,
+        seller=seller,
+        listings=listings,
+        sold_count=sold_count,
+        active_count=active_count,
+        page=page,
+        total_pages=total_pages,
+        delivery_available=delivery_available,
+    )
+
+
+@app.route('/monetization/success')
+def monetization_success():
+    """Post-checkout success page."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('marketplace'))
+    from models import MonetizationPurchase
+
+    session_id = request.args.get('session_id', '')
+    purchase   = None
+    if session_id:
+        purchase = MonetizationPurchase.query.filter_by(
+            stripe_checkout_session_id=session_id,
+            user_id=current_user.id,
+        ).first()
+    return render_template('monetization_success.html', purchase=purchase)
+
+
+@app.route('/monetization/cancel')
+def monetization_cancel():
+    """Post-checkout cancel page."""
+    flash('Checkout cancelled — your listing was not changed.', 'info')
+    return redirect(url_for('seller_monetize'))
+
+
+@app.route('/api/monetization/checkout', methods=['POST'])
+def api_monetization_checkout():
+    """Initiate a Stripe Checkout Session for a MonetizationProduct.
+
+    STRIPE MODE: TEST — no real charge will occur in Phase N.
+    Returns {checkout_url} on success or {error} on failure.
+    """
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Authentication required.'}), 401
+
+    from models import MonetizationProduct, Listing
+    from monetization_service import can_promote_listing
+    from stripe_service import create_checkout_session, get_stripe_mode
+
+    data       = request.get_json(silent=True) or {}
+    product_id = data.get('product_id')
+    listing_id = data.get('listing_id')
+
+    if not product_id:
+        return jsonify({'error': 'product_id required.'}), 400
+
+    product = MonetizationProduct.query.get(product_id)
+    if not product or not product.is_active:
+        return jsonify({'error': 'Product is not available.'}), 404
+
+    if not product.stripe_price_id:
+        return jsonify({'error': 'This product is not yet configured for checkout.'}), 400
+
+    # Listing-level eligibility check
+    if listing_id:
+        listing = Listing.query.get(listing_id)
+        eligible, reason = can_promote_listing(listing, current_user)
+        if not eligible:
+            return jsonify({'error': reason}), 400
+
+    mode = get_stripe_mode()
+    base = request.host_url.rstrip('/')
+    session = create_checkout_session(
+        user       = current_user,
+        product    = product,
+        listing_id = listing_id,
+        success_url= f"{base}/monetization/success",
+        cancel_url = f"{base}/monetization/cancel",
+    )
+    if not session:
+        return jsonify({'error': 'Could not create checkout session. Please try again.'}), 500
+
+    return jsonify({
+        'checkout_url': session.url,
+        'stripe_mode': mode,
+    })
+
+
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """Stripe webhook handler — validates signature before processing.
+
+    Never trusts frontend payment-success redirects.
+    Signature must match STRIPE_WEBHOOK_SECRET environment variable.
+    """
+    from stripe_service import verify_webhook_signature, activate_purchase_from_session, deactivate_purchase_subscription
+    import os
+
+    payload    = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature', '')
+    secret     = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+    if not secret:
+        app.logger.warning("STRIPE_WEBHOOK_SECRET not configured — webhook rejected.")
+        return jsonify({'error': 'Webhook not configured.'}), 400
+
+    event = verify_webhook_signature(payload, sig_header, secret)
+    if event is None:
+        return jsonify({'error': 'Invalid signature.'}), 400
+
+    event_type = event.get('type', '')
+    data_obj   = event.get('data', {}).get('object', {})
+
+    if event_type == 'checkout.session.completed':
+        activate_purchase_from_session(data_obj)
+
+    elif event_type in ('customer.subscription.deleted', 'customer.subscription.updated'):
+        sub_id = data_obj.get('id', '')
+        status = data_obj.get('status', '')
+        if event_type == 'customer.subscription.deleted' or status in ('canceled', 'unpaid'):
+            deactivate_purchase_subscription(sub_id)
+
+    app.logger.info("Stripe webhook processed: %s", event_type)
+    return jsonify({'received': True})
+
+
+# ── Admin Monetization Routes ─────────────────────────────────────────────────
+
+@app.route('/admin/monetization')
+def admin_monetization():
+    """Admin monetization control panel."""
+    if not current_user.is_authenticated or not current_user.is_admin:
+        return redirect(url_for('auth.login'))
+    from models import MonetizationProduct, MonetizationPurchase, SellerStorefront, MonetizationAuditLog
+    from stripe_service import get_stripe_mode
+    from monetization_service import get_delivery_revenue_summary
+
+    products        = MonetizationProduct.query.order_by(MonetizationProduct.display_order).all()
+    recent_purchases= MonetizationPurchase.query.order_by(
+        MonetizationPurchase.created_at.desc()).limit(50).all()
+    storefronts     = SellerStorefront.query.order_by(
+        SellerStorefront.created_at.desc()).limit(50).all()
+    audit_log       = MonetizationAuditLog.query.order_by(
+        MonetizationAuditLog.created_at.desc()).limit(50).all()
+
+    delivery = get_delivery_revenue_summary(days=30)
+    active_purchases = MonetizationPurchase.query.filter_by(status='active').count()
+    from models import User
+    from monetization_service import PLAN_BUSINESS, PLAN_DEALER
+    active_plans = (User.query.filter_by(seller_plan=PLAN_BUSINESS).count() +
+                    User.query.filter_by(seller_plan=PLAN_DEALER).count())
+
+    # Promotion revenue (collected only)
+    from sqlalchemy import func as _func
+    promo_rev = db.session.query(_func.sum(MonetizationPurchase.amount_cents)).filter_by(status='active').scalar() or 0
+
+    revenue = {
+        'period_days': 30,
+        'promotion_revenue_dollars': round(promo_rev / 100, 2),
+        'delivery_dollars': delivery.get('collected_dollars', 0.0),
+        'active_purchases': active_purchases,
+        'active_plans': active_plans,
+    }
+
+    return render_template(
+        'admin_monetization.html',
+        products=products,
+        recent_purchases=recent_purchases,
+        storefronts=storefronts,
+        audit_log=audit_log,
+        revenue=revenue,
+        stripe_mode=get_stripe_mode(),
+    )
+
+
+@app.route('/admin/monetization/products/<int:product_id>/toggle', methods=['POST'])
+def admin_monetization_toggle(product_id):
+    """Toggle a monetization product active/inactive."""
+    if not current_user.is_authenticated or not current_user.is_admin:
+        abort(403)
+    from models import MonetizationProduct
+    from monetization_service import record_audit_event
+
+    product = MonetizationProduct.query.get_or_404(product_id)
+
+    if not product.is_active and not product.stripe_price_id:
+        flash(f'Cannot activate "{product.name}" — no Stripe Price ID is configured.', 'error')
+        return redirect(url_for('admin_monetization'))
+
+    product.is_active = not product.is_active
+    db.session.commit()
+
+    action = 'activated' if product.is_active else 'deactivated'
+    record_audit_event(
+        'product_toggled',
+        user_id=current_user.id,
+        product_id=product.id,
+        performed_by=f'admin:{current_user.id}',
+        detail={'product_type': product.product_type, 'action': action},
+    )
+    flash(f'"{product.name}" {action}.', 'success')
+    return redirect(url_for('admin_monetization'))

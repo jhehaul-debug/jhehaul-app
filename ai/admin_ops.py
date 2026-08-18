@@ -1205,3 +1205,205 @@ def get_growth_operations_summary(days: int = 7) -> dict:
     except Exception as exc:
         log.error("get_growth_operations_summary error: %s", exc)
         return {'error': 'Could not generate growth operations summary.'}
+
+
+# ---------------------------------------------------------------------------
+# 16. get_revenue_analytics (Phase N)
+# ---------------------------------------------------------------------------
+
+def get_revenue_analytics(days: int = 30) -> dict:
+    """Phase N monetization revenue analytics.
+
+    Returns collected/pending/refunded amounts by revenue stream, active
+    purchase counts, plan subscription counts, and delivery revenue.
+    All amounts labelled as 'collected' — never mixes with estimates.
+    """
+    try:
+        from app import db
+        from models import MonetizationPurchase, MonetizationProduct, User
+        from monetization_service import get_delivery_revenue_summary, PLAN_BUSINESS, PLAN_DEALER
+
+        since = _since(days)
+
+        purchases = (
+            MonetizationPurchase.query
+            .filter(MonetizationPurchase.created_at >= since)
+            .all()
+        )
+
+        by_status      = {}
+        by_product_type = {}
+        total_cents    = {'collected': 0, 'pending': 0, 'refunded': 0}
+
+        for p in purchases:
+            by_status[p.status] = by_status.get(p.status, 0) + 1
+            pt = p.product.product_type if p.product else 'unknown'
+            by_product_type[pt] = by_product_type.get(pt, 0) + 1
+            if p.amount_cents:
+                if p.status == 'active':
+                    total_cents['collected'] += p.amount_cents
+                elif p.status == 'pending':
+                    total_cents['pending']   += p.amount_cents
+                elif p.status == 'refunded':
+                    total_cents['refunded']  += p.amount_cents
+
+        active_count   = MonetizationPurchase.query.filter_by(status='active').count()
+        business_count = User.query.filter_by(seller_plan=PLAN_BUSINESS).count()
+        dealer_count   = User.query.filter_by(seller_plan=PLAN_DEALER).count()
+        delivery       = get_delivery_revenue_summary(days=days)
+
+        promo_dollars  = round(total_cents['collected'] / 100, 2)
+        delivery_dollars = delivery.get('collected_dollars', 0.0)
+
+        return {
+            'period_days':   days,
+            'generated_at':  _fmt_dt(_now_utc()),
+            'promotion_revenue': {
+                'collected_dollars': promo_dollars,
+                'collected_cents':   total_cents['collected'],
+                'pending_cents':     total_cents['pending'],
+                'refunded_cents':    total_cents['refunded'],
+                'revenue_type':      'collected',
+                'by_status':         by_status,
+                'by_product_type':   by_product_type,
+                'active_purchases':  active_count,
+            },
+            'delivery_revenue': delivery,
+            'subscriptions': {
+                'business_plan_count': business_count,
+                'dealer_plan_count':   dealer_count,
+                'total_paid_plans':    business_count + dealer_count,
+            },
+            'total_revenue': {
+                'collected_dollars': round(promo_dollars + delivery_dollars, 2),
+                'note': 'Promotion revenue + delivery revenue only. Transaction fees not yet active.',
+            },
+            'note': 'Phase N architecture only. No live billing is activated in this phase.',
+            'nav_links': [
+                {'label': 'Admin Monetization', 'url': '/admin/monetization'},
+            ],
+        }
+    except Exception as exc:
+        log.error("get_revenue_analytics error: %s", exc)
+        return {'error': 'Could not generate revenue analytics.',
+                'note': 'Phase N — no billing active yet.'}
+
+
+# ---------------------------------------------------------------------------
+# 17. get_promotion_summary (Phase N)
+# ---------------------------------------------------------------------------
+
+def get_promotion_summary() -> dict:
+    """Phase N — active featured/boosted listing promotion summary.
+
+    Returns which listings are currently promoted, upcoming expirations,
+    and promotion counts by type. Reports $0 / empty when billing is inactive.
+    """
+    try:
+        from app import db
+        from models import MonetizationPurchase, MonetizationProduct, Listing
+        from datetime import timedelta
+
+        now  = _now_utc()
+        soon = now + timedelta(days=3)
+
+        active_purchases = (
+            MonetizationPurchase.query
+            .join(MonetizationProduct,
+                  MonetizationPurchase.product_id == MonetizationProduct.id)
+            .filter(
+                MonetizationPurchase.status == 'active',
+                db.or_(
+                    MonetizationPurchase.expires_at == None,
+                    MonetizationPurchase.expires_at > now,
+                ),
+            )
+            .all()
+        )
+
+        expiring_soon = [p for p in active_purchases if p.expires_at and p.expires_at <= soon]
+        featured_count = Listing.query.filter_by(featured=True, status='active').count()
+        boosted_count  = Listing.query.filter(
+            Listing.promoted_type == 'boost', Listing.status == 'active',
+        ).count()
+
+        by_type = {}
+        for p in active_purchases:
+            pt = p.product.product_type if p.product else 'unknown'
+            by_type[pt] = by_type.get(pt, 0) + 1
+
+        return {
+            'generated_at':            _fmt_dt(now),
+            'active_promotions':       len(active_purchases),
+            'by_type':                 by_type,
+            'featured_listings':       featured_count,
+            'boosted_listings':        boosted_count,
+            'expiring_within_3_days':  len(expiring_soon),
+            'expiring_soon': [
+                {
+                    'purchase_id':  p.id,
+                    'listing_id':   p.listing_id,
+                    'product_type': p.product.product_type if p.product else '?',
+                    'expires_at':   p.expires_at.isoformat() if p.expires_at else None,
+                }
+                for p in expiring_soon[:10]
+            ],
+            'all_products_default_off': True,
+            'nav_links': [
+                {'label': 'Admin Monetization', 'url': '/admin/monetization'},
+            ],
+        }
+    except Exception as exc:
+        log.error("get_promotion_summary error: %s", exc)
+        return {'error': 'Could not generate promotion summary.'}
+
+
+# ---------------------------------------------------------------------------
+# 18. get_monetization_product_catalog (Phase N)
+# ---------------------------------------------------------------------------
+
+def get_monetization_product_catalog() -> dict:
+    """Phase N — list all monetization products, their status, and pricing.
+
+    Shows admin which products exist, which are active (all default OFF),
+    and whether each has a Stripe Price ID configured.
+    """
+    try:
+        from models import MonetizationProduct
+
+        products = MonetizationProduct.query.order_by(
+            MonetizationProduct.display_order
+        ).all()
+
+        def _serialize(prod):
+            return {
+                'id':                  prod.id,
+                'name':                prod.name,
+                'product_type':        prod.product_type,
+                'is_active':           prod.is_active,
+                'duration_days':       prod.duration_days,
+                'price_dollars':       round(prod.price_cents / 100, 2) if prod.price_cents else None,
+                'has_stripe_price_id': bool(prod.stripe_price_id),
+            }
+
+        active   = [p for p in products if p.is_active]
+        inactive = [p for p in products if not p.is_active]
+
+        return {
+            'generated_at':      _fmt_dt(_now_utc()),
+            'total_products':    len(products),
+            'active_count':      len(active),
+            'inactive_count':    len(inactive),
+            'active_products':   [_serialize(p) for p in active],
+            'inactive_products': [_serialize(p) for p in inactive],
+            'note': (
+                'All products default to inactive. '
+                'Activation requires a Stripe Price ID and explicit admin approval.'
+            ),
+            'nav_links': [
+                {'label': 'Admin Monetization', 'url': '/admin/monetization'},
+            ],
+        }
+    except Exception as exc:
+        log.error("get_monetization_product_catalog error: %s", exc)
+        return {'error': 'Could not retrieve product catalog.'}
