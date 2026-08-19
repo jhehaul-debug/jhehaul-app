@@ -107,7 +107,8 @@
       <!-- Model (dependent on make) -->
       <div style="margin-bottom:8px;">
         <label style="font-size:0.83rem;font-weight:600;color:#718096;">Model</label>
-        <select name="vt_model" id="tvq_model" class="form-control" style="margin-top:4px;">
+        <select name="vt_model" id="tvq_model" class="form-control" style="margin-top:4px;"
+                {{ '' if (form and form.get('vt_make')) else 'disabled' }}>
           <option value="">— Select model —</option>
         </select>
       </div>
@@ -344,17 +345,18 @@ function tvqBuildModels(make) {
   }
 }
 
-function tvqRenderModels() {
+function tvqRenderModels(make) {
   if (!tvqModelSelect) return;
   const cur = tvqModelSelect.value;
   tvqModelSelect.innerHTML = '';
   _tvqModelOpts.forEach(o => tvqModelSelect.appendChild(o.cloneNode(true)));
   if (tvqModelSelect.querySelector('option[value="'+CSS.escape(cur)+'"]')) tvqModelSelect.value = cur;
+  tvqModelSelect.disabled = !make;
 }
 
 function tvqInitModel(make, existingModel) {
   tvqBuildModels(make);
-  tvqRenderModels();
+  tvqRenderModels(make);
   const og = document.getElementById('tvq-model-other-group');
   if (!existingModel) { if(og) og.style.display='none'; return; }
   const inList = _tvqModelOpts.some(o => o.value===existingModel && o.value!=='Other' && o.value!=='');
@@ -370,7 +372,12 @@ tvqModelSelect?.addEventListener('change', function() {
 tvqMakeSelect?.addEventListener('change', function() {
   const og = document.getElementById('tvq-make-other-group');
   if (og) og.style.display = (this.value==='Other') ? '' : 'none';
-  tvqInitModel(this.value, '');
+  const selectedMake = this.value;
+  // Deferred via setTimeout: rebuilding the Model <select>'s options
+  // synchronously inside the Make <select>'s own 'change' event does not
+  // reliably refresh the native picker on iOS/iPhone Safari — deferring
+  // to the next tick lets the browser finish its own change handling first.
+  setTimeout(function() { tvqInitModel(selectedMake, ''); }, 0);
 });
 
 // Page-load restore
