@@ -135,6 +135,15 @@ class Job(db.Model):
     completion_photos = db.relationship('CompletionPhoto', backref='job', lazy=True, cascade='all, delete-orphan')
     reviews = db.relationship('Review', backref='job', lazy=True, cascade='all, delete-orphan')
 
+    @property
+    def customer_phone_formatted(self):
+        if not self.customer_phone:
+            return ''
+        digits = ''.join(c for c in self.customer_phone if c.isdigit())
+        if len(digits) == 10:
+            return f'({digits[:3]}) {digits[3:6]}-{digits[6:]}'
+        return self.customer_phone
+
 class JobPhoto(db.Model):
     __tablename__ = 'job_photos'
     id = db.Column(db.Integer, primary_key=True)

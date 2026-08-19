@@ -53,6 +53,10 @@
     <table style="width:100%;font-size:0.88rem;border-collapse:collapse;">
       <tr><td style="padding:5px 0;color:#718096;width:42%;">DR #</td><td><strong>#{{ dr.id }}</strong></td></tr>
       <tr><td style="padding:5px 0;color:#718096;">Job #</td><td>{% if job %}<a href="{{ url_for('admin_request_detail', job_id=job.id) }}" style="color:#3b82f6;">#{{ job.id }}</a>{% else %}<span style="color:#ef4444;">None</span>{% endif %}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Contact Name</td>
+          <td>{{ job.customer_name if job and job.customer_name else '—' }}</td></tr>
+      <tr><td style="padding:5px 0;color:#718096;">Phone / Mobile</td>
+          <td>{% if job and job.customer_phone %}<strong style="color:#1a202c;">📞 {{ job.customer_phone_formatted }}</strong>{% else %}<span style="color:#9ca3af;">—</span>{% endif %}</td></tr>
       <tr><td style="padding:5px 0;color:#718096;">Status</td><td>
         <span style="background:{% if dr.status=='quoted' %}#dbeafe{% elif dr.status=='requested' %}#f0fdf4{% else %}#f8fafc{% endif %};
                      color:{% if dr.status=='quoted' %}#1d4ed8{% elif dr.status=='requested' %}#065f46{% else %}#4a5568{% endif %};

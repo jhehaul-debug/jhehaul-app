@@ -680,4 +680,13 @@ footer {
   .footer-inner { grid-template-columns: 1fr; }
   .quick-actions .btn { flex: 1; min-width: 140px; }
   .bid-row .bid-header { flex-direction: column; gap: 6px; }
+  /* Test Delivery Quote / Test Vehicle Delivery Quote: stack full-width on mobile
+     instead of squeezing side-by-side, and let long labels wrap inside the button
+     rather than overflowing it. */
+  .quick-actions .btn-test-quote {
+    flex: 1 1 100%;
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
 }
